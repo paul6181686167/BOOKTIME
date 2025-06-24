@@ -16,6 +16,7 @@ const SagasPanel = ({ onSagaSelect }) => {
   const [loading, setLoading] = useState(true);
   const [selectedSaga, setSelectedSaga] = useState(null);
   const [autoAddingFor, setAutoAddingFor] = useState(null);
+  const [showMissingVolumes, setShowMissingVolumes] = useState(null);
 
   useEffect(() => {
     loadSagas();
