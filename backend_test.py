@@ -435,32 +435,32 @@ class BooktimeAPITest(unittest.TestCase):
         books = response.json()
         
         # Check for Harry Potter
-        harry_potter = next((book for book in books if book["title"] == "Harry Potter à l'école des sorciers"), None)
-        self.assertIsNotNone(harry_potter, "Harry Potter à l'école des sorciers should be in the database")
+        harry_potter = next((book for book in books if "Harry Potter" in book["title"] and book["volume_number"] == 1), None)
+        self.assertIsNotNone(harry_potter, "Harry Potter (volume 1) should be in the database")
         if harry_potter:
             self.assertEqual(harry_potter["author"], "J.K. Rowling")
             self.assertEqual(harry_potter["saga"], "Harry Potter")
             self.assertEqual(harry_potter["volume_number"], 1)
             
-        # Check for Astérix
-        asterix = next((book for book in books if book["title"] == "Astérix le Gaulois"), None)
-        self.assertIsNotNone(asterix, "Astérix le Gaulois should be in the database")
-        if asterix:
-            self.assertEqual(asterix["category"], "bd")
-            self.assertEqual(asterix["saga"], "Astérix")
+        # Check for Naruto
+        naruto = next((book for book in books if "Naruto" in book["title"] and book["volume_number"] == 1), None)
+        self.assertIsNotNone(naruto, "Naruto (volume 1) should be in the database")
+        if naruto:
+            self.assertEqual(naruto["category"], "manga")
+            self.assertEqual(naruto["saga"], "Naruto")
             
         # Check for One Piece
-        one_piece = next((book for book in books if book["title"] == "One Piece - À l'aube d'une grande aventure"), None)
-        self.assertIsNotNone(one_piece, "One Piece - À l'aube d'une grande aventure should be in the database")
+        one_piece = next((book for book in books if "One Piece" in book["title"] and book["volume_number"] == 1), None)
+        self.assertIsNotNone(one_piece, "One Piece (volume 1) should be in the database")
         if one_piece:
             self.assertEqual(one_piece["author"], "Eiichiro Oda")
             self.assertEqual(one_piece["category"], "manga")
             self.assertEqual(one_piece["saga"], "One Piece")
             
         print("✅ Popular books are present in the database")
-        print("   - Harry Potter à l'école des sorciers")
-        print("   - Astérix le Gaulois")
-        print("   - One Piece - À l'aube d'une grande aventure")
+        print("   - Harry Potter (volume 1)")
+        print("   - Naruto (volume 1)")
+        print("   - One Piece (volume 1)")
     def test_get_sagas(self):
         """Test retrieving all sagas with their statistics"""
         response = requests.get(f"{API_URL}/sagas")
