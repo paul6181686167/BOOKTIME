@@ -81,7 +81,7 @@ const AuthorsPanel = ({ onAuthorSelect }) => {
                   
                   {author.sagas.length > 0 && (
                     <div className="flex items-center space-x-1">
-                      <CollectionIcon className="h-3 w-3" />
+                      <RectangleStackIcon className="h-3 w-3" />
                       <span>{author.sagas.length} saga{author.sagas.length > 1 ? 's' : ''}</span>
                     </div>
                   )}
