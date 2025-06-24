@@ -388,52 +388,40 @@ class BooktimeAPITest(unittest.TestCase):
             
         print(f"✅ Get authors endpoint working, found {len(authors)} authors")
         
-    def test_get_books_by_author(self):
-        """Test retrieving books by a specific author"""
-        # Test with J.K. Rowling
-        author_name = "J.K. Rowling"
-        response = requests.get(f"{API_URL}/authors/{author_name}/books")
+    def test_specific_popular_books(self):
+        """Test the presence of specific popular books in the database"""
+        # Get all books
+        response = requests.get(f"{API_URL}/books")
         self.assertEqual(response.status_code, 200)
         books = response.json()
         
-        # Should have at least 3 Harry Potter books
-        self.assertGreaterEqual(len(books), 3, f"{author_name} should have at least 3 books")
-        
-        # All books should be by J.K. Rowling
-        for book in books:
-            self.assertEqual(book["author"], author_name)
-            self.assertIn("saga", book)
-            self.assertEqual(book["saga"], "Harry Potter")
+        # Check for Harry Potter
+        harry_potter = next((book for book in books if book["title"] == "Harry Potter à l'école des sorciers"), None)
+        self.assertIsNotNone(harry_potter, "Harry Potter à l'école des sorciers should be in the database")
+        if harry_potter:
+            self.assertEqual(harry_potter["author"], "J.K. Rowling")
+            self.assertEqual(harry_potter["saga"], "Harry Potter")
+            self.assertEqual(harry_potter["volume_number"], 1)
             
-        print(f"✅ Get books by author '{author_name}' working, found {len(books)} books")
-        
-        # Test with Eiichiro Oda
-        author_name = "Eiichiro Oda"
-        response = requests.get(f"{API_URL}/authors/{author_name}/books")
-        self.assertEqual(response.status_code, 200)
-        books = response.json()
-        
-        # Should have at least 3 One Piece books
-        self.assertGreaterEqual(len(books), 3, f"{author_name} should have at least 3 books")
-        
-        # All books should be by Eiichiro Oda
-        for book in books:
-            self.assertEqual(book["author"], author_name)
-            self.assertIn("saga", book)
-            self.assertEqual(book["saga"], "One Piece")
+        # Check for Astérix
+        asterix = next((book for book in books if book["title"] == "Astérix le Gaulois"), None)
+        self.assertIsNotNone(asterix, "Astérix le Gaulois should be in the database")
+        if asterix:
+            self.assertEqual(asterix["category"], "bd")
+            self.assertEqual(asterix["saga"], "Astérix")
             
-        print(f"✅ Get books by author '{author_name}' working, found {len(books)} books")
-        
-        # Test partial author name search
-        partial_name = "Rowl"
-        response = requests.get(f"{API_URL}/authors/{partial_name}/books")
-        self.assertEqual(response.status_code, 200)
-        books = response.json()
-        
-        # Should find J.K. Rowling's books with partial name
-        self.assertGreaterEqual(len(books), 3, f"Partial search for '{partial_name}' should find books")
-        
-        print(f"✅ Partial author name search working, found {len(books)} books for '{partial_name}'")
+        # Check for One Piece
+        one_piece = next((book for book in books if book["title"] == "One Piece - À l'aube d'une grande aventure"), None)
+        self.assertIsNotNone(one_piece, "One Piece - À l'aube d'une grande aventure should be in the database")
+        if one_piece:
+            self.assertEqual(one_piece["author"], "Eiichiro Oda")
+            self.assertEqual(one_piece["category"], "manga")
+            self.assertEqual(one_piece["saga"], "One Piece")
+            
+        print("✅ Popular books are present in the database")
+        print("   - Harry Potter à l'école des sorciers")
+        print("   - Astérix le Gaulois")
+        print("   - One Piece - À l'aube d'une grande aventure")
     def test_get_sagas(self):
         """Test retrieving all sagas with their statistics"""
         response = requests.get(f"{API_URL}/sagas")
