@@ -11,43 +11,36 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDark, setIsDark] = useState(false);
 
-  // Charger la préférence depuis localStorage au démarrage
   useEffect(() => {
+    // Charger le thème depuis localStorage
     const savedTheme = localStorage.getItem('booktime-theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-      setIsDarkMode(true);
-      document.documentElement.classList.add('dark');
+    if (savedTheme) {
+      setIsDark(savedTheme === 'dark');
     } else {
-      setIsDarkMode(false);
-      document.documentElement.classList.remove('dark');
+      // Utiliser la préférence système
+      setIsDark(window.matchMedia('(prefers-color-scheme: dark)').matches);
     }
   }, []);
 
-  // Fonction pour basculer le thème
-  const toggleTheme = () => {
-    const newIsDarkMode = !isDarkMode;
-    setIsDarkMode(newIsDarkMode);
-    
-    if (newIsDarkMode) {
+  useEffect(() => {
+    // Appliquer le thème
+    if (isDark) {
       document.documentElement.classList.add('dark');
-      localStorage.setItem('booktime-theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
-      localStorage.setItem('booktime-theme', 'light');
     }
-  };
+    // Sauvegarder le thème
+    localStorage.setItem('booktime-theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
 
-  const value = {
-    isDarkMode,
-    toggleTheme
+  const toggleTheme = () => {
+    setIsDark(!isDark);
   };
 
   return (
-    <ThemeContext.Provider value={value}>
+    <ThemeContext.Provider value={{ isDark, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );
