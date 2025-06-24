@@ -82,6 +82,25 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
     }
   };
 
+  const handleEnrich = async () => {
+    setEnriching(true);
+    try {
+      const result = await openLibraryService.enrichBook(book.id);
+      if (result.message) {
+        toast.success(result.message);
+        if (result.book) {
+          // Recharger les données du livre dans le parent
+          window.location.reload(); // Solution simple pour rafraîchir
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'enrichissement:', error);
+      toast.error(error.message || 'Erreur lors de l\'enrichissement du livre');
+    } finally {
+      setEnriching(false);
+    }
+  };
+
   const handleRatingClick = (rating) => {
     setEditData(prev => ({ ...prev, rating }));
   };
