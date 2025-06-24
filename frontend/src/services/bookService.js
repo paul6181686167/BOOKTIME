@@ -153,6 +153,52 @@ export const bookService = {
     }
   },
 
+  // === OPEN LIBRARY INTEGRATION ===
+  
+  // Rechercher des livres sur Open Library
+  async searchOpenLibrary(query, limit = 10) {
+    try {
+      const response = await api.get('/api/openlibrary/search', {
+        params: { q: query, limit }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la recherche Open Library:', error);
+      throw new Error('Erreur lors de la recherche sur Open Library');
+    }
+  },
+
+  // Importer un livre depuis Open Library
+  async importFromOpenLibrary(olKey, category = 'roman') {
+    try {
+      const response = await api.post('/api/openlibrary/import', {
+        ol_key: olKey,
+        category: category
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.status === 409) {
+        throw new Error('Ce livre existe déjà dans votre collection');
+      }
+      console.error('Erreur lors de l\'import Open Library:', error);
+      throw new Error('Erreur lors de l\'import du livre');
+    }
+  },
+
+  // Enrichir un livre existant avec les données Open Library
+  async enrichBook(bookId) {
+    try {
+      const response = await api.post(`/api/books/${bookId}/enrich`);
+      return response.data;
+    } catch (error) {
+      if (error.response?.status === 404) {
+        throw new Error('Aucune correspondance trouvée sur Open Library');
+      }
+      console.error('Erreur lors de l\'enrichissement:', error);
+      throw new Error('Erreur lors de l\'enrichissement du livre');
+    }
+  },
+
   // Rechercher des livres (API externe optionnelle)
   async searchBooks(query) {
     try {
