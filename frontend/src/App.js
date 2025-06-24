@@ -222,6 +222,7 @@ function AppContent() {
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         onAddBook={() => setShowAddModal(true)}
+        onOpenLibrarySearch={() => setShowOpenLibraryModal(true)}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         currentContext={currentContext}
