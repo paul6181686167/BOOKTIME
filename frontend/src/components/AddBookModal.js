@@ -56,10 +56,10 @@ const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-900">Ajouter un livre</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Ajouter un livre</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             <XMarkIcon className="h-6 w-6" />
           </button>
@@ -68,7 +68,7 @@ const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Titre */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Titre *
             </label>
             <input
@@ -76,7 +76,7 @@ const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
               name="title"
               value={formData.title}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500 transition-colors"
               placeholder="Le nom du livre"
               required
             />
@@ -84,7 +84,7 @@ const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
 
           {/* Auteur */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Auteur *
             </label>
             <input
@@ -92,7 +92,7 @@ const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
               name="author"
               value={formData.author}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500 transition-colors"
               placeholder="Nom de l'auteur"
               required
             />
@@ -100,7 +100,7 @@ const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
 
           {/* Catégorie */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Catégorie
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -111,8 +111,8 @@ const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
                   onClick={() => setFormData(prev => ({ ...prev, category: category.value }))}
                   className={`p-3 rounded-lg border-2 transition-colors ${
                     formData.category === category.value
-                      ? 'border-booktime-500 bg-booktime-50 text-booktime-700'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-booktime-500 bg-booktime-50 dark:bg-booktime-900/30 text-booktime-700 dark:text-booktime-300'
+                      : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white'
                   }`}
                 >
                   <div className="text-center">
@@ -126,7 +126,7 @@ const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Description
             </label>
             <textarea
@@ -134,14 +134,14 @@ const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
               value={formData.description}
               onChange={handleChange}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500 transition-colors"
               placeholder="Résumé ou description du livre"
             />
           </div>
 
           {/* URL de couverture */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               URL de la couverture
             </label>
             <input
@@ -149,14 +149,14 @@ const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
               name="cover_url"
               value={formData.cover_url}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500 transition-colors"
               placeholder="https://example.com/cover.jpg"
             />
           </div>
 
           {/* Nombre de pages */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Nombre de pages
             </label>
             <input
@@ -165,14 +165,14 @@ const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
               value={formData.total_pages}
               onChange={handleChange}
               min="1"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500 transition-colors"
               placeholder="350"
             />
           </div>
 
           {/* ISBN */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               ISBN
             </label>
             <input
@@ -180,7 +180,7 @@ const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
               name="isbn"
               value={formData.isbn}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500 transition-colors"
               placeholder="978-2-123456-78-9"
             />
           </div>
@@ -190,14 +190,14 @@ const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-booktime-500"
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-booktime-500 dark:focus:ring-offset-gray-800 transition-colors"
             >
               Annuler
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-white bg-booktime-600 border border-transparent rounded-md hover:bg-booktime-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-booktime-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm font-medium text-white bg-booktime-600 border border-transparent rounded-md hover:bg-booktime-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-booktime-500 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? 'Ajout...' : 'Ajouter'}
             </button>

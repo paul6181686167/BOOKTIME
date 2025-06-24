@@ -14,9 +14,9 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const statusOptions = [
-    { value: 'to_read', label: 'À lire', color: 'bg-gray-100 text-gray-800' },
-    { value: 'reading', label: 'En cours', color: 'bg-blue-100 text-blue-800' },
-    { value: 'completed', label: 'Terminé', color: 'bg-green-100 text-green-800' },
+    { value: 'to_read', label: 'À lire', color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300' },
+    { value: 'reading', label: 'En cours', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300' },
+    { value: 'completed', label: 'Terminé', color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300' },
   ];
 
   const handleSave = async () => {
@@ -71,12 +71,12 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
       <div className="modal-content max-w-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between mb-6">
           <div className="flex-1">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">{book.title}</h2>
-            <p className="text-lg text-gray-600 mb-4">par {book.author}</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{book.title}</h2>
+            <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">par {book.author}</p>
             
             {/* Catégorie et statut */}
             <div className="flex items-center space-x-3">
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-booktime-100 text-booktime-800">
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-booktime-100 dark:bg-booktime-900/30 text-booktime-800 dark:text-booktime-300">
                 {book.category === 'roman' && '📚'} 
                 {book.category === 'bd' && '🎨'} 
                 {book.category === 'manga' && '🇯🇵'} 
@@ -91,19 +91,19 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setIsEditing(!isEditing)}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             >
               <PencilIcon className="h-5 w-5" />
             </button>
             <button
               onClick={handleDelete}
-              className="p-2 text-red-400 hover:text-red-600 transition-colors"
+              className="p-2 text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
             >
               <TrashIcon className="h-5 w-5" />
             </button>
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             >
               <XMarkIcon className="h-6 w-6" />
             </button>
@@ -113,7 +113,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Image de couverture */}
           <div className="md:col-span-1">
-            <div className="aspect-[2/3] bg-gray-100 rounded-lg overflow-hidden">
+            <div className="aspect-[2/3] bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
               {book.cover_url ? (
                 <img 
                   src={book.cover_url} 
@@ -121,14 +121,14 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
                   <div className="text-center p-4">
                     <div className="text-6xl mb-2">
                       {book.category === 'roman' && '📚'}
                       {book.category === 'bd' && '🎨'}
                       {book.category === 'manga' && '🇯🇵'}
                     </div>
-                    <p className="text-sm text-gray-500 font-medium">Pas de couverture</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Pas de couverture</p>
                   </div>
                 </div>
               )}
@@ -140,13 +140,13 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
             {/* Statut */}
             {isEditing ? (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Statut
                 </label>
                 <select
                   value={editData.status}
                   onChange={(e) => setEditData(prev => ({ ...prev, status: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-booktime-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-booktime-500 transition-colors"
                 >
                   {statusOptions.map(option => (
                     <option key={option.value} value={option.value}>
@@ -157,7 +157,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
               </div>
             ) : (
               <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-1">Statut</h3>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Statut</h3>
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getCurrentStatus().color}`}>
                   {getCurrentStatus().label}
                 </span>
@@ -167,7 +167,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
             {/* Progression */}
             {book.total_pages && (
               <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Progression</h3>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Progression</h3>
                 {isEditing ? (
                   <div className="space-y-2">
                     <input
@@ -176,20 +176,20 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
                       onChange={(e) => setEditData(prev => ({ ...prev, current_page: e.target.value }))}
                       min="0"
                       max={book.total_pages}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-booktime-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-booktime-500 transition-colors"
                     />
-                    <div className="flex justify-between text-sm text-gray-600">
+                    <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                       <span>{editData.current_page} pages lues</span>
                       <span>{book.total_pages} pages total</span>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <div className="flex justify-between text-sm text-gray-600">
+                    <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                       <span>{book.current_page} pages lues</span>
                       <span>{book.total_pages} pages total</span>
                     </div>
-                    <div className="progress-bar">
+                    <div className="progress-bar bg-gray-200 dark:bg-gray-700">
                       <div 
                         className="progress-fill"
                         style={{ width: `${getProgressPercentage()}%` }}
@@ -202,7 +202,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
 
             {/* Note */}
             <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Note</h3>
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Note</h3>
               <div className="flex space-x-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
@@ -214,7 +214,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
                     {star <= (isEditing ? editData.rating : book.rating) ? (
                       <StarSolidIcon className="h-6 w-6 text-yellow-400" />
                     ) : (
-                      <StarIcon className="h-6 w-6 text-gray-300" />
+                      <StarIcon className="h-6 w-6 text-gray-300 dark:text-gray-600" />
                     )}
                   </button>
                 ))}
@@ -223,17 +223,17 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
 
             {/* Avis */}
             <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Avis</h3>
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Avis</h3>
               {isEditing ? (
                 <textarea
                   value={editData.review}
                   onChange={(e) => setEditData(prev => ({ ...prev, review: e.target.value }))}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-booktime-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-booktime-500 transition-colors"
                   placeholder="Qu'avez-vous pensé de ce livre ?"
                 />
               ) : (
-                <p className="text-gray-600">
+                <p className="text-gray-600 dark:text-gray-400">
                   {book.review || 'Aucun avis pour le moment.'}
                 </p>
               )}
@@ -242,26 +242,26 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
             {/* Description */}
             {book.description && (
               <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Description</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                   {book.description}
                 </p>
               </div>
             )}
 
             {/* Informations supplémentaires */}
-            <div className="border-t pt-4">
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <h4 className="font-medium text-gray-700">Date d'ajout</h4>
-                  <p className="text-gray-600">
+                  <h4 className="font-medium text-gray-700 dark:text-gray-300">Date d'ajout</h4>
+                  <p className="text-gray-600 dark:text-gray-400">
                     {new Date(book.date_added).toLocaleDateString('fr-FR')}
                   </p>
                 </div>
                 {book.isbn && (
                   <div>
-                    <h4 className="font-medium text-gray-700">ISBN</h4>
-                    <p className="text-gray-600">{book.isbn}</p>
+                    <h4 className="font-medium text-gray-700 dark:text-gray-300">ISBN</h4>
+                    <p className="text-gray-600 dark:text-gray-400">{book.isbn}</p>
                   </div>
                 )}
               </div>
@@ -271,17 +271,17 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
 
         {/* Boutons d'action */}
         {isEditing && (
-          <div className="flex justify-end space-x-3 pt-6 border-t">
+          <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={() => setIsEditing(false)}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             >
               Annuler
             </button>
             <button
               onClick={handleSave}
               disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-white bg-booktime-600 border border-transparent rounded-md hover:bg-booktime-700 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-white bg-booktime-600 border border-transparent rounded-md hover:bg-booktime-700 disabled:opacity-50 transition-colors"
             >
               {isLoading ? 'Sauvegarde...' : 'Sauvegarder'}
             </button>
