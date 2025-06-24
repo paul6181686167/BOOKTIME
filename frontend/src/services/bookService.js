@@ -75,13 +75,53 @@ export const bookService = {
     }
   },
 
-  // Récupérer les statistiques
-  async getStats() {
+  // Récupérer les auteurs
+  async getAuthors() {
     try {
-      const response = await api.get('/api/stats');
+      const response = await api.get('/api/authors');
       return response.data;
     } catch (error) {
-      throw new Error('Erreur lors de la récupération des statistiques');
+      throw new Error('Erreur lors de la récupération des auteurs');
+    }
+  },
+
+  // Récupérer les livres d'un auteur
+  async getBooksByAuthor(authorName) {
+    try {
+      const response = await api.get(`/api/authors/${encodeURIComponent(authorName)}/books`);
+      return response.data;
+    } catch (error) {
+      throw new Error('Erreur lors de la récupération des livres de l\'auteur');
+    }
+  },
+
+  // Récupérer les sagas
+  async getSagas() {
+    try {
+      const response = await api.get('/api/sagas');
+      return response.data;
+    } catch (error) {
+      throw new Error('Erreur lors de la récupération des sagas');
+    }
+  },
+
+  // Récupérer les livres d'une saga
+  async getBooksBySaga(sagaName) {
+    try {
+      const response = await api.get(`/api/sagas/${encodeURIComponent(sagaName)}/books`);
+      return response.data;
+    } catch (error) {
+      throw new Error('Erreur lors de la récupération des livres de la saga');
+    }
+  },
+
+  // Ajouter automatiquement le prochain tome d'une saga
+  async autoAddNextVolume(sagaName) {
+    try {
+      const response = await api.post(`/api/sagas/${encodeURIComponent(sagaName)}/auto-add`);
+      return response.data;
+    } catch (error) {
+      throw new Error('Erreur lors de l\'ajout automatique du prochain tome');
     }
   },
 
