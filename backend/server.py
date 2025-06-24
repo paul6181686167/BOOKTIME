@@ -48,7 +48,11 @@ class BookBase(BaseModel):
     language: str = "français"
 
 class BookCreate(BookBase):
-    pass
+    # Validation des catégories
+    def __init__(self, **data):
+        super().__init__(**data)
+        if self.category.lower() not in ['roman', 'bd', 'manga']:
+            raise ValueError(f"Category must be one of: roman, bd, manga. Got: {self.category}")
 
 class Book(BookBase):
     id: str = Field(alias="_id")
