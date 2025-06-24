@@ -301,13 +301,7 @@ function AppContent() {
 }
 
 function App() {
-  return (
-    <ThemeProvider>
-      <UserLanguageProvider>
-        <AppContent />
-      </UserLanguageProvider>
-    </ThemeProvider>
-  );
+  return <AppContent />;
 }
 
 export default App;
