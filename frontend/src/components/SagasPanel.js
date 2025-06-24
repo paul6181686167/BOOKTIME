@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CollectionIcon, BookOpenIcon, CheckCircleIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { RectangleStackIcon, BookOpenIcon, CheckCircleIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { bookService } from '../services/bookService';
 import toast from 'react-hot-toast';
 
