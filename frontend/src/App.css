@@ -19,6 +19,10 @@
   backdrop-filter: blur(4px);
 }
 
+.dark .modal-overlay {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
 .modal-content {
   background: white;
   border-radius: 12px;
@@ -29,6 +33,13 @@
   overflow-y: auto;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   animation: modalSlideIn 0.3s ease-out;
+  transition: background-color 0.3s ease;
+}
+
+.dark .modal-content {
+  background: #1f2937;
+  border: 1px solid #374151;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
 }
 
 @keyframes modalSlideIn {
