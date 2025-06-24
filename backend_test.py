@@ -80,14 +80,17 @@ class BooktimeAPITest(unittest.TestCase):
         status_sum = data["completed_books"] + data["reading_books"] + data["to_read_books"]
         self.assertEqual(data["total_books"], status_sum)
         
-        # Verify the extended stats
-        self.assertGreaterEqual(data["total_books"], 18, "Should have at least 18 books")
-        self.assertGreaterEqual(data["sagas_count"], 7, "Should have at least 7 sagas")
-        self.assertGreaterEqual(data["authors_count"], 9, "Should have at least 9 authors")
-        self.assertGreaterEqual(data["auto_added_count"], 5, "Should have at least 5 auto-added books")
+        # Verify the specific stats from the new database
+        self.assertEqual(data["total_books"], 58, "Should have exactly 58 books")
+        self.assertEqual(data["categories"]["roman"], 21, "Should have 21 roman books")
+        self.assertEqual(data["categories"]["bd"], 17, "Should have 17 bd books")
+        self.assertEqual(data["categories"]["manga"], 20, "Should have 20 manga books")
+        self.assertEqual(data["sagas_count"], 14, "Should have 14 sagas")
+        self.assertEqual(data["authors_count"], 26, "Should have 26 authors")
         
         print("✅ Stats endpoint working with extended stats")
         print(f"   Total books: {data['total_books']}")
+        print(f"   Romans: {data['categories']['roman']}, BD: {data['categories']['bd']}, Mangas: {data['categories']['manga']}")
         print(f"   Sagas: {data['sagas_count']}")
         print(f"   Authors: {data['authors_count']}")
         print(f"   Auto-added books: {data['auto_added_count']}")
