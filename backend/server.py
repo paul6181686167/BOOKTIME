@@ -20,7 +20,7 @@ app.add_middleware(
     allow_origins=["*"],  # In production, specify your frontend URL
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"]
 )
 
 # MongoDB connection
