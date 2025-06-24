@@ -424,6 +424,174 @@ class BooktimeAPITest(unittest.TestCase):
         self.assertGreaterEqual(len(books), 3, f"Partial search for '{partial_name}' should find books")
         
         print(f"✅ Partial author name search working, found {len(books)} books for '{partial_name}'")
+    def test_get_sagas(self):
+        """Test retrieving all sagas with their statistics"""
+        response = requests.get(f"{API_URL}/sagas")
+        self.assertEqual(response.status_code, 200)
+        sagas = response.json()
+        
+        # Should have at least 7 sagas as mentioned in the context
+        self.assertGreaterEqual(len(sagas), 7, "Should have at least 7 sagas")
+        
+        # Check that each saga has the required fields
+        for saga in sagas:
+            self.assertIn("name", saga)
+            self.assertIn("books_count", saga)
+            self.assertIn("completed_books", saga)
+            self.assertIn("author", saga)
+            self.assertIn("category", saga)
+            self.assertIn("next_volume", saga)
+            
+        # Find specific sagas mentioned in the context
+        harry_potter = next((s for s in sagas if s["name"] == "Harry Potter"), None)
+        one_piece = next((s for s in sagas if s["name"] == "One Piece"), None)
+        
+        # Verify Harry Potter saga
+        self.assertIsNotNone(harry_potter, "Harry Potter should be in the sagas list")
+        if harry_potter:
+            self.assertGreaterEqual(harry_potter["books_count"], 3, "Harry Potter should have at least 3 books")
+            self.assertEqual(harry_potter["author"], "J.K. Rowling")
+            
+        # Verify One Piece saga
+        self.assertIsNotNone(one_piece, "One Piece should be in the sagas list")
+        if one_piece:
+            self.assertGreaterEqual(one_piece["books_count"], 3, "One Piece should have at least 3 books")
+            self.assertEqual(one_piece["author"], "Eiichiro Oda")
+            
+        print(f"✅ Get sagas endpoint working, found {len(sagas)} sagas")
+        
+    def test_get_books_by_saga(self):
+        """Test retrieving books by a specific saga"""
+        # Test with Harry Potter
+        saga_name = "Harry Potter"
+        response = requests.get(f"{API_URL}/sagas/{saga_name}/books")
+        self.assertEqual(response.status_code, 200)
+        books = response.json()
+        
+        # Should have at least 3 Harry Potter books
+        self.assertGreaterEqual(len(books), 3, f"{saga_name} should have at least 3 books")
+        
+        # All books should be from Harry Potter saga
+        for book in books:
+            self.assertEqual(book["saga"], saga_name)
+            self.assertEqual(book["author"], "J.K. Rowling")
+            
+        # Books should be sorted by volume_number
+        for i in range(1, len(books)):
+            self.assertGreaterEqual(books[i]["volume_number"], books[i-1]["volume_number"], 
+                                   "Books should be sorted by volume_number")
+            
+        print(f"✅ Get books by saga '{saga_name}' working, found {len(books)} books")
+        
+        # Test with One Piece
+        saga_name = "One Piece"
+        response = requests.get(f"{API_URL}/sagas/{saga_name}/books")
+        self.assertEqual(response.status_code, 200)
+        books = response.json()
+        
+        # Should have at least 3 One Piece books
+        self.assertGreaterEqual(len(books), 3, f"{saga_name} should have at least 3 books")
+        
+        # All books should be from One Piece saga
+        for book in books:
+            self.assertEqual(book["saga"], saga_name)
+            self.assertEqual(book["author"], "Eiichiro Oda")
+            
+        # Books should be sorted by volume_number
+        for i in range(1, len(books)):
+            self.assertGreaterEqual(books[i]["volume_number"], books[i-1]["volume_number"], 
+                                   "Books should be sorted by volume_number")
+            
+        print(f"✅ Get books by saga '{saga_name}' working, found {len(books)} books")
+        
+    def test_auto_add_next_volume(self):
+        """Test auto-adding the next volume to a saga"""
+        # Test with Harry Potter
+        saga_name = "Harry Potter"
+        
+        # Get current books in the saga
+        response = requests.get(f"{API_URL}/sagas/{saga_name}/books")
+        self.assertEqual(response.status_code, 200)
+        initial_books = response.json()
+        initial_count = len(initial_books)
+        
+        # Find the highest volume number
+        highest_volume = max([book["volume_number"] for book in initial_books])
+        
+        # Auto-add next volume
+        response = requests.post(f"{API_URL}/sagas/{saga_name}/auto-add")
+        self.assertEqual(response.status_code, 200)
+        new_book = response.json()
+        self.book_ids_to_delete.append(new_book["_id"])
+        
+        # Verify the new book
+        self.assertEqual(new_book["saga"], saga_name)
+        self.assertEqual(new_book["author"], "J.K. Rowling")
+        self.assertEqual(new_book["volume_number"], highest_volume + 1)
+        self.assertEqual(new_book["status"], "to_read")
+        self.assertTrue(new_book["auto_added"])
+        
+        # Get updated books in the saga
+        response = requests.get(f"{API_URL}/sagas/{saga_name}/books")
+        self.assertEqual(response.status_code, 200)
+        updated_books = response.json()
+        
+        # Should have one more book
+        self.assertEqual(len(updated_books), initial_count + 1)
+        
+        print(f"✅ Auto-add next volume for '{saga_name}' working, added volume {new_book['volume_number']}")
+        
+        # Test with non-existent saga
+        saga_name = "Non-existent Saga"
+        response = requests.post(f"{API_URL}/sagas/{saga_name}/auto-add")
+        self.assertEqual(response.status_code, 404)
+        
+        print("✅ Auto-add for non-existent saga returns 404 as expected")
+        
+    def test_data_validation(self):
+        """Test validation of the new data fields"""
+        # Create a book with saga information
+        response = requests.post(f"{API_URL}/books", json=self.test_saga_book_data)
+        self.assertEqual(response.status_code, 200)
+        book = response.json()
+        self.book_ids_to_delete.append(book["_id"])
+        
+        # Verify all the new fields exist and are correct
+        self.assertEqual(book["saga"], self.test_saga_book_data["saga"])
+        self.assertEqual(book["volume_number"], self.test_saga_book_data["volume_number"])
+        self.assertEqual(book["genre"], self.test_saga_book_data["genre"])
+        self.assertEqual(book["publication_year"], self.test_saga_book_data["publication_year"])
+        self.assertEqual(book["publisher"], self.test_saga_book_data["publisher"])
+        self.assertFalse(book["auto_added"])
+        
+        print("✅ New data fields validation working correctly")
+        
+    def test_data_consistency(self):
+        """Test data consistency for sagas and volumes"""
+        # Get all sagas
+        response = requests.get(f"{API_URL}/sagas")
+        self.assertEqual(response.status_code, 200)
+        sagas = response.json()
+        
+        for saga in sagas:
+            # Get books for this saga
+            response = requests.get(f"{API_URL}/sagas/{saga['name']}/books")
+            self.assertEqual(response.status_code, 200)
+            books = response.json()
+            
+            # Check volume numbers are sequential
+            volume_numbers = sorted([book["volume_number"] for book in books])
+            for i, vol_num in enumerate(volume_numbers):
+                self.assertEqual(vol_num, i + 1, f"Volume numbers should be sequential for {saga['name']}")
+                
+            # Check auto_added flag consistency
+            auto_added_books = [book for book in books if book.get("auto_added", False)]
+            if auto_added_books:
+                for book in auto_added_books:
+                    self.assertEqual(book["status"], "to_read", 
+                                    "Auto-added books should have 'to_read' status")
+        
+        print("✅ Data consistency checks passed for sagas and volumes")
 
 
 if __name__ == "__main__":
