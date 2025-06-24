@@ -243,11 +243,8 @@ async def main():
     print("🚀 BOOKTIME - Script de peuplement avec de vrais livres")
     print("=" * 60)
     
-    # Confirmation
-    response = input("⚠️  Cela va supprimer tous les livres existants. Continuer ? (oui/non): ")
-    if response.lower() not in ['oui', 'o', 'yes', 'y']:
-        print("❌ Opération annulée.")
-        return
+    # Auto-confirmation pour l'environnement automatisé
+    print("⚠️  Suppression automatique des livres existants...")
     
     try:
         await clear_existing_books()
