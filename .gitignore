@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Environment variables (keep example files)
+.env.local
+.env.production
+.env.development.local
+.env.test.local
+
+# Build outputs
+build/
+dist/
+.next/
+.vercel/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+tmp/
+temp/
+
+# Test outputs
+test-results/
+coverage/
+
+# Docker
+.dockerignore
+
+# Backup files
+*.bak
+*.backup
+*~
