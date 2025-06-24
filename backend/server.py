@@ -302,6 +302,7 @@ async def auto_add_next_volume(saga_name: str):
         return Book(**new_book_data)
     
     raise HTTPException(status_code=400, detail="Erreur lors de l'ajout automatique")
+
 @app.get("/api/stats")
 async def get_stats():
     """Récupérer les statistiques générales"""
