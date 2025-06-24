@@ -35,6 +35,16 @@ export const bookService = {
     }
   },
 
+  // Récupérer les statistiques
+  async getStats() {
+    try {
+      const response = await api.get('/api/stats');
+      return response.data;
+    } catch (error) {
+      throw new Error('Erreur lors de la récupération des statistiques');
+    }
+  },
+
   // Récupérer un livre par ID
   async getBook(bookId) {
     try {
