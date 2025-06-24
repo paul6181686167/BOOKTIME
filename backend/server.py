@@ -15,11 +15,9 @@ load_dotenv()
 app = FastAPI(title="BOOKTIME API", description="API pour l'application de tracking de livres")
 
 # CORS middleware for React frontend
-origins = ["*"]  # In production, specify your frontend URL
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],  # In production, specify your frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
