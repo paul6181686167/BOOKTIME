@@ -468,7 +468,6 @@ test_plan:
     - "Special Features - Auto-add Next Volume"
     - "Responsive Interface"
   stuck_tasks:
-    - "Validation - Invalid category"
     - "Main Interface - Tab Navigation"
   test_all: false
   test_priority: "high_first"
