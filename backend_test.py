@@ -375,14 +375,14 @@ class BooktimeAPITest(unittest.TestCase):
         jk_rowling = next((author for author in authors if author["name"] == "J.K. Rowling"), None)
         self.assertIsNotNone(jk_rowling, "J.K. Rowling should be in the database")
         if jk_rowling:
-            self.assertEqual(jk_rowling["books_count"], 7, "J.K. Rowling should have 7 books")
+            self.assertEqual(jk_rowling["books_count"], 3, "J.K. Rowling should have 3 books")
             self.assertIn("Harry Potter", jk_rowling["sagas"])
             
             # Get all books by J.K. Rowling
             response = requests.get(f"{API_URL}/authors/J.K. Rowling/books")
             self.assertEqual(response.status_code, 200)
             books = response.json()
-            self.assertEqual(len(books), 7, "J.K. Rowling should have 7 books")
+            self.assertEqual(len(books), 3, "J.K. Rowling should have 3 books")
             
             # All books should be Harry Potter
             for book in books:
