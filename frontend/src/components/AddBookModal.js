@@ -1,0 +1,211 @@
+import React, { useState } from 'react';
+import { XMarkIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
+
+const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
+  const [formData, setFormData] = useState({
+    title: '',
+    author: '',
+    category: defaultCategory,
+    description: '',
+    cover_url: '',
+    total_pages: '',
+    isbn: '',
+  });
+  const [isLoading, setIsLoading] = useState(false);
+
+  const categories = [
+    { value: 'roman', label: 'Roman', icon: '📚' },
+    { value: 'bd', label: 'BD', icon: '🎨' },
+    { value: 'manga', label: 'Manga', icon: '🇯🇵' },
+  ];
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!formData.title.trim() || !formData.author.trim()) {
+      toast.error('Le titre et l\'auteur sont obligatoires');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const bookData = {
+        ...formData,
+        total_pages: formData.total_pages ? parseInt(formData.total_pages) : null,
+      };
+      
+      await onAdd(bookData);
+      toast.success('Livre ajouté avec succès !');
+    } catch (error) {
+      toast.error('Erreur lors de l\'ajout du livre');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-gray-900">Ajouter un livre</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <XMarkIcon className="h-6 w-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Titre */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Titre *
+            </label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500"
+              placeholder="Le nom du livre"
+              required
+            />
+          </div>
+
+          {/* Auteur */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Auteur *
+            </label>
+            <input
+              type="text"
+              name="author"
+              value={formData.author}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500"
+              placeholder="Nom de l'auteur"
+              required
+            />
+          </div>
+
+          {/* Catégorie */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Catégorie
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {categories.map((category) => (
+                <button
+                  key={category.value}
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, category: category.value }))}
+                  className={`p-3 rounded-lg border-2 transition-colors ${
+                    formData.category === category.value
+                      ? 'border-booktime-500 bg-booktime-50 text-booktime-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="text-xl mb-1">{category.icon}</div>
+                    <div className="text-sm font-medium">{category.label}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500"
+              placeholder="Résumé ou description du livre"
+            />
+          </div>
+
+          {/* URL de couverture */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              URL de la couverture
+            </label>
+            <input
+              type="url"
+              name="cover_url"
+              value={formData.cover_url}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500"
+              placeholder="https://example.com/cover.jpg"
+            />
+          </div>
+
+          {/* Nombre de pages */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nombre de pages
+            </label>
+            <input
+              type="number"
+              name="total_pages"
+              value={formData.total_pages}
+              onChange={handleChange}
+              min="1"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500"
+              placeholder="350"
+            />
+          </div>
+
+          {/* ISBN */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              ISBN
+            </label>
+            <input
+              type="text"
+              name="isbn"
+              value={formData.isbn}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500"
+              placeholder="978-2-123456-78-9"
+            />
+          </div>
+
+          {/* Boutons */}
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-booktime-500"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="px-4 py-2 text-sm font-medium text-white bg-booktime-600 border border-transparent rounded-md hover:bg-booktime-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-booktime-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'Ajout...' : 'Ajouter'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default AddBookModal;
