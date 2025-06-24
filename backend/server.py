@@ -38,6 +38,14 @@ class BookBase(BaseModel):
     cover_url: Optional[str] = None
     total_pages: Optional[int] = None
     isbn: Optional[str] = None
+    # Nouveaux champs pour les sagas et séries
+    saga: Optional[str] = None
+    series: Optional[str] = None
+    volume_number: Optional[int] = None
+    publication_year: Optional[int] = None
+    publisher: Optional[str] = None
+    genre: Optional[List[str]] = None
+    language: str = "français"
 
 class BookCreate(BookBase):
     pass
@@ -51,9 +59,25 @@ class Book(BookBase):
     date_added: datetime
     date_started: Optional[datetime] = None
     date_completed: Optional[datetime] = None
+    # Flag pour l'ajout automatique
+    auto_added: bool = False
 
     class Config:
         populate_by_name = True
+
+class AuthorInfo(BaseModel):
+    name: str
+    books_count: int
+    categories: List[str]
+    sagas: List[str]
+
+class SagaInfo(BaseModel):
+    name: str
+    books_count: int
+    completed_books: int
+    next_volume: Optional[int] = None
+    author: str
+    category: str
 
 class BookUpdate(BaseModel):
     status: Optional[str] = None
