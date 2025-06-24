@@ -1,6 +1,5 @@
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
@@ -17,7 +16,7 @@ app = FastAPI(title="BOOKTIME API", description="API pour l'application de track
 # CORS middleware for React frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify your frontend URL
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
@@ -93,6 +92,9 @@ class BookUpdate(BaseModel):
     review: Optional[str] = None
     date_started: Optional[datetime] = None
     date_completed: Optional[datetime] = None
+    original_language: Optional[str] = None
+    available_translations: Optional[List[str]] = None
+    reading_language: Optional[str] = None
 
 # API Routes
 @app.get("/")
@@ -294,7 +296,6 @@ async def auto_add_next_volume(saga_name: str):
         "auto_added": True,
         "genre": last_book.get("genre", []),
         "publisher": last_book.get("publisher"),
-        "language": last_book.get("reading_language", "français"),
         "original_language": last_book.get("original_language", "français"),
         "available_translations": last_book.get("available_translations", []),
         "reading_language": last_book.get("reading_language", "français")
