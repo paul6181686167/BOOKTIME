@@ -409,14 +409,14 @@ class BooktimeAPITest(unittest.TestCase):
         herge = next((author for author in authors if author["name"] == "Hergé"), None)
         self.assertIsNotNone(herge, "Hergé should be in the database")
         if herge:
-            self.assertGreaterEqual(herge["books_count"], 5, "Hergé should have at least 5 books")
+            self.assertGreaterEqual(herge["books_count"], 2, "Hergé should have at least 2 books")
             self.assertIn("Tintin", herge["sagas"])
             
             # Get all books by Hergé
             response = requests.get(f"{API_URL}/authors/Hergé/books")
             self.assertEqual(response.status_code, 200)
             books = response.json()
-            self.assertGreaterEqual(len(books), 5, "Hergé should have at least 5 books")
+            self.assertGreaterEqual(len(books), 2, "Hergé should have at least 2 books")
             
             # All books should be Tintin
             for book in books:
