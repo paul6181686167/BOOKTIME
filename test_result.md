@@ -492,17 +492,6 @@ metadata:
 test_plan:
   current_focus: 
     - "Main Interface - Tab Navigation"
-    - "Main Interface - Search Functionality"
-    - "Main Interface - Status Filters"
-    - "Main Interface - Statistics Display"
-    - "CRUD - Add Book"
-    - "CRUD - View Book Details"
-    - "CRUD - Update Book"
-    - "CRUD - Delete Book"
-    - "Advanced Views - Authors Panel"
-    - "Advanced Views - Sagas Panel"
-    - "Special Features - Auto-add Next Volume"
-    - "Responsive Interface"
   stuck_tasks:
     - "Main Interface - Tab Navigation"
   test_all: false
