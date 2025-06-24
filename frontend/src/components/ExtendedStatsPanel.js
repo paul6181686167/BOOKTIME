@@ -5,7 +5,7 @@ import {
   ClockIcon, 
   QueueListIcon,
   UserIcon,
-  CollectionIcon,
+  RectangleStackIcon,
   CpuChipIcon
 } from '@heroicons/react/24/outline';
 
@@ -58,7 +58,7 @@ const ExtendedStatsPanel = ({ stats }) => {
     {
       title: 'Sagas',
       value: stats.sagas_count || 0,
-      icon: CollectionIcon,
+      icon: RectangleStackIcon,
       color: 'bg-indigo-500',
       textColor: 'text-indigo-600',
       bgColor: 'bg-indigo-50',
