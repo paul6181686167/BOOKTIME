@@ -272,17 +272,24 @@ class BooktimeAPITest(unittest.TestCase):
         invalid_book = self.test_book_data.copy()
         invalid_book["category"] = "science-fiction"  # Not in the allowed categories
         
-        # The API doesn't explicitly validate categories, so this should succeed
-        # but the category will be stored in lowercase
+        # The API now validates categories, so this should fail
         response = requests.post(f"{API_URL}/books", json=invalid_book)
-        self.assertEqual(response.status_code, 200)
-        book = response.json()
-        self.book_ids_to_delete.append(book["_id"])
+        self.assertNotEqual(response.status_code, 200)
         
-        # Check that the category was stored as provided (in lowercase)
-        self.assertEqual(book["category"], "science-fiction")
+        # Verify the error message mentions category validation
+        error_data = response.json()
+        error_detail = error_data.get("detail", "")
         
-        print("⚠️ Invalid category validation not implemented in API")
+        # Handle both string and list error details
+        if isinstance(error_detail, list):
+            error_text = str(error_detail).lower()
+        else:
+            error_text = str(error_detail).lower()
+            
+        self.assertIn("category", error_text, 
+                     f"Error message should mention category validation issue: {error_detail}")
+        
+        print("✅ Invalid category validation now implemented in API")
 
     def test_stats_update_after_crud(self):
         """Test that stats are updated after CRUD operations"""
