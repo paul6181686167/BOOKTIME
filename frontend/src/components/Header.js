@@ -148,16 +148,6 @@ const Header = ({
               <span className="hidden sm:inline">Open Library</span>
             </button>
 
-            {/* Bouton Open Library */}
-            <button
-              onClick={onOpenLibrarySearch}
-              className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-              title="Rechercher sur Open Library"
-            >
-              <GlobeAltIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Open Library</span>
-            </button>
-
             {/* Bouton d'ajout */}
             <button
               onClick={onAddBook}
