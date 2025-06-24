@@ -354,39 +354,68 @@ class BooktimeAPITest(unittest.TestCase):
         
         print("✅ Stats update correctly after CRUD operations")
         
-    def test_get_authors(self):
-        """Test retrieving all authors with their statistics"""
+    def test_famous_authors(self):
+        """Test the presence and books of famous authors"""
+        # Get all authors
         response = requests.get(f"{API_URL}/authors")
         self.assertEqual(response.status_code, 200)
         authors = response.json()
         
-        # Should have at least 9 authors as mentioned in the context
-        self.assertGreaterEqual(len(authors), 9, "Should have at least 9 authors")
-        
-        # Check that each author has the required fields
-        for author in authors:
-            self.assertIn("name", author)
-            self.assertIn("books_count", author)
-            self.assertIn("categories", author)
-            self.assertIn("sagas", author)
-            
-        # Find specific authors mentioned in the context
-        jk_rowling = next((a for a in authors if a["name"] == "J.K. Rowling"), None)
-        eiichiro_oda = next((a for a in authors if a["name"] == "Eiichiro Oda"), None)
-        
-        # Verify J.K. Rowling has at least 3 Harry Potter books
-        self.assertIsNotNone(jk_rowling, "J.K. Rowling should be in the authors list")
+        # Check for J.K. Rowling
+        jk_rowling = next((author for author in authors if author["name"] == "J.K. Rowling"), None)
+        self.assertIsNotNone(jk_rowling, "J.K. Rowling should be in the database")
         if jk_rowling:
-            self.assertGreaterEqual(jk_rowling["books_count"], 3, "J.K. Rowling should have at least 3 books")
-            self.assertIn("Harry Potter", jk_rowling["sagas"], "J.K. Rowling should have Harry Potter saga")
+            self.assertEqual(jk_rowling["books_count"], 7, "J.K. Rowling should have 7 books")
+            self.assertIn("Harry Potter", jk_rowling["sagas"])
             
-        # Verify Eiichiro Oda has at least 3 One Piece books
-        self.assertIsNotNone(eiichiro_oda, "Eiichiro Oda should be in the authors list")
+            # Get all books by J.K. Rowling
+            response = requests.get(f"{API_URL}/authors/J.K. Rowling/books")
+            self.assertEqual(response.status_code, 200)
+            books = response.json()
+            self.assertEqual(len(books), 7, "J.K. Rowling should have 7 books")
+            
+            # All books should be Harry Potter
+            for book in books:
+                self.assertEqual(book["saga"], "Harry Potter")
+            
+        # Check for Eiichiro Oda
+        eiichiro_oda = next((author for author in authors if author["name"] == "Eiichiro Oda"), None)
+        self.assertIsNotNone(eiichiro_oda, "Eiichiro Oda should be in the database")
         if eiichiro_oda:
-            self.assertGreaterEqual(eiichiro_oda["books_count"], 3, "Eiichiro Oda should have at least 3 books")
-            self.assertIn("One Piece", eiichiro_oda["sagas"], "Eiichiro Oda should have One Piece saga")
+            self.assertGreaterEqual(eiichiro_oda["books_count"], 5, "Eiichiro Oda should have at least 5 books")
+            self.assertIn("One Piece", eiichiro_oda["sagas"])
             
-        print(f"✅ Get authors endpoint working, found {len(authors)} authors")
+            # Get all books by Eiichiro Oda
+            response = requests.get(f"{API_URL}/authors/Eiichiro Oda/books")
+            self.assertEqual(response.status_code, 200)
+            books = response.json()
+            self.assertGreaterEqual(len(books), 5, "Eiichiro Oda should have at least 5 books")
+            
+            # All books should be One Piece
+            for book in books:
+                self.assertEqual(book["saga"], "One Piece")
+                
+        # Check for Hergé
+        herge = next((author for author in authors if author["name"] == "Hergé"), None)
+        self.assertIsNotNone(herge, "Hergé should be in the database")
+        if herge:
+            self.assertGreaterEqual(herge["books_count"], 5, "Hergé should have at least 5 books")
+            self.assertIn("Tintin", herge["sagas"])
+            
+            # Get all books by Hergé
+            response = requests.get(f"{API_URL}/authors/Hergé/books")
+            self.assertEqual(response.status_code, 200)
+            books = response.json()
+            self.assertGreaterEqual(len(books), 5, "Hergé should have at least 5 books")
+            
+            # All books should be Tintin
+            for book in books:
+                self.assertEqual(book["saga"], "Tintin")
+            
+        print("✅ Famous authors are present with their books in the database")
+        print("   - J.K. Rowling: 7 Harry Potter books")
+        print("   - Eiichiro Oda: 5+ One Piece books")
+        print("   - Hergé: 5+ Tintin books")
         
     def test_specific_popular_books(self):
         """Test the presence of specific popular books in the database"""
