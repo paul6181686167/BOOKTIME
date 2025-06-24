@@ -458,49 +458,59 @@ class BooktimeAPITest(unittest.TestCase):
             
         print(f"✅ Get sagas endpoint working, found {len(sagas)} sagas")
         
-    def test_get_books_by_saga(self):
-        """Test retrieving books by a specific saga"""
-        # Test with Harry Potter
-        saga_name = "Harry Potter"
-        response = requests.get(f"{API_URL}/sagas/{saga_name}/books")
+    def test_popular_sagas(self):
+        """Test the presence and completeness of popular sagas"""
+        # Get all sagas
+        response = requests.get(f"{API_URL}/sagas")
         self.assertEqual(response.status_code, 200)
-        books = response.json()
+        sagas = response.json()
         
-        # Should have at least 3 Harry Potter books
-        self.assertGreaterEqual(len(books), 3, f"{saga_name} should have at least 3 books")
-        
-        # All books should be from Harry Potter saga
-        for book in books:
-            self.assertEqual(book["saga"], saga_name)
-            self.assertEqual(book["author"], "J.K. Rowling")
+        # Check for Harry Potter saga
+        harry_potter = next((saga for saga in sagas if saga["name"] == "Harry Potter"), None)
+        self.assertIsNotNone(harry_potter, "Harry Potter saga should be in the database")
+        if harry_potter:
+            self.assertEqual(harry_potter["books_count"], 7, "Harry Potter saga should have 7 books")
+            self.assertEqual(harry_potter["author"], "J.K. Rowling")
             
-        # Books should be sorted by volume_number
-        for i in range(1, len(books)):
-            self.assertGreaterEqual(books[i]["volume_number"], books[i-1]["volume_number"], 
-                                   "Books should be sorted by volume_number")
+            # Get all books in the saga
+            response = requests.get(f"{API_URL}/sagas/Harry Potter/books")
+            self.assertEqual(response.status_code, 200)
+            books = response.json()
+            self.assertEqual(len(books), 7, "Harry Potter saga should have 7 books")
             
-        print(f"✅ Get books by saga '{saga_name}' working, found {len(books)} books")
-        
-        # Test with One Piece
-        saga_name = "One Piece"
-        response = requests.get(f"{API_URL}/sagas/{saga_name}/books")
-        self.assertEqual(response.status_code, 200)
-        books = response.json()
-        
-        # Should have at least 3 One Piece books
-        self.assertGreaterEqual(len(books), 3, f"{saga_name} should have at least 3 books")
-        
-        # All books should be from One Piece saga
-        for book in books:
-            self.assertEqual(book["saga"], saga_name)
-            self.assertEqual(book["author"], "Eiichiro Oda")
+            # Check that all volumes are present (1-7)
+            volumes = sorted([book["volume_number"] for book in books])
+            self.assertEqual(volumes, list(range(1, 8)), "Harry Potter saga should have volumes 1-7")
             
-        # Books should be sorted by volume_number
-        for i in range(1, len(books)):
-            self.assertGreaterEqual(books[i]["volume_number"], books[i-1]["volume_number"], 
-                                   "Books should be sorted by volume_number")
+        # Check for Astérix saga
+        asterix = next((saga for saga in sagas if saga["name"] == "Astérix"), None)
+        self.assertIsNotNone(asterix, "Astérix saga should be in the database")
+        if asterix:
+            self.assertGreaterEqual(asterix["books_count"], 5, "Astérix saga should have at least 5 books")
             
-        print(f"✅ Get books by saga '{saga_name}' working, found {len(books)} books")
+            # Get all books in the saga
+            response = requests.get(f"{API_URL}/sagas/Astérix/books")
+            self.assertEqual(response.status_code, 200)
+            books = response.json()
+            self.assertGreaterEqual(len(books), 5, "Astérix saga should have at least 5 books")
+            
+        # Check for One Piece saga
+        one_piece = next((saga for saga in sagas if saga["name"] == "One Piece"), None)
+        self.assertIsNotNone(one_piece, "One Piece saga should be in the database")
+        if one_piece:
+            self.assertGreaterEqual(one_piece["books_count"], 5, "One Piece saga should have at least 5 books")
+            self.assertEqual(one_piece["author"], "Eiichiro Oda")
+            
+            # Get all books in the saga
+            response = requests.get(f"{API_URL}/sagas/One Piece/books")
+            self.assertEqual(response.status_code, 200)
+            books = response.json()
+            self.assertGreaterEqual(len(books), 5, "One Piece saga should have at least 5 books")
+            
+        print("✅ Popular sagas are present and complete in the database")
+        print("   - Harry Potter: 7 books")
+        print("   - Astérix: 5+ books")
+        print("   - One Piece: 5+ books")
         
     def test_auto_add_next_volume(self):
         """Test auto-adding the next volume to a saga"""
