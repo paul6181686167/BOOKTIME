@@ -12,6 +12,12 @@ const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
     cover_url: '',
     total_pages: '',
     isbn: '',
+    saga: '',
+    series: '',
+    volume_number: '',
+    publication_year: '',
+    publisher: '',
+    genre: [],
     original_language: 'français',
     available_translations: [],
     reading_language: 'français',
@@ -37,6 +43,12 @@ const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
       const bookData = {
         ...formData,
         total_pages: formData.total_pages ? parseInt(formData.total_pages) : null,
+        volume_number: formData.volume_number ? parseInt(formData.volume_number) : null,
+        publication_year: formData.publication_year ? parseInt(formData.publication_year) : null,
+        saga: formData.saga || null,
+        series: formData.series || null,
+        publisher: formData.publisher || null,
+        genre: formData.genre.length > 0 ? formData.genre : null,
       };
       
       await onAdd(bookData);
@@ -58,7 +70,7 @@ const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">Ajouter un livre</h2>
           <button
@@ -128,6 +140,49 @@ const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
             </div>
           </div>
 
+          {/* Section Langues */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">🌍 Informations linguistiques</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Langue originale */}
+              <div>
+                <LanguageSelector
+                  label="Langue originale *"
+                  selectedLanguages={[formData.original_language]}
+                  onLanguagesChange={(languages) => setFormData(prev => ({ ...prev, original_language: languages[0] || 'français' }))}
+                  single={true}
+                  placeholder="Sélectionner la langue originale"
+                />
+              </div>
+
+              {/* Langue de lecture */}
+              <div>
+                <LanguageSelector
+                  label="Langue de lecture *"
+                  selectedLanguages={[formData.reading_language]}
+                  onLanguagesChange={(languages) => setFormData(prev => ({ ...prev, reading_language: languages[0] || 'français' }))}
+                  single={true}
+                  placeholder="Langue dans laquelle vous lisez"
+                />
+              </div>
+            </div>
+
+            {/* Traductions disponibles */}
+            <div className="mt-4">
+              <LanguageSelector
+                label="Traductions disponibles"
+                selectedLanguages={formData.available_translations}
+                onLanguagesChange={(languages) => setFormData(prev => ({ ...prev, available_translations: languages }))}
+                maxSelections={10}
+                placeholder="Ajouter les langues de traduction disponibles"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Langues dans lesquelles cette œuvre a été traduite (optionnel)
+              </p>
+            </div>
+          </div>
+
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -143,54 +198,73 @@ const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
             />
           </div>
 
-          {/* URL de couverture */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              URL de la couverture
-            </label>
-            <input
-              type="url"
-              name="cover_url"
-              value={formData.cover_url}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500 transition-colors"
-              placeholder="https://example.com/cover.jpg"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* URL de couverture */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                URL de la couverture
+              </label>
+              <input
+                type="url"
+                name="cover_url"
+                value={formData.cover_url}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500 transition-colors"
+                placeholder="https://example.com/cover.jpg"
+              />
+            </div>
+
+            {/* Nombre de pages */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Nombre de pages
+              </label>
+              <input
+                type="number"
+                name="total_pages"
+                value={formData.total_pages}
+                onChange={handleChange}
+                min="1"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500 transition-colors"
+                placeholder="350"
+              />
+            </div>
           </div>
 
-          {/* Nombre de pages */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Nombre de pages
-            </label>
-            <input
-              type="number"
-              name="total_pages"
-              value={formData.total_pages}
-              onChange={handleChange}
-              min="1"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500 transition-colors"
-              placeholder="350"
-            />
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* ISBN */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                ISBN
+              </label>
+              <input
+                type="text"
+                name="isbn"
+                value={formData.isbn}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500 transition-colors"
+                placeholder="978-2-123456-78-9"
+              />
+            </div>
 
-          {/* ISBN */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              ISBN
-            </label>
-            <input
-              type="text"
-              name="isbn"
-              value={formData.isbn}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500 transition-colors"
-              placeholder="978-2-123456-78-9"
-            />
+            {/* Saga */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Saga / Série
+              </label>
+              <input
+                type="text"
+                name="saga"
+                value={formData.saga}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500 transition-colors"
+                placeholder="Nom de la saga"
+              />
+            </div>
           </div>
 
           {/* Boutons */}
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
               onClick={onClose}

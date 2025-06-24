@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { XMarkIcon, StarIcon, TrashIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, StarIcon, TrashIcon, PencilIcon, LanguageIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
+import LanguageSelector from './LanguageSelector';
+import { getLanguageByCode } from '../constants/languages';
 
 const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -10,6 +12,9 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
     current_page: book.current_page || 0,
     rating: book.rating || 0,
     review: book.review || '',
+    original_language: book.original_language || 'français',
+    available_translations: book.available_translations || [],
+    reading_language: book.reading_language || 'français',
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -66,16 +71,20 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
     return statusOptions.find(s => s.value === status) || statusOptions[0];
   };
 
+  const getLanguageInfo = (languageCode) => {
+    return getLanguageByCode(languageCode);
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content max-w-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content max-w-4xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between mb-6">
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{book.title}</h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">par {book.author}</p>
             
             {/* Catégorie et statut */}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 mb-4">
               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-booktime-100 dark:bg-booktime-900/30 text-booktime-800 dark:text-booktime-300">
                 {book.category === 'roman' && '📚'} 
                 {book.category === 'bd' && '🎨'} 
@@ -85,6 +94,52 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
               <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getCurrentStatus().color}`}>
                 {getCurrentStatus().label}
               </span>
+            </div>
+
+            {/* Informations linguistiques */}
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-4">
+              <div className="flex items-center gap-2 mb-3">
+                <LanguageIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                <h3 className="text-sm font-medium text-gray-900 dark:text-white">Informations linguistiques</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-600 dark:text-gray-400">Langue originale:</span>
+                  <div className="flex items-center gap-1 mt-1">
+                    <span>{getLanguageInfo(book.original_language).flag}</span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {getLanguageInfo(book.original_language).name}
+                    </span>
+                  </div>
+                </div>
+                
+                <div>
+                  <span className="text-gray-600 dark:text-gray-400">Langue de lecture:</span>
+                  <div className="flex items-center gap-1 mt-1">
+                    <span>{getLanguageInfo(book.reading_language).flag}</span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {getLanguageInfo(book.reading_language).name}
+                    </span>
+                  </div>
+                </div>
+                
+                <div>
+                  <span className="text-gray-600 dark:text-gray-400">Traductions:</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {book.available_translations && book.available_translations.length > 0 ? (
+                      book.available_translations.map(lang => (
+                        <span key={lang} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs rounded">
+                          <span>{getLanguageInfo(lang).flag}</span>
+                          <span>{getLanguageInfo(lang).name}</span>
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-gray-500 dark:text-gray-400 text-xs">Aucune traduction renseignée</span>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -137,6 +192,48 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
 
           {/* Détails du livre */}
           <div className="md:col-span-2 space-y-6">
+            {/* Édition des langues */}
+            {isEditing && (
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">🌍 Modifier les langues</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Langue originale */}
+                  <div>
+                    <LanguageSelector
+                      label="Langue originale"
+                      selectedLanguages={[editData.original_language]}
+                      onLanguagesChange={(languages) => setEditData(prev => ({ ...prev, original_language: languages[0] || 'français' }))}
+                      single={true}
+                      placeholder="Sélectionner la langue originale"
+                    />
+                  </div>
+
+                  {/* Langue de lecture */}
+                  <div>
+                    <LanguageSelector
+                      label="Langue de lecture"
+                      selectedLanguages={[editData.reading_language]}
+                      onLanguagesChange={(languages) => setEditData(prev => ({ ...prev, reading_language: languages[0] || 'français' }))}
+                      single={true}
+                      placeholder="Langue dans laquelle vous lisez"
+                    />
+                  </div>
+                </div>
+
+                {/* Traductions disponibles */}
+                <div className="mt-4">
+                  <LanguageSelector
+                    label="Traductions disponibles"
+                    selectedLanguages={editData.available_translations}
+                    onLanguagesChange={(languages) => setEditData(prev => ({ ...prev, available_translations: languages }))}
+                    maxSelections={10}
+                    placeholder="Ajouter les langues de traduction disponibles"
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Statut */}
             {isEditing ? (
               <div>
