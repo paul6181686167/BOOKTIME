@@ -12,7 +12,7 @@ import ExtendedStatsPanel from './components/ExtendedStatsPanel';
 import AuthorsPanel from './components/AuthorsPanel';
 import SagasPanel from './components/SagasPanel';
 import AdvancedOpenLibrarySearch from './components/AdvancedOpenLibrarySearch';
-import { bookService } from './services/bookService';
+import { adaptiveBookService as bookService } from './services/mockBookService';
 import './App.css';
 
 function AppContent() {
