@@ -19,6 +19,7 @@ const Header = ({
   searchTerm, 
   onSearchChange, 
   onAddBook, 
+  onOpenLibrarySearch,
   viewMode, 
   onViewModeChange, 
   currentContext, 
