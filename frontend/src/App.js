@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { UserLanguageProvider } from './contexts/UserLanguageContext';
 import Header from './components/Header';
