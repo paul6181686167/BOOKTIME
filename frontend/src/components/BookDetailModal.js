@@ -68,6 +68,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [enriching, setEnriching] = useState(false);
+  const [enriching, setEnriching] = useState(false);
 
   const statusOptions = [
     { value: 'to_read', label: 'À lire', color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300' },
