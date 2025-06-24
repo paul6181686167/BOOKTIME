@@ -110,6 +110,12 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.025em;
+  transition: all 0.3s ease;
+}
+
+/* Mode sombre pour les badges */
+.dark .status-badge {
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 /* Animations de chargement */
@@ -117,6 +123,12 @@
   background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
   background-size: 200% 100%;
   animation: loading 1.5s infinite;
+  transition: background 0.3s ease;
+}
+
+.dark .loading-skeleton {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+  background-size: 200% 100%;
 }
 
 @keyframes loading {
