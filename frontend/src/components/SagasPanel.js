@@ -177,19 +177,31 @@ const SagasPanel = ({ onSagaSelect }) => {
                 )}
               </div>
               
-              {/* Bouton d'ajout automatique */}
-              <button
-                onClick={(e) => handleAutoAdd(saga.name, e)}
-                disabled={autoAddingFor === saga.name}
-                className="ml-3 p-2 text-gray-400 hover:text-booktime-600 hover:bg-booktime-50 rounded-full transition-colors disabled:opacity-50"
-                title="Ajouter automatiquement le prochain tome"
-              >
-                {autoAddingFor === saga.name ? (
-                  <div className="h-4 w-4 border-2 border-booktime-500 border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <PlusIcon className="h-4 w-4" />
-                )}
-              </button>
+              {/* Boutons d'action */}
+              <div className="flex space-x-2">
+                {/* Bouton d'analyse des tomes manquants */}
+                <button
+                  onClick={(e) => handleAnalyzeMissingVolumes(saga.name, e)}
+                  className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-full transition-colors"
+                  title="Analyser les tomes manquants"
+                >
+                  <MagnifyingGlassIcon className="h-4 w-4" />
+                </button>
+                
+                {/* Bouton d'ajout automatique */}
+                <button
+                  onClick={(e) => handleAutoAdd(saga.name, e)}
+                  disabled={autoAddingFor === saga.name}
+                  className="p-2 text-gray-400 hover:text-booktime-600 hover:bg-booktime-50 rounded-full transition-colors disabled:opacity-50"
+                  title="Ajouter automatiquement le prochain tome"
+                >
+                  {autoAddingFor === saga.name ? (
+                    <div className="h-4 w-4 border-2 border-booktime-500 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <PlusIcon className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         ))}
