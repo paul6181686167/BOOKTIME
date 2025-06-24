@@ -296,6 +296,8 @@ async def auto_add_next_volume(saga_name: str):
         return Book(**new_book_data)
     
     raise HTTPException(status_code=400, detail="Erreur lors de l'ajout automatique")
+@app.get("/api/stats")
+async def get_stats():
     """Récupérer les statistiques générales"""
     total_books = await books_collection.count_documents({})
     completed_books = await books_collection.count_documents({"status": "completed"})
@@ -307,6 +309,11 @@ async def auto_add_next_volume(saga_name: str):
     bd_count = await books_collection.count_documents({"category": "bd"})
     manga_count = await books_collection.count_documents({"category": "manga"})
     
+    # Stats des sagas
+    sagas_count = len(await books_collection.distinct("saga", {"saga": {"$ne": None}}))
+    authors_count = len(await books_collection.distinct("author"))
+    auto_added_count = await books_collection.count_documents({"auto_added": True})
+    
     return {
         "total_books": total_books,
         "completed_books": completed_books,
@@ -316,7 +323,10 @@ async def auto_add_next_volume(saga_name: str):
             "roman": roman_count,
             "bd": bd_count,
             "manga": manga_count
-        }
+        },
+        "sagas_count": sagas_count,
+        "authors_count": authors_count,
+        "auto_added_count": auto_added_count
     }
 
 if __name__ == "__main__":
