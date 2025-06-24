@@ -199,23 +199,14 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus:
-    - "GET / - Welcome message"
-    - "GET /api/stats - Statistics"
-    - "GET /api/books - Get all books"
-    - "GET /api/books with filters - Filter books by category and status"
-    - "GET /api/books/{book_id} - Get specific book"
-    - "POST /api/books - Create new book"
-    - "PUT /api/books/{book_id} - Update book"
-    - "DELETE /api/books/{book_id} - Delete book"
-    - "Validation - Create book without title"
-    - "Validation - Update non-existent book"
+  current_focus: []
+  stuck_tasks:
     - "Validation - Invalid category"
-    - "Stats update - Verify stats after CRUD operations"
-  stuck_tasks: []
-  test_all: true
+  test_all: false
   test_priority: "high_first"
 
 agent_communication:
   - agent: "testing"
     message: "Starting backend API testing for BOOKTIME application"
+  - agent: "testing"
+    message: "All backend API tests completed. 11 out of 12 tests passed. The only issue found is that the API does not validate book categories, allowing categories other than 'roman', 'bd', or 'manga' to be created. This is a minor issue that could be fixed for data consistency but doesn't affect core functionality."
