@@ -22,6 +22,19 @@
   background: #94a3b8;
 }
 
+/* Mode sombre pour la scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: #374151;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #6b7280;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
 /* Smooth transitions */
 * {
   transition: all 0.2s ease-in-out;
