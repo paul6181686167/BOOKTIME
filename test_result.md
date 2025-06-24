@@ -541,3 +541,5 @@ agent_communication:
     message: "After multiple attempts, I've confirmed that the frontend is compiling successfully without errors, but the browser automation tool is unable to access it properly. The tool consistently gets redirected to the backend API instead. This is likely due to network routing or proxy configuration in the container environment. The frontend code itself appears to be correct, and manual testing would be required to verify its functionality."
   - agent: "testing"
     message: "Successfully tested the dark mode functionality. The dark mode toggle works as expected, changing the theme of the entire application. The theme is properly applied to all UI components including the header, statistics panel, book cards, and modals. The theme preference is also persisted after page reload. There are still CORS issues with the backend API, but these don't affect the dark mode functionality itself."
+  - agent: "main"
+    message: "User requested testing of backend and frontend with latest additions. Restarted all services successfully. All dependencies are up to date. Starting comprehensive testing session."
