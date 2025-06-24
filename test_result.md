@@ -475,3 +475,5 @@ agent_communication:
     message: "Completed testing of the extended BOOKTIME API with sagas and authors. All 19 tests passed successfully. The database has been extended with 18 books, 7 sagas, 9 authors, and 5 auto-added books as required. The only minor issue is that the API still doesn't validate book categories, but this doesn't affect core functionality."
   - agent: "testing"
     message: "Starting frontend testing for BOOKTIME application. Will test all UI components, CRUD operations, and special features."
+  - agent: "testing"
+    message: "Encountered issues with the frontend application. Fixed the CollectionIcon import error by replacing it with RectangleStackIcon, but the application still doesn't load properly. The backend API is working correctly, but the frontend is not connecting to it properly. Need to investigate further."
