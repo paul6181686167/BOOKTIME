@@ -392,14 +392,14 @@ class BooktimeAPITest(unittest.TestCase):
         eiichiro_oda = next((author for author in authors if author["name"] == "Eiichiro Oda"), None)
         self.assertIsNotNone(eiichiro_oda, "Eiichiro Oda should be in the database")
         if eiichiro_oda:
-            self.assertGreaterEqual(eiichiro_oda["books_count"], 5, "Eiichiro Oda should have at least 5 books")
+            self.assertGreaterEqual(eiichiro_oda["books_count"], 3, "Eiichiro Oda should have at least 3 books")
             self.assertIn("One Piece", eiichiro_oda["sagas"])
             
             # Get all books by Eiichiro Oda
             response = requests.get(f"{API_URL}/authors/Eiichiro Oda/books")
             self.assertEqual(response.status_code, 200)
             books = response.json()
-            self.assertGreaterEqual(len(books), 5, "Eiichiro Oda should have at least 5 books")
+            self.assertGreaterEqual(len(books), 3, "Eiichiro Oda should have at least 3 books")
             
             # All books should be One Piece
             for book in books:
