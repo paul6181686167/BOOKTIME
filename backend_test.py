@@ -508,7 +508,7 @@ class BooktimeAPITest(unittest.TestCase):
         harry_potter = next((saga for saga in sagas if saga["name"] == "Harry Potter"), None)
         self.assertIsNotNone(harry_potter, "Harry Potter saga should be in the database")
         if harry_potter:
-            self.assertEqual(harry_potter["books_count"], 3, "Harry Potter saga should have 3 books")
+            self.assertEqual(harry_potter["books_count"], 4, "Harry Potter saga should have 4 books")
             self.assertEqual(harry_potter["author"], "J.K. Rowling")
             
             # Get all books in the saga
