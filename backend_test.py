@@ -66,7 +66,8 @@ class BooktimeAPITest(unittest.TestCase):
         
         # Check that all required fields are present
         required_fields = ["total_books", "completed_books", "reading_books", 
-                          "to_read_books", "categories"]
+                          "to_read_books", "categories", "sagas_count", 
+                          "authors_count", "auto_added_count"]
         for field in required_fields:
             self.assertIn(field, data)
         
@@ -79,7 +80,17 @@ class BooktimeAPITest(unittest.TestCase):
         status_sum = data["completed_books"] + data["reading_books"] + data["to_read_books"]
         self.assertEqual(data["total_books"], status_sum)
         
-        print("✅ Stats endpoint working")
+        # Verify the extended stats
+        self.assertGreaterEqual(data["total_books"], 18, "Should have at least 18 books")
+        self.assertGreaterEqual(data["sagas_count"], 7, "Should have at least 7 sagas")
+        self.assertGreaterEqual(data["authors_count"], 9, "Should have at least 9 authors")
+        self.assertGreaterEqual(data["auto_added_count"], 5, "Should have at least 5 auto-added books")
+        
+        print("✅ Stats endpoint working with extended stats")
+        print(f"   Total books: {data['total_books']}")
+        print(f"   Sagas: {data['sagas_count']}")
+        print(f"   Authors: {data['authors_count']}")
+        print(f"   Auto-added books: {data['auto_added_count']}")
 
     def test_get_all_books(self):
         """Test retrieving all books"""
