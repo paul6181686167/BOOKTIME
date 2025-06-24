@@ -7,6 +7,8 @@ import motor.motor_asyncio
 import os
 from dotenv import load_dotenv
 import uuid
+import httpx
+import json
 
 # Load environment variables
 load_dotenv()
