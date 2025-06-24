@@ -47,7 +47,10 @@ class BookBase(BaseModel):
     publication_year: Optional[int] = None
     publisher: Optional[str] = None
     genre: Optional[List[str]] = None
-    language: str = "français"
+    # Gestion des langues
+    original_language: str = "français"  # Langue d'origine de l'œuvre
+    available_translations: Optional[List[str]] = []  # Langues disponibles
+    reading_language: str = "français"  # Langue dans laquelle l'utilisateur lit le livre
 
 class BookCreate(BookBase):
     # Validation des catégories
