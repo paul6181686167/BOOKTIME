@@ -33,10 +33,10 @@ const BookCard = ({ book, onClick }) => {
   return (
     <div 
       onClick={onClick}
-      className={`book-card bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 ${categoryColor}`}
+      className={`book-card bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden cursor-pointer hover:shadow-lg dark:hover:shadow-2xl transition-all duration-300 ${categoryColor}`}
     >
       {/* Image de couverture */}
-      <div className="aspect-[2/3] bg-gray-100 relative overflow-hidden">
+      <div className="aspect-[2/3] bg-gray-100 dark:bg-gray-700 relative overflow-hidden">
         {book.cover_url ? (
           <img 
             src={book.cover_url} 
@@ -44,14 +44,14 @@ const BookCard = ({ book, onClick }) => {
             className="w-full h-full object-cover book-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
             <div className="text-center p-4">
               <div className="text-4xl mb-2">
                 {book.category === 'roman' && '📚'}
                 {book.category === 'bd' && '🎨'}
                 {book.category === 'manga' && '🇯🇵'}
               </div>
-              <p className="text-xs text-gray-500 font-medium">Pas de couverture</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Pas de couverture</p>
             </div>
           </div>
         )}
@@ -66,10 +66,10 @@ const BookCard = ({ book, onClick }) => {
 
       {/* Informations du livre */}
       <div className="p-4">
-        <h3 className="font-semibold text-gray-900 text-sm mb-1 line-clamp-2 leading-tight">
+        <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-1 line-clamp-2 leading-tight">
           {book.title}
         </h3>
-        <p className="text-gray-600 text-xs mb-3 line-clamp-1">
+        <p className="text-gray-600 dark:text-gray-400 text-xs mb-3 line-clamp-1">
           {book.author}
         </p>
 
@@ -81,7 +81,7 @@ const BookCard = ({ book, onClick }) => {
                 star <= book.rating ? (
                   <StarIcon key={star} className="h-4 w-4 text-yellow-400" />
                 ) : (
-                  <StarOutlineIcon key={star} className="h-4 w-4 text-gray-300" />
+                  <StarOutlineIcon key={star} className="h-4 w-4 text-gray-300 dark:text-gray-600" />
                 )
               ))}
             </div>
@@ -91,11 +91,11 @@ const BookCard = ({ book, onClick }) => {
         {/* Barre de progression */}
         {book.status === 'reading' && book.total_pages && (
           <div className="mb-3">
-            <div className="flex justify-between text-xs text-gray-600 mb-1">
+            <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
               <span>{book.current_page} pages</span>
               <span>{book.total_pages} pages</span>
             </div>
-            <div className="progress-bar">
+            <div className="progress-bar bg-gray-200 dark:bg-gray-700">
               <div 
                 className="progress-fill"
                 style={{ width: `${progressPercentage}%` }}
@@ -105,7 +105,7 @@ const BookCard = ({ book, onClick }) => {
         )}
 
         {/* Date d'ajout */}
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
           Ajouté le {new Date(book.date_added).toLocaleDateString('fr-FR')}
         </p>
       </div>

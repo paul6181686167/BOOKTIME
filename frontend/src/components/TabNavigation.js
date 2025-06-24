@@ -15,9 +15,9 @@ const TabNavigation = ({ activeTab, onTabChange, activeStatus, onStatusChange })
   ];
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6 transition-colors">
       {/* Onglets principaux */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-gray-700">
         {/* Version desktop */}
         <nav className="hidden sm:flex space-x-8 px-6">
           {tabs.map((tab) => (
@@ -26,8 +26,8 @@ const TabNavigation = ({ activeTab, onTabChange, activeStatus, onStatusChange })
               onClick={() => onTabChange(tab.key)}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === tab.key
-                  ? `border-${tab.color} text-${tab.color}`
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? `border-${tab.color} text-${tab.color} dark:text-${tab.color}`
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
               }`}
             >
               <span className="flex items-center space-x-2">
@@ -46,8 +46,8 @@ const TabNavigation = ({ activeTab, onTabChange, activeStatus, onStatusChange })
               onClick={() => onTabChange(tab.key)}
               className={`flex-shrink-0 flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === tab.key
-                  ? 'bg-booktime-100 text-booktime-800 border border-booktime-200'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  ? 'bg-booktime-100 dark:bg-booktime-900 text-booktime-800 dark:text-booktime-300 border border-booktime-200 dark:border-booktime-700'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
               <span>{tab.icon}</span>
@@ -66,8 +66,8 @@ const TabNavigation = ({ activeTab, onTabChange, activeStatus, onStatusChange })
               onClick={() => onStatusChange(filter.key)}
               className={`px-3 py-1.5 sm:py-1 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                 activeStatus === filter.key
-                  ? 'bg-booktime-100 text-booktime-800 border border-booktime-200'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
+                  ? 'bg-booktime-100 dark:bg-booktime-900 text-booktime-800 dark:text-booktime-300 border border-booktime-200 dark:border-booktime-700'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 border border-transparent'
               }`}
             >
               {filter.label}
