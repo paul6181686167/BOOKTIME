@@ -293,6 +293,14 @@ function AppContent() {
         />
       )}
 
+      {showOpenLibraryModal && (
+        <OpenLibrarySearch
+          onImport={handleOpenLibraryImport}
+          onClose={() => setShowOpenLibraryModal(false)}
+          defaultCategory={activeTab}
+        />
+      )}
+
       {selectedBook && (
         <BookDetailModal
           book={selectedBook}
