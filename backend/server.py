@@ -296,7 +296,10 @@ async def auto_add_next_volume(saga_name: str):
         "auto_added": True,
         "genre": last_book.get("genre", []),
         "publisher": last_book.get("publisher"),
-        "language": last_book.get("language", "français")
+        "language": last_book.get("reading_language", "français"),
+        "original_language": last_book.get("original_language", "français"),
+        "available_translations": last_book.get("available_translations", []),
+        "reading_language": last_book.get("reading_language", "français")
     }
     
     result = await books_collection.insert_one(new_book_data)
