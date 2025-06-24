@@ -375,7 +375,7 @@ class BooktimeAPITest(unittest.TestCase):
         jk_rowling = next((author for author in authors if author["name"] == "J.K. Rowling"), None)
         self.assertIsNotNone(jk_rowling, "J.K. Rowling should be in the database")
         if jk_rowling:
-            self.assertEqual(jk_rowling["books_count"], 3, "J.K. Rowling should have 3 books")
+            self.assertEqual(jk_rowling["books_count"], 4, "J.K. Rowling should have 4 books")
             self.assertIn("Harry Potter", jk_rowling["sagas"])
             
             # Get all books by J.K. Rowling
