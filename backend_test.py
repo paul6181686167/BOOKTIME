@@ -270,29 +270,39 @@ class BooktimeAPITest(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         print("✅ Delete non-existent book returns 404 as expected")
 
-    def test_invalid_category(self):
-        """Test creating a book with an invalid category"""
-        invalid_book = self.test_book_data.copy()
-        invalid_book["category"] = "science-fiction"  # Not in the allowed categories
+    def test_category_validation(self):
+        """Test that category validation works correctly"""
+        # Test with valid categories
+        valid_categories = ["roman", "bd", "manga", "Roman", "BD", "Manga"]
         
-        # The API now validates categories, so this should fail
-        response = requests.post(f"{API_URL}/books", json=invalid_book)
-        self.assertNotEqual(response.status_code, 200)
-        
-        # Verify the error message mentions category validation
-        error_data = response.json()
-        error_detail = error_data.get("detail", "")
-        
-        # Handle both string and list error details
-        if isinstance(error_detail, list):
-            error_text = str(error_detail).lower()
-        else:
-            error_text = str(error_detail).lower()
+        for category in valid_categories:
+            test_book = self.test_book_data.copy()
+            test_book["title"] = f"Test Book with {category} category"
+            test_book["category"] = category
             
-        self.assertIn("category", error_text, 
-                     f"Error message should mention category validation issue: {error_detail}")
+            response = requests.post(f"{API_URL}/books", json=test_book)
+            self.assertEqual(response.status_code, 200, f"Creating book with category '{category}' should succeed")
+            
+            if response.status_code == 200:
+                book = response.json()
+                self.book_ids_to_delete.append(book["_id"])
+                # Category should be normalized to lowercase
+                self.assertEqual(book["category"], category.lower())
         
-        print("✅ Invalid category validation now implemented in API")
+        # Test with invalid categories
+        invalid_categories = ["fiction", "comic", "novel", "science-fiction"]
+        
+        for category in invalid_categories:
+            test_book = self.test_book_data.copy()
+            test_book["title"] = f"Test Book with {category} category"
+            test_book["category"] = category
+            
+            response = requests.post(f"{API_URL}/books", json=test_book)
+            self.assertNotEqual(response.status_code, 200, f"Creating book with invalid category '{category}' should fail")
+            
+        print("✅ Category validation works correctly")
+        print("   - Valid categories (roman, bd, manga) are accepted and normalized to lowercase")
+        print("   - Invalid categories are rejected")
 
     def test_stats_update_after_crud(self):
         """Test that stats are updated after CRUD operations"""
