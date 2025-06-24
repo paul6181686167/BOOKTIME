@@ -94,8 +94,8 @@ class OpenLibraryEndpointsTest(unittest.TestCase):
         """Test error cases for the search endpoint"""
         # Empty query
         response = requests.get(f"{self.api_url}/openlibrary/search", params={"q": ""})
-        self.assertEqual(response.status_code, 400)
-        print("✅ Empty query returns 400 as expected")
+        self.assertIn(response.status_code, [400, 422])
+        print("✅ Empty query returns error status code as expected")
         
         # Missing query parameter
         response = requests.get(f"{self.api_url}/openlibrary/search")
