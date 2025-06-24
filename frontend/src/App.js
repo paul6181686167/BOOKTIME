@@ -22,6 +22,7 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState('roman');
   const [activeStatus, setActiveStatus] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showOpenLibraryModal, setShowOpenLibraryModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('books'); // 'books', 'authors', 'sagas'
