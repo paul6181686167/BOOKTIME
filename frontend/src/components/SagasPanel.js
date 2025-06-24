@@ -68,6 +68,25 @@ const SagasPanel = ({ onSagaSelect }) => {
     }
   };
 
+  const handleAnalyzeMissingVolumes = (sagaName, event) => {
+    event.stopPropagation();
+    setShowMissingVolumes(sagaName);
+  };
+
+  const handleMissingVolumesImport = async (importedBook) => {
+    await loadSagas(); // Recharger les sagas pour mettre à jour les stats
+    
+    // Recharger les livres si cette saga est sélectionnée
+    if (selectedSaga && onSagaSelect) {
+      try {
+        const books = await bookService.getBooksBySaga(selectedSaga.name);
+        onSagaSelect(books, selectedSaga);
+      } catch (error) {
+        console.error('Erreur lors du rechargement des livres de la saga:', error);
+      }
+    }
+  };
+
   const getCompletionPercentage = (saga) => {
     if (saga.books_count === 0) return 0;
     return Math.round((saga.completed_books / saga.books_count) * 100);
