@@ -11,7 +11,7 @@ import BookDetailModal from './components/BookDetailModal';
 import ExtendedStatsPanel from './components/ExtendedStatsPanel';
 import AuthorsPanel from './components/AuthorsPanel';
 import SagasPanel from './components/SagasPanel';
-import OpenLibrarySearch from './components/OpenLibrarySearch';
+import AdvancedOpenLibrarySearch from './components/AdvancedOpenLibrarySearch';
 import { bookService } from './services/bookService';
 import './App.css';
 
