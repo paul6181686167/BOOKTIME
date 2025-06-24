@@ -470,3 +470,5 @@ agent_communication:
     message: "All backend API tests completed. 11 out of 12 tests passed. The only issue found is that the API does not validate book categories, allowing categories other than 'roman', 'bd', or 'manga' to be created. This is a minor issue that could be fixed for data consistency but doesn't affect core functionality."
   - agent: "testing"
     message: "Completed testing of the extended BOOKTIME API with sagas and authors. All 19 tests passed successfully. The database has been extended with 18 books, 7 sagas, 9 authors, and 5 auto-added books as required. The only minor issue is that the API still doesn't validate book categories, but this doesn't affect core functionality."
+  - agent: "testing"
+    message: "Starting frontend testing for BOOKTIME application. Will test all UI components, CRUD operations, and special features."
