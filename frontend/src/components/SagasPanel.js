@@ -206,6 +206,15 @@ const SagasPanel = ({ onSagaSelect }) => {
           </div>
         ))}
       </div>
+      
+      {/* Modal d'analyse des tomes manquants */}
+      {showMissingVolumes && (
+        <MissingVolumesDetector
+          saga={showMissingVolumes}
+          onClose={() => setShowMissingVolumes(null)}
+          onImport={handleMissingVolumesImport}
+        />
+      )}
     </div>
   );
 };
