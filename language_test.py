@@ -112,8 +112,8 @@ def main():
     
     success, created_book = tester.test_create_book_with_languages(new_book)
     if success:
-        print(f"✅ Created new book with ID: {created_book['id']}")
-        book_id = created_book['id']
+        print(f"✅ Created new book with ID: {created_book['_id']}")
+        book_id = created_book['_id']
         
         # Verify language fields
         print(f"   Original language: {created_book['original_language']}")
