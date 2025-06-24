@@ -30,31 +30,6 @@ const openLibraryService = {
   }
 };
 
-// Service Open Library pour l'enrichissement
-const openLibraryService = {
-  async enrichBook(bookId) {
-    try {
-      const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
-      const response = await fetch(`${API_BASE_URL}/api/books/${bookId}/enrich`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Erreur HTTP: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Erreur lors de l\'enrichissement:', error);
-      throw error;
-    }
-  }
-};
-
 const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
