@@ -30,30 +30,6 @@ const openLibraryService = {
   }
 };
 
-const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editData, setEditData] = useState({
-    status: book.status,
-    current_page: book.current_page || 0,
-    rating: book.rating || 0,
-    review: book.review || '',
-    original_language: book.original_language || 'français',
-    available_translations: book.available_translations || [],
-    reading_language: book.reading_language || 'français',
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [enriching, setEnriching] = useState(false);
-  const [enriching, setEnriching] = useState(false);
-
-  const statusOptions = [
-    { value: 'to_read', label: 'À lire', color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300' },
-    { value: 'reading', label: 'En cours', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300' },
-    { value: 'completed', label: 'Terminé', color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300' },
-  ];
-
-  const handleSave = async () => {
-    setIsLoading(true);
-    try {
       const updates = {
         ...editData,
         current_page: parseInt(editData.current_page) || 0,
@@ -92,7 +68,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
     const currentPage = isEditing ? editData.current_page : book.current_page;
     return Math.min(100, (currentPage / book.total_pages) * 100);
   };
-
   const getCurrentStatus = () => {
     const status = isEditing ? editData.status : book.status;
     return statusOptions.find(s => s.value === status) || statusOptions[0];
