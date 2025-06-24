@@ -151,6 +151,28 @@ function AppContent() {
     }
   };
 
+  const handleOpenLibraryImport = async (importedBook) => {
+    try {
+      await loadBooks();
+      await loadStats();
+      setShowOpenLibraryModal(false);
+      toast.success(`"${importedBook.title}" ajouté à votre collection !`);
+      
+      // Si on est dans une vue spécifique, rafraîchir
+      if (currentContext) {
+        if (currentContext.type === 'author') {
+          const books = await bookService.getBooksByAuthor(currentContext.name);
+          setSelectedAuthorBooks(books);
+        } else if (currentContext.type === 'saga') {
+          const books = await bookService.getBooksBySaga(currentContext.name);
+          setSelectedSagaBooks(books);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du rafraîchissement après import:', error);
+    }
+  };
+
   const handleUpdateBook = async (bookId, updates) => {
     try {
       await bookService.updateBook(bookId, updates);
