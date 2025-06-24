@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserIcon, BookOpenIcon, CollectionIcon } from '@heroicons/react/24/outline';
+import { UserIcon, BookOpenIcon, RectangleStackIcon } from '@heroicons/react/24/outline';
 import { bookService } from '../services/bookService';
 
 const AuthorsPanel = ({ onAuthorSelect }) => {
