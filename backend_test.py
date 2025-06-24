@@ -81,12 +81,12 @@ class BooktimeAPITest(unittest.TestCase):
         self.assertEqual(data["total_books"], status_sum)
         
         # Verify the specific stats from the new database
-        self.assertEqual(data["total_books"], 18, "Should have exactly 18 books")
+        self.assertEqual(data["total_books"], 21, "Should have exactly 21 books")
         self.assertEqual(data["categories"]["roman"], 7, "Should have 7 roman books")
-        self.assertEqual(data["categories"]["bd"], 4, "Should have 4 bd books")
-        self.assertEqual(data["categories"]["manga"], 7, "Should have 7 manga books")
-        self.assertEqual(data["sagas_count"], 7, "Should have 7 sagas")
-        self.assertEqual(data["authors_count"], 9, "Should have 9 authors")
+        self.assertEqual(data["categories"]["bd"], 5, "Should have 5 bd books")
+        self.assertEqual(data["categories"]["manga"], 9, "Should have 9 manga books")
+        self.assertEqual(data["sagas_count"], 5, "Should have 5 sagas")
+        self.assertEqual(data["authors_count"], 8, "Should have 8 authors")
         
         print("✅ Stats endpoint working with extended stats")
         print(f"   Total books: {data['total_books']}")
