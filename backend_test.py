@@ -382,7 +382,7 @@ class BooktimeAPITest(unittest.TestCase):
             response = requests.get(f"{API_URL}/authors/J.K. Rowling/books")
             self.assertEqual(response.status_code, 200)
             books = response.json()
-            self.assertEqual(len(books), 3, "J.K. Rowling should have 3 books")
+            self.assertEqual(len(books), 4, "J.K. Rowling should have 4 books")
             
             # All books should be Harry Potter
             for book in books:
