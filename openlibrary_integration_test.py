@@ -22,6 +22,12 @@ class OpenLibraryIntegrationTest(unittest.TestCase):
         """Setup for each test"""
         # Book IDs to be used/cleaned up during testing
         self.book_ids_to_delete = []
+        
+        # Create some test data if the database is empty
+        response = requests.get(f"{API_URL}/books")
+        if len(response.json()) == 0:
+            print("Database is empty, creating test data...")
+            self.create_test_data()
 
     def tearDown(self):
         """Clean up after each test"""
