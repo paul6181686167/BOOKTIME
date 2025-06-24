@@ -343,6 +343,87 @@ class BooktimeAPITest(unittest.TestCase):
                          after_update_stats["categories"]["manga"] - 1)
         
         print("✅ Stats update correctly after CRUD operations")
+        
+    def test_get_authors(self):
+        """Test retrieving all authors with their statistics"""
+        response = requests.get(f"{API_URL}/authors")
+        self.assertEqual(response.status_code, 200)
+        authors = response.json()
+        
+        # Should have at least 9 authors as mentioned in the context
+        self.assertGreaterEqual(len(authors), 9, "Should have at least 9 authors")
+        
+        # Check that each author has the required fields
+        for author in authors:
+            self.assertIn("name", author)
+            self.assertIn("books_count", author)
+            self.assertIn("categories", author)
+            self.assertIn("sagas", author)
+            
+        # Find specific authors mentioned in the context
+        jk_rowling = next((a for a in authors if a["name"] == "J.K. Rowling"), None)
+        eiichiro_oda = next((a for a in authors if a["name"] == "Eiichiro Oda"), None)
+        
+        # Verify J.K. Rowling has at least 3 Harry Potter books
+        self.assertIsNotNone(jk_rowling, "J.K. Rowling should be in the authors list")
+        if jk_rowling:
+            self.assertGreaterEqual(jk_rowling["books_count"], 3, "J.K. Rowling should have at least 3 books")
+            self.assertIn("Harry Potter", jk_rowling["sagas"], "J.K. Rowling should have Harry Potter saga")
+            
+        # Verify Eiichiro Oda has at least 3 One Piece books
+        self.assertIsNotNone(eiichiro_oda, "Eiichiro Oda should be in the authors list")
+        if eiichiro_oda:
+            self.assertGreaterEqual(eiichiro_oda["books_count"], 3, "Eiichiro Oda should have at least 3 books")
+            self.assertIn("One Piece", eiichiro_oda["sagas"], "Eiichiro Oda should have One Piece saga")
+            
+        print(f"✅ Get authors endpoint working, found {len(authors)} authors")
+        
+    def test_get_books_by_author(self):
+        """Test retrieving books by a specific author"""
+        # Test with J.K. Rowling
+        author_name = "J.K. Rowling"
+        response = requests.get(f"{API_URL}/authors/{author_name}/books")
+        self.assertEqual(response.status_code, 200)
+        books = response.json()
+        
+        # Should have at least 3 Harry Potter books
+        self.assertGreaterEqual(len(books), 3, f"{author_name} should have at least 3 books")
+        
+        # All books should be by J.K. Rowling
+        for book in books:
+            self.assertEqual(book["author"], author_name)
+            self.assertIn("saga", book)
+            self.assertEqual(book["saga"], "Harry Potter")
+            
+        print(f"✅ Get books by author '{author_name}' working, found {len(books)} books")
+        
+        # Test with Eiichiro Oda
+        author_name = "Eiichiro Oda"
+        response = requests.get(f"{API_URL}/authors/{author_name}/books")
+        self.assertEqual(response.status_code, 200)
+        books = response.json()
+        
+        # Should have at least 3 One Piece books
+        self.assertGreaterEqual(len(books), 3, f"{author_name} should have at least 3 books")
+        
+        # All books should be by Eiichiro Oda
+        for book in books:
+            self.assertEqual(book["author"], author_name)
+            self.assertIn("saga", book)
+            self.assertEqual(book["saga"], "One Piece")
+            
+        print(f"✅ Get books by author '{author_name}' working, found {len(books)} books")
+        
+        # Test partial author name search
+        partial_name = "Rowl"
+        response = requests.get(f"{API_URL}/authors/{partial_name}/books")
+        self.assertEqual(response.status_code, 200)
+        books = response.json()
+        
+        # Should find J.K. Rowling's books with partial name
+        self.assertGreaterEqual(len(books), 3, f"Partial search for '{partial_name}' should find books")
+        
+        print(f"✅ Partial author name search working, found {len(books)} books for '{partial_name}'")
 
 
 if __name__ == "__main__":
