@@ -272,7 +272,7 @@ function AppContent() {
       )}
 
       {showOpenLibraryModal && (
-        <OpenLibrarySearch
+        <AdvancedOpenLibrarySearch
           onImport={handleOpenLibraryImport}
           onClose={() => setShowOpenLibraryModal(false)}
           defaultCategory={activeTab}
