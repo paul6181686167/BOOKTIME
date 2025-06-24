@@ -74,6 +74,120 @@ class OpenLibraryIntegrationTest(unittest.TestCase):
         
         # Test with author filter
         response = requests.get(f"{API_URL}/openlibrary/search?q=Harry Potter&author_filter=Rowling")
+    def create_test_data(self):
+        """Create test data for the tests"""
+        # Create a Harry Potter saga
+        books = [
+            {
+                "title": "Harry Potter and the Philosopher's Stone",
+                "author": "J.K. Rowling",
+                "category": "roman",
+                "description": "First book in the Harry Potter series",
+                "total_pages": 223,
+                "saga": "Harry Potter",
+                "volume_number": 1,
+                "publication_year": 1997,
+                "publisher": "Bloomsbury",
+                "genre": ["fantasy", "young adult"]
+            },
+            {
+                "title": "Harry Potter and the Chamber of Secrets",
+                "author": "J.K. Rowling",
+                "category": "roman",
+                "description": "Second book in the Harry Potter series",
+                "total_pages": 251,
+                "saga": "Harry Potter",
+                "volume_number": 2,
+                "publication_year": 1998,
+                "publisher": "Bloomsbury",
+                "genre": ["fantasy", "young adult"]
+            },
+            {
+                "title": "Harry Potter and the Prisoner of Azkaban",
+                "author": "J.K. Rowling",
+                "category": "roman",
+                "description": "Third book in the Harry Potter series",
+                "total_pages": 317,
+                "saga": "Harry Potter",
+                "volume_number": 3,
+                "publication_year": 1999,
+                "publisher": "Bloomsbury",
+                "genre": ["fantasy", "young adult"]
+            }
+        ]
+        
+        # Create a One Piece saga
+        books.extend([
+            {
+                "title": "One Piece, Vol. 1: Romance Dawn",
+                "author": "Eiichiro Oda",
+                "category": "manga",
+                "description": "First volume of One Piece",
+                "total_pages": 216,
+                "saga": "One Piece",
+                "volume_number": 1,
+                "publication_year": 1997,
+                "publisher": "Shueisha",
+                "genre": ["adventure", "fantasy", "shonen"]
+            },
+            {
+                "title": "One Piece, Vol. 2: Buggy the Clown",
+                "author": "Eiichiro Oda",
+                "category": "manga",
+                "description": "Second volume of One Piece",
+                "total_pages": 208,
+                "saga": "One Piece",
+                "volume_number": 2,
+                "publication_year": 1998,
+                "publisher": "Shueisha",
+                "genre": ["adventure", "fantasy", "shonen"]
+            }
+        ])
+        
+        # Create some standalone books
+        books.extend([
+            {
+                "title": "Le Petit Prince",
+                "author": "Antoine de Saint-Exupéry",
+                "category": "roman",
+                "description": "A poetic tale about a young prince",
+                "total_pages": 96,
+                "publication_year": 1943,
+                "publisher": "Gallimard",
+                "genre": ["children", "philosophy"]
+            },
+            {
+                "title": "Astérix le Gaulois",
+                "author": "René Goscinny",
+                "category": "bd",
+                "description": "First Asterix album",
+                "total_pages": 44,
+                "saga": "Astérix",
+                "volume_number": 1,
+                "publication_year": 1961,
+                "publisher": "Dargaud",
+                "genre": ["humor", "historical"]
+            }
+        ])
+        
+        # Add books to the database
+        for book in books:
+            response = requests.post(f"{API_URL}/books", json=book)
+            if response.status_code == 200:
+                book_id = response.json()["_id"]
+                self.book_ids_to_delete.append(book_id)
+                
+                # Set some books as completed
+                if "Harry Potter" in book["title"] and book["volume_number"] in [1, 2]:
+                    update_data = {"status": "completed", "current_page": book["total_pages"]}
+                    requests.put(f"{API_URL}/books/{book_id}", json=update_data)
+                
+                # Set some books as reading
+                if "One Piece" in book["title"] and book["volume_number"] == 1:
+                    update_data = {"status": "reading", "current_page": 100}
+                    requests.put(f"{API_URL}/books/{book_id}", json=update_data)
+        
+        print(f"Created {len(books)} test books")
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("books", data)
