@@ -64,8 +64,16 @@ class CategoryValidationTest(unittest.TestCase):
             print(f"✅ Correctly rejected book with invalid category '{category}'")
             
             # Verify the error message mentions category validation
-            error_detail = response.json().get("detail", "")
-            self.assertIn("category", error_detail.lower(), 
+            error_data = response.json()
+            error_detail = error_data.get("detail", "")
+            
+            # Handle both string and list error details
+            if isinstance(error_detail, list):
+                error_text = str(error_detail).lower()
+            else:
+                error_text = str(error_detail).lower()
+                
+            self.assertIn("category", error_text, 
                          f"Error message should mention category validation issue: {error_detail}")
 
     def test_category_case_conversion(self):
