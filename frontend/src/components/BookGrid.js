@@ -44,5 +44,3 @@ const BookGrid = ({ books, loading, onBookClick }) => {
 };
 
 export default BookGrid;
-
-export default BookGrid;
