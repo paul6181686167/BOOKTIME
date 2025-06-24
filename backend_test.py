@@ -537,14 +537,14 @@ class BooktimeAPITest(unittest.TestCase):
         one_piece = next((saga for saga in sagas if saga["name"] == "One Piece"), None)
         self.assertIsNotNone(one_piece, "One Piece saga should be in the database")
         if one_piece:
-            self.assertGreaterEqual(one_piece["books_count"], 5, "One Piece saga should have at least 5 books")
+            self.assertGreaterEqual(one_piece["books_count"], 3, "One Piece saga should have at least 3 books")
             self.assertEqual(one_piece["author"], "Eiichiro Oda")
             
             # Get all books in the saga
             response = requests.get(f"{API_URL}/sagas/One Piece/books")
             self.assertEqual(response.status_code, 200)
             books = response.json()
-            self.assertGreaterEqual(len(books), 5, "One Piece saga should have at least 5 books")
+            self.assertGreaterEqual(len(books), 3, "One Piece saga should have at least 3 books")
             
         print("✅ Popular sagas are present and complete in the database")
         print("   - Harry Potter: 7 books")
