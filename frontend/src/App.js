@@ -271,7 +271,9 @@ function AppContent() {
 function App() {
   return (
     <ThemeProvider>
-      <AppContent />
+      <UserLanguageProvider>
+        <AppContent />
+      </UserLanguageProvider>
     </ThemeProvider>
   );
 }
