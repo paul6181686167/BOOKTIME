@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { UserLanguageProvider } from './contexts/UserLanguageContext';
 import Header from './components/Header';
 import TabNavigation from './components/TabNavigation';
 import BookGrid from './components/BookGrid';
@@ -11,7 +9,7 @@ import BookDetailModal from './components/BookDetailModal';
 import ExtendedStatsPanel from './components/ExtendedStatsPanel';
 import AuthorsPanel from './components/AuthorsPanel';
 import SagasPanel from './components/SagasPanel';
-import AdvancedOpenLibrarySearch from './components/AdvancedOpenLibrarySearch';
+import OpenLibrarySearch from './components/OpenLibrarySearch';
 import { adaptiveBookService as bookService } from './services/mockBookService';
 import './App.css';
 
