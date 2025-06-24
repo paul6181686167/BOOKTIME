@@ -23,6 +23,20 @@ class BooktimeAPITest(unittest.TestCase):
             "isbn": "978-2-07-040850-4"
         }
         
+        # Test book with saga information
+        self.test_saga_book_data = {
+            "title": "Harry Potter et la Chambre des Secrets",
+            "author": "J.K. Rowling",
+            "category": "roman",
+            "description": "Deuxième tome de la saga Harry Potter",
+            "total_pages": 368,
+            "saga": "Harry Potter",
+            "volume_number": 2,
+            "genre": ["fantasy", "young adult"],
+            "publication_year": 1998,
+            "publisher": "Gallimard"
+        }
+        
         # Book IDs to be used/cleaned up during testing
         self.book_ids_to_delete = []
 
