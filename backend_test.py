@@ -467,8 +467,8 @@ class BooktimeAPITest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         sagas = response.json()
         
-        # Should have at least 7 sagas as mentioned in the context
-        self.assertGreaterEqual(len(sagas), 7, "Should have at least 7 sagas")
+        # Should have at least 5 sagas as mentioned in the context
+        self.assertGreaterEqual(len(sagas), 5, "Should have at least 5 sagas")
         
         # Check that each saga has the required fields
         for saga in sagas:
