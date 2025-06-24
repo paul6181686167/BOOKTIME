@@ -173,23 +173,65 @@ function App() {
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         onAddBook={() => setShowAddModal(true)}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        currentContext={currentContext}
+        onBackToAll={handleBackToAll}
       />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <StatsPanel stats={stats} />
+        <ExtendedStatsPanel stats={stats} />
         
-        <TabNavigation 
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          activeStatus={activeStatus}
-          onStatusChange={setActiveStatus}
-        />
+        {viewMode === 'books' && (
+          <>
+            {!currentContext && (
+              <TabNavigation 
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                activeStatus={activeStatus}
+                onStatusChange={setActiveStatus}
+              />
+            )}
+            
+            {currentContext && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-medium text-gray-900">
+                      {currentContext.type === 'author' ? 'Livres de' : 'Saga'} : {currentContext.name}
+                    </h2>
+                    <p className="text-sm text-gray-600">
+                      {getCurrentBooks().length} livre{getCurrentBooks().length > 1 ? 's' : ''}
+                      {currentContext.type === 'saga' && currentContext.data && 
+                        ` • ${currentContext.data.completed_books} terminé${currentContext.data.completed_books > 1 ? 's' : ''}`
+                      }
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleBackToAll}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  >
+                    Retour à tous les livres
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            <BookGrid 
+              books={getCurrentBooks()}
+              loading={loading}
+              onBookClick={setSelectedBook}
+            />
+          </>
+        )}
         
-        <BookGrid 
-          books={filteredBooks}
-          loading={loading}
-          onBookClick={setSelectedBook}
-        />
+        {viewMode === 'authors' && (
+          <AuthorsPanel onAuthorSelect={handleAuthorSelect} />
+        )}
+        
+        {viewMode === 'sagas' && (
+          <SagasPanel onSagaSelect={handleSagaSelect} />
+        )}
       </main>
 
       {/* Modals */}
