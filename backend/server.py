@@ -436,6 +436,150 @@ async def get_stats():
         "auto_added_count": auto_added_count
     }
 
+# API Routes Open Library
+@app.get("/api/openlibrary/search")
+async def search_openlibrary(q: str, limit: int = 10):
+    """Rechercher des livres sur Open Library"""
+    if not q:
+        raise HTTPException(status_code=400, detail="Le paramètre de recherche 'q' est requis")
+    
+    result = await OpenLibraryService.search_books(q, limit)
+    
+    # Mapper les résultats
+    mapped_books = []
+    for book in result.get("docs", []):
+        mapped_book = OpenLibraryService.map_openlibrary_to_booktime(book)
+        mapped_book["ol_key"] = book.get("key")
+        mapped_books.append(mapped_book)
+    
+    return {
+        "total": result.get("numFound", 0),
+        "books": mapped_books
+    }
+
+@app.post("/api/openlibrary/import")
+async def import_from_openlibrary(import_request: OpenLibraryImportRequest):
+    """Importer un livre depuis Open Library"""
+    try:
+        # Rechercher le livre spécifique pour obtenir les détails
+        search_result = await OpenLibraryService.search_books(f"key:{import_request.ol_key}")
+        
+        if not search_result.get("docs"):
+            raise HTTPException(status_code=404, detail="Livre non trouvé sur Open Library")
+        
+        ol_book = search_result["docs"][0]
+        
+        # Mapper vers le format BOOKTIME
+        book_data = OpenLibraryService.map_openlibrary_to_booktime(ol_book, import_request.category)
+        
+        # Vérifier si le livre existe déjà (par ISBN ou titre+auteur)
+        existing_book = None
+        if book_data.get("isbn"):
+            existing_book = await books_collection.find_one({"isbn": book_data["isbn"]})
+        
+        if not existing_book:
+            # Recherche par titre et auteur
+            existing_book = await books_collection.find_one({
+                "title": {"$regex": book_data["title"], "$options": "i"},
+                "author": {"$regex": book_data["author"], "$options": "i"}
+            })
+        
+        if existing_book:
+            raise HTTPException(status_code=409, detail="Ce livre existe déjà dans votre collection")
+        
+        # Créer le nouveau livre
+        book_data["_id"] = str(uuid.uuid4())
+        book_data["status"] = "to_read"
+        book_data["current_page"] = 0
+        book_data["date_added"] = datetime.utcnow()
+        book_data["category"] = import_request.category.lower()
+        
+        result = await books_collection.insert_one(book_data)
+        if result.inserted_id:
+            created_book = await books_collection.find_one({"_id": book_data["_id"]})
+            created_book["_id"] = str(created_book["_id"])
+            return Book(**created_book)
+        
+        raise HTTPException(status_code=400, detail="Erreur lors de l'import du livre")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Erreur lors de l'import Open Library: {e}")
+        raise HTTPException(status_code=500, detail="Erreur interne du serveur")
+
+@app.post("/api/books/{book_id}/enrich")
+async def enrich_book_from_openlibrary(book_id: str):
+    """Enrichir un livre existant avec les données Open Library"""
+    try:
+        # Récupérer le livre existant
+        book = await books_collection.find_one({"_id": book_id})
+        if not book:
+            raise HTTPException(status_code=404, detail="Livre non trouvé")
+        
+        # Rechercher sur Open Library par titre et auteur
+        search_query = f"{book['title']} {book['author']}"
+        search_result = await OpenLibraryService.search_books(search_query, limit=5)
+        
+        if not search_result.get("docs"):
+            raise HTTPException(status_code=404, detail="Aucune correspondance trouvée sur Open Library")
+        
+        # Prendre le premier résultat qui semble correspondre
+        ol_book = search_result["docs"][0]
+        
+        # Enrichir les données existantes
+        enriched_data = {}
+        
+        # Couverture si pas déjà présente
+        if not book.get("cover_url") and ol_book.get("cover_i"):
+            enriched_data["cover_url"] = f"https://covers.openlibrary.org/b/id/{ol_book['cover_i']}-L.jpg"
+        
+        # ISBN si pas déjà présent
+        if not book.get("isbn") and ol_book.get("isbn"):
+            enriched_data["isbn"] = ol_book["isbn"][0] if isinstance(ol_book["isbn"], list) else ol_book["isbn"]
+        
+        # Nombre de pages si pas déjà présent
+        if not book.get("total_pages") and ol_book.get("number_of_pages_median"):
+            enriched_data["total_pages"] = ol_book["number_of_pages_median"]
+        
+        # Genres si pas déjà présents
+        if not book.get("genre") and ol_book.get("subject"):
+            enriched_data["genre"] = ol_book["subject"][:5]  # Limiter à 5 genres
+        
+        # Editeur si pas déjà présent
+        if not book.get("publisher") and ol_book.get("publisher"):
+            enriched_data["publisher"] = ol_book["publisher"][0] if isinstance(ol_book["publisher"], list) else ol_book["publisher"]
+        
+        # Année de publication si pas déjà présente
+        if not book.get("publication_year") and ol_book.get("first_publish_year"):
+            enriched_data["publication_year"] = ol_book["first_publish_year"]
+        
+        if not enriched_data:
+            return {"message": "Aucune nouvelle donnée trouvée pour enrichir ce livre"}
+        
+        # Mettre à jour le livre
+        result = await books_collection.update_one(
+            {"_id": book_id}, 
+            {"$set": enriched_data}
+        )
+        
+        if result.modified_count:
+            updated_book = await books_collection.find_one({"_id": book_id})
+            updated_book["_id"] = str(updated_book["_id"])
+            return {
+                "message": "Livre enrichi avec succès",
+                "enriched_fields": list(enriched_data.keys()),
+                "book": Book(**updated_book)
+            }
+        
+        raise HTTPException(status_code=400, detail="Erreur lors de l'enrichissement")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Erreur lors de l'enrichissement: {e}")
+        raise HTTPException(status_code=500, detail="Erreur interne du serveur")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
