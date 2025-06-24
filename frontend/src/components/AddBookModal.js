@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import LanguageSelector from './LanguageSelector';
 
 const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
   const [formData, setFormData] = useState({
@@ -11,6 +12,9 @@ const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
     cover_url: '',
     total_pages: '',
     isbn: '',
+    original_language: 'français',
+    available_translations: [],
+    reading_language: 'français',
   });
   const [isLoading, setIsLoading] = useState(false);
 
