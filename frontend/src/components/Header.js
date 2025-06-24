@@ -7,7 +7,8 @@ import {
   UserGroupIcon,
   BookOpenIcon,
   LanguageIcon,
-  ArrowLeftIcon
+  ArrowLeftIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/outline';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUserLanguage } from '../contexts/UserLanguageContext';
