@@ -480,3 +480,5 @@ agent_communication:
     message: "Starting frontend testing for BOOKTIME application. Will test all UI components, CRUD operations, and special features."
   - agent: "testing"
     message: "Encountered issues with the frontend application. Fixed the CollectionIcon import error by replacing it with RectangleStackIcon, but the application still doesn't load properly. The backend API is working correctly, but the frontend is not connecting to it properly. Need to investigate further."
+  - agent: "testing"
+    message: "The frontend is running on port 3000 and can be accessed via curl, but the browser_automation_tool is unable to access it properly. This might be due to network configuration issues in the container environment. The backend API is working correctly on port 8001. Manual testing would be required to verify the frontend functionality."
