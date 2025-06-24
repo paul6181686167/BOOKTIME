@@ -486,3 +486,5 @@ agent_communication:
     message: "Encountered issues with the frontend application. Fixed the CollectionIcon import error by replacing it with RectangleStackIcon, but the application still doesn't load properly. The backend API is working correctly, but the frontend is not connecting to it properly. Need to investigate further."
   - agent: "testing"
     message: "The frontend is running on port 3000 and can be accessed via curl, but the browser_automation_tool is unable to access it properly. This might be due to network configuration issues in the container environment. The backend API is working correctly on port 8001. Manual testing would be required to verify the frontend functionality."
+  - agent: "testing"
+    message: "Tested the category validation in the backend. The validation is now working correctly. Books with valid categories (roman, bd, manga) can be created, while books with invalid categories are rejected with an appropriate error. Categories are also properly converted to lowercase (e.g., 'Roman' -> 'roman', 'BD' -> 'bd')."
