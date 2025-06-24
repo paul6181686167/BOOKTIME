@@ -515,7 +515,7 @@ class BooktimeAPITest(unittest.TestCase):
             response = requests.get(f"{API_URL}/sagas/Harry Potter/books")
             self.assertEqual(response.status_code, 200)
             books = response.json()
-            self.assertEqual(len(books), 3, "Harry Potter saga should have 3 books")
+            self.assertEqual(len(books), 4, "Harry Potter saga should have 4 books")
             
             # Check that all volumes are present (1-3)
             volumes = sorted([book["volume_number"] for book in books])
