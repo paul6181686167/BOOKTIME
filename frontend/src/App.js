@@ -5,7 +5,9 @@ import TabNavigation from './components/TabNavigation';
 import BookGrid from './components/BookGrid';
 import AddBookModal from './components/AddBookModal';
 import BookDetailModal from './components/BookDetailModal';
-import StatsPanel from './components/StatsPanel';
+import ExtendedStatsPanel from './components/ExtendedStatsPanel';
+import AuthorsPanel from './components/AuthorsPanel';
+import SagasPanel from './components/SagasPanel';
 import { bookService } from './services/bookService';
 import './App.css';
 
@@ -19,6 +21,10 @@ function App() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState('books'); // 'books', 'authors', 'sagas'
+  const [selectedAuthorBooks, setSelectedAuthorBooks] = useState(null);
+  const [selectedSagaBooks, setSelectedSagaBooks] = useState(null);
+  const [currentContext, setCurrentContext] = useState(null); // Pour afficher le contexte actuel
 
   // Charger les livres au démarrage
   useEffect(() => {
