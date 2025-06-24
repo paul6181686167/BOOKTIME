@@ -487,3 +487,7 @@ agent_communication:
     message: "The frontend is running on port 3000 and can be accessed via curl, but the browser_automation_tool is unable to access it properly. This might be due to network configuration issues in the container environment. The backend API is working correctly on port 8001. Manual testing would be required to verify the frontend functionality."
   - agent: "testing"
     message: "Tested the category validation in the backend. The validation is now working correctly. Books with valid categories (roman, bd, manga) can be created, while books with invalid categories are rejected with an appropriate error. Categories are also properly converted to lowercase (e.g., 'Roman' -> 'roman', 'BD' -> 'bd')."
+  - agent: "testing"
+    message: "Fixed an issue with the CORS middleware in the backend server.py file that was causing all API endpoints to return 500 errors. After fixing this issue, all backend tests are now passing successfully."
+  - agent: "testing"
+    message: "Completed comprehensive testing of the BOOKTIME backend API. All endpoints are working correctly according to the requirements. The database contains 18 books, 7 sagas, 9 authors, and 5 auto-added books as specified. Category validation is working correctly, and all CRUD operations function as expected."
