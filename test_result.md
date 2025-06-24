@@ -160,7 +160,7 @@ backend:
 
   - task: "Validation - Invalid category"
     implemented: true
-    working: false
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "medium"
@@ -172,6 +172,9 @@ backend:
       - working: false
         agent: "testing"
         comment: "The API does not validate book categories. Books with categories other than 'roman', 'bd', or 'manga' can be created. This is a minor issue as the API still functions correctly, but category validation could be added for data consistency."
+      - working: true
+        agent: "testing"
+        comment: "Category validation has been successfully implemented. The API now correctly validates that book categories must be one of 'roman', 'bd', or 'manga'. Invalid categories are rejected with a 422 error. Categories are also properly converted to lowercase (e.g., 'Roman' -> 'roman', 'BD' -> 'bd')."
 
   - task: "Stats update - Verify stats after CRUD operations"
     implemented: true
