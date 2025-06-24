@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Header from './components/Header';
 import TabNavigation from './components/TabNavigation';
 import BookGrid from './components/BookGrid';
@@ -11,7 +12,7 @@ import SagasPanel from './components/SagasPanel';
 import { bookService } from './services/bookService';
 import './App.css';
 
-function App() {
+function AppContent() {
   const [books, setBooks] = useState([]);
   const [filteredBooks, setFilteredBooks] = useState([]);
   const [stats, setStats] = useState({});
@@ -168,7 +169,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       <Header 
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
@@ -194,13 +195,13 @@ function App() {
             )}
             
             {currentContext && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-lg font-medium text-gray-900">
+                    <h2 className="text-lg font-medium text-gray-900 dark:text-white">
                       {currentContext.type === 'author' ? 'Livres de' : 'Saga'} : {currentContext.name}
                     </h2>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       {getCurrentBooks().length} livre{getCurrentBooks().length > 1 ? 's' : ''}
                       {currentContext.type === 'saga' && currentContext.data && 
                         ` • ${currentContext.data.completed_books} terminé${currentContext.data.completed_books > 1 ? 's' : ''}`
@@ -209,7 +210,7 @@ function App() {
                   </div>
                   <button
                     onClick={handleBackToAll}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                   >
                     Retour à tous les livres
                   </button>
@@ -263,6 +264,14 @@ function App() {
         }}
       />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }
 
