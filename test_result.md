@@ -294,17 +294,149 @@ backend:
         comment: "Data consistency for sagas and volumes is maintained. Volume numbers are present and valid. Newly auto-added books have the correct status 'to_read' and auto_added flag set to true."
 
 frontend:
-  - task: "Frontend testing not in scope"
+  - task: "Main Interface - Tab Navigation"
     implemented: true
     working: "NA"
-    file: "N/A"
+    file: "/app/frontend/src/components/TabNavigation.js"
     stuck_count: 0
-    priority: "low"
-    needs_retesting: false
+    priority: "high"
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "testing"
-        comment: "Frontend testing not in scope for this task"
+        comment: "Initial setup, needs testing"
+
+  - task: "Main Interface - Search Functionality"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+
+  - task: "Main Interface - Status Filters"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/TabNavigation.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+
+  - task: "Main Interface - Statistics Display"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/ExtendedStatsPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+
+  - task: "CRUD - Add Book"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/AddBookModal.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+
+  - task: "CRUD - View Book Details"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/BookDetailModal.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+
+  - task: "CRUD - Update Book"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/BookDetailModal.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+
+  - task: "CRUD - Delete Book"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/BookDetailModal.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+
+  - task: "Advanced Views - Authors Panel"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/AuthorsPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+
+  - task: "Advanced Views - Sagas Panel"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/SagasPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+
+  - task: "Special Features - Auto-add Next Volume"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/SagasPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+
+  - task: "Responsive Interface"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
 
 metadata:
   created_by: "testing_agent"
