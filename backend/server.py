@@ -30,7 +30,100 @@ client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URL)
 database = client.booktime
 books_collection = database.books
 
-# Pydantic models
+# Service Open Library
+class OpenLibraryService:
+    BASE_URL = "https://openlibrary.org"
+    
+    @staticmethod
+    async def search_books(query: str, limit: int = 10):
+        """Rechercher des livres sur Open Library"""
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(
+                    f"{OpenLibraryService.BASE_URL}/search.json",
+                    params={
+                        "q": query,
+                        "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,publisher,number_of_pages_median",
+                        "limit": limit
+                    }
+                )
+                response.raise_for_status()
+                return response.json()
+        except Exception as e:
+            print(f"Erreur lors de la recherche Open Library: {e}")
+            return {"docs": [], "numFound": 0}
+    
+    @staticmethod
+    async def get_book_by_isbn(isbn: str):
+        """Récupérer un livre par ISBN depuis Open Library"""
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(
+                    f"{OpenLibraryService.BASE_URL}/api/books",
+                    params={
+                        "bibkeys": f"ISBN:{isbn}",
+                        "format": "json",
+                        "jscmd": "data"
+                    }
+                )
+                response.raise_for_status()
+                data = response.json()
+                return data.get(f"ISBN:{isbn}")
+        except Exception as e:
+            print(f"Erreur lors de la récupération du livre par ISBN: {e}")
+            return None
+    
+    @staticmethod
+    def map_openlibrary_to_booktime(ol_book, category="roman"):
+        """Mapper un livre Open Library vers le format BOOKTIME"""
+        # Déterminer la catégorie basée sur les sujets
+        subjects = ol_book.get("subject", [])
+        if any(term in " ".join(subjects).lower() for term in ["comic", "graphic", "bd", "bande dessinée"]):
+            category = "bd"
+        elif any(term in " ".join(subjects).lower() for term in ["manga", "japanese"]):
+            category = "manga"
+        
+        # URL de couverture
+        cover_url = None
+        if ol_book.get("cover_i"):
+            cover_url = f"https://covers.openlibrary.org/b/id/{ol_book['cover_i']}-L.jpg"
+        
+        # ISBN
+        isbn = None
+        if ol_book.get("isbn"):
+            isbn = ol_book["isbn"][0] if isinstance(ol_book["isbn"], list) else ol_book["isbn"]
+        
+        return {
+            "title": ol_book.get("title", "Titre inconnu"),
+            "author": ", ".join(ol_book.get("author_name", ["Auteur inconnu"])),
+            "category": category,
+            "description": f"Publié en {ol_book.get('first_publish_year', 'année inconnue')}",
+            "cover_url": cover_url,
+            "total_pages": ol_book.get("number_of_pages_median"),
+            "isbn": isbn,
+            "publication_year": ol_book.get("first_publish_year"),
+            "publisher": ol_book.get("publisher", [None])[0] if ol_book.get("publisher") else None,
+            "genre": ol_book.get("subject", [])[:5] if ol_book.get("subject") else [],  # Limiter à 5 genres
+            "original_language": "anglais" if not any(lang in str(ol_book.get("publisher", [])) for lang in ["français", "french", "gallimard"]) else "français",
+            "available_translations": [],
+            "reading_language": "français"
+        }
+
+# Modèles Pydantic pour Open Library
+class OpenLibrarySearchResult(BaseModel):
+    key: str
+    title: str
+    author_name: Optional[List[str]] = []
+    first_publish_year: Optional[int] = None
+    isbn: Optional[List[str]] = []
+    cover_i: Optional[int] = None
+    subject: Optional[List[str]] = []
+    publisher: Optional[List[str]] = []
+    number_of_pages_median: Optional[int] = None
+
+class OpenLibraryImportRequest(BaseModel):
+    ol_key: str
+    category: str = "roman"
 class BookBase(BaseModel):
     title: str
     author: str
