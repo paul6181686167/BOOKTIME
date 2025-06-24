@@ -71,12 +71,55 @@ function App() {
     }
   };
 
+  const handleAuthorSelect = (books, author) => {
+    setSelectedAuthorBooks(books);
+    setCurrentContext({
+      type: 'author',
+      name: author.name,
+      data: author
+    });
+    setViewMode('books');
+  };
+
+  const handleSagaSelect = (books, saga) => {
+    setSelectedSagaBooks(books);
+    setCurrentContext({
+      type: 'saga',
+      name: saga.name,
+      data: saga
+    });
+    setViewMode('books');
+  };
+
+  const handleBackToAll = () => {
+    setSelectedAuthorBooks(null);
+    setSelectedSagaBooks(null);
+    setCurrentContext(null);
+    setViewMode('books');
+  };
+
+  const getCurrentBooks = () => {
+    if (selectedAuthorBooks) return selectedAuthorBooks;
+    if (selectedSagaBooks) return selectedSagaBooks;
+    return filteredBooks;
+  };
+
   const handleAddBook = async (bookData) => {
     try {
       await bookService.createBook(bookData);
       await loadBooks();
       await loadStats();
       setShowAddModal(false);
+      // Si on est dans une vue spécifique, rafraîchir
+      if (currentContext) {
+        if (currentContext.type === 'author') {
+          const books = await bookService.getBooksByAuthor(currentContext.name);
+          setSelectedAuthorBooks(books);
+        } else if (currentContext.type === 'saga') {
+          const books = await bookService.getBooksBySaga(currentContext.name);
+          setSelectedSagaBooks(books);
+        }
+      }
     } catch (error) {
       console.error('Erreur lors de l\'ajout du livre:', error);
     }
@@ -88,6 +131,16 @@ function App() {
       await loadBooks();
       await loadStats();
       setSelectedBook(null);
+      // Si on est dans une vue spécifique, rafraîchir
+      if (currentContext) {
+        if (currentContext.type === 'author') {
+          const books = await bookService.getBooksByAuthor(currentContext.name);
+          setSelectedAuthorBooks(books);
+        } else if (currentContext.type === 'saga') {
+          const books = await bookService.getBooksBySaga(currentContext.name);
+          setSelectedSagaBooks(books);
+        }
+      }
     } catch (error) {
       console.error('Erreur lors de la mise à jour du livre:', error);
     }
@@ -99,6 +152,16 @@ function App() {
       await loadBooks();
       await loadStats();
       setSelectedBook(null);
+      // Si on est dans une vue spécifique, rafraîchir
+      if (currentContext) {
+        if (currentContext.type === 'author') {
+          const books = await bookService.getBooksByAuthor(currentContext.name);
+          setSelectedAuthorBooks(books);
+        } else if (currentContext.type === 'saga') {
+          const books = await bookService.getBooksBySaga(currentContext.name);
+          setSelectedSagaBooks(books);
+        }
+      }
     } catch (error) {
       console.error('Erreur lors de la suppression du livre:', error);
     }
