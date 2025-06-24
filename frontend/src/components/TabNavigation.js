@@ -18,7 +18,8 @@ const TabNavigation = ({ activeTab, onTabChange, activeStatus, onStatusChange })
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
       {/* Onglets principaux */}
       <div className="border-b border-gray-200">
-        <nav className="flex space-x-8 px-6">
+        {/* Version desktop */}
+        <nav className="hidden sm:flex space-x-8 px-6">
           {tabs.map((tab) => (
             <button
               key={tab.key}
@@ -36,16 +37,34 @@ const TabNavigation = ({ activeTab, onTabChange, activeStatus, onStatusChange })
             </button>
           ))}
         </nav>
+
+        {/* Version mobile - onglets horizontaux avec scroll */}
+        <nav className="sm:hidden flex space-x-1 px-4 py-2 overflow-x-auto">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => onTabChange(tab.key)}
+              className={`flex-shrink-0 flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === tab.key
+                  ? 'bg-booktime-100 text-booktime-800 border border-booktime-200'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              <span>{tab.icon}</span>
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </nav>
       </div>
 
       {/* Filtres de statut */}
-      <div className="px-6 py-4">
+      <div className="px-4 sm:px-6 py-4">
         <div className="flex flex-wrap gap-2">
           {statusFilters.map((filter) => (
             <button
               key={filter.key}
               onClick={() => onStatusChange(filter.key)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+              className={`px-3 py-1.5 sm:py-1 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                 activeStatus === filter.key
                   ? 'bg-booktime-100 text-booktime-800 border border-booktime-200'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
