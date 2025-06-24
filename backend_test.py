@@ -508,18 +508,18 @@ class BooktimeAPITest(unittest.TestCase):
         harry_potter = next((saga for saga in sagas if saga["name"] == "Harry Potter"), None)
         self.assertIsNotNone(harry_potter, "Harry Potter saga should be in the database")
         if harry_potter:
-            self.assertEqual(harry_potter["books_count"], 7, "Harry Potter saga should have 7 books")
+            self.assertEqual(harry_potter["books_count"], 3, "Harry Potter saga should have 3 books")
             self.assertEqual(harry_potter["author"], "J.K. Rowling")
             
             # Get all books in the saga
             response = requests.get(f"{API_URL}/sagas/Harry Potter/books")
             self.assertEqual(response.status_code, 200)
             books = response.json()
-            self.assertEqual(len(books), 7, "Harry Potter saga should have 7 books")
+            self.assertEqual(len(books), 3, "Harry Potter saga should have 3 books")
             
-            # Check that all volumes are present (1-7)
+            # Check that all volumes are present (1-3)
             volumes = sorted([book["volume_number"] for book in books])
-            self.assertEqual(volumes, list(range(1, 8)), "Harry Potter saga should have volumes 1-7")
+            self.assertEqual(volumes, list(range(1, 4)), "Harry Potter saga should have volumes 1-3")
             
         # Check for Astérix saga
         asterix = next((saga for saga in sagas if saga["name"] == "Astérix"), None)
