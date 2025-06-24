@@ -153,14 +153,13 @@ export const bookService = {
     }
   },
 
-  // === OPEN LIBRARY INTEGRATION ===
+  // === OPEN LIBRARY INTEGRATION AVANCÉE ===
   
-  // Rechercher des livres sur Open Library
-  async searchOpenLibrary(query, limit = 10) {
+  // Recherche de base sur Open Library
+  async searchOpenLibrary(query, limit = 10, filters = {}) {
     try {
-      const response = await api.get('/api/openlibrary/search', {
-        params: { q: query, limit }
-      });
+      const params = { q: query, limit, ...filters };
+      const response = await api.get('/api/openlibrary/search', { params });
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la recherche Open Library:', error);
@@ -168,7 +167,42 @@ export const bookService = {
     }
   },
 
-  // Importer un livre depuis Open Library
+  // Recherche avancée avec filtres
+  async searchOpenLibraryAdvanced(filters) {
+    try {
+      const response = await api.get('/api/openlibrary/search-advanced', { params: filters });
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la recherche avancée:', error);
+      throw new Error('Erreur lors de la recherche avancée');
+    }
+  },
+
+  // Recherche par ISBN
+  async searchByISBN(isbn) {
+    try {
+      const response = await api.get('/api/openlibrary/search-isbn', { params: { isbn } });
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la recherche par ISBN:', error);
+      throw new Error('Erreur lors de la recherche par ISBN');
+    }
+  },
+
+  // Recherche par auteur
+  async searchByAuthor(author, limit = 20) {
+    try {
+      const response = await api.get('/api/openlibrary/search-author', { 
+        params: { author, limit } 
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la recherche par auteur:', error);
+      throw new Error('Erreur lors de la recherche par auteur');
+    }
+  },
+
+  // Import simple
   async importFromOpenLibrary(olKey, category = 'roman') {
     try {
       const response = await api.post('/api/openlibrary/import', {
@@ -185,7 +219,29 @@ export const bookService = {
     }
   },
 
-  // Enrichir un livre existant avec les données Open Library
+  // Import en lot
+  async importMultipleFromOpenLibrary(books) {
+    try {
+      const response = await api.post('/api/openlibrary/import-bulk', { books });
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de l\'import en lot:', error);
+      throw new Error('Erreur lors de l\'import en lot');
+    }
+  },
+
+  // Import de série complète
+  async importSeries(seriesData) {
+    try {
+      const response = await api.post('/api/openlibrary/import-series', seriesData);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de l\'import de série:', error);
+      throw new Error('Erreur lors de l\'import de série');
+    }
+  },
+
+  // Enrichir un livre existant
   async enrichBook(bookId) {
     try {
       const response = await api.post(`/api/books/${bookId}/enrich`);
@@ -199,61 +255,77 @@ export const bookService = {
     }
   },
 
-  // === OPEN LIBRARY INTEGRATION ===
-  
-  // Rechercher des livres sur Open Library
-  async searchOpenLibrary(query, limit = 10) {
+  // Obtenir des recommandations personnalisées
+  async getPersonalizedRecommendations(limit = 10) {
     try {
-      const response = await api.get('/api/openlibrary/search', {
-        params: { q: query, limit }
+      const response = await api.get('/api/openlibrary/recommendations', { 
+        params: { limit } 
       });
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la recherche Open Library:', error);
-      throw new Error('Erreur lors de la recherche sur Open Library');
+      console.error('Erreur lors de la récupération des recommandations:', error);
+      throw new Error('Erreur lors de la récupération des recommandations');
     }
   },
 
-  // Importer un livre depuis Open Library
-  async importFromOpenLibrary(olKey, category = 'roman') {
+  // Détecter les tomes manquants d'une saga
+  async detectMissingSagaVolumes(sagaName) {
     try {
-      const response = await api.post('/api/openlibrary/import', {
-        ol_key: olKey,
-        category: category
+      const response = await api.get('/api/openlibrary/missing-volumes', {
+        params: { saga: sagaName }
       });
       return response.data;
     } catch (error) {
-      if (error.response?.status === 409) {
-        throw new Error('Ce livre existe déjà dans votre collection');
-      }
-      console.error('Erreur lors de l\'import Open Library:', error);
-      throw new Error('Erreur lors de l\'import du livre');
+      console.error('Erreur lors de la détection des tomes manquants:', error);
+      throw new Error('Erreur lors de la détection des tomes manquants');
     }
   },
 
-  // Enrichir un livre existant avec les données Open Library
-  async enrichBook(bookId) {
+  // Obtenir des suggestions d'import basées sur la collection
+  async getImportSuggestions(limit = 15) {
     try {
-      const response = await api.post(`/api/books/${bookId}/enrich`);
+      const response = await api.get('/api/openlibrary/suggestions', { 
+        params: { limit } 
+      });
       return response.data;
     } catch (error) {
-      if (error.response?.status === 404) {
-        throw new Error('Aucune correspondance trouvée sur Open Library');
-      }
-      console.error('Erreur lors de l\'enrichissement:', error);
-      throw new Error('Erreur lors de l\'enrichissement du livre');
+      console.error('Erreur lors de la récupération des suggestions:', error);
+      throw new Error('Erreur lors de la récupération des suggestions');
     }
   },
 
-  // Rechercher des livres (API externe optionnelle)
-  async searchBooks(query) {
+  // Historique des recherches (stockage local)
+  getSearchHistory() {
     try {
-      // Ici, vous pourriez intégrer une API comme Google Books
-      // Pour l'instant, on retourne un tableau vide
-      return [];
+      const history = localStorage.getItem('ol_search_history');
+      return history ? JSON.parse(history) : [];
     } catch (error) {
-      console.error('Erreur lors de la recherche de livres:', error);
+      console.error('Erreur lors de la récupération de l\'historique:', error);
       return [];
+    }
+  },
+
+  // Ajouter à l'historique de recherche
+  addToSearchHistory(query) {
+    try {
+      const history = this.getSearchHistory();
+      const newHistory = [query, ...history.filter(h => h !== query)].slice(0, 10);
+      localStorage.setItem('ol_search_history', JSON.stringify(newHistory));
+      return newHistory;
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout à l\'historique:', error);
+      return [];
+    }
+  },
+
+  // Vider l'historique de recherche
+  clearSearchHistory() {
+    try {
+      localStorage.removeItem('ol_search_history');
+      return true;
+    } catch (error) {
+      console.error('Erreur lors de la suppression de l\'historique:', error);
+      return false;
     }
   }
 };
