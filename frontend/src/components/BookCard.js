@@ -1,24 +1,29 @@
 import React from 'react';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { StarIcon as StarOutlineIcon } from '@heroicons/react/24/outline';
+import LanguageIndicator from './LanguageIndicator';
 
-const BookCard = ({ book, onClick }) => {
-  const getStatusBadge = (status) => {
-    const badges = {
-      to_read: { label: 'À lire', class: 'status-to-read' },
-      reading: { label: 'En cours', class: 'status-reading' },
-      completed: { label: 'Terminé', class: 'status-completed' },
-    };
-    return badges[status] || badges.to_read;
+const BookCard = ({ book, onBookClick }) => {
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'reading':
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300';
+      case 'completed':
+        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300';
+      default:
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300';
+    }
   };
 
-  const getCategoryColor = (category) => {
-    const colors = {
-      roman: 'category-roman',
-      bd: 'category-bd',
-      manga: 'category-manga',
-    };
-    return colors[category] || 'category-roman';
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'reading':
+        return 'En cours';
+      case 'completed':
+        return 'Terminé';
+      default:
+        return 'À lire';
+    }
   };
 
   const getProgressPercentage = () => {
@@ -26,22 +31,18 @@ const BookCard = ({ book, onClick }) => {
     return Math.min(100, (book.current_page / book.total_pages) * 100);
   };
 
-  const statusBadge = getStatusBadge(book.status);
-  const categoryColor = getCategoryColor(book.category);
-  const progressPercentage = getProgressPercentage();
-
   return (
-    <div 
-      onClick={onClick}
-      className={`book-card bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden cursor-pointer hover:shadow-lg dark:hover:shadow-2xl transition-all duration-300 ${categoryColor}`}
+    <div
+      onClick={() => onBookClick(book)}
+      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md dark:hover:shadow-gray-900/20 transition-all cursor-pointer overflow-hidden group"
     >
       {/* Image de couverture */}
-      <div className="aspect-[2/3] bg-gray-100 dark:bg-gray-700 relative overflow-hidden">
+      <div className="aspect-[2/3] bg-gray-100 dark:bg-gray-700 overflow-hidden relative">
         {book.cover_url ? (
-          <img 
-            src={book.cover_url} 
+          <img
+            src={book.cover_url}
             alt={book.title}
-            className="w-full h-full object-cover book-cover"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
@@ -51,63 +52,84 @@ const BookCard = ({ book, onClick }) => {
                 {book.category === 'bd' && '🎨'}
                 {book.category === 'manga' && '🇯🇵'}
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Pas de couverture</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Pas de couverture</p>
             </div>
           </div>
         )}
         
-        {/* Badge de statut */}
+        {/* Indicateur de langue */}
         <div className="absolute top-2 right-2">
-          <span className={`status-badge ${statusBadge.class}`}>
-            {statusBadge.label}
-          </span>
+          <LanguageIndicator book={book} size="xs" />
         </div>
+
+        {/* Barre de progression pour les livres en cours */}
+        {book.status === 'reading' && book.total_pages && (
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
+            <div
+              className="h-full bg-blue-500 transition-all duration-300"
+              style={{ width: `${getProgressPercentage()}%` }}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Informations du livre */}
+      {/* Contenu */}
       <div className="p-4">
-        <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-1 line-clamp-2 leading-tight">
-          {book.title}
-        </h3>
-        <p className="text-gray-600 dark:text-gray-400 text-xs mb-3 line-clamp-1">
+        <div className="flex items-start justify-between mb-2">
+          <h3 className="font-semibold text-gray-900 dark:text-white text-sm leading-tight line-clamp-2 flex-1">
+            {book.title}
+          </h3>
+        </div>
+
+        <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 line-clamp-1">
           {book.author}
         </p>
 
-        {/* Note */}
-        {book.rating && (
-          <div className="flex items-center mb-3">
-            <div className="flex space-x-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                star <= book.rating ? (
-                  <StarIcon key={star} className="h-4 w-4 text-yellow-400" />
-                ) : (
-                  <StarOutlineIcon key={star} className="h-4 w-4 text-gray-300 dark:text-gray-600" />
-                )
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Statut et note */}
+        <div className="flex items-center justify-between">
+          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(book.status)}`}>
+            {getStatusLabel(book.status)}
+          </span>
 
-        {/* Barre de progression */}
-        {book.status === 'reading' && book.total_pages && (
-          <div className="mb-3">
-            <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
-              <span>{book.current_page} pages</span>
+          {/* Note */}
+          {book.rating > 0 && (
+            <div className="flex items-center space-x-1">
+              <div className="flex">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <div key={star} className="w-3 h-3">
+                    {star <= book.rating ? (
+                      <StarIcon className="w-3 h-3 text-yellow-400" />
+                    ) : (
+                      <StarOutlineIcon className="w-3 h-3 text-gray-300 dark:text-gray-600" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Informations supplémentaires */}
+        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+            {book.saga && (
+              <span className="truncate">📖 {book.saga}</span>
+            )}
+            {book.total_pages && (
               <span>{book.total_pages} pages</span>
-            </div>
-            <div className="progress-bar bg-gray-200 dark:bg-gray-700">
-              <div 
-                className="progress-fill"
-                style={{ width: `${progressPercentage}%` }}
-              />
-            </div>
+            )}
           </div>
-        )}
-
-        {/* Date d'ajout */}
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          Ajouté le {new Date(book.date_added).toLocaleDateString('fr-FR')}
-        </p>
+          
+          {/* Progression pour les livres en cours */}
+          {book.status === 'reading' && book.total_pages && (
+            <div className="mt-2">
+              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <span>{book.current_page} / {book.total_pages}</span>
+                <span>{Math.round(getProgressPercentage())}%</span>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
