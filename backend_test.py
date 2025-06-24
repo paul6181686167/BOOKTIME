@@ -517,9 +517,9 @@ class BooktimeAPITest(unittest.TestCase):
             books = response.json()
             self.assertEqual(len(books), 4, "Harry Potter saga should have 4 books")
             
-            # Check that all volumes are present (1-3)
+            # Check that all volumes are present (1-4)
             volumes = sorted([book["volume_number"] for book in books])
-            self.assertEqual(volumes, list(range(1, 4)), "Harry Potter saga should have volumes 1-3")
+            self.assertEqual(volumes, list(range(1, 5)), "Harry Potter saga should have volumes 1-4")
             
         # Check for Astérix saga
         asterix = next((saga for saga in sagas if saga["name"] == "Astérix"), None)
