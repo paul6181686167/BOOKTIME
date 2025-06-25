@@ -610,6 +610,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Modified authentication system works correctly. The system now uses only first_name and last_name instead of email and password. Registration, login, and user info endpoints work correctly with the new authentication method. Validation for required fields and duplicate users is properly implemented. The JWT token system continues to work correctly for protecting routes."
+      - working: true
+        agent: "testing"
+        comment: "Frontend authentication has been successfully tested. The login/registration form now only displays first name and last name fields, with no email or password fields present. Registration works correctly with just first name and last name. Login works with the same credentials. The user is properly connected after registration/login and can access the application. The profile modal correctly displays the user's first name and last name. Logout functionality works correctly, redirecting the user back to the login page."
 
 frontend:
   - task: "Authentication - Login/Registration Page"
