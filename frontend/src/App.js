@@ -1035,6 +1035,15 @@ function AppContent() {
 
       <AddBookModal />
       <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
+      
+      {/* Modal OpenLibrary */}
+      {showOpenLibraryModal && (
+        <OpenLibrarySearch
+          onImport={handleAddBook}
+          onClose={() => setShowOpenLibraryModal(false)}
+          defaultCategory={activeTab}
+        />
+      )}
     </div>
   );
 }
