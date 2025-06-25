@@ -790,8 +790,8 @@ function AppContent() {
   );
 }
 
-// Main App Component
-function App() {
+// Auth Wrapper Component
+function AuthWrapper() {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -805,6 +805,11 @@ function App() {
     );
   }
 
+  return user ? <AppContent /> : <LoginPage />;
+}
+
+// Main App Component
+function App() {
   return (
     <AuthProvider>
       <div className="App">
@@ -822,24 +827,6 @@ function App() {
       </div>
     </AuthProvider>
   );
-}
-
-// Auth Wrapper Component
-function AuthWrapper() {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return user ? <AppContent /> : <LoginPage />;
 }
 
 export default App;
