@@ -45,6 +45,36 @@ authors_collection = db.authors
 # Security
 security = HTTPBearer()
 
+# Fonction de traduction automatique pour les résumés
+def translate_to_french(text):
+    """Traduit automatiquement un texte en français s'il n'est pas déjà en français"""
+    if not text or len(text.strip()) < 10:  # Ignorer les textes très courts
+        return text
+    
+    try:
+        # Détecter si le texte est déjà en français (méthode simple)
+        french_words = ['le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'et', 'ou', 'avec', 'dans', 'sur', 'pour', 'par', 'est', 'sont', 'être', 'avoir', 'qui', 'que', 'dont', 'où']
+        text_lower = text.lower()
+        french_word_count = sum(1 for word in french_words if f' {word} ' in f' {text_lower} ')
+        
+        # Si le texte contient déjà beaucoup de mots français, ne pas traduire
+        if french_word_count >= 3:
+            return text
+        
+        # Traduire en français
+        translator = GoogleTranslator(source='auto', target='fr')
+        translated_text = translator.translate(text)
+        
+        # Vérifier que la traduction a réussi
+        if translated_text and len(translated_text) > 0:
+            return translated_text
+        else:
+            return text
+            
+    except Exception as e:
+        print(f"Erreur lors de la traduction: {e}")
+        return text  # Retourner le texte original en cas d'erreur
+
 # Modèles Pydantic
 class UserAuth(BaseModel):
     first_name: str
