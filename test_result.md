@@ -650,6 +650,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Login/Registration page has been successfully modified to use only first name and last name fields. Email and password fields have been completely removed from the form. The page displays correctly with the BOOKTIME title and proper form fields."
+      - working: true
+        agent: "testing"
+        comment: "Verified that the login/registration page displays correctly with first name and last name fields only. The form is properly styled and the toggle between login and registration works as expected."
 
   - task: "Authentication - Registration Form"
     implemented: true
