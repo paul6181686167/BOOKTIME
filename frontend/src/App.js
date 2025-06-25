@@ -13,6 +13,7 @@ import BookDetailPage from './components/BookDetailPage';
 import AuthorDetailPage from './components/AuthorDetailPage';
 import OpenLibraryBookPage from './components/OpenLibraryBookPage';
 import OpenLibraryAuthorPage from './components/OpenLibraryAuthorPage';
+import SearchResultsPage from './components/SearchResultsPage';
 
 import './App.css';
 
