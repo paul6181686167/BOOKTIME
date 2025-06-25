@@ -428,6 +428,17 @@ function AppContent() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // Hook de recherche avancée
+  const {
+    searchTerm,
+    setSearchTerm,
+    filters,
+    setFilters,
+    filteredBooks,
+    searchStats,
+    clearSearch
+  } = useAdvancedSearch(books);
+
   useEffect(() => {
     if (user) {
       loadBooks();
@@ -470,8 +481,8 @@ function AppContent() {
     }
   };
 
-  // Filter books by active tab
-  const filteredBooks = books.filter(book => book.category === activeTab);
+  // Filter books by active tab AND search results
+  const displayedBooks = filteredBooks.filter(book => book.category === activeTab);
 
   // Header Component
   const Header = () => (
