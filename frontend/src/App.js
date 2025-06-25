@@ -843,35 +843,7 @@ function AppContent() {
     </div>
   );
 
-  // Composant Stats
-  const StatsPanel = () => (
-    <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          {stats.total_books || 0}
-        </h3>
-        <p className="text-gray-600 dark:text-gray-400">Total</p>
-      </div>
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-green-600 dark:text-green-400">
-          {stats.completed_books || 0}
-        </h3>
-        <p className="text-gray-600 dark:text-gray-400">Terminés</p>
-      </div>
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-yellow-600 dark:text-yellow-400">
-          {stats.reading_books || 0}
-        </h3>
-        <p className="text-gray-600 dark:text-gray-400">En cours</p>
-      </div>
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-          {stats.to_read_books || 0}
-        </h3>
-        <p className="text-gray-600 dark:text-gray-400">À lire</p>
-      </div>
-    </div>
-  );
+
 
   // Composant Grille de livres réorganisée
   const BookGrid = () => {
