@@ -726,9 +726,12 @@ function AppContent() {
           <div className="flex items-center space-x-4">
             <button 
               onClick={() => navigate('/')}
-              className="text-2xl font-bold text-blue-600 dark:text-blue-400 hover:opacity-80 transition-opacity"
+              className="flex items-center space-x-3 text-2xl font-bold text-green-600 dark:text-green-400 hover:opacity-80 transition-opacity"
             >
-              📚 BOOKTIME
+              <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center text-white text-xl">
+                🐝
+              </div>
+              BookTime
             </button>
             {/* Indicateur de recherche active */}
             {searchStats.hasActiveFilters && (
