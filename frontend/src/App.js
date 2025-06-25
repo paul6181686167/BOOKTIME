@@ -1,21 +1,16 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, useContext, createContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 
-// Import des contexts
-import { ThemeProvider, useTheme } from './contexts/ThemeContext';
-
-// Import des hooks
-import { useAdvancedSearch } from './hooks/useAdvancedSearch';
-
 // Import des composants
+import { useAdvancedSearch } from './hooks/useAdvancedSearch';
 import AdvancedSearchBar from './components/AdvancedSearchBar';
+import OpenLibrarySearch from './components/OpenLibrarySearch';
 import BookDetailPage from './components/BookDetailPage';
 import AuthorDetailPage from './components/AuthorDetailPage';
 import OpenLibraryBookPage from './components/OpenLibraryBookPage';
 import OpenLibraryAuthorPage from './components/OpenLibraryAuthorPage';
 
-// CSS
 import './App.css';
 
 // Service d'authentification simple
