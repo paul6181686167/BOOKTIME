@@ -1044,6 +1044,15 @@ function AppContent() {
           defaultCategory={activeTab}
         />
       )}
+      
+      {/* Modal OpenLibrary */}
+      {showOpenLibraryModal && (
+        <OpenLibrarySearch
+          onImport={handleAddBook}
+          onClose={() => setShowOpenLibraryModal(false)}
+          defaultCategory={activeTab}
+        />
+      )}
     </div>
   );
 }
