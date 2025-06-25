@@ -769,40 +769,25 @@ function AppContent() {
   const TabNavigation = () => (
     <div className="mb-6">
       <div className="border-b border-gray-200 dark:border-gray-700">
-        <nav className="-mb-px flex space-x-8">
-          {['roman', 'bd', 'manga'].map((category) => (
+        <nav className="-mb-px flex space-x-12">
+          {[
+            { key: 'roman', label: 'Roman' },
+            { key: 'bd', label: 'Bande Dessinée' },
+            { key: 'manga', label: 'Manga' }
+          ].map((category) => (
             <button
-              key={category}
-              onClick={() => setActiveTab(category)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm capitalize ${
-                activeTab === category
+              key={category.key}
+              onClick={() => setActiveTab(category.key)}
+              className={`py-3 px-2 border-b-2 font-medium text-lg ${
+                activeTab === category.key
                   ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >
-              {category}
+              {category.label}
             </button>
           ))}
         </nav>
-      </div>
-      <div className="mt-4">
-        <div className="flex space-x-4">
-          {['all', 'to_read', 'reading', 'completed'].map((status) => (
-            <button
-              key={status}
-              onClick={() => setActiveStatus(status)}
-              className={`px-3 py-1 rounded-full text-sm ${
-                activeStatus === status
-                  ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
-              }`}
-            >
-              {status === 'all' ? 'Tous' : 
-               status === 'to_read' ? 'À lire' :
-               status === 'reading' ? 'En cours' : 'Terminés'}
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   );
