@@ -14,7 +14,16 @@ export const useAdvancedSearch = (books = []) => {
     hasReview: false
   });
 
-  // Logique de filtrage avancée
+  // Debounce pour la recherche - attendre 300ms après la dernière frappe
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchTerm]);
+
+  // Logique de filtrage avancée utilisant le terme de recherche avec debounce
   const filteredBooks = useMemo(() => {
     if (!books || books.length === 0) return [];
 
