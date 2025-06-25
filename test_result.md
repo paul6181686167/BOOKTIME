@@ -632,6 +632,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Fixed the 'Invalid Host header' issue by creating a .env.development file with DANGEROUSLY_DISABLE_HOST_CHECK=true and HOST=0.0.0.0. The login/registration page now loads correctly and displays the BOOKTIME title, login/registration toggle, and form fields."
+      - working: true
+        agent: "testing"
+        comment: "Login/Registration page has been successfully modified to use only first name and last name fields. Email and password fields have been completely removed from the form. The page displays correctly with the BOOKTIME title and proper form fields."
 
   - task: "Authentication - Registration Form"
     implemented: true
