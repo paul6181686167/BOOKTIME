@@ -5,7 +5,6 @@ import {
   XMarkIcon,
   BookOpenIcon,
   UserIcon,
-  TagIcon,
   GlobeAltIcon,
   ClockIcon,
   BookmarkIcon
