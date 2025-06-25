@@ -796,6 +796,15 @@ function AppContent() {
 
           {/* Actions utilisateur */}
           <div className="flex items-center space-x-3">
+            {/* Bouton Ajouter un livre */}
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+            >
+              <span className="text-lg">+</span>
+              <span className="hidden sm:block">Ajouter</span>
+            </button>
+            
             {/* Bouton Profil */}
             <button
               onClick={() => setShowProfileModal(true)}
