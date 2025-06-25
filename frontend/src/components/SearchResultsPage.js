@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeftIcon, ViewListIcon, ViewGridIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { Squares2X2Icon as ViewGridIcon, ListBulletIcon as ViewListIcon } from '@heroicons/react/24/outline';
 import BookService from '../services/bookService';
 import { useAdvancedSearch } from '../hooks/useAdvancedSearch';
 import AdvancedSearchBar from './AdvancedSearchBar';
