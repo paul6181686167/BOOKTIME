@@ -597,6 +597,69 @@ backend:
         comment: "User-specific data works correctly. Books are properly associated with the user who created them. Users can only see and modify their own books. The user_id field is correctly set when creating a book and used for filtering in all book-related endpoints."
 
 frontend:
+  - task: "Authentication - Login/Registration Page"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: false
+        agent: "testing"
+        comment: "Initial testing showed 'Invalid Host header' error when accessing the application. This is a common issue with React development servers when accessed through a proxy or from a different domain than expected."
+      - working: true
+        agent: "testing"
+        comment: "Fixed the 'Invalid Host header' issue by creating a .env.development file with DANGEROUSLY_DISABLE_HOST_CHECK=true and HOST=0.0.0.0. The login/registration page now loads correctly and displays the BOOKTIME title, login/registration toggle, and form fields."
+
+  - task: "Authentication - Registration Form"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "Registration form works correctly. The form includes all required fields (first name, last name, email, password). Form validation works as expected. Successfully registered a new user (John Doe) and was redirected to the main app interface."
+
+  - task: "Authentication - Login Form"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "Login form works correctly. The form includes email and password fields. Successfully logged in with the registered user credentials and was redirected to the main app interface."
+
+  - task: "Authentication - Session Management"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "Session management works correctly. The user remains logged in after page refresh. Logging out (by removing the token from localStorage) correctly redirects to the login page."
+
   - task: "Main Interface - Tab Navigation"
     implemented: true
     working: true
