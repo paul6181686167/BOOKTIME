@@ -237,14 +237,29 @@ const AdvancedSearchBar = React.memo(({
 
         {/* Boutons d'action dans la barre */}
         <div className="absolute inset-y-0 right-0 flex items-center space-x-1 pr-3">
-          {/* Bouton Open Library */}
-          <button
-            onClick={onOpenLibrarySearch}
-            className="p-1.5 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
-            title="Rechercher sur Open Library"
-          >
-            <GlobeAltIcon className="h-4 w-4" />
-          </button>
+          {/* Bouton Effacer la recherche */}
+          {(localSearchTerm || Object.values(filters || {}).some(v => v !== '' && v !== false)) && (
+            <button
+              onClick={() => {
+                setLocalSearchTerm('');
+                onSearchChange('');
+                onFiltersChange({
+                  category: '',
+                  status: '',
+                  author: '',
+                  saga: '',
+                  yearFrom: '',
+                  yearTo: '',
+                  minRating: '',
+                  hasReview: false
+                });
+              }}
+              className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md transition-colors"
+              title="Effacer la recherche"
+            >
+              <XMarkIcon className="h-4 w-4" />
+            </button>
+          )}
 
           {/* Bouton filtres avec compteur */}
           <button
