@@ -57,21 +57,32 @@ class BooktimeAuthAPITest(unittest.TestCase):
             "last_name": self.test_last_name
         }
         
-        response = requests.post(f"{API_URL}/auth/register", json=user_data)
-        self.assertEqual(response.status_code, 200, f"Registration failed: {response.text}")
+        print(f"Sending registration request to {API_URL}/auth/register with data: {user_data}")
         
-        data = response.json()
-        self.assertIn("access_token", data, "No access token in response")
-        self.assertIn("user", data, "No user data in response")
-        self.assertIn("first_name", data["user"], "No first_name in user data")
-        self.assertIn("last_name", data["user"], "No last_name in user data")
-        
-        # Store token for subsequent tests
-        self.token = data["access_token"]
-        self.user_id = data["user"]["id"]
-        
-        print(f"✅ User registered: {self.test_first_name} {self.test_last_name}")
-        print(f"✅ Token received: {self.token[:10]}...")
+        try:
+            response = requests.post(f"{API_URL}/auth/register", json=user_data)
+            print(f"Response status code: {response.status_code}")
+            print(f"Response headers: {response.headers}")
+            print(f"Response text: {response.text}")
+            
+            self.assertEqual(response.status_code, 200, f"Registration failed: {response.text}")
+            
+            data = response.json()
+            self.assertIn("access_token", data, "No access token in response")
+            self.assertIn("user", data, "No user data in response")
+            self.assertIn("first_name", data["user"], "No first_name in user data")
+            self.assertIn("last_name", data["user"], "No last_name in user data")
+            
+            # Store token for subsequent tests
+            self.token = data["access_token"]
+            self.user_id = data["user"]["id"]
+            
+            print(f"✅ User registered: {self.test_first_name} {self.test_last_name}")
+            print(f"✅ Token received: {self.token[:10]}...")
+            
+        except Exception as e:
+            print(f"❌ Exception during registration: {str(e)}")
+            raise
 
     def test_2_login(self):
         """Test user login with first_name and last_name"""
