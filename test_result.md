@@ -595,6 +595,21 @@ backend:
       - working: true
         agent: "testing"
         comment: "User-specific data works correctly. Books are properly associated with the user who created them. Users can only see and modify their own books. The user_id field is correctly set when creating a book and used for filtering in all book-related endpoints."
+        
+  - task: "Modified Authentication - First Name and Last Name Only"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "Modified authentication system works correctly. The system now uses only first_name and last_name instead of email and password. Registration, login, and user info endpoints work correctly with the new authentication method. Validation for required fields and duplicate users is properly implemented. The JWT token system continues to work correctly for protecting routes."
 
 frontend:
   - task: "Authentication - Login/Registration Page"
