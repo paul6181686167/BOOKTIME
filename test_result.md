@@ -677,11 +677,11 @@ frontend:
 
   - task: "Authentication - Login Form"
     implemented: true
-    working: true
+    working: false
     file: "/app/frontend/src/App.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "testing"
@@ -692,6 +692,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Login form has been successfully modified to use only first name and last name fields. Email and password fields have been removed. Successfully logged in with the registered user's first name and last name, and was redirected to the main app interface."
+      - working: false
+        agent: "testing"
+        comment: "Login form displays correctly with first name and last name fields, but there appears to be an issue with the login process. The backend logs show both successful (200 OK) and failed (400 Bad Request) API responses for login attempts. The frontend doesn't properly redirect to the main application interface after login. This could be due to issues with token handling or routing in the frontend."
 
   - task: "Authentication - Session Management"
     implemented: true
