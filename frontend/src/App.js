@@ -1097,7 +1097,9 @@ function AuthWrapper() {
     <Routes>
       <Route path="/" element={<AppContent />} />
       <Route path="/livre/:bookId" element={<BookDetailPage />} />
+      <Route path="/livre/ol/:workKey" element={<OpenLibraryBookPage />} />
       <Route path="/auteur/:authorName" element={<AuthorDetailPage />} />
+      <Route path="/auteur/ol/:authorName" element={<OpenLibraryAuthorPage />} />
     </Routes>
   ) : <LoginPage />;
 }
