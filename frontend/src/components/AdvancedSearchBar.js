@@ -32,10 +32,8 @@ const AdvancedSearchBar = React.memo(({
 
   // Synchroniser l'état local avec la prop searchTerm
   useEffect(() => {
-    if (searchTerm !== localSearchTerm) {
-      setLocalSearchTerm(searchTerm || '');
-    }
-  }, [searchTerm, localSearchTerm]);
+    setLocalSearchTerm(searchTerm || '');
+  }, [searchTerm]);
 
   // Fonction mémorisée pour gérer les changements d'input
   const handleInputChange = useCallback((e) => {
