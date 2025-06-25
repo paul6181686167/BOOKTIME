@@ -6,16 +6,6 @@ import { toast, Toaster } from 'react-hot-toast';
 // Context imports
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
-// Components imports
-import { AdvancedSearchBar } from './components/AdvancedSearchBar';
-import { useAdvancedSearch } from './hooks/useAdvancedSearch';
-import OpenLibrarySearch from './components/OpenLibrarySearch';
-import SearchResultsPage from './pages/SearchResultsPage';
-import BookDetailPage from './pages/BookDetailPage';
-import OpenLibraryBookPage from './pages/OpenLibraryBookPage';
-import AuthorDetailPage from './pages/AuthorDetailPage';
-import OpenLibraryAuthorPage from './pages/OpenLibraryAuthorPage';
-
 import './App.css';
 
 // Service d'authentification simple
