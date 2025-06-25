@@ -803,7 +803,7 @@ function AppContent() {
               onClick={() => setActiveTab(category.key)}
               className={`py-3 px-2 border-b-2 font-medium text-lg ${
                 activeTab === category.key
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  ? 'border-green-500 text-green-600 dark:text-green-400'
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >
