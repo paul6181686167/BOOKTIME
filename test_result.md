@@ -615,6 +615,21 @@ backend:
         comment: "Frontend authentication has been successfully tested. The login/registration form now only displays first name and last name fields, with no email or password fields present. Registration works correctly with just first name and last name. Login works with the same credentials. The user is properly connected after registration/login and can access the application. The profile modal correctly displays the user's first name and last name. Logout functionality works correctly, redirecting the user back to the login page."
 
 frontend:
+  - task: "Search Bar X Icon Functionality"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/AdvancedSearchBar.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "Code review confirms that the globe icon has been replaced with an X icon (XMarkIcon from Heroicons) in the search bar. The X icon appears conditionally when there's a search term or active filters, and disappears when there's no active search or filters. Clicking on the X icon clears both the search term and all filters. The implementation meets all the requirements."
+
   - task: "Authentication - Login/Registration Page"
     implemented: true
     working: true
