@@ -28,9 +28,9 @@ export const useAdvancedSearch = (books = []) => {
     if (!books || books.length === 0) return [];
 
     return books.filter(book => {
-      // Filtrage par terme de recherche
-      if (searchTerm) {
-        const term = searchTerm.toLowerCase();
+      // Filtrage par terme de recherche (avec debounce)
+      if (debouncedSearchTerm) {
+        const term = debouncedSearchTerm.toLowerCase();
         const matchesTitle = book.title?.toLowerCase().includes(term);
         const matchesAuthor = book.author?.toLowerCase().includes(term);
         const matchesSaga = book.saga?.toLowerCase().includes(term);
