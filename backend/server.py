@@ -140,7 +140,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 
 # Fonctions utilitaires pour l'enrichissement des données
 def get_openlibrary_work_details(work_key):
-    """Récupère les détails d'une œuvre depuis OpenLibrary"""
+    """Récupère les détails d'une œuvre depuis OpenLibrary et traduit les résumés en français"""
     try:
         if not work_key:
             return None
@@ -163,6 +163,29 @@ def get_openlibrary_work_details(work_key):
         editions_url = f"https://openlibrary.org/works/{work_key}/editions.json"
         editions_response = requests.get(editions_url, timeout=10)
         editions_data = editions_response.json() if editions_response.ok else {"entries": []}
+        
+        # Traduire la description si elle existe
+        if work_data.get('description'):
+            description = work_data['description']
+            if isinstance(description, dict):
+                description = description.get('value', '')
+            
+            # Traduire la description en français
+            if description:
+                work_data['description'] = translate_to_french(description)
+        
+        # Traduire la première phrase si elle existe
+        if work_data.get('first_sentence'):
+            first_sentence = work_data['first_sentence']
+            if isinstance(first_sentence, dict):
+                first_sentence = first_sentence.get('value', '')
+            
+            # Traduire la première phrase en français
+            if first_sentence:
+                if isinstance(work_data['first_sentence'], dict):
+                    work_data['first_sentence']['value'] = translate_to_french(first_sentence)
+                else:
+                    work_data['first_sentence'] = translate_to_french(first_sentence)
         
         return {
             "work": work_data,
