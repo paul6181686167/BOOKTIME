@@ -1033,8 +1033,8 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: ["Authentication - Registration Form", "Authentication - Login Form"]
-  stuck_tasks: ["Authentication - Registration Form", "Authentication - Login Form"]
+  current_focus: ["Modified Authentication - First Name and Last Name Only"]
+  stuck_tasks: ["Modified Authentication - First Name and Last Name Only"]
   test_all: false
   test_priority: "high_first"
 
