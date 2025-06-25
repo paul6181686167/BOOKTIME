@@ -598,9 +598,9 @@ backend:
         
   - task: "Modified Authentication - First Name and Last Name Only"
     implemented: true
-    working: true
+    working: false
     file: "/app/backend/server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
     needs_retesting: false
     status_history:
@@ -613,6 +613,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Frontend authentication has been successfully tested. The login/registration form now only displays first name and last name fields, with no email or password fields present. Registration works correctly with just first name and last name. Login works with the same credentials. The user is properly connected after registration/login and can access the application. The profile modal correctly displays the user's first name and last name. Logout functionality works correctly, redirecting the user back to the login page."
+      - working: false
+        agent: "testing"
+        comment: "Backend authentication endpoints are currently not working. All requests to the API return 500 Internal Server Error. The backend logs show a 'ValueError: too many values to unpack (expected 2)' error in the FastAPI middleware stack. This appears to be an issue with the FastAPI application configuration. Attempted to fix the CORS middleware configuration but the error persists. This is a critical issue that needs to be resolved before the authentication endpoints can be tested."
 
 frontend:
   - task: "Search Bar X Icon Functionality"
