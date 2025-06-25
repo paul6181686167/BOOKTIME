@@ -50,6 +50,26 @@ const AdvancedSearchBar = React.memo(({
     return () => clearTimeout(timeoutId);
   }, [onSearchChange]);
 
+  // Synchroniser l'état local avec la prop searchTerm
+  useEffect(() => {
+    if (searchTerm !== localSearchTerm) {
+      setLocalSearchTerm(searchTerm || '');
+    }
+  }, [searchTerm, localSearchTerm]);
+
+  // Fonction mémorisée pour gérer les changements d'input
+  const handleInputChange = useCallback((e) => {
+    const value = e.target.value;
+    setLocalSearchTerm(value);
+    
+    // Déclencher le changement dans le parent avec un petit délai
+    const timeoutId = setTimeout(() => {
+      onSearchChange(value);
+    }, 100);
+    
+    return () => clearTimeout(timeoutId);
+  }, [onSearchChange]);
+
   // Charger les recherches récentes depuis localStorage
   useEffect(() => {
     const saved = localStorage.getItem('booktime-recent-searches');
