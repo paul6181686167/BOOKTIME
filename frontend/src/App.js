@@ -1,19 +1,20 @@
-import React, { useState, useEffect, useContext, createContext } from 'react';
+// Imports
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import toast, { Toaster } from 'react-hot-toast';
+import { toast, Toaster } from 'react-hot-toast';
 
-// Import des contexts
+// Context imports
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
-// Import des hooks et composants
+// Components imports
+import { AdvancedSearchBar } from './components/AdvancedSearchBar';
 import { useAdvancedSearch } from './hooks/useAdvancedSearch';
-import AdvancedSearchBar from './components/AdvancedSearchBar';
 import OpenLibrarySearch from './components/OpenLibrarySearch';
-import BookDetailPage from './components/BookDetailPage';
-import AuthorDetailPage from './components/AuthorDetailPage';
-import OpenLibraryBookPage from './components/OpenLibraryBookPage';
-import OpenLibraryAuthorPage from './components/OpenLibraryAuthorPage';
-import SearchResultsPage from './components/SearchResultsPage';
+import SearchResultsPage from './pages/SearchResultsPage';
+import BookDetailPage from './pages/BookDetailPage';
+import OpenLibraryBookPage from './pages/OpenLibraryBookPage';
+import AuthorDetailPage from './pages/AuthorDetailPage';
+import OpenLibraryAuthorPage from './pages/OpenLibraryAuthorPage';
 
 import './App.css';
 
