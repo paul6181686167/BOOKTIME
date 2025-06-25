@@ -37,25 +37,20 @@ const AdvancedSearchBar = React.memo(({
     }
   }, [searchTerm]);
 
-  // Debounce pour la recherche avec cleanup
-  const [debouncedTerm, setDebouncedTerm] = useState(localSearchTerm);
-  
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (debouncedTerm !== localSearchTerm) {
-        setDebouncedTerm(localSearchTerm);
-        onSearchChange(localSearchTerm);
-      }
-    }, 300);
-    
-    return () => clearTimeout(timeoutId);
-  }, [localSearchTerm, onSearchChange]);
-
   // Fonction mémorisée pour gérer les changements d'input
   const handleInputChange = useCallback((e) => {
     const value = e.target.value;
     setLocalSearchTerm(value);
   }, []);
+
+  // Fonction pour déclencher la recherche
+  const triggerSearch = useCallback(() => {
+    onSearchChange(localSearchTerm);
+    if (localSearchTerm.trim()) {
+      saveRecentSearch(localSearchTerm);
+    }
+    setShowSuggestions(false);
+  }, [localSearchTerm, onSearchChange, saveRecentSearch]);
 
   // Charger les recherches récentes depuis localStorage
   useEffect(() => {
