@@ -335,6 +335,24 @@ class BookService {
 
     return response.json();
   }
+
+  async searchUniversal(query, options = {}) {
+    const params = new URLSearchParams();
+    params.append('q', query);
+    
+    if (options.limit) params.append('limit', options.limit);
+    if (options.category) params.append('category', options.category);
+
+    const response = await fetch(`${this.backendUrl}/api/openlibrary/search-universal?${params}`, {
+      headers: this.getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to search OpenLibrary universally');
+    }
+
+    return response.json();
+  }
 }
 
 const bookService = new BookService();
