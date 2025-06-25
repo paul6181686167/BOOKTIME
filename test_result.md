@@ -1015,8 +1015,8 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: ["Search Bar X Icon Functionality"]
-  stuck_tasks: []
+  current_focus: ["Authentication - Registration Form", "Authentication - Login Form"]
+  stuck_tasks: ["Authentication - Registration Form", "Authentication - Login Form"]
   test_all: false
   test_priority: "high_first"
 
