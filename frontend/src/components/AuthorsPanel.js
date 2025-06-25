@@ -101,7 +101,7 @@ const AuthorsPanel = ({ onAuthorSelect }) => {
                       {category === 'roman' && '📚'} 
                       {category === 'bd' && '🎨'} 
                       {category === 'manga' && '🇯🇵'} 
-                      {category}
+                      {category === 'bd' ? 'bande dessinée' : category}
                     </span>
                   ))}
                 </div>
