@@ -766,7 +766,7 @@ function AppContent() {
             {/* Bouton Ajouter un livre */}
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
             >
               <span className="text-lg">+</span>
               <span className="hidden sm:block">Ajouter</span>
