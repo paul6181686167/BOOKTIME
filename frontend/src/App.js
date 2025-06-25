@@ -483,11 +483,6 @@ function AppContent() {
     setShowOpenLibraryModal(true);
   };
 
-  // Gestionnaire pour ouvrir la recherche Open Library
-  const handleOpenLibrarySearch = () => {
-    setShowOpenLibraryModal(true);
-  };
-
   // Composant Header moderne
   const Header = () => (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
