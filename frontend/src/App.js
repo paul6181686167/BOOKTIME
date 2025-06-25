@@ -5,6 +5,57 @@ import AdvancedSearchBar from './components/AdvancedSearchBar';
 import { useAdvancedSearch } from './hooks/useAdvancedSearch';
 import './App.css';
 
+// Theme Context
+const ThemeContext = createContext();
+
+// Theme Provider
+function ThemeProvider({ children }) {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    // Charger la préférence du mode sombre depuis localStorage
+    const savedTheme = localStorage.getItem('booktime-theme');
+    if (savedTheme === 'dark') {
+      setIsDarkMode(true);
+    } else if (savedTheme === 'light') {
+      setIsDarkMode(false);
+    } else {
+      // Détecter la préférence système
+      setIsDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Appliquer la classe au body et sauvegarder
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('booktime-theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('booktime-theme', 'light');
+    }
+  }, [isDarkMode]);
+
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+  };
+
+  return (
+    <ThemeContext.Provider value={{ isDarkMode, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+// Hook pour utiliser le contexte Theme
+function useTheme() {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  return context;
+}
+
 // Auth Context
 const AuthContext = createContext();
 
@@ -268,18 +319,18 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">📚 BOOKTIME</h1>
-          <p className="text-gray-600">Gérez votre bibliothèque personnelle</p>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">📚 BOOKTIME</h1>
+          <p className="text-gray-600 dark:text-gray-400">Gérez votre bibliothèque personnelle</p>
         </div>
 
-        <div className="flex mb-6 bg-gray-100 rounded-lg p-1">
+        <div className="flex mb-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
           <button
             onClick={() => setIsLogin(true)}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-              isLogin ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'
+              isLogin ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400'
             }`}
           >
             Connexion
@@ -287,7 +338,7 @@ function LoginPage() {
           <button
             onClick={() => setIsLogin(false)}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-              !isLogin ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'
+              !isLogin ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400'
             }`}
           >
             Inscription
@@ -298,7 +349,7 @@ function LoginPage() {
           {!isLogin && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Prénom
                 </label>
                 <input
@@ -306,12 +357,12 @@ function LoginPage() {
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   required={!isLogin}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Nom
                 </label>
                 <input
@@ -319,7 +370,7 @@ function LoginPage() {
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   required={!isLogin}
                 />
               </div>
@@ -327,7 +378,7 @@ function LoginPage() {
           )}
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Email
             </label>
             <input
@@ -335,13 +386,13 @@ function LoginPage() {
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               required
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Mot de passe
             </label>
             <input
@@ -349,7 +400,7 @@ function LoginPage() {
               name="password"
               value={formData.password}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               required
             />
           </div>
@@ -367,6 +418,209 @@ function LoginPage() {
   );
 }
 
+// Profile Modal Component
+function ProfileModal({ isOpen, onClose }) {
+  const { user, logout } = useAuth();
+  const { isDarkMode, toggleTheme } = useTheme();
+  const [stats, setStats] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadStats();
+    }
+  }, [isOpen]);
+
+  const loadStats = async () => {
+    try {
+      setLoading(true);
+      const data = await bookService.getStats();
+      setStats(data);
+    } catch (error) {
+      console.error('Erreur lors du chargement des statistiques:', error);
+      toast.error('Erreur lors du chargement des statistiques');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    onClose();
+    toast.success('Déconnexion réussie');
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-90vh overflow-y-auto">
+        {/* Header */}
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Profil</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {user?.first_name} {user?.last_name}
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          {/* Statistiques */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              📊 Mes Statistiques
+            </h3>
+            
+            {loading ? (
+              <div className="space-y-3">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Stats générales */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      {stats.total_books || 0}
+                    </div>
+                    <div className="text-sm text-blue-600 dark:text-blue-400">Total</div>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                      {stats.completed_books || 0}
+                    </div>
+                    <div className="text-sm text-green-600 dark:text-green-400">Terminés</div>
+                  </div>
+                </div>
+
+                {/* Stats par catégorie */}
+                <div className="space-y-3">
+                  <h4 className="font-medium text-gray-900 dark:text-white">Par catégorie :</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                      <span className="flex items-center text-gray-700 dark:text-gray-300">
+                        📚 Romans
+                      </span>
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {stats.categories?.roman || 0}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                      <span className="flex items-center text-gray-700 dark:text-gray-300">
+                        🎨 BD
+                      </span>
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {stats.categories?.bd || 0}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                      <span className="flex items-center text-gray-700 dark:text-gray-300">
+                        🇯🇵 Mangas
+                      </span>
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {stats.categories?.manga || 0}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stats additionnelles */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <span className="flex items-center text-gray-700 dark:text-gray-300">
+                      👥 Auteurs différents
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {stats.authors_count || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <span className="flex items-center text-gray-700 dark:text-gray-300">
+                      📖 Sagas
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {stats.sagas_count || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <span className="flex items-center text-gray-700 dark:text-gray-300">
+                      📚 En cours
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {stats.reading_books || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <span className="flex items-center text-gray-700 dark:text-gray-300">
+                      📋 À lire
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {stats.to_read_books || 0}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Paramètres */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              ⚙️ Paramètres
+            </h3>
+            
+            <div className="space-y-4">
+              {/* Mode sombre */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <div>
+                  <span className="font-medium text-gray-900 dark:text-white">Mode sombre</span>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Basculer entre thème clair et sombre
+                  </p>
+                </div>
+                <button
+                  onClick={toggleTheme}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                    isDarkMode ? 'bg-blue-600' : 'bg-gray-200'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      isDarkMode ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={handleLogout}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+            >
+              Se déconnecter
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Main App Content
 function AppContent() {
   const { user } = useAuth();
@@ -378,6 +632,7 @@ function AppContent() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showOpenLibraryModal, setShowOpenLibraryModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   // Utiliser le hook de recherche avancée
   const {
@@ -483,7 +738,7 @@ function AppContent() {
     setShowOpenLibraryModal(true);
   };
 
-  // Composant Header moderne
+  // Composant Header moderne avec bouton profil
   const Header = () => (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -522,15 +777,23 @@ function AppContent() {
 
           {/* Actions utilisateur */}
           <div className="flex items-center space-x-3">
-            <span className="hidden sm:block text-sm text-gray-600 dark:text-gray-400">
-              Bonjour, {user?.first_name}
-            </span>
             <button
               onClick={() => setShowAddModal(true)}
               className="flex items-center space-x-1 px-4 py-2 text-sm font-medium text-white bg-booktime-600 border border-transparent rounded-md hover:bg-booktime-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-booktime-500 transition-colors"
             >
               <span className="text-sm">➕</span>
               <span className="hidden sm:inline">Ajouter</span>
+            </button>
+            
+            {/* Bouton Profil */}
+            <button
+              onClick={() => setShowProfileModal(true)}
+              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors profile-button"
+            >
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                {user?.first_name?.charAt(0).toUpperCase()}{user?.last_name?.charAt(0).toUpperCase()}
+              </div>
+              <span className="hidden sm:block">Profil</span>
             </button>
           </div>
         </div>
@@ -541,7 +804,7 @@ function AppContent() {
   // Composant Navigation des onglets
   const TabNavigation = () => (
     <div className="mb-6">
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="-mb-px flex space-x-8">
           {['roman', 'bd', 'manga'].map((category) => (
             <button
@@ -549,8 +812,8 @@ function AppContent() {
               onClick={() => setActiveTab(category)}
               className={`py-2 px-1 border-b-2 font-medium text-sm capitalize ${
                 activeTab === category
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >
               {category}
@@ -566,8 +829,8 @@ function AppContent() {
               onClick={() => setActiveStatus(status)}
               className={`px-3 py-1 rounded-full text-sm ${
                 activeStatus === status
-                  ? 'bg-blue-100 text-blue-800'
-                  : 'bg-gray-100 text-gray-800'
+                  ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
               }`}
             >
               {status === 'all' ? 'Tous' : 
@@ -583,29 +846,29 @@ function AppContent() {
   // Composant Stats
   const StatsPanel = () => (
     <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div className="bg-white p-4 rounded-lg border">
-        <h3 className="text-lg font-semibold text-gray-900">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           {stats.total_books || 0}
         </h3>
-        <p className="text-gray-600">Total</p>
+        <p className="text-gray-600 dark:text-gray-400">Total</p>
       </div>
-      <div className="bg-white p-4 rounded-lg border">
-        <h3 className="text-lg font-semibold text-green-600">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-green-600 dark:text-green-400">
           {stats.completed_books || 0}
         </h3>
-        <p className="text-gray-600">Terminés</p>
+        <p className="text-gray-600 dark:text-gray-400">Terminés</p>
       </div>
-      <div className="bg-white p-4 rounded-lg border">
-        <h3 className="text-lg font-semibold text-yellow-600">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-yellow-600 dark:text-yellow-400">
           {stats.reading_books || 0}
         </h3>
-        <p className="text-gray-600">En cours</p>
+        <p className="text-gray-600 dark:text-gray-400">En cours</p>
       </div>
-      <div className="bg-white p-4 rounded-lg border">
-        <h3 className="text-lg font-semibold text-blue-600">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-blue-600 dark:text-blue-400">
           {stats.to_read_books || 0}
         </h3>
-        <p className="text-gray-600">À lire</p>
+        <p className="text-gray-600 dark:text-gray-400">À lire</p>
       </div>
     </div>
   );
@@ -616,7 +879,7 @@ function AppContent() {
       return (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-gray-200 h-48 rounded-lg animate-pulse"></div>
+            <div key={i} className="bg-gray-200 dark:bg-gray-700 h-48 rounded-lg animate-pulse"></div>
           ))}
         </div>
       );
@@ -627,10 +890,10 @@ function AppContent() {
         <div className="text-center py-12">
           <div className="max-w-md mx-auto">
             <span className="text-6xl mb-4 block">🔍</span>
-            <p className="text-gray-500 text-lg mb-2">
+            <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">
               {searchStats.hasActiveFilters ? 'Aucun livre trouvé' : 'Aucun livre dans votre collection'}
             </p>
-            <p className="text-gray-400 text-sm mb-4">
+            <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">
               {searchStats.hasActiveFilters 
                 ? 'Essayez de modifier vos critères de recherche' 
                 : 'Ajoutez votre premier livre pour commencer !'}
@@ -638,7 +901,7 @@ function AppContent() {
             {searchStats.hasActiveFilters && (
               <button
                 onClick={clearSearch}
-                className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                className="px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors"
               >
                 Effacer la recherche
               </button>
@@ -652,19 +915,19 @@ function AppContent() {
       <div>
         {/* Résumé des résultats */}
         {searchStats.hasActiveFilters && (
-          <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border">
+          <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border dark:border-gray-700">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 <strong>{finalFilteredBooks.length}</strong> livre{finalFilteredBooks.length > 1 ? 's' : ''} trouvé{finalFilteredBooks.length > 1 ? 's' : ''}
                 {searchStats.hiddenCount > 0 && (
-                  <span className="ml-2 text-gray-500">
+                  <span className="ml-2 text-gray-500 dark:text-gray-500">
                     ({searchStats.hiddenCount} masqué{searchStats.hiddenCount > 1 ? 's' : ''})
                   </span>
                 )}
               </span>
               <button
                 onClick={clearSearch}
-                className="text-xs text-blue-500 hover:text-blue-600 underline"
+                className="text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 underline"
               >
                 Effacer les filtres
               </button>
@@ -744,43 +1007,43 @@ function AppContent() {
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 w-full max-w-md">
-          <h2 className="text-xl font-bold mb-4 text-gray-900">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+          <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
             Ajouter un Livre
           </h2>
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Titre *
               </label>
               <input
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData({...formData, title: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 required
               />
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Auteur *
               </label>
               <input
                 type="text"
                 value={formData.author}
                 onChange={(e) => setFormData({...formData, author: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 required
               />
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Catégorie
               </label>
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({...formData, category: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="roman">Roman</option>
                 <option value="bd">BD</option>
@@ -791,7 +1054,7 @@ function AppContent() {
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
               >
                 Annuler
               </button>
@@ -814,17 +1077,17 @@ function AppContent() {
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 w-full max-w-md">
-          <h2 className="text-xl font-bold mb-4 text-gray-900">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+          <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
             {selectedBook.title}
           </h2>
-          <p className="text-gray-600 mb-2">
+          <p className="text-gray-600 dark:text-gray-400 mb-2">
             <strong>Auteur:</strong> {selectedBook.author}
           </p>
-          <p className="text-gray-600 mb-2">
+          <p className="text-gray-600 dark:text-gray-400 mb-2">
             <strong>Catégorie:</strong> {selectedBook.category}
           </p>
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
             <strong>Statut:</strong> {
               selectedBook.status === 'completed' ? 'Terminé' :
               selectedBook.status === 'reading' ? 'En cours' : 'À lire'
@@ -855,7 +1118,7 @@ function AppContent() {
             </button>
             <button
               onClick={() => setSelectedBook(null)}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
             >
               Fermer
             </button>
@@ -866,7 +1129,7 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -877,6 +1140,7 @@ function AppContent() {
 
       <AddBookModal />
       <BookDetailModal />
+      <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
     </div>
   );
 }
@@ -887,10 +1151,10 @@ function AuthWrapper() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement...</p>
+          <p className="text-gray-600 dark:text-gray-400">Chargement...</p>
         </div>
       </div>
     );
@@ -902,21 +1166,23 @@ function AuthWrapper() {
 // Main App Component
 function App() {
   return (
-    <AuthProvider>
-      <div className="App">
-        <AuthWrapper />
-        <Toaster 
-          position="top-right"
-          toastOptions={{
-            duration: 3000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-          }}
-        />
-      </div>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <div className="App">
+          <AuthWrapper />
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              duration: 3000,
+              style: {
+                background: '#363636',
+                color: '#fff',
+              },
+            }}
+          />
+        </div>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
