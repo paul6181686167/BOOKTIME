@@ -478,32 +478,59 @@ function AppContent() {
     }
   };
 
-  // Composant Header
+  // Gestionnaire pour ouvrir la recherche Open Library
+  const handleOpenLibrarySearch = () => {
+    setShowOpenLibraryModal(true);
+  };
+
+  // Composant Header moderne
   const Header = () => (
-    <header className="bg-white border-b border-gray-200">
+    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-6">
-          <div className="flex items-center">
-            <h1 className="text-3xl font-bold text-gray-900">
+        <div className="flex justify-between items-center py-4">
+          <div className="flex items-center space-x-4">
+            <h1 className="text-2xl font-bold text-booktime-600 dark:text-booktime-400">
               📚 BOOKTIME
             </h1>
+            {/* Indicateur de recherche active */}
+            {searchStats.hasActiveFilters && (
+              <div className="hidden sm:flex items-center space-x-2 px-3 py-1 bg-booktime-50 dark:bg-booktime-900/20 rounded-full">
+                <span className="text-xs text-booktime-600 dark:text-booktime-400 font-medium">
+                  {searchStats.filtered} / {searchStats.total} livres
+                </span>
+                <button
+                  onClick={clearSearch}
+                  className="text-booktime-500 hover:text-booktime-600 dark:text-booktime-400 dark:hover:text-booktime-300 text-xs underline"
+                >
+                  Effacer
+                </button>
+              </div>
+            )}
           </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-gray-600">
-              Bonjour, {user?.first_name} {user?.last_name}
-            </span>
-            <input
-              type="text"
-              placeholder="Rechercher un livre..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-md"
+          
+          {/* Barre de recherche centrale */}
+          <div className="flex-1 max-w-lg mx-4">
+            <AdvancedSearchBar
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              books={books}
+              filters={filters}
+              onFiltersChange={setFilters}
+              onOpenLibrarySearch={handleOpenLibrarySearch}
             />
+          </div>
+
+          {/* Actions utilisateur */}
+          <div className="flex items-center space-x-3">
+            <span className="hidden sm:block text-sm text-gray-600 dark:text-gray-400">
+              Bonjour, {user?.first_name}
+            </span>
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="flex items-center space-x-1 px-4 py-2 text-sm font-medium text-white bg-booktime-600 border border-transparent rounded-md hover:bg-booktime-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-booktime-500 transition-colors"
             >
-              ➕ Ajouter
+              <span className="text-sm">➕</span>
+              <span className="hidden sm:inline">Ajouter</span>
             </button>
           </div>
         </div>
