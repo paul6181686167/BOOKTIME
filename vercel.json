@@ -1,9 +1,10 @@
 {
   "version": 2,
   "name": "booktime-frontend",
-  "buildCommand": "cd frontend && yarn install && yarn build",
-  "outputDirectory": "frontend/build",
-  "installCommand": "cd frontend && yarn install",
+  "framework": "create-react-app",
+  "installCommand": "yarn install",
+  "buildCommand": "yarn build",
+  "outputDirectory": "build",
   "routes": [
     {
       "handle": "filesystem"
