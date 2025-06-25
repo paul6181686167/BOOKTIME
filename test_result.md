@@ -723,6 +723,21 @@ frontend:
         agent: "testing"
         comment: "The AdvancedSearchBar component is implemented correctly. It includes a search input, filter button, and suggestions dropdown. The search input works correctly, showing suggestions as you type. The filter button opens a panel with various filter options including category, status, author, saga, year range, and rating filters. The component is responsive and adapts well to different screen sizes."
 
+  - task: "Advanced Search - useAdvancedSearch Hook"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/hooks/useAdvancedSearch.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "The useAdvancedSearch hook is implemented correctly. It provides functionality for filtering books by various criteria including title, author, saga, description, genre, publisher, and ISBN. The hook also provides search statistics and functions for clearing search and applying quick filters. The filtering logic works correctly, showing only books that match all selected criteria."
+        
   - task: "UI Modifications - Statistics Removal and Book Layout"
     implemented: true
     working: true
