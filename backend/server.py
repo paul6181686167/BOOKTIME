@@ -3,7 +3,6 @@ from flask_cors import CORS
 from pymongo import MongoClient
 from datetime import datetime, timedelta
 import uuid
-import bcrypt
 import jwt
 import os
 import requests
