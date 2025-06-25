@@ -92,19 +92,21 @@ def register():
     data = request.get_json()
     
     # Validation des données
-    if not data or not all(k in data for k in ('email', 'password', 'first_name', 'last_name')):
-        return jsonify({'error': 'Missing required fields'}), 400
+    if not data or not all(k in data for k in ('first_name', 'last_name')):
+        return jsonify({'error': 'Missing required fields (first_name, last_name)'}), 400
     
-    # Vérifier si l'utilisateur existe déjà
-    if users_collection.find_one({"email": data['email']}):
-        return jsonify({'error': 'Email already registered'}), 400
+    # Vérifier si l'utilisateur existe déjà (même prénom et nom)
+    existing_user = users_collection.find_one({
+        "first_name": data['first_name'], 
+        "last_name": data['last_name']
+    })
+    if existing_user:
+        return jsonify({'error': 'User with this name already exists'}), 400
     
     # Créer le nouvel utilisateur
     user_id = str(uuid.uuid4())
     user = {
         "id": user_id,
-        "email": data['email'],
-        "password": hash_password(data['password']),
         "first_name": data['first_name'],
         "last_name": data['last_name'],
         "created_at": datetime.utcnow(),
@@ -121,7 +123,6 @@ def register():
         "token_type": "bearer",
         "user": {
             "id": user_id,
-            "email": data['email'],
             "first_name": data['first_name'],
             "last_name": data['last_name']
         }
