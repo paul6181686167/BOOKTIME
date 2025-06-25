@@ -1,191 +1,89 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
-import toast from 'react-hot-toast';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import toast, { Toaster } from 'react-hot-toast';
+
+// Import des contexts
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+
+// Import des hooks
+import { useAdvancedSearch } from './hooks/useAdvancedSearch';
+
+// Import des composants
 import AdvancedSearchBar from './components/AdvancedSearchBar';
 import BookDetailPage from './components/BookDetailPage';
 import AuthorDetailPage from './components/AuthorDetailPage';
 import OpenLibraryBookPage from './components/OpenLibraryBookPage';
 import OpenLibraryAuthorPage from './components/OpenLibraryAuthorPage';
-import openLibraryService from './services/OpenLibraryService';
-import { useAdvancedSearch } from './hooks/useAdvancedSearch';
+
+// CSS
 import './App.css';
 
-// Theme Context
-const ThemeContext = createContext();
-
-// Theme Provider
-function ThemeProvider({ children }) {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  useEffect(() => {
-    // Charger la préférence du mode sombre depuis localStorage
-    const savedTheme = localStorage.getItem('booktime-theme');
-    if (savedTheme === 'dark') {
-      setIsDarkMode(true);
-    } else if (savedTheme === 'light') {
-      setIsDarkMode(false);
-    } else {
-      // Détecter la préférence système
-      setIsDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Appliquer la classe au body et sauvegarder
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('booktime-theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('booktime-theme', 'light');
-    }
-  }, [isDarkMode]);
-
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-  };
-
-  return (
-    <ThemeContext.Provider value={{ isDarkMode, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
-}
-
-// Hook pour utiliser le contexte Theme
-function useTheme() {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
+// Service d'authentification simple
+class AuthService {
+  constructor() {
+    this.backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
   }
-  return context;
-}
 
-// Auth Context
-const AuthContext = createContext();
-
-// Auth Provider
-function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
-
-  useEffect(() => {
-    // Check if user is logged in on app start
-    const token = localStorage.getItem('token');
-    if (token) {
-      checkAuthStatus(token);
-    } else {
-      setLoading(false);
-    }
-  }, []);
-
-  const checkAuthStatus = async (token) => {
+  async login(firstName, lastName) {
     try {
-      const response = await fetch(`${backendUrl}/api/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-      } else {
-        localStorage.removeItem('token');
-      }
-    } catch (error) {
-      console.error('Error checking auth status:', error);
-      localStorage.removeItem('token');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const login = async (firstName, lastName) => {
-    try {
-      const response = await fetch(`${backendUrl}/api/auth/login`, {
+      const response = await fetch(`${this.backendUrl}/api/auth/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ first_name: firstName, last_name: lastName })
       });
 
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem('token', data.access_token);
-        setUser(data.user);
-        return { success: true };
+        localStorage.setItem('user', JSON.stringify(data.user));
+        return { success: true, user: data.user };
       } else {
         const error = await response.json();
-        return { success: false, error: error.detail };
+        return { success: false, error: error.error };
       }
     } catch (error) {
       return { success: false, error: 'Erreur de connexion' };
     }
-  };
+  }
 
-  const register = async (firstName, lastName) => {
+  async register(firstName, lastName) {
     try {
-      const response = await fetch(`${backendUrl}/api/auth/register`, {
+      const response = await fetch(`${this.backendUrl}/api/auth/register`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          first_name: firstName,
-          last_name: lastName
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ first_name: firstName, last_name: lastName })
       });
 
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem('token', data.access_token);
-        setUser(data.user);
-        return { success: true };
+        localStorage.setItem('user', JSON.stringify(data.user));
+        return { success: true, user: data.user };
       } else {
         const error = await response.json();
-        return { success: false, error: error.detail };
+        return { success: false, error: error.error };
       }
     } catch (error) {
-      return { success: false, error: 'Erreur lors de l\'inscription' };
+      return { success: false, error: 'Erreur de création de compte' };
     }
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
-  };
-
-  const value = {
-    user,
-    loading,
-    login,
-    register,
-    logout
-  };
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-// Hook to use auth context
-function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context;
+
+  logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  }
+
+  getCurrentUser() {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+  }
+
+  isAuthenticated() {
+    return localStorage.getItem('token') !== null;
+  }
 }
 
-// Book Service
+// Service de livres
 class BookService {
   constructor() {
     this.backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
@@ -199,12 +97,8 @@ class BookService {
     };
   }
 
-  async getBooks(category = null, status = null) {
-    const params = new URLSearchParams();
-    if (category) params.append('category', category);
-    if (status) params.append('status', status);
-
-    const response = await fetch(`${this.backendUrl}/api/books?${params}`, {
+  async getBooks() {
+    const response = await fetch(`${this.backendUrl}/api/books`, {
       headers: this.getAuthHeaders()
     });
 
@@ -335,25 +229,58 @@ class BookService {
 
     return response.json();
   }
-
-  async searchUniversal(query, options = {}) {
-    const params = new URLSearchParams();
-    params.append('q', query);
-    
-    if (options.limit) params.append('limit', options.limit);
-    if (options.category) params.append('category', options.category);
-
-    const response = await fetch(`${this.backendUrl}/api/openlibrary/search-universal?${params}`, {
-      headers: this.getAuthHeaders()
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to search OpenLibrary universally');
-    }
-
-    return response.json();
-  }
 }
+
+// Context d'authentification
+const AuthContext = createContext();
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const authService = new AuthService();
+
+  useEffect(() => {
+    // Vérifier si l'utilisateur est connecté
+    const currentUser = authService.getCurrentUser();
+    setUser(currentUser);
+    setLoading(false);
+  }, []);
+
+  const login = async (firstName, lastName) => {
+    const result = await authService.login(firstName, lastName);
+    if (result.success) {
+      setUser(result.user);
+    }
+    return result;
+  };
+
+  const register = async (firstName, lastName) => {
+    const result = await authService.register(firstName, lastName);
+    if (result.success) {
+      setUser(result.user);
+    }
+    return result;
+  };
+
+  const logout = () => {
+    authService.logout();
+    setUser(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
 
 const bookService = new BookService();
 
@@ -465,7 +392,7 @@ function LoginPage() {
 // Profile Modal Component
 function ProfileModal({ isOpen, onClose }) {
   const { user, logout } = useAuth();
-  const { isDarkMode, toggleTheme } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
 
@@ -637,12 +564,12 @@ function ProfileModal({ isOpen, onClose }) {
                 <button
                   onClick={toggleTheme}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                    isDarkMode ? 'bg-blue-600' : 'bg-gray-200'
+                    isDark ? 'bg-blue-600' : 'bg-gray-200'
                   }`}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      isDarkMode ? 'translate-x-6' : 'translate-x-1'
+                      isDark ? 'translate-x-6' : 'translate-x-1'
                     }`}
                   />
                 </button>
@@ -801,19 +728,19 @@ function AppContent() {
           <div className="flex items-center space-x-4">
             <button 
               onClick={() => navigate('/')}
-              className="text-2xl font-bold text-booktime-600 dark:text-booktime-400 hover:opacity-80 transition-opacity"
+              className="text-2xl font-bold text-blue-600 dark:text-blue-400 hover:opacity-80 transition-opacity"
             >
               📚 BOOKTIME
             </button>
             {/* Indicateur de recherche active */}
             {searchStats.hasActiveFilters && (
-              <div className="hidden sm:flex items-center space-x-2 px-3 py-1 bg-booktime-50 dark:bg-booktime-900/20 rounded-full">
-                <span className="text-xs text-booktime-600 dark:text-booktime-400 font-medium">
+              <div className="hidden sm:flex items-center space-x-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-full">
+                <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
                   {searchStats.filtered} / {searchStats.total} livres
                 </span>
                 <button
                   onClick={clearSearch}
-                  className="text-booktime-500 hover:text-booktime-600 dark:text-booktime-400 dark:hover:text-booktime-300 text-xs underline"
+                  className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-xs underline"
                 >
                   Effacer
                 </button>
