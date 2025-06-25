@@ -7,6 +7,8 @@ import jwt
 import os
 import requests
 from functools import wraps
+import re
+import time
 
 # Chargement des variables d'environnement
 from dotenv import load_dotenv
@@ -26,6 +28,7 @@ client = MongoClient(MONGO_URL)
 db = client.booktime
 users_collection = db.users
 books_collection = db.books
+authors_collection = db.authors  # Nouvelle collection pour le cache des auteurs
 
 def create_access_token(data: dict):
     to_encode = data.copy()
@@ -63,6 +66,121 @@ def token_required(f):
         return f(current_user, *args, **kwargs)
     
     return decorated
+
+# Fonctions utilitaires pour l'enrichissement des données
+def get_openlibrary_work_details(work_key):
+    """Récupère les détails d'une œuvre depuis OpenLibrary"""
+    try:
+        if not work_key:
+            return None
+            
+        # Nettoyer la clé work
+        if work_key.startswith('/works/'):
+            work_key = work_key[7:]
+        elif work_key.startswith('OL') and work_key.endswith('W'):
+            pass  # Déjà au bon format
+        else:
+            return None
+            
+        work_url = f"https://openlibrary.org/works/{work_key}.json"
+        response = requests.get(work_url, timeout=10)
+        response.raise_for_status()
+        
+        work_data = response.json()
+        
+        # Récupérer aussi les éditions pour plus d'infos
+        editions_url = f"https://openlibrary.org/works/{work_key}/editions.json"
+        editions_response = requests.get(editions_url, timeout=10)
+        editions_data = editions_response.json() if editions_response.ok else {"entries": []}
+        
+        return {
+            "work": work_data,
+            "editions": editions_data.get("entries", [])[:5]  # Limiter à 5 éditions
+        }
+    except Exception as e:
+        print(f"Erreur lors de la récupération des détails OpenLibrary: {e}")
+        return None
+
+def get_wikipedia_author_info(author_name):
+    """Récupère les informations biographiques d'un auteur depuis Wikipedia"""
+    try:
+        # Recherche de la page Wikipedia
+        search_url = "https://fr.wikipedia.org/api/rest_v1/page/summary/" + author_name.replace(" ", "_")
+        response = requests.get(search_url, timeout=10)
+        
+        if not response.ok:
+            # Essayer avec l'API de recherche
+            search_api_url = "https://fr.wikipedia.org/w/api.php"
+            search_params = {
+                "action": "query",
+                "format": "json",
+                "list": "search",
+                "srsearch": author_name,
+                "srlimit": 1
+            }
+            search_response = requests.get(search_api_url, params=search_params, timeout=10)
+            search_data = search_response.json()
+            
+            if search_data.get("query", {}).get("search"):
+                page_title = search_data["query"]["search"][0]["title"]
+                summary_url = f"https://fr.wikipedia.org/api/rest_v1/page/summary/{page_title.replace(' ', '_')}"
+                response = requests.get(summary_url, timeout=10)
+        
+        if response.ok:
+            data = response.json()
+            return {
+                "title": data.get("title", ""),
+                "extract": data.get("extract", ""),
+                "thumbnail": data.get("thumbnail", {}).get("source", "") if data.get("thumbnail") else "",
+                "birth_date": None,  # Pourrait être extrait avec plus de travail
+                "death_date": None,
+                "wikipedia_url": data.get("content_urls", {}).get("desktop", {}).get("page", "")
+            }
+    except Exception as e:
+        print(f"Erreur lors de la récupération des infos Wikipedia: {e}")
+    
+    return None
+
+def get_author_books_from_openlibrary(author_name):
+    """Récupère tous les livres d'un auteur depuis OpenLibrary"""
+    try:
+        # Rechercher les œuvres de l'auteur
+        search_url = "https://openlibrary.org/search.json"
+        params = {
+            "author": author_name,
+            "limit": 50,
+            "fields": "key,title,first_publish_year,cover_i,isbn,publisher,subject,language"
+        }
+        
+        response = requests.get(search_url, params=params, timeout=15)
+        response.raise_for_status()
+        
+        data = response.json()
+        books = []
+        
+        for item in data.get("docs", []):
+            book = {
+                "title": item.get("title", ""),
+                "first_publish_year": item.get("first_publish_year"),
+                "cover_id": item.get("cover_i"),
+                "isbn": item.get("isbn", [None])[0] if item.get("isbn") else None,
+                "publisher": ", ".join(item.get("publisher", [])),
+                "subjects": item.get("subject", [])[:5],  # Limiter à 5 sujets
+                "languages": item.get("language", []),
+                "openlibrary_key": item.get("key", "")
+            }
+            
+            # Construire l'URL de la couverture si disponible
+            if book["cover_id"]:
+                book["cover_url"] = f"https://covers.openlibrary.org/b/id/{book['cover_id']}-M.jpg"
+            
+            books.append(book)
+        
+        return sorted(books, key=lambda x: x.get("first_publish_year") or 0, reverse=True)
+        
+    except Exception as e:
+        print(f"Erreur lors de la récupération des livres de l'auteur: {e}")
+        return []
 
 # Routes de base
 @app.route('/')
@@ -177,6 +295,99 @@ def get_books(current_user):
     books = list(books_collection.find(filter_dict, {"_id": 0}))
     return jsonify(books)
 
+@app.route('/api/books/<book_id>', methods=['GET'])
+@token_required
+def get_book_details(current_user, book_id):
+    """Récupère les détails complets d'un livre avec enrichissement OpenLibrary"""
+    try:
+        # Récupérer le livre de base
+        book = books_collection.find_one({"id": book_id, "user_id": current_user["id"]}, {"_id": 0})
+        if not book:
+            return jsonify({'error': 'Book not found'}), 404
+        
+        # Chercher des informations enrichies via OpenLibrary si on a un ISBN ou titre+auteur
+        enriched_data = {}
+        
+        if book.get('isbn'):
+            # Recherche par ISBN
+            try:
+                search_url = f"https://openlibrary.org/search.json?isbn={book['isbn']}&limit=1"
+                response = requests.get(search_url, timeout=10)
+                if response.ok:
+                    search_data = response.json()
+                    if search_data.get('docs'):
+                        doc = search_data['docs'][0]
+                        work_key = doc.get('key', '').replace('/works/', '') if doc.get('key') else None
+                        
+                        if work_key:
+                            work_details = get_openlibrary_work_details(work_key)
+                            if work_details:
+                                work = work_details['work']
+                                editions = work_details['editions']
+                                
+                                enriched_data = {
+                                    'description': work.get('description', {}).get('value', '') if isinstance(work.get('description'), dict) else work.get('description', ''),
+                                    'subjects': work.get('subjects', [])[:10],
+                                    'first_sentence': work.get('first_sentence', {}).get('value', '') if isinstance(work.get('first_sentence'), dict) else '',
+                                    'work_key': work_key,
+                                    'openlibrary_url': f"https://openlibrary.org/works/{work_key}",
+                                    'editions_info': []
+                                }
+                                
+                                # Informations des éditions
+                                for edition in editions:
+                                    edition_info = {
+                                        'title': edition.get('title', ''),
+                                        'publish_date': edition.get('publish_date', ''),
+                                        'publishers': edition.get('publishers', []),
+                                        'number_of_pages': edition.get('number_of_pages'),
+                                        'languages': [lang.get('key', '').replace('/languages/', '') for lang in edition.get('languages', [])],
+                                        'isbn_10': edition.get('isbn_10', []),
+                                        'isbn_13': edition.get('isbn_13', [])
+                                    }
+                                    enriched_data['editions_info'].append(edition_info)
+            except Exception as e:
+                print(f"Erreur enrichissement par ISBN: {e}")
+        
+        # Si pas d'enrichissement par ISBN, essayer par titre/auteur
+        if not enriched_data and book.get('title') and book.get('author'):
+            try:
+                search_query = f"{book['title']} {book['author']}"
+                search_url = f"https://openlibrary.org/search.json?q={requests.utils.quote(search_query)}&limit=1"
+                response = requests.get(search_url, timeout=10)
+                if response.ok:
+                    search_data = response.json()
+                    if search_data.get('docs'):
+                        doc = search_data['docs'][0]
+                        # Vérifier que c'est bien le bon livre (titre similaire)
+                        if doc.get('title', '').lower() in book['title'].lower() or book['title'].lower() in doc.get('title', '').lower():
+                            enriched_data = {
+                                'subjects': doc.get('subject', [])[:10],
+                                'first_publish_year': doc.get('first_publish_year'),
+                                'publishers': doc.get('publisher', [])[:5],
+                                'languages': doc.get('language', [])[:3],
+                                'cover_id': doc.get('cover_i'),
+                                'openlibrary_key': doc.get('key', '')
+                            }
+                            
+                            if enriched_data['cover_id']:
+                                enriched_data['cover_url_large'] = f"https://covers.openlibrary.org/b/id/{enriched_data['cover_id']}-L.jpg"
+            except Exception as e:
+                print(f"Erreur enrichissement par titre/auteur: {e}")
+        
+        # Combiner les données
+        result = {
+            **book,
+            'enriched_data': enriched_data,
+            'last_enriched': datetime.utcnow().isoformat()
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Erreur lors de la récupération des détails du livre: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
 @app.route('/api/books', methods=['POST'])
 @token_required
 def create_book(current_user):
@@ -204,6 +415,9 @@ def create_book(current_user):
         "publisher": data.get('publisher', ''),
         "genre": data.get('genre', []),
         "pages": data.get('pages'),
+        "pages_read": data.get('pages_read', 0),
+        "reading_start_date": data.get('reading_start_date'),
+        "reading_end_date": data.get('reading_end_date'),
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     }
@@ -246,6 +460,139 @@ def delete_book(current_user, book_id):
         return jsonify({'error': 'Book not found'}), 404
     
     return jsonify({"message": "Book deleted successfully"})
+
+# Routes pour les auteurs
+@app.route('/api/authors/<author_name>', methods=['GET'])
+@token_required
+def get_author_details(current_user, author_name):
+    """Récupère les détails complets d'un auteur avec enrichissement"""
+    try:
+        # Décoder le nom de l'auteur de l'URL
+        author_name = requests.utils.unquote(author_name)
+        
+        # Vérifier le cache d'abord
+        cached_author = authors_collection.find_one({"name": author_name})
+        if cached_author and cached_author.get('last_updated'):
+            # Vérifier si le cache est encore valide (24h)
+            last_updated = cached_author['last_updated']
+            if isinstance(last_updated, str):
+                last_updated = datetime.fromisoformat(last_updated.replace('Z', '+00:00'))
+            
+            if (datetime.utcnow() - last_updated.replace(tzinfo=None)).total_seconds() < 86400:  # 24h
+                # Ajouter les statistiques utilisateur
+                user_books = list(books_collection.find({"user_id": current_user["id"], "author": author_name}, {"_id": 0}))
+                cached_author['user_stats'] = {
+                    'books_read': len([b for b in user_books if b.get('status') == 'completed']),
+                    'books_reading': len([b for b in user_books if b.get('status') == 'reading']),
+                    'books_to_read': len([b for b in user_books if b.get('status') == 'to_read']),
+                    'total_user_books': len(user_books),
+                    'user_books': user_books
+                }
+                cached_author.pop('_id', None)
+                return jsonify(cached_author)
+        
+        # Récupérer les informations depuis les APIs externes
+        author_info = {
+            'name': author_name,
+            'biography': '',
+            'photo_url': '',
+            'birth_date': None,
+            'death_date': None,
+            'wikipedia_url': '',
+            'bibliography': [],
+            'last_updated': datetime.utcnow()
+        }
+        
+        # Récupérer les infos Wikipedia
+        wikipedia_info = get_wikipedia_author_info(author_name)
+        if wikipedia_info:
+            author_info.update({
+                'biography': wikipedia_info.get('extract', ''),
+                'photo_url': wikipedia_info.get('thumbnail', ''),
+                'wikipedia_url': wikipedia_info.get('wikipedia_url', ''),
+                'birth_date': wikipedia_info.get('birth_date'),
+                'death_date': wikipedia_info.get('death_date')
+            })
+        
+        # Récupérer la bibliographie depuis OpenLibrary
+        openlibrary_books = get_author_books_from_openlibrary(author_name)
+        author_info['bibliography'] = openlibrary_books
+        
+        # Sauvegarder en cache
+        authors_collection.replace_one(
+            {"name": author_name},
+            author_info,
+            upsert=True
+        )
+        
+        # Ajouter les statistiques utilisateur
+        user_books = list(books_collection.find({"user_id": current_user["id"], "author": author_name}, {"_id": 0}))
+        author_info['user_stats'] = {
+            'books_read': len([b for b in user_books if b.get('status') == 'completed']),
+            'books_reading': len([b for b in user_books if b.get('status') == 'reading']),
+            'books_to_read': len([b for b in user_books if b.get('status') == 'to_read']),
+            'total_user_books': len(user_books),
+            'user_books': user_books
+        }
+        
+        return jsonify(author_info)
+        
+    except Exception as e:
+        print(f"Erreur lors de la récupération des détails de l'auteur: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/authors/<author_name>/books', methods=['GET'])
+@token_required
+def get_author_books(current_user, author_name):
+    """Récupère tous les livres d'un auteur (utilisateur + OpenLibrary)"""
+    try:
+        author_name = requests.utils.unquote(author_name)
+        
+        # Livres de l'utilisateur
+        user_books = list(books_collection.find({"user_id": current_user["id"], "author": author_name}, {"_id": 0}))
+        
+        # Bibliographie complète depuis OpenLibrary
+        openlibrary_books = get_author_books_from_openlibrary(author_name)
+        
+        # Combiner et marquer les livres lus
+        all_books = []
+        user_titles = {book['title'].lower() for book in user_books}
+        
+        for ol_book in openlibrary_books:
+            # Vérifier si l'utilisateur a ce livre
+            user_book = next((ub for ub in user_books if ub['title'].lower() == ol_book['title'].lower()), None)
+            
+            book_data = {
+                **ol_book,
+                'in_user_library': user_book is not None,
+                'user_status': user_book.get('status') if user_book else None,
+                'user_rating': user_book.get('rating') if user_book else None,
+                'user_book_id': user_book.get('id') if user_book else None
+            }
+            all_books.append(book_data)
+        
+        # Ajouter les livres de l'utilisateur qui ne sont pas dans OpenLibrary
+        for user_book in user_books:
+            if user_book['title'].lower() not in {book['title'].lower() for book in all_books}:
+                all_books.append({
+                    **user_book,
+                    'in_user_library': True,
+                    'user_status': user_book.get('status'),
+                    'user_rating': user_book.get('rating'),
+                    'user_book_id': user_book.get('id'),
+                    'from_user_library': True
+                })
+        
+        return jsonify({
+            'author': author_name,
+            'total_books': len(all_books),
+            'user_books_count': len(user_books),
+            'books': sorted(all_books, key=lambda x: x.get('first_publish_year') or 0, reverse=True)
+        })
+        
+    except Exception as e:
+        print(f"Erreur lors de la récupération des livres de l'auteur: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 # Route des statistiques
 @app.route('/api/stats')
