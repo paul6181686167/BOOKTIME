@@ -105,21 +105,61 @@ export const bookService = {
     }
   },
 
-  // Récupérer les sagas
+  // Récupérer toutes les séries
+  async getSeries() {
+    try {
+      const response = await api.get('/api/series');
+      return response.data;
+    } catch (error) {
+      throw new Error('Erreur lors de la récupération des séries');
+    }
+  },
+
+  // Récupérer les détails d'une série
+  async getSeriesDetails(seriesName) {
+    try {
+      const response = await api.get(`/api/series/${encodeURIComponent(seriesName)}`);
+      return response.data;
+    } catch (error) {
+      throw new Error('Erreur lors de la récupération des détails de la série');
+    }
+  },
+
+  // Récupérer les livres d'une série
+  async getSeriesBooks(seriesName) {
+    try {
+      const response = await api.get(`/api/series/${encodeURIComponent(seriesName)}/books`);
+      return response.data;
+    } catch (error) {
+      throw new Error('Erreur lors de la récupération des livres de la série');
+    }
+  },
+
+  // Rechercher des séries
+  async searchSeries(query) {
+    try {
+      const response = await api.get('/api/search/series', { params: { q: query } });
+      return response.data;
+    } catch (error) {
+      throw new Error('Erreur lors de la recherche de séries');
+    }
+  },
+
+  // Récupérer les sagas (pour compatibilité)
   async getSagas() {
     try {
-      const response = await api.get('/api/sagas');
-      return response.data;
+      const response = await this.getSeries();
+      return response.series || [];
     } catch (error) {
       throw new Error('Erreur lors de la récupération des sagas');
     }
   },
 
-  // Récupérer les livres d'une saga
+  // Récupérer les livres d'une saga (pour compatibilité)
   async getBooksBySaga(sagaName) {
     try {
-      const response = await api.get(`/api/sagas/${encodeURIComponent(sagaName)}/books`);
-      return response.data;
+      const response = await this.getSeriesBooks(sagaName);
+      return response.books || [];
     } catch (error) {
       throw new Error('Erreur lors de la récupération des livres de la saga');
     }
