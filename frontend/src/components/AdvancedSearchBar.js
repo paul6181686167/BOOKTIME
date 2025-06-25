@@ -95,14 +95,13 @@ const AdvancedSearchBar = React.memo(({
     localStorage.setItem('booktime-recent-searches', JSON.stringify(newRecentSearches));
   }, [recentSearches]);
 
-  // Générer des suggestions basées sur la recherche et les livres existants
-  useEffect(() => {
-    if (!searchTerm || searchTerm.length < 2) {
-      setSuggestions([]);
-      return;
+  // Générer des suggestions basées sur la recherche et les livres existants (mémorisé)
+  const memoizedSuggestions = useMemo(() => {
+    if (!localSearchTerm || localSearchTerm.length < 2) {
+      return [];
     }
 
-    const term = searchTerm.toLowerCase();
+    const term = localSearchTerm.toLowerCase();
     const bookSuggestions = [];
     const authorSuggestions = new Set();
     const sagaSuggestions = new Set();
@@ -148,8 +147,13 @@ const AdvancedSearchBar = React.memo(({
       ...Array.from(sagaSuggestions).slice(0, 2)
     ].slice(0, 6);
 
-    setSuggestions(allSuggestions);
-  }, [searchTerm, books]);
+    return allSuggestions;
+  }, [localSearchTerm, books]);
+
+  // Mettre à jour les suggestions quand les suggestions mémorisées changent
+  useEffect(() => {
+    setSuggestions(memoizedSuggestions);
+  }, [memoizedSuggestions]);
 
   // Gérer la sélection d'une suggestion
   const handleSuggestionClick = (suggestion) => {
