@@ -293,9 +293,9 @@ function LoginPage() {
 
     let result;
     if (isLogin) {
-      result = await login(formData.email, formData.password);
+      result = await login(formData.firstName, formData.lastName);
     } else {
-      result = await register(formData.email, formData.password, formData.firstName, formData.lastName);
+      result = await register(formData.firstName, formData.lastName);
     }
 
     if (result.success) {
