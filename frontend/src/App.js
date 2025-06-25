@@ -338,7 +338,7 @@ function LoginPage() {
           <button
             onClick={() => setIsLogin(true)}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-              isLogin ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400'
+              isLogin ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm' : 'text-gray-600 dark:text-gray-400'
             }`}
           >
             Connexion
@@ -346,7 +346,7 @@ function LoginPage() {
           <button
             onClick={() => setIsLogin(false)}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-              !isLogin ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400'
+              !isLogin ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm' : 'text-gray-600 dark:text-gray-400'
             }`}
           >
             Inscription
