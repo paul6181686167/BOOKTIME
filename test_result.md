@@ -656,11 +656,11 @@ frontend:
 
   - task: "Authentication - Registration Form"
     implemented: true
-    working: true
+    working: false
     file: "/app/frontend/src/App.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "testing"
@@ -671,6 +671,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Registration form has been successfully modified to use only first name and last name fields. Email and password fields have been removed. The form validation works correctly, requiring both fields. Successfully registered a new user with just first name and last name, and was redirected to the main app interface."
+      - working: false
+        agent: "testing"
+        comment: "Registration form displays correctly with first name and last name fields, but there appears to be an issue with the registration process. The backend logs show successful API responses (200 OK) for registration attempts, but the frontend doesn't properly redirect to the main application interface after registration. This could be due to issues with token handling or routing in the frontend."
 
   - task: "Authentication - Login Form"
     implemented: true
