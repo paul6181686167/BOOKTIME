@@ -190,13 +190,13 @@ const OpenLibrarySearch = ({ onImport, onClose, defaultCategory = 'roman' }) => 
 
                     {/* Import Buttons */}
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {['roman', 'bd', 'manga'].map((category) => (
+                      {[{value: 'roman', label: 'Roman'}, {value: 'bd', label: 'Bande dessinée'}, {value: 'manga', label: 'Manga'}].map((categoryOption) => (
                         <button
-                          key={category}
-                          onClick={() => handleImport(book, category)}
+                          key={categoryOption.value}
+                          onClick={() => handleImport(book, categoryOption.value)}
                           disabled={importing[book.ol_key]}
                           className={`px-3 py-1 text-xs font-medium rounded transition-colors disabled:cursor-not-allowed ${
-                            category === defaultCategory
+                            categoryOption.value === defaultCategory
                               ? 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white'
                               : 'bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 text-gray-700 dark:bg-gray-600 dark:hover:bg-gray-500 dark:disabled:bg-gray-700 dark:text-gray-300'
                           }`}
@@ -207,7 +207,7 @@ const OpenLibrarySearch = ({ onImport, onClose, defaultCategory = 'roman' }) => 
                               <span>Import...</span>
                             </div>
                           ) : (
-                            `Import ${category}`
+                            `Import ${categoryOption.label}`
                           )}
                         </button>
                       ))}
