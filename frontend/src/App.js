@@ -483,7 +483,7 @@ function ProfileModal({ isOpen, onClose }) {
                     </div>
                     <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                       <span className="flex items-center text-gray-700 dark:text-gray-300">
-                        🎨 BD
+                        🎨 Bande dessinée
                       </span>
                       <span className="font-medium text-gray-900 dark:text-white">
                         {stats.categories?.bd || 0}
