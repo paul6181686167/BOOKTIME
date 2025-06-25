@@ -873,7 +873,7 @@ function AppContent() {
     </div>
   );
 
-  // Composant Grille de livres
+  // Composant Grille de livres réorganisée
   const BookGrid = () => {
     if (loading) {
       return (
@@ -884,6 +884,82 @@ function AppContent() {
         </div>
       );
     }
+
+    // Séparer les livres par statut et trier par année de publication
+    const readingBooks = finalFilteredBooks
+      .filter(book => book.status === 'reading')
+      .sort((a, b) => (a.publication_year || 0) - (b.publication_year || 0));
+    
+    const toReadBooks = finalFilteredBooks
+      .filter(book => book.status === 'to_read')
+      .sort((a, b) => (a.publication_year || 0) - (b.publication_year || 0));
+
+    const renderBookSection = (books, title) => {
+      if (books.length === 0) return null;
+
+      return (
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+            {title === 'En cours de lecture' ? '📖' : '📚'} {title}
+            <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+              ({books.length} livre{books.length > 1 ? 's' : ''})
+            </span>
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {books.map((book) => (
+              <div
+                key={book.id}
+                onClick={() => setSelectedBook(book)}
+                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 cursor-pointer hover:shadow-lg transition-all hover:scale-105 group"
+              >
+                <div className="aspect-[2/3] bg-gray-100 dark:bg-gray-700 rounded mb-2 flex items-center justify-center overflow-hidden">
+                  {book.cover_url ? (
+                    <img
+                      src={book.cover_url}
+                      alt={book.title}
+                      className="w-full h-full object-cover rounded group-hover:scale-110 transition-transform duration-300"
+                    />
+                  ) : (
+                    <span className="text-4xl">📖</span>
+                  )}
+                </div>
+                <h3 className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                  {book.title}
+                </h3>
+                <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                  {book.author}
+                </p>
+                {book.publication_year && (
+                  <p className="text-xs text-gray-500 dark:text-gray-500 truncate">
+                    {book.publication_year}
+                  </p>
+                )}
+                {book.saga && (
+                  <p className="text-xs text-booktime-600 dark:text-booktime-400 truncate mt-1">
+                    📚 {book.saga}
+                  </p>
+                )}
+                <div className="mt-2 flex items-center justify-between">
+                  <span className={`inline-block px-2 py-1 rounded-full text-xs ${
+                    book.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
+                    book.status === 'reading' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
+                    'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
+                  }`}>
+                    {book.status === 'completed' ? '✅' :
+                     book.status === 'reading' ? '📖' : '📚'}
+                  </span>
+                  {book.rating && (
+                    <span className="text-xs text-yellow-500">
+                      {'⭐'.repeat(book.rating)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    };
 
     if (finalFilteredBooks.length === 0) {
       return (
@@ -935,54 +1011,11 @@ function AppContent() {
           </div>
         )}
 
-        {/* Grille de livres */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {finalFilteredBooks.map((book) => (
-            <div
-              key={book.id}
-              onClick={() => setSelectedBook(book)}
-              className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 cursor-pointer hover:shadow-lg transition-all hover:scale-105 group"
-            >
-              <div className="aspect-[2/3] bg-gray-100 dark:bg-gray-700 rounded mb-2 flex items-center justify-center overflow-hidden">
-                {book.cover_url ? (
-                  <img
-                    src={book.cover_url}
-                    alt={book.title}
-                    className="w-full h-full object-cover rounded group-hover:scale-110 transition-transform duration-300"
-                  />
-                ) : (
-                  <span className="text-4xl">📖</span>
-                )}
-              </div>
-              <h3 className="font-medium text-sm text-gray-900 dark:text-white truncate">
-                {book.title}
-              </h3>
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                {book.author}
-              </p>
-              {book.saga && (
-                <p className="text-xs text-booktime-600 dark:text-booktime-400 truncate mt-1">
-                  📚 {book.saga}
-                </p>
-              )}
-              <div className="mt-2 flex items-center justify-between">
-                <span className={`inline-block px-2 py-1 rounded-full text-xs ${
-                  book.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
-                  book.status === 'reading' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
-                  'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
-                }`}>
-                  {book.status === 'completed' ? '✅' :
-                   book.status === 'reading' ? '📖' : '📚'}
-                </span>
-                {book.rating && (
-                  <span className="text-xs text-yellow-500">
-                    {'⭐'.repeat(book.rating)}
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Livres en cours de lecture */}
+        {renderBookSection(readingBooks, 'En cours de lecture')}
+
+        {/* Livres à lire */}
+        {renderBookSection(toReadBooks, 'À lire')}
       </div>
     );
   };
