@@ -1057,6 +1057,189 @@ async def import_from_openlibrary(
         print(f"Erreur lors de l'import OpenLibrary: {e}")
         raise HTTPException(status_code=500, detail='Erreur lors de l\'import du livre')
 
+# Routes pour les séries
+@app.get("/api/series")
+async def get_series(current_user = Depends(get_current_user)):
+    """Récupérer toutes les séries de l'utilisateur avec statistiques"""
+    try:
+        # Récupérer tous les livres de l'utilisateur qui ont une saga
+        books_with_saga = list(books_collection.find(
+            {"user_id": current_user["id"], "saga": {"$ne": "", "$exists": True}}, 
+            {"_id": 0}
+        ))
+        
+        # Grouper par saga
+        series_map = {}
+        for book in books_with_saga:
+            saga_name = book.get("saga", "")
+            if saga_name:
+                if saga_name not in series_map:
+                    series_map[saga_name] = {
+                        "name": saga_name,
+                        "books": [],
+                        "total_books": 0,
+                        "completed_books": 0,
+                        "reading_books": 0,
+                        "to_read_books": 0,
+                        "author": book.get("author", ""),
+                        "category": book.get("category", "roman"),
+                        "cover_url": book.get("cover_url", ""),
+                        "description": ""
+                    }
+                
+                series_map[saga_name]["books"].append(book)
+                series_map[saga_name]["total_books"] += 1
+                
+                # Compter par statut
+                status = book.get("status", "to_read")
+                if status == "completed":
+                    series_map[saga_name]["completed_books"] += 1
+                elif status == "reading":
+                    series_map[saga_name]["reading_books"] += 1
+                else:
+                    series_map[saga_name]["to_read_books"] += 1
+        
+        # Trier les livres par numéro de tome dans chaque série
+        for series in series_map.values():
+            series["books"].sort(key=lambda x: x.get("volume_number", 0) or 0)
+            # Utiliser la description du premier livre si pas de description série
+            if series["books"] and not series["description"]:
+                series["description"] = series["books"][0].get("description", "")
+        
+        # Convertir en liste et trier par nom de série
+        series_list = sorted(series_map.values(), key=lambda x: x["name"])
+        
+        return {
+            "series": series_list,
+            "total_series": len(series_list)
+        }
+        
+    except Exception as e:
+        print(f"Erreur lors de la récupération des séries: {e}")
+        raise HTTPException(status_code=500, detail='Internal server error')
+
+@app.get("/api/series/{series_name}")
+async def get_series_details(series_name: str, current_user = Depends(get_current_user)):
+    """Récupérer les détails d'une série spécifique"""
+    try:
+        # Récupérer tous les livres de cette série
+        books = list(books_collection.find(
+            {"user_id": current_user["id"], "saga": series_name}, 
+            {"_id": 0}
+        ))
+        
+        if not books:
+            raise HTTPException(status_code=404, detail='Series not found')
+        
+        # Trier par numéro de tome
+        books.sort(key=lambda x: x.get("volume_number", 0) or 0)
+        
+        # Calculer les statistiques
+        stats = {
+            "total_books": len(books),
+            "completed_books": len([b for b in books if b.get("status") == "completed"]),
+            "reading_books": len([b for b in books if b.get("status") == "reading"]),
+            "to_read_books": len([b for b in books if b.get("status") == "to_read"]),
+        }
+        
+        # Informations générales de la série
+        first_book = books[0]
+        series_info = {
+            "name": series_name,
+            "author": first_book.get("author", ""),
+            "category": first_book.get("category", "roman"),
+            "description": first_book.get("description", ""),
+            "cover_url": first_book.get("cover_url", ""),
+            "books": books,
+            "stats": stats
+        }
+        
+        return series_info
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Erreur lors de la récupération des détails de la série: {e}")
+        raise HTTPException(status_code=500, detail='Internal server error')
+
+@app.get("/api/series/{series_name}/books")
+async def get_series_books(series_name: str, current_user = Depends(get_current_user)):
+    """Récupérer tous les livres d'une série"""
+    try:
+        books = list(books_collection.find(
+            {"user_id": current_user["id"], "saga": series_name}, 
+            {"_id": 0}
+        ))
+        
+        if not books:
+            raise HTTPException(status_code=404, detail='Series not found')
+        
+        # Trier par numéro de tome
+        books.sort(key=lambda x: x.get("volume_number", 0) or 0)
+        
+        return {
+            "series_name": series_name,
+            "books": books,
+            "total_books": len(books)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Erreur lors de la récupération des livres de la série: {e}")
+        raise HTTPException(status_code=500, detail='Internal server error')
+
+@app.get("/api/search/series")
+async def search_series(q: str, current_user = Depends(get_current_user)):
+    """Rechercher des séries par nom"""
+    try:
+        if not q:
+            return {"series": [], "books": []}
+        
+        # Rechercher dans les séries existantes
+        series_books = list(books_collection.find(
+            {
+                "user_id": current_user["id"], 
+                "saga": {"$regex": q, "$options": "i", "$ne": ""}
+            }, 
+            {"_id": 0}
+        ))
+        
+        # Grouper par saga
+        series_map = {}
+        for book in series_books:
+            saga_name = book.get("saga", "")
+            if saga_name:
+                if saga_name not in series_map:
+                    series_map[saga_name] = {
+                        "name": saga_name,
+                        "books_count": 0,
+                        "author": book.get("author", ""),
+                        "category": book.get("category", "roman"),
+                        "cover_url": book.get("cover_url", ""),
+                        "first_book": book
+                    }
+                series_map[saga_name]["books_count"] += 1
+        
+        # Rechercher aussi dans les titres de livres
+        title_books = list(books_collection.find(
+            {
+                "user_id": current_user["id"], 
+                "title": {"$regex": q, "$options": "i"}
+            }, 
+            {"_id": 0}
+        ))
+        
+        return {
+            "series": list(series_map.values()),
+            "books": title_books,
+            "query": q
+        }
+        
+    except Exception as e:
+        print(f"Erreur lors de la recherche de séries: {e}")
+        raise HTTPException(status_code=500, detail='Internal server error')
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
