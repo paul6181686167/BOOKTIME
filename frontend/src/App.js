@@ -1076,6 +1076,7 @@ function AuthWrapper() {
   return user ? (
     <Routes>
       <Route path="/" element={<AppContent />} />
+      <Route path="/recherche" element={<SearchResultsPage />} />
       <Route path="/livre/:bookId" element={<BookDetailPage />} />
       <Route path="/livre/ol/:workKey" element={<OpenLibraryBookPage />} />
       <Route path="/auteur/:authorName" element={<AuthorDetailPage />} />
