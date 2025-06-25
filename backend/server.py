@@ -952,6 +952,111 @@ async def get_openlibrary_book_details(work_key: str, current_user = Depends(get
         print(f"Erreur lors de la récupération des détails du livre OpenLibrary: {e}")
         raise HTTPException(status_code=500, detail='Internal server error')
 
+@app.post("/api/openlibrary/import")
+async def import_from_openlibrary(
+    import_data: dict, 
+    current_user = Depends(get_current_user)
+):
+    """Importer un livre depuis OpenLibrary directement dans la collection utilisateur"""
+    try:
+        ol_key = import_data.get('ol_key')
+        category = import_data.get('category', 'roman')
+        
+        if not ol_key:
+            raise HTTPException(status_code=400, detail='Clé OpenLibrary manquante')
+        
+        # Récupérer les détails du livre depuis OpenLibrary
+        book_details = get_openlibrary_work_details(ol_key)
+        if not book_details:
+            raise HTTPException(status_code=404, detail='Livre non trouvé sur OpenLibrary')
+        
+        work = book_details['work']
+        editions = book_details['editions']
+        
+        # Construire les données du livre
+        book_data = {
+            'title': work.get('title', ''),
+            'category': category,
+            'status': 'to_read',  # Par défaut
+            'description': work.get('description', ''),
+            'subjects': work.get('subjects', [])[:10],
+            'first_sentence': work.get('first_sentence', ''),
+        }
+        
+        # Récupérer l'auteur principal
+        if work.get('authors'):
+            try:
+                first_author = work['authors'][0]
+                if isinstance(first_author, dict) and first_author.get('author'):
+                    author_key = first_author['author']['key'].replace('/authors/', '')
+                    author_response = requests.get(f"https://openlibrary.org/authors/{author_key}.json", timeout=10)
+                    if author_response.ok:
+                        author_data = author_response.json()
+                        book_data['author'] = author_data.get('name', 'Auteur inconnu')
+                    else:
+                        book_data['author'] = 'Auteur inconnu'
+                else:
+                    book_data['author'] = 'Auteur inconnu'
+            except:
+                book_data['author'] = 'Auteur inconnu'
+        else:
+            book_data['author'] = 'Auteur inconnu'
+        
+        # Récupérer des infos depuis les éditions
+        if editions:
+            first_edition = editions[0]
+            book_data['publication_year'] = first_edition.get('publish_date', '')
+            book_data['publisher'] = ', '.join(first_edition.get('publishers', []))
+            if first_edition.get('isbn_13'):
+                book_data['isbn'] = first_edition['isbn_13'][0]
+            elif first_edition.get('isbn_10'):
+                book_data['isbn'] = first_edition['isbn_10'][0]
+            book_data['pages'] = first_edition.get('number_of_pages')
+            
+            # Couverture
+            if first_edition.get('covers'):
+                cover_id = first_edition['covers'][0]
+                book_data['cover_url'] = f"https://covers.openlibrary.org/b/id/{cover_id}-M.jpg"
+        
+        # Vérifier si le livre existe déjà dans la collection
+        existing_book = None
+        if book_data.get('isbn'):
+            existing_book = books_collection.find_one({
+                "user_id": current_user["id"],
+                "isbn": book_data['isbn']
+            })
+        
+        if not existing_book and book_data.get('title') and book_data.get('author'):
+            existing_book = books_collection.find_one({
+                "user_id": current_user["id"],
+                "title": {"$regex": re.escape(book_data['title']), "$options": "i"},
+                "author": {"$regex": re.escape(book_data['author']), "$options": "i"}
+            })
+        
+        if existing_book:
+            raise HTTPException(status_code=409, detail='Ce livre existe déjà dans votre collection')
+        
+        # Créer le livre
+        book_id = str(uuid.uuid4())
+        final_book = {
+            "id": book_id,
+            "user_id": current_user["id"],
+            **book_data,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        
+        books_collection.insert_one(final_book)
+        final_book.pop("_id", None)
+        
+        return final_book
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Erreur lors de l'import OpenLibrary: {e}")
+        raise HTTPException(status_code=500, detail='Erreur lors de l\'import du livre')
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
