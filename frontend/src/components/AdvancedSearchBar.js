@@ -37,11 +37,17 @@ const AdvancedSearchBar = React.memo(({
     }
   }, [searchTerm]);
 
-  // Fonction mémorisée pour gérer les changements d'input
+  // Fonction mémorisée pour gérer les changements d'input avec debounce
   const handleInputChange = useCallback((e) => {
     const value = e.target.value;
     setLocalSearchTerm(value);
-    onSearchChange(value);
+    
+    // Utiliser un timeout pour éviter trop d'appels
+    const timeoutId = setTimeout(() => {
+      onSearchChange(value);
+    }, 300);
+    
+    return () => clearTimeout(timeoutId);
   }, [onSearchChange]);
 
   // Charger les recherches récentes depuis localStorage
