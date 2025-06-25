@@ -9,6 +9,10 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 // Service imports
 import { bookService } from './services/bookService';
 
+// Component imports
+import AdvancedSearchBar from './components/AdvancedSearchBar';
+import { useAdvancedSearch } from './hooks/useAdvancedSearch';
+
 import './App.css';
 
 // Service d'authentification simple
