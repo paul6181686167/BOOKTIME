@@ -432,11 +432,15 @@ function ProfileModal({ isOpen, onClose }) {
   return (
     <div 
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={handleBackdropClick}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
     >
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col">
         {/* Header fixe */}
-        <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-t-2xl">
+        <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Profil</h2>
@@ -447,7 +451,7 @@ function ProfileModal({ isOpen, onClose }) {
             <button
               onClick={onClose}
               className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              title="Fermer"
+              title="Fermer le profil"
             >
               ✕
             </button>
