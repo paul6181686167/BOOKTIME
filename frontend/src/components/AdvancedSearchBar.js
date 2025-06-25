@@ -36,11 +36,18 @@ const AdvancedSearchBar = React.memo(({
     }
   }, [searchTerm]);
 
-  // Fonction mémorisée pour gérer les changements d'input
-  const handleInputChange = useCallback((e) => {
-    const value = e.target.value;
-    setLocalSearchTerm(value);
-  }, []);
+  // Sauvegarder les recherches récentes (mémorisé)
+  const saveRecentSearch = useCallback((term) => {
+    if (!term.trim() || term.length < 2) return;
+    
+    const newRecentSearches = [
+      term,
+      ...recentSearches.filter(search => search !== term)
+    ].slice(0, 5); // Garder seulement les 5 dernières
+    
+    setRecentSearches(newRecentSearches);
+    localStorage.setItem('booktime-recent-searches', JSON.stringify(newRecentSearches));
+  }, [recentSearches]);
 
   // Fonction pour déclencher la recherche
   const triggerSearch = useCallback(() => {
