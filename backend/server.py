@@ -1,5 +1,6 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pymongo import MongoClient
 from datetime import datetime, timedelta
 import uuid
@@ -9,13 +10,23 @@ import requests
 from functools import wraps
 import re
 import time
+from pydantic import BaseModel
+from typing import Optional, List
 
 # Chargement des variables d'environnement
 from dotenv import load_dotenv
 load_dotenv()
 
-app = Flask(__name__)
-CORS(app)
+app = FastAPI(title="BookTime API", description="Votre bibliothèque personnelle")
+
+# Configuration CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Configuration
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017/booktime")
@@ -28,7 +39,53 @@ client = MongoClient(MONGO_URL)
 db = client.booktime
 users_collection = db.users
 books_collection = db.books
-authors_collection = db.authors  # Nouvelle collection pour le cache des auteurs
+authors_collection = db.authors
+
+# Security
+security = HTTPBearer()
+
+# Modèles Pydantic
+class UserAuth(BaseModel):
+    first_name: str
+    last_name: str
+
+class BookCreate(BaseModel):
+    title: str
+    author: str
+    category: str = "roman"
+    description: str = ""
+    saga: str = ""
+    cover_url: str = ""
+    status: str = "to_read"
+    rating: Optional[int] = None
+    review: str = ""
+    publication_year: Optional[int] = None
+    isbn: str = ""
+    publisher: str = ""
+    genre: List[str] = []
+    pages: Optional[int] = None
+    pages_read: int = 0
+    reading_start_date: Optional[str] = None
+    reading_end_date: Optional[str] = None
+
+class BookUpdate(BaseModel):
+    title: Optional[str] = None
+    author: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    saga: Optional[str] = None
+    cover_url: Optional[str] = None
+    status: Optional[str] = None
+    rating: Optional[int] = None
+    review: Optional[str] = None
+    publication_year: Optional[int] = None
+    isbn: Optional[str] = None
+    publisher: Optional[str] = None
+    genre: Optional[List[str]] = None
+    pages: Optional[int] = None
+    pages_read: Optional[int] = None
+    reading_start_date: Optional[str] = None
+    reading_end_date: Optional[str] = None
 
 def create_access_token(data: dict):
     to_encode = data.copy()
@@ -37,35 +94,18 @@ def create_access_token(data: dict):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def token_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = None
-        auth_header = request.headers.get('Authorization')
-        
-        if auth_header:
-            try:
-                token = auth_header.split(" ")[1]  # Bearer <token>
-            except IndexError:
-                return jsonify({'message': 'Token format invalid!'}), 401
-        
-        if not token:
-            return jsonify({'message': 'Token is missing!'}), 401
-        
-        try:
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            current_user_id = payload.get('sub')
-            current_user = users_collection.find_one({"id": current_user_id})
-            if not current_user:
-                return jsonify({'message': 'User not found!'}), 401
-        except jwt.ExpiredSignatureError:
-            return jsonify({'message': 'Token has expired!'}), 401
-        except jwt.InvalidTokenError:
-            return jsonify({'message': 'Token is invalid!'}), 401
-        
-        return f(current_user, *args, **kwargs)
-    
-    return decorated
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        current_user_id = payload.get('sub')
+        current_user = users_collection.find_one({"id": current_user_id})
+        if not current_user:
+            raise HTTPException(status_code=401, detail='User not found!')
+        return current_user
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail='Token has expired!')
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail='Token is invalid!')
 
 # Fonctions utilitaires pour l'enrichissement des données
 def get_openlibrary_work_details(work_key):
@@ -183,42 +223,36 @@ def get_author_books_from_openlibrary(author_name):
         return []
 
 # Routes de base
-@app.route('/')
-def read_root():
-    return jsonify({"message": "BookTime API - Votre bibliothèque personnelle"})
+@app.get("/")
+async def read_root():
+    return {"message": "BookTime API - Votre bibliothèque personnelle"}
 
-@app.route('/health')
-def health():
+@app.get("/health")
+async def health():
     try:
         # Test de connexion à la base de données
         client.admin.command('ping')
-        return jsonify({"status": "ok", "database": "connected", "timestamp": datetime.utcnow().isoformat()})
+        return {"status": "ok", "database": "connected", "timestamp": datetime.utcnow().isoformat()}
     except Exception as e:
-        return jsonify({"status": "error", "message": f"Database connection error: {str(e)}"}), 500
+        raise HTTPException(status_code=500, detail=f"Database connection error: {str(e)}")
 
 # Routes d'authentification
-@app.route('/api/auth/register', methods=['POST'])
-def register():
-    data = request.get_json()
-    
-    # Validation des données
-    if not data or not all(k in data for k in ('first_name', 'last_name')):
-        return jsonify({'error': 'Missing required fields (first_name, last_name)'}), 400
-    
+@app.post("/api/auth/register")
+async def register(user_data: UserAuth):
     # Vérifier si l'utilisateur existe déjà (même prénom et nom)
     existing_user = users_collection.find_one({
-        "first_name": data['first_name'], 
-        "last_name": data['last_name']
+        "first_name": user_data.first_name, 
+        "last_name": user_data.last_name
     })
     if existing_user:
-        return jsonify({'error': 'User with this name already exists'}), 400
+        raise HTTPException(status_code=400, detail='User with this name already exists')
     
     # Créer le nouvel utilisateur
     user_id = str(uuid.uuid4())
     user = {
         "id": user_id,
-        "first_name": data['first_name'],
-        "last_name": data['last_name'],
+        "first_name": user_data.first_name,
+        "last_name": user_data.last_name,
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     }
@@ -228,36 +262,30 @@ def register():
     # Créer le token d'accès
     access_token = create_access_token(data={"sub": user_id})
     
-    return jsonify({
+    return {
         "access_token": access_token,
         "token_type": "bearer",
         "user": {
             "id": user_id,
-            "first_name": data['first_name'],
-            "last_name": data['last_name']
+            "first_name": user_data.first_name,
+            "last_name": user_data.last_name
         }
-    })
+    }
 
-@app.route('/api/auth/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    
-    # Validation des données
-    if not data or not all(k in data for k in ('first_name', 'last_name')):
-        return jsonify({'error': 'Missing first_name or last_name'}), 400
-    
+@app.post("/api/auth/login")
+async def login(user_data: UserAuth):
     # Trouver l'utilisateur
     user = users_collection.find_one({
-        "first_name": data['first_name'], 
-        "last_name": data['last_name']
+        "first_name": user_data.first_name, 
+        "last_name": user_data.last_name
     })
     if not user:
-        return jsonify({'error': 'User not found'}), 401
+        raise HTTPException(status_code=401, detail='User not found')
     
     # Créer le token d'accès
     access_token = create_access_token(data={"sub": user["id"]})
     
-    return jsonify({
+    return {
         "access_token": access_token,
         "token_type": "bearer",
         "user": {
@@ -265,25 +293,23 @@ def login():
             "first_name": user["first_name"],
             "last_name": user["last_name"]
         }
-    })
+    }
 
-@app.route('/api/auth/me')
-@token_required
-def get_me(current_user):
-    return jsonify({
+@app.get("/api/auth/me")
+async def get_me(current_user = Depends(get_current_user)):
+    return {
         "id": current_user["id"],
         "first_name": current_user["first_name"],
         "last_name": current_user["last_name"]
-    })
+    }
 
 # Routes pour les livres
-@app.route('/api/books', methods=['GET'])
-@token_required
-def get_books(current_user):
-    # Récupérer les paramètres de filtre
-    category = request.args.get('category')
-    status = request.args.get('status')
-    
+@app.get("/api/books")
+async def get_books(
+    category: Optional[str] = None,
+    status: Optional[str] = None,
+    current_user = Depends(get_current_user)
+):
     # Construire le filtre
     filter_dict = {"user_id": current_user["id"]}
     if category:
@@ -293,17 +319,16 @@ def get_books(current_user):
     
     # Récupérer les livres
     books = list(books_collection.find(filter_dict, {"_id": 0}))
-    return jsonify(books)
+    return books
 
-@app.route('/api/books/<book_id>', methods=['GET'])
-@token_required
-def get_book_details(current_user, book_id):
+@app.get("/api/books/{book_id}")
+async def get_book_details(book_id: str, current_user = Depends(get_current_user)):
     """Récupère les détails complets d'un livre avec enrichissement OpenLibrary"""
     try:
         # Récupérer le livre de base
         book = books_collection.find_one({"id": book_id, "user_id": current_user["id"]}, {"_id": 0})
         if not book:
-            return jsonify({'error': 'Book not found'}), 404
+            raise HTTPException(status_code=404, detail='Book not found')
         
         # Chercher des informations enrichies via OpenLibrary si on a un ISBN ou titre+auteur
         enriched_data = {}
@@ -382,62 +407,36 @@ def get_book_details(current_user, book_id):
             'last_enriched': datetime.utcnow().isoformat()
         }
         
-        return jsonify(result)
+        return result
         
     except Exception as e:
         print(f"Erreur lors de la récupération des détails du livre: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
+        raise HTTPException(status_code=500, detail='Internal server error')
 
-@app.route('/api/books', methods=['POST'])
-@token_required
-def create_book(current_user):
-    data = request.get_json()
-    
-    # Validation des données essentielles
-    if not data or not all(k in data for k in ('title', 'author')):
-        return jsonify({'error': 'Missing title or author'}), 400
-    
+@app.post("/api/books")
+async def create_book(book_data: BookCreate, current_user = Depends(get_current_user)):
     book_id = str(uuid.uuid4())
     book = {
         "id": book_id,
         "user_id": current_user["id"],
-        "title": data['title'],
-        "author": data['author'],
-        "category": data.get('category', 'roman'),
-        "description": data.get('description', ''),
-        "saga": data.get('saga', ''),
-        "cover_url": data.get('cover_url', ''),
-        "status": data.get('status', 'to_read'),
-        "rating": data.get('rating'),
-        "review": data.get('review', ''),
-        "publication_year": data.get('publication_year'),
-        "isbn": data.get('isbn', ''),
-        "publisher": data.get('publisher', ''),
-        "genre": data.get('genre', []),
-        "pages": data.get('pages'),
-        "pages_read": data.get('pages_read', 0),
-        "reading_start_date": data.get('reading_start_date'),
-        "reading_end_date": data.get('reading_end_date'),
+        **book_data.dict(),
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     }
     
     books_collection.insert_one(book)
     book.pop("_id", None)  # Retirer l'ObjectId de MongoDB
-    return jsonify(book), 201
+    return book
 
-@app.route('/api/books/<book_id>', methods=['PUT'])
-@token_required
-def update_book(current_user, book_id):
-    data = request.get_json()
-    
+@app.put("/api/books/{book_id}")
+async def update_book(book_id: str, updates: BookUpdate, current_user = Depends(get_current_user)):
     # Vérifier que le livre appartient à l'utilisateur
     book = books_collection.find_one({"id": book_id, "user_id": current_user["id"]})
     if not book:
-        return jsonify({'error': 'Book not found'}), 404
+        raise HTTPException(status_code=404, detail='Book not found')
     
     # Préparer les mises à jour
-    update_data = {k: v for k, v in data.items() if v is not None}
+    update_data = {k: v for k, v in updates.dict().items() if v is not None}
     update_data["updated_at"] = datetime.utcnow()
     
     # Mettre à jour le livre
@@ -448,28 +447,23 @@ def update_book(current_user, book_id):
     
     # Retourner le livre mis à jour
     updated_book = books_collection.find_one({"id": book_id}, {"_id": 0})
-    return jsonify(updated_book)
+    return updated_book
 
-@app.route('/api/books/<book_id>', methods=['DELETE'])
-@token_required
-def delete_book(current_user, book_id):
+@app.delete("/api/books/{book_id}")
+async def delete_book(book_id: str, current_user = Depends(get_current_user)):
     # Vérifier que le livre appartient à l'utilisateur
     result = books_collection.delete_one({"id": book_id, "user_id": current_user["id"]})
     
     if result.deleted_count == 0:
-        return jsonify({'error': 'Book not found'}), 404
+        raise HTTPException(status_code=404, detail='Book not found')
     
-    return jsonify({"message": "Book deleted successfully"})
+    return {"message": "Book deleted successfully"}
 
 # Routes pour les auteurs
-@app.route('/api/authors/<author_name>', methods=['GET'])
-@token_required
-def get_author_details(current_user, author_name):
+@app.get("/api/authors/{author_name}")
+async def get_author_details(author_name: str, current_user = Depends(get_current_user)):
     """Récupère les détails complets d'un auteur avec enrichissement"""
     try:
-        # Décoder le nom de l'auteur de l'URL
-        author_name = requests.utils.unquote(author_name)
-        
         # Vérifier le cache d'abord
         cached_author = authors_collection.find_one({"name": author_name})
         if cached_author and cached_author.get('last_updated'):
@@ -489,7 +483,7 @@ def get_author_details(current_user, author_name):
                     'user_books': user_books
                 }
                 cached_author.pop('_id', None)
-                return jsonify(cached_author)
+                return cached_author
         
         # Récupérer les informations depuis les APIs externes
         author_info = {
@@ -535,19 +529,16 @@ def get_author_details(current_user, author_name):
             'user_books': user_books
         }
         
-        return jsonify(author_info)
+        return author_info
         
     except Exception as e:
         print(f"Erreur lors de la récupération des détails de l'auteur: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
+        raise HTTPException(status_code=500, detail='Internal server error')
 
-@app.route('/api/authors/<author_name>/books', methods=['GET'])
-@token_required
-def get_author_books(current_user, author_name):
+@app.get("/api/authors/{author_name}/books")
+async def get_author_books(author_name: str, current_user = Depends(get_current_user)):
     """Récupère tous les livres d'un auteur (utilisateur + OpenLibrary)"""
     try:
-        author_name = requests.utils.unquote(author_name)
-        
         # Livres de l'utilisateur
         user_books = list(books_collection.find({"user_id": current_user["id"], "author": author_name}, {"_id": 0}))
         
@@ -583,21 +574,20 @@ def get_author_books(current_user, author_name):
                     'from_user_library': True
                 })
         
-        return jsonify({
+        return {
             'author': author_name,
             'total_books': len(all_books),
             'user_books_count': len(user_books),
             'books': sorted(all_books, key=lambda x: x.get('first_publish_year') or 0, reverse=True)
-        })
+        }
         
     except Exception as e:
         print(f"Erreur lors de la récupération des livres de l'auteur: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
+        raise HTTPException(status_code=500, detail='Internal server error')
 
 # Route des statistiques
-@app.route('/api/stats')
-@token_required
-def get_stats(current_user):
+@app.get("/api/stats")
+async def get_stats(current_user = Depends(get_current_user)):
     user_id = current_user["id"]
     
     # Statistiques de base
@@ -621,7 +611,7 @@ def get_stats(current_user):
     sagas = books_collection.distinct("saga", {"user_id": user_id, "saga": {"$ne": ""}})
     sagas_count = len(sagas)
     
-    return jsonify({
+    return {
         "total_books": total_books,
         "completed_books": completed_books,
         "reading_books": reading_books,
@@ -633,7 +623,7 @@ def get_stats(current_user):
         },
         "authors_count": authors_count,
         "sagas_count": sagas_count
-    })
+    }
 
 # Fonctions utilitaires pour l'intégration OpenLibrary universelle
 def detect_category_from_subjects(subjects):
@@ -690,20 +680,13 @@ def check_book_in_user_library(current_user, book_data):
     return None
 
 # Routes OpenLibrary universelles
-
-# Route de recherche OpenLibrary (maintenue pour compatibilité)
-@app.route('/api/openlibrary/search')
-@token_required
-def search_openlibrary(current_user):
-    q = request.args.get('q')
-    if not q:
-        return jsonify({'error': 'Missing search query'}), 400
-    
+@app.get("/api/openlibrary/search")
+async def search_openlibrary(q: str, limit: int = 10, current_user = Depends(get_current_user)):
     try:
         # Appel à l'API OpenLibrary
         response = requests.get(
             "https://openlibrary.org/search.json",
-            params={"q": q, "limit": 10},
+            params={"q": q, "limit": limit},
             timeout=10
         )
         response.raise_for_status()
@@ -728,27 +711,24 @@ def search_openlibrary(current_user):
             
             books.append(book)
         
-        return jsonify({
+        return {
             "books": books,
             "total": data.get("numFound", 0)
-        })
+        }
         
     except requests.exceptions.RequestException as e:
-        return jsonify({'error': f'OpenLibrary service unavailable: {str(e)}'}), 503
+        raise HTTPException(status_code=503, detail=f'OpenLibrary service unavailable: {str(e)}')
     except Exception as e:
-        return jsonify({'error': f'Error searching OpenLibrary: {str(e)}'}), 500
+        raise HTTPException(status_code=500, detail=f'Error searching OpenLibrary: {str(e)}')
 
-@app.route('/api/openlibrary/search-universal')
-@token_required
-def search_openlibrary_universal(current_user):
+@app.get("/api/openlibrary/search-universal")
+async def search_openlibrary_universal(
+    q: str,
+    limit: int = 20,
+    category: Optional[str] = None,
+    current_user = Depends(get_current_user)
+):
     """Recherche universelle dans OpenLibrary avec détection de catégorie et statut utilisateur"""
-    q = request.args.get('q')
-    limit = int(request.args.get('limit', 20))
-    category = request.args.get('category')  # Filtre optionnel par catégorie
-    
-    if not q:
-        return jsonify({'error': 'Missing search query'}), 400
-    
     try:
         # Appel à l'API OpenLibrary avec plus de détails
         params = {
@@ -805,22 +785,21 @@ def search_openlibrary_universal(current_user):
             
             books.append(book_data)
         
-        return jsonify({
+        return {
             "books": books,
             "total": data.get("numFound", 0),
             "search_query": q,
             "category_filter": category,
             "results_count": len(books)
-        })
+        }
         
     except requests.exceptions.RequestException as e:
-        return jsonify({'error': f'OpenLibrary service unavailable: {str(e)}'}), 503
+        raise HTTPException(status_code=503, detail=f'OpenLibrary service unavailable: {str(e)}')
     except Exception as e:
-        return jsonify({'error': f'Error in universal search: {str(e)}'}), 500
+        raise HTTPException(status_code=500, detail=f'Error in universal search: {str(e)}')
 
-@app.route('/api/openlibrary/book/<work_key>')
-@token_required
-def get_openlibrary_book_details(current_user, work_key):
+@app.get("/api/openlibrary/book/{work_key}")
+async def get_openlibrary_book_details(work_key: str, current_user = Depends(get_current_user)):
     """Récupère les détails complets d'un livre OpenLibrary par sa clé work"""
     try:
         # Nettoyer la clé work
@@ -832,7 +811,7 @@ def get_openlibrary_book_details(current_user, work_key):
         # Récupérer les détails de l'œuvre
         work_details = get_openlibrary_work_details(clean_work_key)
         if not work_details:
-            return jsonify({'error': 'Book not found'}), 404
+            raise HTTPException(status_code=404, detail='Book not found')
         
         work = work_details['work']
         editions = work_details['editions']
@@ -881,40 +860,10 @@ def get_openlibrary_book_details(current_user, work_key):
                 "languages": [lang.get('key', '').replace('/languages/', '') for lang in edition.get('languages', [])],
                 "covers": edition.get('covers', [])
             }
-            
-            # URL de couverture pour cette édition
-            if edition_data['covers']:
-                edition_data['cover_url'] = f"https://covers.openlibrary.org/b/id/{edition_data['covers'][0]}-L.jpg"
-            
             book_data['editions'].append(edition_data)
         
-        # Détection de catégorie
+        # Détection automatique de catégorie
         book_data["category"] = detect_category_from_subjects(book_data["subjects"])
-        
-        # Informations pratiques (de la première édition avec des infos)
-        if book_data['editions']:
-            best_edition = book_data['editions'][0]
-            book_data["author"] = ", ".join([author['name'] for author in book_data['authors']])
-            book_data["publication_year"] = None
-            book_data["publisher"] = ", ".join(best_edition['publishers'][:2]) if best_edition['publishers'] else ""
-            book_data["pages"] = best_edition['number_of_pages']
-            book_data["isbn"] = (best_edition['isbn_13'] or best_edition['isbn_10'] or [None])[0]
-            book_data["languages"] = best_edition['languages']
-            
-            # Extraire l'année de publication
-            if best_edition['publish_date']:
-                try:
-                    import re
-                    year_match = re.search(r'\b(19|20)\d{2}\b', best_edition['publish_date'])
-                    if year_match:
-                        book_data["publication_year"] = int(year_match.group())
-                except:
-                    pass
-            
-            # URL de couverture principale
-            if best_edition.get('cover_url'):
-                book_data["cover_url"] = best_edition['cover_url']
-                book_data["cover_url_medium"] = best_edition['cover_url'].replace('-L.jpg', '-M.jpg')
         
         # Vérifier si le livre est dans la bibliothèque de l'utilisateur
         existing_book = check_book_in_user_library(current_user, book_data)
@@ -923,161 +872,29 @@ def get_openlibrary_book_details(current_user, work_key):
             book_data["user_book_id"] = existing_book.get("id")
             book_data["user_status"] = existing_book.get("status")
             book_data["user_rating"] = existing_book.get("rating")
-            book_data["user_review"] = existing_book.get("review", "")
         
-        return jsonify(book_data)
+        # Prendre les infos de la première édition pour les détails basiques
+        if book_data["editions"]:
+            first_edition = book_data["editions"][0]
+            book_data["isbn"] = first_edition["isbn_13"][0] if first_edition["isbn_13"] else (first_edition["isbn_10"][0] if first_edition["isbn_10"] else None)
+            book_data["publisher"] = ", ".join(first_edition["publishers"][:2])
+            book_data["pages"] = first_edition["number_of_pages"]
+            book_data["publication_year"] = first_edition.get("publish_date", "").split()[-1] if first_edition.get("publish_date") else None
+            
+            # URL de couverture
+            if first_edition["covers"]:
+                book_data["cover_url"] = f"https://covers.openlibrary.org/b/id/{first_edition['covers'][0]}-L.jpg"
+        
+        # Prendre le premier auteur comme auteur principal
+        if book_data["authors"]:
+            book_data["author"] = book_data["authors"][0]["name"]
+        
+        return book_data
         
     except Exception as e:
-        print(f"Erreur lors de la récupération du livre OpenLibrary: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
+        print(f"Erreur lors de la récupération des détails du livre OpenLibrary: {e}")
+        raise HTTPException(status_code=500, detail='Internal server error')
 
-@app.route('/api/openlibrary/author/<author_name>')
-@token_required  
-def get_openlibrary_author_universal(current_user, author_name):
-    """Récupère les détails universels d'un auteur depuis OpenLibrary (différent de /api/authors/)"""
-    try:
-        # Décoder le nom de l'auteur
-        author_name = requests.utils.unquote(author_name)
-        
-        # Vérifier le cache d'abord (utiliser une collection séparée pour les auteurs universels)
-        cached_author = authors_collection.find_one({"name": author_name, "source": "openlibrary_universal"})
-        if cached_author and cached_author.get('last_updated'):
-            # Vérifier si le cache est encore valide (6h pour les données universelles)
-            last_updated = cached_author['last_updated']
-            if isinstance(last_updated, str):
-                last_updated = datetime.fromisoformat(last_updated.replace('Z', '+00:00'))
-            
-            if (datetime.utcnow() - last_updated.replace(tzinfo=None)).total_seconds() < 21600:  # 6h
-                # Ajouter les statistiques utilisateur
-                cached_author = add_user_stats_to_author(current_user, cached_author, author_name)
-                cached_author.pop('_id', None)
-                return jsonify(cached_author)
-        
-        # Récupérer les informations depuis OpenLibrary et Wikipedia
-        author_info = {
-            'name': author_name,
-            'biography': '',
-            'photo_url': '',
-            'birth_date': None,
-            'death_date': None,
-            'wikipedia_url': '',
-            'openlibrary_author_key': None,
-            'bibliography': [],
-            'source': 'openlibrary_universal',
-            'last_updated': datetime.utcnow()
-        }
-        
-        # Rechercher l'auteur sur OpenLibrary d'abord
-        try:
-            search_url = "https://openlibrary.org/search/authors.json"
-            params = {"q": author_name, "limit": 5}
-            response = requests.get(search_url, params=params, timeout=10)
-            
-            if response.ok:
-                search_data = response.json()
-                docs = search_data.get('docs', [])
-                
-                # Trouver le meilleur match
-                best_match = None
-                for doc in docs:
-                    doc_name = doc.get('name', '').lower()
-                    if doc_name == author_name.lower():
-                        best_match = doc
-                        break
-                    elif author_name.lower() in doc_name or doc_name in author_name.lower():
-                        if not best_match:
-                            best_match = doc
-                
-                if best_match:
-                    author_key = best_match['key']
-                    author_info['openlibrary_author_key'] = author_key
-                    
-                    # Récupérer les détails complets de l'auteur
-                    author_detail_response = requests.get(f"https://openlibrary.org{author_key}.json", timeout=10)
-                    if author_detail_response.ok:
-                        author_detail = author_detail_response.json()
-                        
-                        # Extraire les informations
-                        if author_detail.get('bio'):
-                            bio = author_detail['bio']
-                            if isinstance(bio, dict):
-                                author_info['biography'] = bio.get('value', '')
-                            else:
-                                author_info['biography'] = str(bio)
-                        
-                        author_info['birth_date'] = author_detail.get('birth_date', '')
-                        author_info['death_date'] = author_detail.get('death_date', '')
-                        
-                        # Photo depuis OpenLibrary
-                        if author_detail.get('photos'):
-                            photo_id = author_detail['photos'][0]
-                            author_info['photo_url'] = f"https://covers.openlibrary.org/a/id/{photo_id}-L.jpg"
-        except Exception as e:
-            print(f"Erreur OpenLibrary author search: {e}")
-        
-        # Récupérer les infos Wikipedia (complément ou alternative)
-        wikipedia_info = get_wikipedia_author_info(author_name)
-        if wikipedia_info:
-            # Compléter avec Wikipedia si pas d'infos OpenLibrary
-            if not author_info['biography']:
-                author_info['biography'] = wikipedia_info.get('extract', '')
-            if not author_info['photo_url']:
-                author_info['photo_url'] = wikipedia_info.get('thumbnail', '')
-            author_info['wikipedia_url'] = wikipedia_info.get('wikipedia_url', '')
-        
-        # Récupérer la bibliographie depuis OpenLibrary
-        openlibrary_books = get_author_books_from_openlibrary(author_name)
-        
-        # Enrichir chaque livre avec le statut utilisateur
-        for book in openlibrary_books:
-            existing_book = check_book_in_user_library(current_user, book)
-            book['in_user_library'] = existing_book is not None
-            if existing_book:
-                book['user_book_id'] = existing_book.get('id')
-                book['user_status'] = existing_book.get('status')
-                book['user_rating'] = existing_book.get('rating')
-            
-            # Détecter la catégorie
-            book['category'] = detect_category_from_subjects(book.get('subjects', []))
-        
-        author_info['bibliography'] = openlibrary_books
-        
-        # Sauvegarder en cache
-        authors_collection.replace_one(
-            {"name": author_name, "source": "openlibrary_universal"},
-            author_info,
-            upsert=True
-        )
-        
-        # Ajouter les statistiques utilisateur
-        author_info = add_user_stats_to_author(current_user, author_info, author_name)
-        
-        return jsonify(author_info)
-        
-    except Exception as e:
-        print(f"Erreur lors de la récupération de l'auteur OpenLibrary: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-def add_user_stats_to_author(current_user, author_info, author_name):
-    """Ajoute les statistiques utilisateur aux informations de l'auteur"""
-    # Livres de l'utilisateur pour cet auteur
-    user_books = list(books_collection.find({"user_id": current_user["id"], "author": author_name}, {"_id": 0}))
-    
-    # Statistiques depuis la bibliographie complète
-    bibliography = author_info.get('bibliography', [])
-    user_books_in_bibliography = [book for book in bibliography if book.get('in_user_library')]
-    
-    author_info['user_stats'] = {
-        'books_read': len([b for b in user_books_in_bibliography if b.get('user_status') == 'completed']),
-        'books_reading': len([b for b in user_books_in_bibliography if b.get('user_status') == 'reading']),
-        'books_to_read': len([b for b in user_books_in_bibliography if b.get('user_status') == 'to_read']),
-        'total_user_books': len(user_books_in_bibliography),
-        'total_bibliography': len(bibliography),
-        'completion_percentage': round((len(user_books_in_bibliography) / len(bibliography)) * 100, 1) if bibliography else 0,
-        'user_books': user_books
-    }
-    
-    return author_info
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8001, debug=True)
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8001)
