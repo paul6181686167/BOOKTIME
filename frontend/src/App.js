@@ -5,6 +5,9 @@ import toast from 'react-hot-toast';
 import AdvancedSearchBar from './components/AdvancedSearchBar';
 import BookDetailPage from './components/BookDetailPage';
 import AuthorDetailPage from './components/AuthorDetailPage';
+import OpenLibraryBookPage from './components/OpenLibraryBookPage';
+import OpenLibraryAuthorPage from './components/OpenLibraryAuthorPage';
+import openLibraryService from './services/OpenLibraryService';
 import { useAdvancedSearch } from './hooks/useAdvancedSearch';
 import './App.css';
 
