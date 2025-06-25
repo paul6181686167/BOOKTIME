@@ -48,13 +48,6 @@ const AdvancedSearchBar = React.memo(({
     }, 100);
   }, [onSearchChange]);
 
-  // Synchroniser l'état local avec la prop searchTerm
-  useEffect(() => {
-    if (searchTerm !== localSearchTerm) {
-      setLocalSearchTerm(searchTerm || '');
-    }
-  }, [searchTerm, localSearchTerm]);
-
   // Charger les recherches récentes depuis localStorage
   useEffect(() => {
     const saved = localStorage.getItem('booktime-recent-searches');
@@ -491,6 +484,6 @@ const AdvancedSearchBar = React.memo(({
       )}
     </div>
   );
-};
+});
 
 export default AdvancedSearchBar;
