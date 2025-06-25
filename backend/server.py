@@ -118,7 +118,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     user["_id"] = str(user["_id"])
     return User(**user)
 
-# Service Open Library (unchanged)
+# Service Open Library
 class OpenLibraryService:
     BASE_URL = "https://openlibrary.org"
     
@@ -177,7 +177,7 @@ class OpenLibraryService:
             "reading_language": "français"
         }
 
-# Book Models (updated with user_id)
+# Book Models
 class BookBase(BaseModel):
     title: str
     author: str
@@ -315,7 +315,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
     """Get current user information"""
     return current_user
 
-# API Routes (updated with authentication)
+# API Routes
 @app.get("/")
 async def root():
     return {"message": "Welcome to BOOKTIME API 📚"}
@@ -437,7 +437,7 @@ async def get_stats(current_user: User = Depends(get_current_user)):
         "auto_added_count": auto_added_count
     }
 
-# OpenLibrary routes (unchanged but protected)
+# OpenLibrary routes
 @app.get("/api/openlibrary/search")
 async def search_openlibrary(
     q: str, 
