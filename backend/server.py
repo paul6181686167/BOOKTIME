@@ -898,7 +898,7 @@ async def get_openlibrary_book_details(work_key: str, current_user = Depends(get
                             book_data['authors'].append({
                                 "name": author_data.get('name', ''),
                                 "key": author_key,
-                                "bio": author_data.get('bio', {}).get('value', '') if isinstance(author_data.get('bio'), dict) else author_data.get('bio', ''),
+                                "bio": translate_to_french(author_data.get('bio', {}).get('value', '') if isinstance(author_data.get('bio'), dict) else author_data.get('bio', '')),
                                 "birth_date": author_data.get('birth_date', ''),
                                 "death_date": author_data.get('death_date', '')
                             })
