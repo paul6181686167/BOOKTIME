@@ -238,12 +238,12 @@ const AdvancedSearchBar = React.memo(({
         <input
           ref={searchInputRef}
           type="text"
-          value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
+          value={localSearchTerm}
+          onChange={handleInputChange}
           onFocus={() => setShowSuggestions(true)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && searchTerm.trim()) {
-              saveRecentSearch(searchTerm);
+            if (e.key === 'Enter' && localSearchTerm.trim()) {
+              saveRecentSearch(localSearchTerm);
               setShowSuggestions(false);
             }
           }}
