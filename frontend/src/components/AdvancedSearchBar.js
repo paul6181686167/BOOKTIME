@@ -41,11 +41,7 @@ const AdvancedSearchBar = React.memo(({
   const handleInputChange = useCallback((e) => {
     const value = e.target.value;
     setLocalSearchTerm(value);
-    
-    // Déclencher le changement dans le parent avec un petit délai
-    setTimeout(() => {
-      onSearchChange(value);
-    }, 100);
+    onSearchChange(value);
   }, [onSearchChange]);
 
   // Charger les recherches récentes depuis localStorage
