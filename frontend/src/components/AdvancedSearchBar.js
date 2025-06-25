@@ -328,7 +328,7 @@ const AdvancedSearchBar = React.memo(({
       </div>
 
       {/* Suggestions dropdown */}
-      {showSuggestions && (suggestions.length > 0 || recentSearches.length > 0) && (
+      {showSuggestions && (suggestions.length > 0 || recentSearches.length > 0 || universalResults.length > 0) && (
         <div
           ref={suggestionsRef}
           className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
@@ -357,9 +357,12 @@ const AdvancedSearchBar = React.memo(({
             </div>
           )}
 
-          {/* Suggestions */}
+          {/* Suggestions de ma bibliothèque */}
           {suggestions.length > 0 && (
-            <div className="p-2">
+            <div className="p-2 border-b border-gray-100 dark:border-gray-700">
+              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-1">
+                📚 Dans ma bibliothèque
+              </h4>
               {suggestions.map((suggestion, index) => {
                 const Icon = suggestion.icon;
                 return (
@@ -380,6 +383,71 @@ const AdvancedSearchBar = React.memo(({
                   </button>
                 );
               })}
+            </div>
+          )}
+
+          {/* Résultats universels OpenLibrary */}
+          {universalResults.length > 0 && (
+            <div className="p-2">
+              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-1 flex items-center space-x-1">
+                <GlobeAltIcon className="h-3 w-3" />
+                <span>🌐 OpenLibrary</span>
+                {searchingUniversal && <span className="text-blue-500">...</span>}
+              </h4>
+              {universalResults.map((book, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    if (book.in_user_library) {
+                      navigate(`/livre/${book.user_book_id}`);
+                    } else if (book.work_key) {
+                      navigate(`/livre/ol/${book.work_key}`);
+                    }
+                    setShowSuggestions(false);
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md transition-colors"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-10 bg-gray-100 dark:bg-gray-700 rounded flex-shrink-0 overflow-hidden">
+                      {book.cover_url ? (
+                        <img src={book.cover_url} alt={book.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <BookOpenIcon className="h-3 w-3 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {book.title}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center space-x-2">
+                        <span>{book.author}</span>
+                        {book.first_publish_year && (
+                          <span>• {book.first_publish_year}</span>
+                        )}
+                        {book.category && (
+                          <span>• {book.category === 'bd' ? '🎨' : book.category === 'manga' ? '🇯🇵' : '📚'}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      {book.in_user_library ? (
+                        <div className="text-green-500 text-xs">✓ Possédé</div>
+                      ) : (
+                        <div className="text-blue-500 text-xs">Découvrir</div>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Message de chargement */}
+          {searchingUniversal && universalResults.length === 0 && (
+            <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
+              <div className="animate-pulse">Recherche dans OpenLibrary...</div>
             </div>
           )}
         </div>
