@@ -877,9 +877,9 @@ async def get_openlibrary_book_details(work_key: str, current_user = Depends(get
         book_data = {
             "work_key": clean_work_key,
             "title": work.get('title', ''),
-            "description": work.get('description', {}).get('value', '') if isinstance(work.get('description'), dict) else work.get('description', ''),
+            "description": translate_to_french(work.get('description', {}).get('value', '') if isinstance(work.get('description'), dict) else work.get('description', '')),
             "subjects": work.get('subjects', [])[:15],
-            "first_sentence": work.get('first_sentence', {}).get('value', '') if isinstance(work.get('first_sentence'), dict) else '',
+            "first_sentence": translate_to_french(work.get('first_sentence', {}).get('value', '') if isinstance(work.get('first_sentence'), dict) else ''),
             "authors": [],
             "editions": [],
             "category": "roman",  # Par défaut
