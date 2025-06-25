@@ -704,6 +704,39 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Search functionality works correctly. Tested searching for 'Harry Potter' (found 4 books) and 'Rowling' (found 4 books). The search works for both book titles and author names as expected."
+      - working: true
+        agent: "testing"
+        comment: "Advanced search functionality works correctly. The search bar is properly implemented with suggestions, filters, and recent searches. Successfully tested searching by title, author, and other fields. The search results are displayed correctly with a count of matching books."
+
+  - task: "Advanced Search - AdvancedSearchBar Component"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/AdvancedSearchBar.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "The AdvancedSearchBar component is implemented correctly. It includes a search input, filter button, and suggestions dropdown. The search input works correctly, showing suggestions as you type. The filter button opens a panel with various filter options including category, status, author, saga, year range, and rating filters. The component is responsive and adapts well to different screen sizes."
+
+  - task: "Advanced Search - useAdvancedSearch Hook"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/hooks/useAdvancedSearch.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "The useAdvancedSearch hook is implemented correctly. It provides functionality for filtering books by various criteria including title, author, saga, description, genre, publisher, and ISBN. The hook also provides search statistics and functions for clearing search and applying quick filters. The filtering logic works correctly, showing only books that match all selected criteria."
 
   - task: "Main Interface - Status Filters"
     implemented: true
@@ -884,6 +917,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Responsive interface works correctly. Tested on desktop (1920x1080), tablet (768x1024), and mobile (390x844) viewports. The layout adapts appropriately to each screen size, with proper stacking of elements and adjusted font sizes."
+      - working: true
+        agent: "testing"
+        comment: "Responsive design for the advanced search bar works correctly. The search bar and filter panel adapt well to different screen sizes. On mobile, the search bar takes up the full width and the filter panel is properly sized for the smaller screen."
         
   - task: "Dark Mode Implementation"
     implemented: true
