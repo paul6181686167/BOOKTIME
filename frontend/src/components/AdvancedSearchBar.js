@@ -228,9 +228,8 @@ const AdvancedSearchBar = React.memo(({
           onChange={handleInputChange}
           onFocus={() => setShowSuggestions(true)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && localSearchTerm.trim()) {
-              saveRecentSearch(localSearchTerm);
-              setShowSuggestions(false);
+            if (e.key === 'Enter') {
+              triggerSearch();
             }
           }}
           className="block w-full pl-10 pr-20 py-3 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-booktime-500 focus:border-booktime-500 transition-colors text-sm"
