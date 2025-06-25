@@ -635,7 +635,63 @@ def get_stats(current_user):
         "sagas_count": sagas_count
     })
 
-# Route de recherche OpenLibrary
+# Fonctions utilitaires pour l'intégration OpenLibrary universelle
+def detect_category_from_subjects(subjects):
+    """Détecte automatiquement la catégorie d'un livre à partir de ses sujets"""
+    if not subjects:
+        return 'roman'
+    
+    subjects_lower = [s.lower() for s in subjects]
+    
+    # Mots-clés pour BD/Comics
+    bd_keywords = ['comic', 'comics', 'graphic novel', 'bande dessinée', 'bd', 'manga', 'strip', 'cartoon']
+    if any(keyword in ' '.join(subjects_lower) for keyword in bd_keywords):
+        # Distinguer manga des autres BD
+        manga_keywords = ['manga', 'japanese', 'anime', 'japan']
+        if any(keyword in ' '.join(subjects_lower) for keyword in manga_keywords):
+            return 'manga'
+        return 'bd'
+    
+    # Mots-clés pour manga spécifiques
+    manga_keywords = ['manga', 'japanese comics', 'anime', 'light novel']
+    if any(keyword in ' '.join(subjects_lower) for keyword in manga_keywords):
+        return 'manga'
+    
+    # Par défaut : roman
+    return 'roman'
+
+def check_book_in_user_library(current_user, book_data):
+    """Vérifie si un livre OpenLibrary est déjà dans la bibliothèque de l'utilisateur"""
+    title = book_data.get('title', '').lower()
+    author = book_data.get('author', '').lower()
+    isbn = book_data.get('isbn')
+    
+    # Recherche par ISBN d'abord
+    if isbn:
+        existing = books_collection.find_one({
+            "user_id": current_user["id"],
+            "isbn": isbn
+        })
+        if existing:
+            return existing
+    
+    # Recherche par titre + auteur
+    if title and author:
+        existing = books_collection.find_one({
+            "user_id": current_user["id"],
+            "$and": [
+                {"title": {"$regex": re.escape(title), "$options": "i"}},
+                {"author": {"$regex": re.escape(author), "$options": "i"}}
+            ]
+        })
+        if existing:
+            return existing
+    
+    return None
+
+# Routes OpenLibrary universelles
+
+# Route de recherche OpenLibrary (maintenue pour compatibilité)
 @app.route('/api/openlibrary/search')
 @token_required
 def search_openlibrary(current_user):
@@ -681,6 +737,347 @@ def search_openlibrary(current_user):
         return jsonify({'error': f'OpenLibrary service unavailable: {str(e)}'}), 503
     except Exception as e:
         return jsonify({'error': f'Error searching OpenLibrary: {str(e)}'}), 500
+
+@app.route('/api/openlibrary/search-universal')
+@token_required
+def search_openlibrary_universal(current_user):
+    """Recherche universelle dans OpenLibrary avec détection de catégorie et statut utilisateur"""
+    q = request.args.get('q')
+    limit = int(request.args.get('limit', 20))
+    category = request.args.get('category')  # Filtre optionnel par catégorie
+    
+    if not q:
+        return jsonify({'error': 'Missing search query'}), 400
+    
+    try:
+        # Appel à l'API OpenLibrary avec plus de détails
+        params = {
+            "q": q,
+            "limit": min(limit, 50),  # Limiter à 50 max
+            "fields": "key,title,author_name,first_publish_year,isbn,cover_i,publisher,subject,language,number_of_pages_median"
+        }
+        
+        response = requests.get(
+            "https://openlibrary.org/search.json",
+            params=params,
+            timeout=15
+        )
+        response.raise_for_status()
+        
+        data = response.json()
+        books = []
+        
+        for item in data.get("docs", []):
+            # Données de base
+            book_data = {
+                "title": item.get("title", ""),
+                "author": ", ".join(item.get("author_name", [])) if item.get("author_name") else "Auteur inconnu",
+                "first_publish_year": item.get("first_publish_year"),
+                "isbn": item.get("isbn", [None])[0] if item.get("isbn") else None,
+                "cover_id": item.get("cover_i"),
+                "publisher": ", ".join(item.get("publisher", [])[:3]) if item.get("publisher") else "",
+                "subjects": item.get("subject", [])[:8],
+                "languages": item.get("language", [])[:3],
+                "pages": item.get("number_of_pages_median"),
+                "work_key": item.get("key", "").replace("/works/", "") if item.get("key") else None
+            }
+            
+            # Détection automatique de catégorie
+            detected_category = detect_category_from_subjects(book_data["subjects"])
+            book_data["category"] = detected_category
+            
+            # Filtrer par catégorie si demandé
+            if category and detected_category != category:
+                continue
+            
+            # URLs de couverture
+            if book_data["cover_id"]:
+                book_data["cover_url"] = f"https://covers.openlibrary.org/b/id/{book_data['cover_id']}-M.jpg"
+                book_data["cover_url_large"] = f"https://covers.openlibrary.org/b/id/{book_data['cover_id']}-L.jpg"
+            
+            # Vérifier si le livre est dans la bibliothèque de l'utilisateur
+            existing_book = check_book_in_user_library(current_user, book_data)
+            book_data["in_user_library"] = existing_book is not None
+            if existing_book:
+                book_data["user_book_id"] = existing_book.get("id")
+                book_data["user_status"] = existing_book.get("status")
+                book_data["user_rating"] = existing_book.get("rating")
+            
+            books.append(book_data)
+        
+        return jsonify({
+            "books": books,
+            "total": data.get("numFound", 0),
+            "search_query": q,
+            "category_filter": category,
+            "results_count": len(books)
+        })
+        
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'OpenLibrary service unavailable: {str(e)}'}), 503
+    except Exception as e:
+        return jsonify({'error': f'Error in universal search: {str(e)}'}), 500
+
+@app.route('/api/openlibrary/book/<work_key>')
+@token_required
+def get_openlibrary_book_details(current_user, work_key):
+    """Récupère les détails complets d'un livre OpenLibrary par sa clé work"""
+    try:
+        # Nettoyer la clé work
+        if work_key.startswith('OL') and work_key.endswith('W'):
+            clean_work_key = work_key
+        else:
+            clean_work_key = f"OL{work_key}W" if not work_key.startswith('OL') else work_key
+        
+        # Récupérer les détails de l'œuvre
+        work_details = get_openlibrary_work_details(clean_work_key)
+        if not work_details:
+            return jsonify({'error': 'Book not found'}), 404
+        
+        work = work_details['work']
+        editions = work_details['editions']
+        
+        # Construire les détails du livre
+        book_data = {
+            "work_key": clean_work_key,
+            "title": work.get('title', ''),
+            "description": work.get('description', {}).get('value', '') if isinstance(work.get('description'), dict) else work.get('description', ''),
+            "subjects": work.get('subjects', [])[:15],
+            "first_sentence": work.get('first_sentence', {}).get('value', '') if isinstance(work.get('first_sentence'), dict) else '',
+            "authors": [],
+            "editions": [],
+            "category": "roman",  # Par défaut
+            "openlibrary_url": f"https://openlibrary.org/works/{clean_work_key}"
+        }
+        
+        # Récupérer les informations des auteurs
+        if work.get('authors'):
+            for author_ref in work['authors'][:5]:  # Limiter à 5 auteurs
+                if isinstance(author_ref, dict) and author_ref.get('author'):
+                    author_key = author_ref['author']['key'].replace('/authors/', '')
+                    try:
+                        author_response = requests.get(f"https://openlibrary.org/authors/{author_key}.json", timeout=10)
+                        if author_response.ok:
+                            author_data = author_response.json()
+                            book_data['authors'].append({
+                                "name": author_data.get('name', ''),
+                                "key": author_key,
+                                "bio": author_data.get('bio', {}).get('value', '') if isinstance(author_data.get('bio'), dict) else author_data.get('bio', ''),
+                                "birth_date": author_data.get('birth_date', ''),
+                                "death_date": author_data.get('death_date', '')
+                            })
+                    except:
+                        continue
+        
+        # Récupérer les détails des meilleures éditions
+        for edition in editions:
+            edition_data = {
+                "title": edition.get('title', ''),
+                "isbn_10": edition.get('isbn_10', []),
+                "isbn_13": edition.get('isbn_13', []),
+                "publish_date": edition.get('publish_date', ''),
+                "publishers": edition.get('publishers', []),
+                "number_of_pages": edition.get('number_of_pages'),
+                "languages": [lang.get('key', '').replace('/languages/', '') for lang in edition.get('languages', [])],
+                "covers": edition.get('covers', [])
+            }
+            
+            # URL de couverture pour cette édition
+            if edition_data['covers']:
+                edition_data['cover_url'] = f"https://covers.openlibrary.org/b/id/{edition_data['covers'][0]}-L.jpg"
+            
+            book_data['editions'].append(edition_data)
+        
+        # Détection de catégorie
+        book_data["category"] = detect_category_from_subjects(book_data["subjects"])
+        
+        # Informations pratiques (de la première édition avec des infos)
+        if book_data['editions']:
+            best_edition = book_data['editions'][0]
+            book_data["author"] = ", ".join([author['name'] for author in book_data['authors']])
+            book_data["publication_year"] = None
+            book_data["publisher"] = ", ".join(best_edition['publishers'][:2]) if best_edition['publishers'] else ""
+            book_data["pages"] = best_edition['number_of_pages']
+            book_data["isbn"] = (best_edition['isbn_13'] or best_edition['isbn_10'] or [None])[0]
+            book_data["languages"] = best_edition['languages']
+            
+            # Extraire l'année de publication
+            if best_edition['publish_date']:
+                try:
+                    import re
+                    year_match = re.search(r'\b(19|20)\d{2}\b', best_edition['publish_date'])
+                    if year_match:
+                        book_data["publication_year"] = int(year_match.group())
+                except:
+                    pass
+            
+            # URL de couverture principale
+            if best_edition.get('cover_url'):
+                book_data["cover_url"] = best_edition['cover_url']
+                book_data["cover_url_medium"] = best_edition['cover_url'].replace('-L.jpg', '-M.jpg')
+        
+        # Vérifier si le livre est dans la bibliothèque de l'utilisateur
+        existing_book = check_book_in_user_library(current_user, book_data)
+        book_data["in_user_library"] = existing_book is not None
+        if existing_book:
+            book_data["user_book_id"] = existing_book.get("id")
+            book_data["user_status"] = existing_book.get("status")
+            book_data["user_rating"] = existing_book.get("rating")
+            book_data["user_review"] = existing_book.get("review", "")
+        
+        return jsonify(book_data)
+        
+    except Exception as e:
+        print(f"Erreur lors de la récupération du livre OpenLibrary: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/openlibrary/author/<author_name>')
+@token_required  
+def get_openlibrary_author_universal(current_user, author_name):
+    """Récupère les détails universels d'un auteur depuis OpenLibrary (différent de /api/authors/)"""
+    try:
+        # Décoder le nom de l'auteur
+        author_name = requests.utils.unquote(author_name)
+        
+        # Vérifier le cache d'abord (utiliser une collection séparée pour les auteurs universels)
+        cached_author = authors_collection.find_one({"name": author_name, "source": "openlibrary_universal"})
+        if cached_author and cached_author.get('last_updated'):
+            # Vérifier si le cache est encore valide (6h pour les données universelles)
+            last_updated = cached_author['last_updated']
+            if isinstance(last_updated, str):
+                last_updated = datetime.fromisoformat(last_updated.replace('Z', '+00:00'))
+            
+            if (datetime.utcnow() - last_updated.replace(tzinfo=None)).total_seconds() < 21600:  # 6h
+                # Ajouter les statistiques utilisateur
+                cached_author = add_user_stats_to_author(current_user, cached_author, author_name)
+                cached_author.pop('_id', None)
+                return jsonify(cached_author)
+        
+        # Récupérer les informations depuis OpenLibrary et Wikipedia
+        author_info = {
+            'name': author_name,
+            'biography': '',
+            'photo_url': '',
+            'birth_date': None,
+            'death_date': None,
+            'wikipedia_url': '',
+            'openlibrary_author_key': None,
+            'bibliography': [],
+            'source': 'openlibrary_universal',
+            'last_updated': datetime.utcnow()
+        }
+        
+        # Rechercher l'auteur sur OpenLibrary d'abord
+        try:
+            search_url = "https://openlibrary.org/search/authors.json"
+            params = {"q": author_name, "limit": 5}
+            response = requests.get(search_url, params=params, timeout=10)
+            
+            if response.ok:
+                search_data = response.json()
+                docs = search_data.get('docs', [])
+                
+                # Trouver le meilleur match
+                best_match = None
+                for doc in docs:
+                    doc_name = doc.get('name', '').lower()
+                    if doc_name == author_name.lower():
+                        best_match = doc
+                        break
+                    elif author_name.lower() in doc_name or doc_name in author_name.lower():
+                        if not best_match:
+                            best_match = doc
+                
+                if best_match:
+                    author_key = best_match['key']
+                    author_info['openlibrary_author_key'] = author_key
+                    
+                    # Récupérer les détails complets de l'auteur
+                    author_detail_response = requests.get(f"https://openlibrary.org{author_key}.json", timeout=10)
+                    if author_detail_response.ok:
+                        author_detail = author_detail_response.json()
+                        
+                        # Extraire les informations
+                        if author_detail.get('bio'):
+                            bio = author_detail['bio']
+                            if isinstance(bio, dict):
+                                author_info['biography'] = bio.get('value', '')
+                            else:
+                                author_info['biography'] = str(bio)
+                        
+                        author_info['birth_date'] = author_detail.get('birth_date', '')
+                        author_info['death_date'] = author_detail.get('death_date', '')
+                        
+                        # Photo depuis OpenLibrary
+                        if author_detail.get('photos'):
+                            photo_id = author_detail['photos'][0]
+                            author_info['photo_url'] = f"https://covers.openlibrary.org/a/id/{photo_id}-L.jpg"
+        except Exception as e:
+            print(f"Erreur OpenLibrary author search: {e}")
+        
+        # Récupérer les infos Wikipedia (complément ou alternative)
+        wikipedia_info = get_wikipedia_author_info(author_name)
+        if wikipedia_info:
+            # Compléter avec Wikipedia si pas d'infos OpenLibrary
+            if not author_info['biography']:
+                author_info['biography'] = wikipedia_info.get('extract', '')
+            if not author_info['photo_url']:
+                author_info['photo_url'] = wikipedia_info.get('thumbnail', '')
+            author_info['wikipedia_url'] = wikipedia_info.get('wikipedia_url', '')
+        
+        # Récupérer la bibliographie depuis OpenLibrary
+        openlibrary_books = get_author_books_from_openlibrary(author_name)
+        
+        # Enrichir chaque livre avec le statut utilisateur
+        for book in openlibrary_books:
+            existing_book = check_book_in_user_library(current_user, book)
+            book['in_user_library'] = existing_book is not None
+            if existing_book:
+                book['user_book_id'] = existing_book.get('id')
+                book['user_status'] = existing_book.get('status')
+                book['user_rating'] = existing_book.get('rating')
+            
+            # Détecter la catégorie
+            book['category'] = detect_category_from_subjects(book.get('subjects', []))
+        
+        author_info['bibliography'] = openlibrary_books
+        
+        # Sauvegarder en cache
+        authors_collection.replace_one(
+            {"name": author_name, "source": "openlibrary_universal"},
+            author_info,
+            upsert=True
+        )
+        
+        # Ajouter les statistiques utilisateur
+        author_info = add_user_stats_to_author(current_user, author_info, author_name)
+        
+        return jsonify(author_info)
+        
+    except Exception as e:
+        print(f"Erreur lors de la récupération de l'auteur OpenLibrary: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+def add_user_stats_to_author(current_user, author_info, author_name):
+    """Ajoute les statistiques utilisateur aux informations de l'auteur"""
+    # Livres de l'utilisateur pour cet auteur
+    user_books = list(books_collection.find({"user_id": current_user["id"], "author": author_name}, {"_id": 0}))
+    
+    # Statistiques depuis la bibliographie complète
+    bibliography = author_info.get('bibliography', [])
+    user_books_in_bibliography = [book for book in bibliography if book.get('in_user_library')]
+    
+    author_info['user_stats'] = {
+        'books_read': len([b for b in user_books_in_bibliography if b.get('user_status') == 'completed']),
+        'books_reading': len([b for b in user_books_in_bibliography if b.get('user_status') == 'reading']),
+        'books_to_read': len([b for b in user_books_in_bibliography if b.get('user_status') == 'to_read']),
+        'total_user_books': len(user_books_in_bibliography),
+        'total_bibliography': len(bibliography),
+        'completion_percentage': round((len(user_books_in_bibliography) / len(bibliography)) * 100, 1) if bibliography else 0,
+        'user_books': user_books
+    }
+    
+    return author_info
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8001, debug=True)
