@@ -284,8 +284,6 @@ function LoginPage() {
   const { login, register } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
     firstName: '',
     lastName: ''
   });
