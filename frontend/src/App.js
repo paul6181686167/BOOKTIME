@@ -250,29 +250,50 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Vérifier si l'utilisateur est connecté
     const currentUser = authService.getCurrentUser();
-    setUser(currentUser);
+    if (currentUser) {
+      setUser(currentUser);
+    }
     setLoading(false);
   }, []);
 
   const login = async (firstName, lastName) => {
-    const result = await authService.login(firstName, lastName);
-    if (result.success) {
-      setUser(result.user);
+    try {
+      const result = await authService.login(firstName, lastName);
+      if (result.success) {
+        setUser(result.user);
+        // Force re-render and state update
+        setTimeout(() => {
+          window.location.reload(); // Temporary fix to ensure state sync
+        }, 100);
+      }
+      return result;
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, error: 'Erreur de connexion' };
     }
-    return result;
   };
 
   const register = async (firstName, lastName) => {
-    const result = await authService.register(firstName, lastName);
-    if (result.success) {
-      setUser(result.user);
+    try {
+      const result = await authService.register(firstName, lastName);
+      if (result.success) {
+        setUser(result.user);
+        // Force re-render and state update
+        setTimeout(() => {
+          window.location.reload(); // Temporary fix to ensure state sync
+        }, 100);
+      }
+      return result;
+    } catch (error) {
+      console.error('Register error:', error);
+      return { success: false, error: 'Erreur d\'inscription' };
     }
-    return result;
   };
 
   const logout = () => {
     authService.logout();
     setUser(null);
+    window.location.reload(); // Ensure clean logout
   };
 
   return (
