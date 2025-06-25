@@ -261,7 +261,8 @@ export const mockBookService = {
     }));
   },
 
-  async getSagas() {
+  // Nouvelles méthodes pour les séries
+  async getSeries() {
     const data = loadData();
     const sagasMap = {};
     
@@ -270,29 +271,123 @@ export const mockBookService = {
         if (!sagasMap[book.saga]) {
           sagasMap[book.saga] = {
             name: book.saga,
-            books_count: 0,
+            books: [],
+            total_books: 0,
             completed_books: 0,
+            reading_books: 0,
+            to_read_books: 0,
             author: book.author,
             category: book.category,
-            next_volume: 1
+            cover_url: book.cover_url || "",
+            description: book.description || ""
           };
         }
         
-        sagasMap[book.saga].books_count++;
+        sagasMap[book.saga].books.push(book);
+        sagasMap[book.saga].total_books++;
+        
         if (book.status === "completed") {
           sagasMap[book.saga].completed_books++;
-        }
-        if (book.volume_number) {
-          sagasMap[book.saga].next_volume = Math.max(
-            sagasMap[book.saga].next_volume, 
-            book.volume_number + 1
-          );
+        } else if (book.status === "reading") {
+          sagasMap[book.saga].reading_books++;
+        } else {
+          sagasMap[book.saga].to_read_books++;
         }
       }
     });
     
-    return Object.values(sagasMap);
-  }
+    // Trier les livres par numéro de tome dans chaque série
+    Object.values(sagasMap).forEach(series => {
+      series.books.sort((a, b) => (a.volume_number || 0) - (b.volume_number || 0));
+    });
+    
+    return {
+      series: Object.values(sagasMap).sort((a, b) => a.name.localeCompare(b.name)),
+      total_series: Object.keys(sagasMap).length
+    };
+  },
+
+  async getSeriesDetails(seriesName) {
+    const data = loadData();
+    const books = data.books.filter(book => book.saga === seriesName)
+      .sort((a, b) => (a.volume_number || 0) - (b.volume_number || 0));
+    
+    if (books.length === 0) {
+      throw new Error('Série non trouvée');
+    }
+    
+    const stats = {
+      total_books: books.length,
+      completed_books: books.filter(b => b.status === "completed").length,
+      reading_books: books.filter(b => b.status === "reading").length,
+      to_read_books: books.filter(b => b.status === "to_read").length,
+    };
+    
+    const firstBook = books[0];
+    return {
+      name: seriesName,
+      author: firstBook.author,
+      category: firstBook.category,
+      description: firstBook.description || "",
+      cover_url: firstBook.cover_url || "",
+      books: books,
+      stats: stats
+    };
+  },
+
+  async getSeriesBooks(seriesName) {
+    const data = loadData();
+    const books = data.books.filter(book => book.saga === seriesName)
+      .sort((a, b) => (a.volume_number || 0) - (b.volume_number || 0));
+    
+    if (books.length === 0) {
+      throw new Error('Série non trouvée');
+    }
+    
+    return {
+      series_name: seriesName,
+      books: books,
+      total_books: books.length
+    };
+  },
+
+  async searchSeries(query) {
+    const data = loadData();
+    const sagasMap = {};
+    
+    // Rechercher dans les noms de séries
+    data.books.forEach(book => {
+      if (book.saga && book.saga.toLowerCase().includes(query.toLowerCase())) {
+        if (!sagasMap[book.saga]) {
+          sagasMap[book.saga] = {
+            name: book.saga,
+            books_count: 0,
+            author: book.author,
+            category: book.category,
+            cover_url: book.cover_url || "",
+            first_book: book
+          };
+        }
+        sagasMap[book.saga].books_count++;
+      }
+    });
+    
+    // Rechercher aussi dans les titres de livres
+    const titleBooks = data.books.filter(book => 
+      book.title.toLowerCase().includes(query.toLowerCase())
+    );
+    
+    return {
+      series: Object.values(sagasMap),
+      books: titleBooks,
+      query: query
+    };
+  },
+
+  async getSagas() {
+    const seriesData = await this.getSeries();
+    return seriesData.series;
+  },
 };
 
 // Service adaptatif : utilise le vrai service si backend disponible, sinon mock
