@@ -692,6 +692,30 @@ function AppContent() {
       <Header />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Barre de recherche */}
+        <div className="mb-6">
+          <AdvancedSearchBar
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            books={books}
+            filters={filters}
+            onFiltersChange={setFilters}
+            className="max-w-2xl mx-auto"
+          />
+          
+          {/* Statistiques de recherche */}
+          {searchStats.hasActiveFilters && (
+            <div className="mt-3 text-center">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {searchStats.filtered} résultat{searchStats.filtered > 1 ? 's' : ''} trouvé{searchStats.filtered > 1 ? 's' : ''} 
+                {searchStats.hiddenCount > 0 && (
+                  <span> ({searchStats.hiddenCount} masqué{searchStats.hiddenCount > 1 ? 's' : ''})</span>
+                )}
+              </p>
+            </div>
+          )}
+        </div>
+
         <TabNavigation />
         <BookGrid />
       </main>
