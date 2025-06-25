@@ -735,13 +735,13 @@ function AppContent() {
             </button>
             {/* Indicateur de recherche active */}
             {searchStats.hasActiveFilters && (
-              <div className="hidden sm:flex items-center space-x-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-full">
-                <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+              <div className="hidden sm:flex items-center space-x-2 px-3 py-1 bg-green-50 dark:bg-green-900/20 rounded-full">
+                <span className="text-xs text-green-600 dark:text-green-400 font-medium">
                   {searchStats.filtered} / {searchStats.total} livres
                 </span>
                 <button
                   onClick={clearSearch}
-                  className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-xs underline"
+                  className="text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300 text-xs underline"
                 >
                   Effacer
                 </button>
