@@ -1,7 +1,10 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
 import AdvancedSearchBar from './components/AdvancedSearchBar';
+import BookDetailPage from './components/BookDetailPage';
+import AuthorDetailPage from './components/AuthorDetailPage';
 import { useAdvancedSearch } from './hooks/useAdvancedSearch';
 import './App.css';
 
@@ -204,6 +207,44 @@ class BookService {
 
     if (!response.ok) {
       throw new Error('Failed to fetch books');
+    }
+
+    return response.json();
+  }
+
+  async getBookDetails(bookId) {
+    const response = await fetch(`${this.backendUrl}/api/books/${bookId}`, {
+      headers: this.getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch book details');
+    }
+
+    return response.json();
+  }
+
+  async getAuthorDetails(authorName) {
+    const encodedAuthorName = encodeURIComponent(authorName);
+    const response = await fetch(`${this.backendUrl}/api/authors/${encodedAuthorName}`, {
+      headers: this.getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch author details');
+    }
+
+    return response.json();
+  }
+
+  async getAuthorBooks(authorName) {
+    const encodedAuthorName = encodeURIComponent(authorName);
+    const response = await fetch(`${this.backendUrl}/api/authors/${encodedAuthorName}/books`, {
+      headers: this.getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch author books');
     }
 
     return response.json();
@@ -587,6 +628,7 @@ function ProfileModal({ isOpen, onClose }) {
 
 // Main App Content
 function AppContent() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [books, setBooks] = useState([]);
   const [stats, setStats] = useState({});
@@ -697,6 +739,16 @@ function AppContent() {
     }
   };
 
+  // Navigation vers fiche livre
+  const handleBookClick = (book) => {
+    navigate(`/livre/${book.id}`);
+  };
+
+  // Navigation vers fiche auteur
+  const handleAuthorClick = (authorName) => {
+    navigate(`/auteur/${encodeURIComponent(authorName)}`);
+  };
+
   // Gestionnaire pour ouvrir la recherche Open Library
   const handleOpenLibrarySearch = () => {
     setShowOpenLibraryModal(true);
@@ -708,9 +760,12 @@ function AppContent() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-booktime-600 dark:text-booktime-400">
+            <button 
+              onClick={() => navigate('/')}
+              className="text-2xl font-bold text-booktime-600 dark:text-booktime-400 hover:opacity-80 transition-opacity"
+            >
               📚 BOOKTIME
-            </h1>
+            </button>
             {/* Indicateur de recherche active */}
             {searchStats.hasActiveFilters && (
               <div className="hidden sm:flex items-center space-x-2 px-3 py-1 bg-booktime-50 dark:bg-booktime-900/20 rounded-full">
@@ -784,8 +839,6 @@ function AppContent() {
     </div>
   );
 
-
-
   // Composant Grille de livres réorganisée
   const BookGrid = () => {
     if (loading) {
@@ -822,7 +875,7 @@ function AppContent() {
             {books.map((book) => (
               <div
                 key={book.id}
-                onClick={() => setSelectedBook(book)}
+                onClick={() => handleBookClick(book)}
                 className="cursor-pointer hover:shadow-lg transition-all hover:scale-105 group"
               >
                 <div className="aspect-[2/3] bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden shadow-md">
@@ -835,6 +888,18 @@ function AppContent() {
                   ) : (
                     <span className="text-4xl">📖</span>
                   )}
+                </div>
+                <div className="mt-2 text-center">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{book.title}</p>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAuthorClick(book.author);
+                    }}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline truncate block"
+                  >
+                    {book.author}
+                  </button>
                 </div>
               </div>
             ))}
@@ -986,63 +1051,6 @@ function AppContent() {
     );
   };
 
-  // Modal de détails simplifié
-  const BookDetailModal = () => {
-    if (!selectedBook) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-          <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
-            {selectedBook.title}
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-2">
-            <strong>Auteur:</strong> {selectedBook.author}
-          </p>
-          <p className="text-gray-600 dark:text-gray-400 mb-2">
-            <strong>Catégorie:</strong> {selectedBook.category}
-          </p>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
-            <strong>Statut:</strong> {
-              selectedBook.status === 'completed' ? 'Terminé' :
-              selectedBook.status === 'reading' ? 'En cours' : 'À lire'
-            }
-          </p>
-          
-          <div className="flex justify-between">
-            <button
-              onClick={() => {
-                const newStatus = 
-                  selectedBook.status === 'to_read' ? 'reading' :
-                  selectedBook.status === 'reading' ? 'completed' : 'to_read';
-                handleUpdateBook(selectedBook.id, { status: newStatus });
-              }}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-            >
-              Changer Statut
-            </button>
-            <button
-              onClick={() => {
-                if (window.confirm('Supprimer ce livre ?')) {
-                  handleDeleteBook(selectedBook.id);
-                }
-              }}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-            >
-              Supprimer
-            </button>
-            <button
-              onClick={() => setSelectedBook(null)}
-              className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-            >
-              Fermer
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header />
@@ -1053,7 +1061,6 @@ function AppContent() {
       </main>
 
       <AddBookModal />
-      <BookDetailModal />
       <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
     </div>
   );
@@ -1074,7 +1081,13 @@ function AuthWrapper() {
     );
   }
 
-  return user ? <AppContent /> : <LoginPage />;
+  return user ? (
+    <Routes>
+      <Route path="/" element={<AppContent />} />
+      <Route path="/livre/:bookId" element={<BookDetailPage />} />
+      <Route path="/auteur/:authorName" element={<AuthorDetailPage />} />
+    </Routes>
+  ) : <LoginPage />;
 }
 
 // Main App Component
@@ -1082,19 +1095,21 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <div className="App">
-          <AuthWrapper />
-          <Toaster 
-            position="top-right"
-            toastOptions={{
-              duration: 3000,
-              style: {
-                background: '#363636',
-                color: '#fff',
-              },
-            }}
-          />
-        </div>
+        <Router>
+          <div className="App">
+            <AuthWrapper />
+            <Toaster 
+              position="top-right"
+              toastOptions={{
+                duration: 3000,
+                style: {
+                  background: '#363636',
+                  color: '#fff',
+                },
+              }}
+            />
+          </div>
+        </Router>
       </AuthProvider>
     </ThemeProvider>
   );
