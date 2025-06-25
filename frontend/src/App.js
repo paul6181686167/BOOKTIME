@@ -984,7 +984,7 @@ function AppContent() {
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="roman">Roman</option>
-                <option value="bd">BD</option>
+                <option value="bd">Bande dessinée</option>
                 <option value="manga">Manga</option>
               </select>
             </div>
