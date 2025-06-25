@@ -461,7 +461,7 @@ function ProfileModal({ isOpen, onClose }) {
         {/* Contenu défilable */}
         <div className="flex-1 overflow-y-auto p-4">
           {/* Statistiques compactes */}
-          <div className="mb-6">
+          <div className="mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
               📊 Mes Statistiques
             </h3>
@@ -474,7 +474,7 @@ function ProfileModal({ isOpen, onClose }) {
               </div>
             ) : (
               <div className="space-y-3">
-                {/* Stats principales compactes */}
+                {/* Stats principales */}
                 <div className="grid grid-cols-3 gap-2">
                   <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
                     <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
@@ -496,7 +496,7 @@ function ProfileModal({ isOpen, onClose }) {
                   </div>
                 </div>
 
-                {/* Stats par catégorie compactes */}
+                {/* Stats par catégorie */}
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
                   <h4 className="font-medium text-gray-900 dark:text-white text-sm mb-2">Catégories :</h4>
                   <div className="grid grid-cols-3 gap-2 text-xs">
@@ -521,7 +521,7 @@ function ProfileModal({ isOpen, onClose }) {
                   </div>
                 </div>
 
-                {/* Stats additionnelles condensées */}
+                {/* Stats additionnelles */}
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <span className="text-gray-700 dark:text-gray-300">👥 Auteurs</span>
@@ -570,8 +570,8 @@ function ProfileModal({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* Footer fixe avec bouton déconnexion */}
-        <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-b-2xl">
+        {/* Footer fixe */}
+        <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={handleLogout}
             className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
