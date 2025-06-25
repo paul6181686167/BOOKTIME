@@ -99,14 +99,14 @@ function AuthProvider({ children }) {
     }
   };
 
-  const login = async (email, password) => {
+  const login = async (firstName, lastName) => {
     try {
       const response = await fetch(`${backendUrl}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ first_name: firstName, last_name: lastName })
       });
 
       if (response.ok) {
@@ -123,7 +123,7 @@ function AuthProvider({ children }) {
     }
   };
 
-  const register = async (email, password, firstName, lastName) => {
+  const register = async (firstName, lastName) => {
     try {
       const response = await fetch(`${backendUrl}/api/auth/register`, {
         method: 'POST',
@@ -131,8 +131,6 @@ function AuthProvider({ children }) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          email,
-          password,
           first_name: firstName,
           last_name: lastName
         })
