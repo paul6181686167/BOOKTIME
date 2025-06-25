@@ -627,53 +627,104 @@ function AppContent() {
       );
     }
 
-    if (filteredBooks.length === 0) {
+    if (finalFilteredBooks.length === 0) {
       return (
         <div className="text-center py-12">
-          <p className="text-gray-500">
-            Aucun livre trouvé. Ajoutez votre premier livre !
-          </p>
+          <div className="max-w-md mx-auto">
+            <span className="text-6xl mb-4 block">🔍</span>
+            <p className="text-gray-500 text-lg mb-2">
+              {searchStats.hasActiveFilters ? 'Aucun livre trouvé' : 'Aucun livre dans votre collection'}
+            </p>
+            <p className="text-gray-400 text-sm mb-4">
+              {searchStats.hasActiveFilters 
+                ? 'Essayez de modifier vos critères de recherche' 
+                : 'Ajoutez votre premier livre pour commencer !'}
+            </p>
+            {searchStats.hasActiveFilters && (
+              <button
+                onClick={clearSearch}
+                className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+              >
+                Effacer la recherche
+              </button>
+            )}
+          </div>
         </div>
       );
     }
 
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        {filteredBooks.map((book) => (
-          <div
-            key={book.id}
-            onClick={() => setSelectedBook(book)}
-            className="bg-white rounded-lg border border-gray-200 p-3 cursor-pointer hover:shadow-lg transition-shadow"
-          >
-            <div className="aspect-[2/3] bg-gray-100 rounded mb-2 flex items-center justify-center">
-              {book.cover_url ? (
-                <img
-                  src={book.cover_url}
-                  alt={book.title}
-                  className="w-full h-full object-cover rounded"
-                />
-              ) : (
-                <span className="text-4xl">📖</span>
-              )}
-            </div>
-            <h3 className="font-medium text-sm text-gray-900 truncate">
-              {book.title}
-            </h3>
-            <p className="text-xs text-gray-600 truncate">
-              {book.author}
-            </p>
-            <div className="mt-2">
-              <span className={`inline-block px-2 py-1 rounded-full text-xs ${
-                book.status === 'completed' ? 'bg-green-100 text-green-800' :
-                book.status === 'reading' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-blue-100 text-blue-800'
-              }`}>
-                {book.status === 'completed' ? '✅' :
-                 book.status === 'reading' ? '📖' : '📚'}
+      <div>
+        {/* Résumé des résultats */}
+        {searchStats.hasActiveFilters && (
+          <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                <strong>{finalFilteredBooks.length}</strong> livre{finalFilteredBooks.length > 1 ? 's' : ''} trouvé{finalFilteredBooks.length > 1 ? 's' : ''}
+                {searchStats.hiddenCount > 0 && (
+                  <span className="ml-2 text-gray-500">
+                    ({searchStats.hiddenCount} masqué{searchStats.hiddenCount > 1 ? 's' : ''})
+                  </span>
+                )}
               </span>
+              <button
+                onClick={clearSearch}
+                className="text-xs text-blue-500 hover:text-blue-600 underline"
+              >
+                Effacer les filtres
+              </button>
             </div>
           </div>
-        ))}
+        )}
+
+        {/* Grille de livres */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {finalFilteredBooks.map((book) => (
+            <div
+              key={book.id}
+              onClick={() => setSelectedBook(book)}
+              className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 cursor-pointer hover:shadow-lg transition-all hover:scale-105 group"
+            >
+              <div className="aspect-[2/3] bg-gray-100 dark:bg-gray-700 rounded mb-2 flex items-center justify-center overflow-hidden">
+                {book.cover_url ? (
+                  <img
+                    src={book.cover_url}
+                    alt={book.title}
+                    className="w-full h-full object-cover rounded group-hover:scale-110 transition-transform duration-300"
+                  />
+                ) : (
+                  <span className="text-4xl">📖</span>
+                )}
+              </div>
+              <h3 className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                {book.title}
+              </h3>
+              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                {book.author}
+              </p>
+              {book.saga && (
+                <p className="text-xs text-booktime-600 dark:text-booktime-400 truncate mt-1">
+                  📚 {book.saga}
+                </p>
+              )}
+              <div className="mt-2 flex items-center justify-between">
+                <span className={`inline-block px-2 py-1 rounded-full text-xs ${
+                  book.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
+                  book.status === 'reading' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
+                  'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
+                }`}>
+                  {book.status === 'completed' ? '✅' :
+                   book.status === 'reading' ? '📖' : '📚'}
+                </span>
+                {book.rating && (
+                  <span className="text-xs text-yellow-500">
+                    {'⭐'.repeat(book.rating)}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   };
