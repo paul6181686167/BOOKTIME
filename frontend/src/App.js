@@ -371,14 +371,43 @@ function LoginPage() {
 function AppContent() {
   const { user } = useAuth();
   const [books, setBooks] = useState([]);
-  const [filteredBooks, setFilteredBooks] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('roman');
   const [activeStatus, setActiveStatus] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showOpenLibraryModal, setShowOpenLibraryModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
+
+  // Utiliser le hook de recherche avancée
+  const {
+    searchTerm,
+    setSearchTerm,
+    filters,
+    setFilters,
+    filteredBooks: searchFilteredBooks,
+    searchStats,
+    clearSearch
+  } = useAdvancedSearch(books);
+
+  // Appliquer les filtres d'onglets et de statut par-dessus la recherche avancée
+  const [finalFilteredBooks, setFinalFilteredBooks] = useState([]);
+
+  useEffect(() => {
+    let filtered = searchFilteredBooks;
+
+    // Filtrer par onglet actif
+    if (activeTab !== 'all') {
+      filtered = filtered.filter(book => book.category === activeTab);
+    }
+
+    // Filtrer par statut actif
+    if (activeStatus !== 'all') {
+      filtered = filtered.filter(book => book.status === activeStatus);
+    }
+
+    setFinalFilteredBooks(filtered);
+  }, [searchFilteredBooks, activeTab, activeStatus]);
 
   // Charger les livres au démarrage
   useEffect(() => {
@@ -387,24 +416,6 @@ function AppContent() {
       loadStats();
     }
   }, [user]);
-
-  // Filtrer les livres selon l'onglet actif, le statut et la recherche
-  useEffect(() => {
-    let filtered = books.filter(book => book.category === activeTab);
-    
-    if (activeStatus !== 'all') {
-      filtered = filtered.filter(book => book.status === activeStatus);
-    }
-    
-    if (searchTerm) {
-      filtered = filtered.filter(book => 
-        book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        book.author.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    setFilteredBooks(filtered);
-  }, [books, activeTab, activeStatus, searchTerm]);
 
   const loadBooks = async () => {
     try {
