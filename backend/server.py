@@ -12,6 +12,7 @@ import re
 import time
 from pydantic import BaseModel
 from typing import Optional, List
+from deep_translator import GoogleTranslator
 
 # Chargement des variables d'environnement
 from dotenv import load_dotenv
