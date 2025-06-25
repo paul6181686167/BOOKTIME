@@ -420,13 +420,23 @@ function ProfileModal({ isOpen, onClose }) {
     toast.success('Déconnexion réussie');
   };
 
+  // Fermeture par clic sur l'arrière-plan
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={handleBackdropClick}
+    >
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col">
+        {/* Header fixe */}
+        <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-t-2xl">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Profil</h2>
@@ -437,107 +447,88 @@ function ProfileModal({ isOpen, onClose }) {
             <button
               onClick={onClose}
               className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              title="Fermer"
             >
               ✕
             </button>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-6">
-          {/* Statistiques */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+        {/* Contenu défilable */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {/* Statistiques compactes */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
               📊 Mes Statistiques
             </h3>
             
             {loading ? (
-              <div className="space-y-3">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              <div className="space-y-2">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                 ))}
               </div>
             ) : (
-              <div className="space-y-4">
-                {/* Stats générales */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              <div className="space-y-3">
+                {/* Stats principales compactes */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
+                    <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
                       {stats.total_books || 0}
                     </div>
-                    <div className="text-sm text-blue-600 dark:text-blue-400">Total</div>
+                    <div className="text-xs text-blue-600 dark:text-blue-400">Total</div>
                   </div>
-                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
+                    <div className="text-lg font-bold text-green-600 dark:text-green-400">
                       {stats.completed_books || 0}
                     </div>
-                    <div className="text-sm text-green-600 dark:text-green-400">Terminés</div>
+                    <div className="text-xs text-green-600 dark:text-green-400">Terminés</div>
+                  </div>
+                  <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 text-center">
+                    <div className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                      {stats.reading_books || 0}
+                    </div>
+                    <div className="text-xs text-orange-600 dark:text-orange-400">En cours</div>
                   </div>
                 </div>
 
-                {/* Stats par catégorie */}
-                <div className="space-y-3">
-                  <h4 className="font-medium text-gray-900 dark:text-white">Par catégorie :</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                      <span className="flex items-center text-gray-700 dark:text-gray-300">
-                        📚 Romans
-                      </span>
-                      <span className="font-medium text-gray-900 dark:text-white">
+                {/* Stats par catégorie compactes */}
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                  <h4 className="font-medium text-gray-900 dark:text-white text-sm mb-2">Catégories :</h4>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="text-center">
+                      <div className="font-medium text-gray-900 dark:text-white">
                         {stats.categories?.roman || 0}
-                      </span>
+                      </div>
+                      <div className="text-gray-600 dark:text-gray-400">Romans</div>
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                      <span className="flex items-center text-gray-700 dark:text-gray-300">
-                        🎨 Bande dessinée
-                      </span>
-                      <span className="font-medium text-gray-900 dark:text-white">
+                    <div className="text-center">
+                      <div className="font-medium text-gray-900 dark:text-white">
                         {stats.categories?.bd || 0}
-                      </span>
+                      </div>
+                      <div className="text-gray-600 dark:text-gray-400">BD</div>
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                      <span className="flex items-center text-gray-700 dark:text-gray-300">
-                        🇯🇵 Mangas
-                      </span>
-                      <span className="font-medium text-gray-900 dark:text-white">
+                    <div className="text-center">
+                      <div className="font-medium text-gray-900 dark:text-white">
                         {stats.categories?.manga || 0}
-                      </span>
+                      </div>
+                      <div className="text-gray-600 dark:text-gray-400">Mangas</div>
                     </div>
                   </div>
                 </div>
 
-                {/* Stats additionnelles */}
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <span className="flex items-center text-gray-700 dark:text-gray-300">
-                      👥 Auteurs différents
-                    </span>
+                {/* Stats additionnelles condensées */}
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <span className="text-gray-700 dark:text-gray-300">👥 Auteurs</span>
                     <span className="font-medium text-gray-900 dark:text-white">
                       {stats.authors_count || 0}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <span className="flex items-center text-gray-700 dark:text-gray-300">
-                      📖 Sagas
-                    </span>
+                  <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <span className="text-gray-700 dark:text-gray-300">📖 Sagas</span>
                     <span className="font-medium text-gray-900 dark:text-white">
                       {stats.sagas_count || 0}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <span className="flex items-center text-gray-700 dark:text-gray-300">
-                      📚 En cours
-                    </span>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {stats.reading_books || 0}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <span className="flex items-center text-gray-700 dark:text-gray-300">
-                      📋 À lire
-                    </span>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {stats.to_read_books || 0}
                     </span>
                   </div>
                 </div>
@@ -546,45 +537,43 @@ function ProfileModal({ isOpen, onClose }) {
           </div>
 
           {/* Paramètres */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
               ⚙️ Paramètres
             </h3>
             
-            <div className="space-y-4">
-              {/* Mode sombre */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                <div>
-                  <span className="font-medium text-gray-900 dark:text-white">Mode sombre</span>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Basculer entre thème clair et sombre
-                  </p>
-                </div>
-                <button
-                  onClick={toggleTheme}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                    isDark ? 'bg-blue-600' : 'bg-gray-200'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      isDark ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
+            {/* Mode sombre */}
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <div>
+                <span className="font-medium text-gray-900 dark:text-white text-sm">Mode sombre</span>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  Basculer entre thème clair et sombre
+                </p>
               </div>
+              <button
+                onClick={toggleTheme}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  isDark ? 'bg-blue-600' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                    isDark ? 'translate-x-5' : 'translate-x-1'
+                  }`}
+                />
+              </button>
             </div>
           </div>
+        </div>
 
-          {/* Actions */}
-          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-            <button
-              onClick={handleLogout}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
-            >
-              Se déconnecter
-            </button>
-          </div>
+        {/* Footer fixe avec bouton déconnexion */}
+        <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-b-2xl">
+          <button
+            onClick={handleLogout}
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+          >
+            Se déconnecter
+          </button>
         </div>
       </div>
     </div>
