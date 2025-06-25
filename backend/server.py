@@ -405,9 +405,9 @@ async def get_book_details(book_id: str, current_user = Depends(get_current_user
                                 editions = work_details['editions']
                                 
                                 enriched_data = {
-                                    'description': work.get('description', {}).get('value', '') if isinstance(work.get('description'), dict) else work.get('description', ''),
+                                    'description': translate_to_french(work.get('description', {}).get('value', '') if isinstance(work.get('description'), dict) else work.get('description', '')),
                                     'subjects': work.get('subjects', [])[:10],
-                                    'first_sentence': work.get('first_sentence', {}).get('value', '') if isinstance(work.get('first_sentence'), dict) else '',
+                                    'first_sentence': translate_to_french(work.get('first_sentence', {}).get('value', '') if isinstance(work.get('first_sentence'), dict) else ''),
                                     'work_key': work_key,
                                     'openlibrary_url': f"https://openlibrary.org/works/{work_key}",
                                     'editions_info': []
