@@ -76,19 +76,6 @@ const AdvancedSearchBar = React.memo(({
     }
   }, []);
 
-  // Sauvegarder les recherches récentes (mémorisé)
-  const saveRecentSearch = useCallback((term) => {
-    if (!term.trim() || term.length < 2) return;
-    
-    const newRecentSearches = [
-      term,
-      ...recentSearches.filter(search => search !== term)
-    ].slice(0, 5); // Garder seulement les 5 dernières
-    
-    setRecentSearches(newRecentSearches);
-    localStorage.setItem('booktime-recent-searches', JSON.stringify(newRecentSearches));
-  }, [recentSearches]);
-
   // Générer des suggestions basées sur la recherche et les livres existants (mémorisé)
   const memoizedSuggestions = useMemo(() => {
     if (!localSearchTerm || localSearchTerm.length < 2) {
