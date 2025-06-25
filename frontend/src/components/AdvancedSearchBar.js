@@ -5,7 +5,6 @@ import {
   XMarkIcon,
   BookOpenIcon,
   UserIcon,
-  GlobeAltIcon,
   ClockIcon,
   BookmarkIcon
 } from '@heroicons/react/24/outline';
