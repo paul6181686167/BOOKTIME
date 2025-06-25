@@ -2,7 +2,10 @@ import React, { useState, useEffect, useContext, createContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 
-// Import des composants
+// Import des contexts
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+
+// Import des hooks et composants
 import { useAdvancedSearch } from './hooks/useAdvancedSearch';
 import AdvancedSearchBar from './components/AdvancedSearchBar';
 import OpenLibrarySearch from './components/OpenLibrarySearch';
