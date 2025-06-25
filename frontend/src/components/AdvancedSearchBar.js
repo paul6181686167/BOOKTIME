@@ -11,7 +11,7 @@ import {
   BookmarkIcon
 } from '@heroicons/react/24/outline';
 
-const AdvancedSearchBar = ({ 
+const AdvancedSearchBar = React.memo(({ 
   searchTerm, 
   onSearchChange, 
   books = [], 
@@ -24,6 +24,8 @@ const AdvancedSearchBar = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [recentSearches, setRecentSearches] = useState([]);
+  // État local pour l'input pour éviter les re-rendus
+  const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm || '');
 
   const searchInputRef = useRef(null);
   const suggestionsRef = useRef(null);
