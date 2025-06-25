@@ -643,17 +643,36 @@ function AppContent() {
       );
     }
 
-    if (filteredBooks.length === 0) {
+    if (displayedBooks.length === 0) {
       return (
         <div className="text-center py-12">
           <div className="max-w-md mx-auto">
             <span className="text-6xl mb-4 block">📚</span>
-            <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">
-              Aucun livre dans cette catégorie
-            </p>
-            <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">
-              Ajoutez votre premier livre pour commencer !
-            </p>
+            {searchStats.hasActiveFilters ? (
+              <>
+                <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">
+                  Aucun livre trouvé
+                </p>
+                <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">
+                  Essayez d'ajuster vos critères de recherche
+                </p>
+                <button
+                  onClick={clearSearch}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                >
+                  Effacer les filtres
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">
+                  Aucun livre dans cette catégorie
+                </p>
+                <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">
+                  Ajoutez votre premier livre pour commencer !
+                </p>
+              </>
+            )}
           </div>
         </div>
       );
@@ -661,7 +680,7 @@ function AppContent() {
 
     return (
       <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-3">
-        {filteredBooks.map((book) => (
+        {displayedBooks.map((book) => (
           <div
             key={book.id}
             className="cursor-pointer hover:shadow-lg transition-all hover:scale-105 group"
