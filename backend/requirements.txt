@@ -12,4 +12,4 @@ httpx==0.25.2
 httpcore==1.0.2
 Pillow==10.1.0
 fastapi-cors==0.0.6
-deep-translator==1.11.4
+deep-translator==1.11.4beautifulsoup4
