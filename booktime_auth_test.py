@@ -32,6 +32,9 @@ class BooktimeAuthAPITest(unittest.TestCase):
         self.token = None
         self.user_id = None
         self.book_ids_to_delete = []
+        
+        # Debug info
+        print(f"\nUsing API URL: {API_URL}")
 
     def tearDown(self):
         """Clean up after each test"""
