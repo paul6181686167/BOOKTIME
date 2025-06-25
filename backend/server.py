@@ -133,13 +133,16 @@ def login():
     data = request.get_json()
     
     # Validation des données
-    if not data or not all(k in data for k in ('email', 'password')):
-        return jsonify({'error': 'Missing email or password'}), 400
+    if not data or not all(k in data for k in ('first_name', 'last_name')):
+        return jsonify({'error': 'Missing first_name or last_name'}), 400
     
     # Trouver l'utilisateur
-    user = users_collection.find_one({"email": data['email']})
-    if not user or not verify_password(data['password'], user["password"]):
-        return jsonify({'error': 'Incorrect email or password'}), 401
+    user = users_collection.find_one({
+        "first_name": data['first_name'], 
+        "last_name": data['last_name']
+    })
+    if not user:
+        return jsonify({'error': 'User not found'}), 401
     
     # Créer le token d'accès
     access_token = create_access_token(data={"sub": user["id"]})
@@ -149,7 +152,6 @@ def login():
         "token_type": "bearer",
         "user": {
             "id": user["id"],
-            "email": user["email"],
             "first_name": user["first_name"],
             "last_name": user["last_name"]
         }
