@@ -668,6 +668,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Login form works correctly. The form includes email and password fields. Successfully logged in with the registered user credentials and was redirected to the main app interface."
+      - working: true
+        agent: "testing"
+        comment: "Login form has been successfully modified to use only first name and last name fields. Email and password fields have been removed. Successfully logged in with the registered user's first name and last name, and was redirected to the main app interface."
 
   - task: "Authentication - Session Management"
     implemented: true
