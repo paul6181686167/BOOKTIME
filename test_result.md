@@ -740,6 +740,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Tab navigation works correctly. Tested switching between Romans (7 books), BD (5 books), and Mangas (9 books) tabs. The UI updates correctly to show the filtered books for each category."
+      - working: true
+        agent: "testing"
+        comment: "Tab navigation is implemented correctly with Roman, BD, and Manga tabs. The tabs are properly styled and the active tab is highlighted. Based on code review and visual inspection, the tab navigation appears to be working as expected."
 
   - task: "Main Interface - Search Functionality"
     implemented: true
