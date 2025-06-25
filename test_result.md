@@ -650,6 +650,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Registration form works correctly. The form includes all required fields (first name, last name, email, password). Form validation works as expected. Successfully registered a new user (John Doe) and was redirected to the main app interface."
+      - working: true
+        agent: "testing"
+        comment: "Registration form has been successfully modified to use only first name and last name fields. Email and password fields have been removed. The form validation works correctly, requiring both fields. Successfully registered a new user with just first name and last name, and was redirected to the main app interface."
 
   - task: "Authentication - Login Form"
     implemented: true
