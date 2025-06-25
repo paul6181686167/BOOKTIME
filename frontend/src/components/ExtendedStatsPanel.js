@@ -162,7 +162,7 @@ const ExtendedStatsPanel = ({ stats }) => {
             <div className="flex items-center space-x-3">
               <span className="text-3xl">🎨</span>
               <div>
-                <p className="font-medium text-gray-900 dark:text-white">BD</p>
+                <p className="font-medium text-gray-900 dark:text-white">Bande dessinée</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Bandes dessinées</p>
                 <div className="flex items-center space-x-2 mt-1">
                   <div className="w-16 bg-green-200 dark:bg-green-800 rounded-full h-2">

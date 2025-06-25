@@ -85,7 +85,7 @@ const StatsPanel = ({ stats }) => {
             <div className="flex items-center space-x-3">
               <span className="text-2xl">🎨</span>
               <div>
-                <p className="font-medium text-gray-900">BD</p>
+                <p className="font-medium text-gray-900">Bande dessinée</p>
                 <p className="text-sm text-gray-600">Bandes dessinées</p>
               </div>
             </div>
