@@ -3,7 +3,7 @@ import React from 'react';
 const TabNavigation = ({ activeTab, onTabChange, activeStatus, onStatusChange }) => {
   const tabs = [
     { key: 'roman', label: 'Romans', icon: '📚', color: 'book-roman' },
-    { key: 'bd', label: 'BD', icon: '🎨', color: 'book-bd' },
+    { key: 'bd', label: 'Bande dessinée', icon: '🎨', color: 'book-bd' },
     { key: 'manga', label: 'Mangas', icon: '🇯🇵', color: 'book-manga' },
   ];
 

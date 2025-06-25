@@ -196,7 +196,7 @@ const AdvancedSearchBar = React.memo(({
   const categoryOptions = [
     { value: '', label: 'Toutes les catégories' },
     { value: 'roman', label: 'Romans', icon: '📚' },
-    { value: 'bd', label: 'BD', icon: '🎨' },
+    { value: 'bd', label: 'Bande dessinée', icon: '🎨' },
     { value: 'manga', label: 'Mangas', icon: '🇯🇵' }
   ];
 

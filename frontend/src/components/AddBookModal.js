@@ -82,7 +82,7 @@ const AddBookModal = ({ onClose, onAdd, defaultCategory = 'roman' }) => {
 
   const categories = [
     { value: 'roman', label: 'Roman', icon: '📚' },
-    { value: 'bd', label: 'BD', icon: '🎨' },
+    { value: 'bd', label: 'Bande dessinée', icon: '🎨' },
     { value: 'manga', label: 'Manga', icon: '🇯🇵' },
   ];
 
