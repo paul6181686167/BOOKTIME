@@ -554,8 +554,11 @@ async def get_author_details(author_name: str, current_user = Depends(get_curren
         # Récupérer les infos Wikipedia
         wikipedia_info = get_wikipedia_author_info(author_name)
         if wikipedia_info:
+            biography = wikipedia_info.get('extract', '')
+            # S'assurer que la biographie est en français (elle devrait déjà l'être depuis Wikipedia FR)
+            # Mais on peut la nettoyer si nécessaire
             author_info.update({
-                'biography': wikipedia_info.get('extract', ''),
+                'biography': biography,  # Pas besoin de traduire, Wikipedia FR retourne déjà du français
                 'photo_url': wikipedia_info.get('thumbnail', ''),
                 'wikipedia_url': wikipedia_info.get('wikipedia_url', ''),
                 'birth_date': wikipedia_info.get('birth_date'),
