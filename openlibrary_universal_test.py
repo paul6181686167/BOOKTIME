@@ -11,7 +11,7 @@ class OpenLibraryUniversalTest(unittest.TestCase):
         """Setup for each test"""
         # Get the backend URL from environment or use default
         import os
-        self.backend_url = "https://6b7f3a2a-56b0-4f6f-992e-a6fe866a02ad.preview.emergentagent.com"
+        self.backend_url = "http://localhost:8001"
         self.api_url = f"{self.backend_url}/api"
         
         # Register a test user
