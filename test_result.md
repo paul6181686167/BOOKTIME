@@ -686,6 +686,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Session management works correctly. The user remains logged in after page refresh. Logging out (by removing the token from localStorage) correctly redirects to the login page."
+      - working: true
+        agent: "testing"
+        comment: "Session management continues to work correctly with the modified authentication system. The JWT token is properly stored in localStorage after login with first name and last name. The user remains logged in after page refresh. Logging out correctly removes the token and redirects to the login page."
 
   - task: "Main Interface - Tab Navigation"
     implemented: true
