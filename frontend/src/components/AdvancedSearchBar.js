@@ -184,13 +184,13 @@ const AdvancedSearchBar = React.memo(({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Gérer les changements de filtres
-  const handleFilterChange = (key, value) => {
+  // Gérer les changements de filtres (mémorisé)
+  const handleFilterChange = useCallback((key, value) => {
     onFiltersChange({ ...filters, [key]: value });
-  };
+  }, [filters, onFiltersChange]);
 
-  // Nettoyer tous les filtres
-  const clearAllFilters = () => {
+  // Nettoyer tous les filtres (mémorisé)
+  const clearAllFilters = useCallback(() => {
     onFiltersChange({
       category: '',
       status: '',
@@ -201,7 +201,7 @@ const AdvancedSearchBar = React.memo(({
       minRating: '',
       hasReview: false
     });
-  };
+  }, [onFiltersChange]);
 
   // Compter les filtres actifs
   const activeFiltersCount = Object.values(filters || {}).filter(value => 
