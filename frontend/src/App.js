@@ -741,14 +741,6 @@ function AppContent() {
 
           {/* Actions utilisateur */}
           <div className="flex items-center space-x-3">
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center space-x-1 px-4 py-2 text-sm font-medium text-white bg-booktime-600 border border-transparent rounded-md hover:bg-booktime-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-booktime-500 transition-colors"
-            >
-              <span className="text-sm">➕</span>
-              <span className="hidden sm:inline">Ajouter</span>
-            </button>
-            
             {/* Bouton Profil */}
             <button
               onClick={() => setShowProfileModal(true)}
