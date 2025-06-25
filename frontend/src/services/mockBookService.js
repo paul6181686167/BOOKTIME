@@ -482,5 +482,41 @@ export const adaptiveBookService = {
       console.log('🔄 Backend indisponible, utilisation du mode offline');
       return await mockBookService.getSagas(...args);
     }
+  },
+
+  async getSeries(...args) {
+    try {
+      return await realBookService.getSeries(...args);
+    } catch (error) {
+      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      return await mockBookService.getSeries(...args);
+    }
+  },
+
+  async getSeriesDetails(...args) {
+    try {
+      return await realBookService.getSeriesDetails(...args);
+    } catch (error) {
+      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      return await mockBookService.getSeriesDetails(...args);
+    }
+  },
+
+  async getSeriesBooks(...args) {
+    try {
+      return await realBookService.getSeriesBooks(...args);
+    } catch (error) {
+      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      return await mockBookService.getSeriesBooks(...args);
+    }
+  },
+
+  async searchSeries(...args) {
+    try {
+      return await realBookService.searchSeries(...args);
+    } catch (error) {
+      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      return await mockBookService.searchSeries(...args);
+    }
   }
 };
