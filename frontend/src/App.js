@@ -1,6 +1,8 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
+import AdvancedSearchBar from './components/AdvancedSearchBar';
+import { useAdvancedSearch } from './hooks/useAdvancedSearch';
 import './App.css';
 
 // Auth Context
