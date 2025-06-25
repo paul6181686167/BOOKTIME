@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { 
   MagnifyingGlassIcon, 
   AdjustmentsHorizontalIcon,
@@ -6,7 +8,8 @@ import {
   BookOpenIcon,
   UserIcon,
   ClockIcon,
-  BookmarkIcon
+  BookmarkIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/outline';
 
 const AdvancedSearchBar = React.memo(({ 
@@ -18,15 +21,20 @@ const AdvancedSearchBar = React.memo(({
   onFiltersChange,
   className = '' 
 }) => {
+  const navigate = useNavigate();
   const [showFilters, setShowFilters] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [recentSearches, setRecentSearches] = useState([]);
+  const [universalResults, setUniversalResults] = useState([]);
+  const [showUniversalResults, setShowUniversalResults] = useState(false);
+  const [searchingUniversal, setSearchingUniversal] = useState(false);
   // État local pour l'input pour éviter les re-rendus
   const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm || '');
 
   const searchInputRef = useRef(null);
   const suggestionsRef = useRef(null);
+  const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
   // Synchroniser l'état local avec la prop searchTerm seulement si différent
   useEffect(() => {
@@ -34,6 +42,45 @@ const AdvancedSearchBar = React.memo(({
       setLocalSearchTerm(searchTerm || '');
     }
   }, [searchTerm]);
+
+  // Recherche universelle OpenLibrary
+  const searchUniversal = useCallback(async (query) => {
+    if (!query.trim() || query.length < 3) {
+      setUniversalResults([]);
+      return;
+    }
+
+    try {
+      setSearchingUniversal(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${backendUrl}/api/openlibrary/search-universal?q=${encodeURIComponent(query)}&limit=10`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUniversalResults(data.books.slice(0, 5)); // Limiter à 5 pour l'affichage
+      }
+    } catch (error) {
+      console.error('Erreur recherche universelle:', error);
+    } finally {
+      setSearchingUniversal(false);
+    }
+  }, [backendUrl]);
+
+  // Débounce pour la recherche universelle
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localSearchTerm && showSuggestions) {
+        searchUniversal(localSearchTerm);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [localSearchTerm, showSuggestions, searchUniversal]);
 
   // Sauvegarder les recherches récentes (mémorisé)
   const saveRecentSearch = useCallback((term) => {
