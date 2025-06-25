@@ -10,8 +10,6 @@ import jwt
 import os
 import requests
 from typing import Optional, List, Dict, Any
-import asyncio
-from motor.motor_asyncio import AsyncIOMotorClient
 
 # Chargement des variables d'environnement
 from dotenv import load_dotenv
@@ -19,14 +17,15 @@ load_dotenv()
 
 app = FastAPI(title="BookTime API", version="1.0.0")
 
-# Configuration CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
-)
+# Configuration CORS - méthode alternative
+@app.middleware("http")
+async def cors_handler(request, call_next):
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
 
 # Configuration base de données
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017/booktime")
