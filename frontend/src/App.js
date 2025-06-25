@@ -6,6 +6,9 @@ import { toast, Toaster } from 'react-hot-toast';
 // Context imports
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
+// Service imports
+import { bookService } from './services/bookService';
+
 import './App.css';
 
 // Service d'authentification simple
@@ -29,7 +32,7 @@ class AuthService {
         return { success: true, user: data.user };
       } else {
         const error = await response.json();
-        return { success: false, error: error.error };
+        return { success: false, error: error.detail || 'Erreur de connexion' };
       }
     } catch (error) {
       return { success: false, error: 'Erreur de connexion' };
@@ -51,10 +54,24 @@ class AuthService {
         return { success: true, user: data.user };
       } else {
         const error = await response.json();
-        return { success: false, error: error.error };
+        return { success: false, error: error.detail || 'Erreur d\'inscription' };
       }
     } catch (error) {
-      return { success: false, error: 'Erreur de création de compte' };
+      return { success: false, error: 'Erreur de connexion' };
+    }
+  }
+
+  getCurrentUser() {
+    try {
+      const userString = localStorage.getItem('user');
+      const token = localStorage.getItem('token');
+      
+      if (userString && token) {
+        return JSON.parse(userString);
+      }
+      return null;
+    } catch (error) {
+      return null;
     }
   }
 
@@ -62,166 +79,9 @@ class AuthService {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   }
-
-  getCurrentUser() {
-    const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
-  }
-
-  isAuthenticated() {
-    return localStorage.getItem('token') !== null;
-  }
 }
 
-// Service de livres
-class BookService {
-  constructor() {
-    this.backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
-  }
-
-  getAuthHeaders() {
-    const token = localStorage.getItem('token');
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    };
-  }
-
-  async getBooks() {
-    const response = await fetch(`${this.backendUrl}/api/books`, {
-      headers: this.getAuthHeaders()
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch books');
-    }
-
-    return response.json();
-  }
-
-  async getBookDetails(bookId) {
-    const response = await fetch(`${this.backendUrl}/api/books/${bookId}`, {
-      headers: this.getAuthHeaders()
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch book details');
-    }
-
-    return response.json();
-  }
-
-  async getAuthorDetails(authorName) {
-    const encodedAuthorName = encodeURIComponent(authorName);
-    const response = await fetch(`${this.backendUrl}/api/authors/${encodedAuthorName}`, {
-      headers: this.getAuthHeaders()
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch author details');
-    }
-
-    return response.json();
-  }
-
-  async getAuthorBooks(authorName) {
-    const encodedAuthorName = encodeURIComponent(authorName);
-    const response = await fetch(`${this.backendUrl}/api/authors/${encodedAuthorName}/books`, {
-      headers: this.getAuthHeaders()
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch author books');
-    }
-
-    return response.json();
-  }
-
-  async createBook(bookData) {
-    const response = await fetch(`${this.backendUrl}/api/books`, {
-      method: 'POST',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(bookData)
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to create book');
-    }
-
-    return response.json();
-  }
-
-  async updateBook(bookId, updates) {
-    const response = await fetch(`${this.backendUrl}/api/books/${bookId}`, {
-      method: 'PUT',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(updates)
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to update book');
-    }
-
-    return response.json();
-  }
-
-  async deleteBook(bookId) {
-    const response = await fetch(`${this.backendUrl}/api/books/${bookId}`, {
-      method: 'DELETE',
-      headers: this.getAuthHeaders()
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to delete book');
-    }
-
-    return response.json();
-  }
-
-  async getStats() {
-    const response = await fetch(`${this.backendUrl}/api/stats`, {
-      headers: this.getAuthHeaders()
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch stats');
-    }
-
-    return response.json();
-  }
-
-  async searchOpenLibrary(query) {
-    const response = await fetch(`${this.backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}`, {
-      headers: this.getAuthHeaders()
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to search OpenLibrary');
-    }
-
-    return response.json();
-  }
-
-  async searchUniversal(query, options = {}) {
-    const params = new URLSearchParams();
-    params.append('q', query);
-    
-    if (options.limit) params.append('limit', options.limit);
-    if (options.category) params.append('category', options.category);
-
-    const response = await fetch(`${this.backendUrl}/api/openlibrary/search-universal?${params}`, {
-      headers: this.getAuthHeaders()
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to search OpenLibrary universally');
-    }
-
-    return response.json();
-  }
-}
-
-// Context d'authentification
+// Auth Context
 const AuthContext = createContext();
 
 export const useAuth = () => {
@@ -293,36 +153,39 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-const bookService = new BookService();
-
-// Login Component
+// Login Page Component
 function LoginPage() {
   const { login, register } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: ''
   });
-  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.firstName || !formData.lastName) return;
+
     setLoading(true);
+    try {
+      let result;
+      if (isLogin) {
+        result = await login(formData.firstName, formData.lastName);
+      } else {
+        result = await register(formData.firstName, formData.lastName);
+      }
 
-    let result;
-    if (isLogin) {
-      result = await login(formData.firstName, formData.lastName);
-    } else {
-      result = await register(formData.firstName, formData.lastName);
+      if (result.success) {
+        toast.success(isLogin ? 'Connexion réussie !' : 'Inscription réussie !');
+      } else {
+        toast.error(result.error || 'Une erreur est survenue');
+      }
+    } catch (error) {
+      toast.error('Erreur de connexion');
+    } finally {
+      setLoading(false);
     }
-
-    if (result.success) {
-      toast.success(isLogin ? 'Connexion réussie !' : 'Compte créé avec succès !');
-    } else {
-      toast.error(result.error);
-    }
-    
-    setLoading(false);
   };
 
   const handleInputChange = (e) => {
@@ -333,73 +196,79 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center text-white text-2xl mr-3">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-lg">
               🐝
             </div>
-            <h1 className="text-4xl font-bold text-green-800 dark:text-white">BookTime</h1>
           </div>
-          <p className="text-gray-600 dark:text-gray-400">Gérez votre bibliothèque personnelle</p>
+          <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+            BookTime
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            Votre bibliothèque personnelle
+          </p>
         </div>
 
-        <div className="flex mb-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-          <button
-            onClick={() => setIsLogin(true)}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-              isLogin ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm' : 'text-gray-600 dark:text-gray-400'
-            }`}
-          >
-            Connexion
-          </button>
-          <button
-            onClick={() => setIsLogin(false)}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-              !isLogin ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm' : 'text-gray-600 dark:text-gray-400'
-            }`}
-          >
-            Inscription
-          </button>
+        <div className="bg-white dark:bg-gray-800 shadow-2xl rounded-2xl p-8 space-y-6 border dark:border-gray-700">
+          <div className="flex mb-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+            <button
+              onClick={() => setIsLogin(true)}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                isLogin ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm' : 'text-gray-600 dark:text-gray-400'
+              }`}
+            >
+              Connexion
+            </button>
+            <button
+              onClick={() => setIsLogin(false)}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                !isLogin ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm' : 'text-gray-600 dark:text-gray-400'
+              }`}
+            >
+              Inscription
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Prénom
+              </label>
+              <input
+                type="text"
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Nom
+              </label>
+              <input
+                type="text"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Chargement...' : (isLogin ? 'Se connecter' : 'Créer un compte')}
+            </button>
+          </form>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Prénom
-            </label>
-            <input
-              type="text"
-              name="firstName"
-              value={formData.firstName}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Nom
-            </label>
-            <input
-              type="text"
-              name="lastName"
-              value={formData.lastName}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Chargement...' : (isLogin ? 'Se connecter' : 'Créer un compte')}
-          </button>
-        </form>
       </div>
     </div>
   );
@@ -437,13 +306,6 @@ function ProfileModal({ isOpen, onClose }) {
     toast.success('Déconnexion réussie');
   };
 
-  // Fermeture par clic sur l'arrière-plan
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -456,7 +318,6 @@ function ProfileModal({ isOpen, onClose }) {
       }}
     >
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col">
-        {/* Header fixe */}
         <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
@@ -468,16 +329,13 @@ function ProfileModal({ isOpen, onClose }) {
             <button
               onClick={onClose}
               className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              title="Fermer le profil"
             >
               ✕
             </button>
           </div>
         </div>
 
-        {/* Contenu défilable */}
         <div className="flex-1 overflow-y-auto p-4">
-          {/* Statistiques compactes */}
           <div className="mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
               📊 Mes Statistiques
@@ -491,7 +349,6 @@ function ProfileModal({ isOpen, onClose }) {
               </div>
             ) : (
               <div className="space-y-3">
-                {/* Stats principales */}
                 <div className="grid grid-cols-3 gap-2">
                   <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
                     <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
@@ -512,58 +369,15 @@ function ProfileModal({ isOpen, onClose }) {
                     <div className="text-xs text-orange-600 dark:text-orange-400">En cours</div>
                   </div>
                 </div>
-
-                {/* Stats par catégorie */}
-                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                  <h4 className="font-medium text-gray-900 dark:text-white text-sm mb-2">Catégories :</h4>
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div className="text-center">
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {stats.categories?.roman || 0}
-                      </div>
-                      <div className="text-gray-600 dark:text-gray-400">Romans</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {stats.categories?.bd || 0}
-                      </div>
-                      <div className="text-gray-600 dark:text-gray-400">BD</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {stats.categories?.manga || 0}
-                      </div>
-                      <div className="text-gray-600 dark:text-gray-400">Mangas</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Stats additionnelles */}
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <span className="text-gray-700 dark:text-gray-300">👥 Auteurs</span>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {stats.authors_count || 0}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <span className="text-gray-700 dark:text-gray-300">📖 Sagas</span>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {stats.sagas_count || 0}
-                    </span>
-                  </div>
-                </div>
               </div>
             )}
           </div>
 
-          {/* Paramètres */}
           <div className="mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
               ⚙️ Paramètres
             </h3>
             
-            {/* Mode sombre */}
             <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
               <div>
                 <span className="font-medium text-gray-900 dark:text-white text-sm">Mode sombre</span>
@@ -587,7 +401,6 @@ function ProfileModal({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* Footer fixe */}
         <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={handleLogout}
@@ -603,49 +416,14 @@ function ProfileModal({ isOpen, onClose }) {
 
 // Main App Content
 function AppContent() {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const [books, setBooks] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('roman');
-  const [activeStatus, setActiveStatus] = useState('all');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showOpenLibraryModal, setShowOpenLibraryModal] = useState(false);
-  const [selectedBook, setSelectedBook] = useState(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
 
-  // Utiliser le hook de recherche avancée
-  const {
-    searchTerm,
-    setSearchTerm,
-    filters,
-    setFilters,
-    filteredBooks: searchFilteredBooks,
-    searchStats,
-    clearSearch
-  } = useAdvancedSearch(books);
-
-  // Appliquer les filtres d'onglets et de statut par-dessus la recherche avancée
-  const [finalFilteredBooks, setFinalFilteredBooks] = useState([]);
-
-  useEffect(() => {
-    let filtered = searchFilteredBooks;
-
-    // Filtrer par onglet actif
-    if (activeTab !== 'all') {
-      filtered = filtered.filter(book => book.category === activeTab);
-    }
-
-    // Filtrer par statut actif
-    if (activeStatus !== 'all') {
-      filtered = filtered.filter(book => book.status === activeStatus);
-    }
-
-    setFinalFilteredBooks(filtered);
-  }, [searchFilteredBooks, activeTab, activeStatus]);
-
-  // Charger les livres au démarrage
   useEffect(() => {
     if (user) {
       loadBooks();
@@ -688,110 +466,38 @@ function AppContent() {
     }
   };
 
-  const handleUpdateBook = async (bookId, updates) => {
-    try {
-      await bookService.updateBook(bookId, updates);
-      await loadBooks();
-      await loadStats();
-      setSelectedBook(null);
-      toast.success('Livre mis à jour !');
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour du livre:', error);
-      toast.error('Erreur lors de la mise à jour');
-    }
-  };
+  // Filter books by active tab
+  const filteredBooks = books.filter(book => book.category === activeTab);
 
-  const handleDeleteBook = async (bookId) => {
-    try {
-      await bookService.deleteBook(bookId);
-      await loadBooks();
-      await loadStats();
-      setSelectedBook(null);
-      toast.success('Livre supprimé !');
-    } catch (error) {
-      console.error('Erreur lors de la suppression du livre:', error);
-      toast.error('Erreur lors de la suppression');
-    }
-  };
-
-  // Navigation vers fiche livre
-  const handleBookClick = (book) => {
-    navigate(`/livre/${book.id}`);
-  };
-
-  // Navigation vers fiche auteur
-  const handleAuthorClick = (authorName) => {
-    navigate(`/auteur/${encodeURIComponent(authorName)}`);
-  };
-
-  // Gestionnaire pour ouvrir la recherche Open Library
-  const handleOpenLibrarySearch = () => {
-    setShowOpenLibraryModal(true);
-  };
-
-  // Composant Header moderne avec bouton profil
+  // Header Component
   const Header = () => (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
-          <div className="flex items-center space-x-4">
-            <button 
-              onClick={() => navigate('/')}
-              className="flex items-center space-x-3 text-2xl font-bold text-green-600 dark:text-green-400 hover:opacity-80 transition-opacity"
-            >
-              <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center text-white text-xl">
-                🐝
-              </div>
-              BookTime
-            </button>
-            {/* Indicateur de recherche active */}
-            {searchStats.hasActiveFilters && (
-              <div className="hidden sm:flex items-center space-x-2 px-3 py-1 bg-green-50 dark:bg-green-900/20 rounded-full">
-                <span className="text-xs text-green-600 dark:text-green-400 font-medium">
-                  {searchStats.filtered} / {searchStats.total} livres
-                </span>
-                <button
-                  onClick={clearSearch}
-                  className="text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300 text-xs underline"
-                >
-                  Effacer
-                </button>
-              </div>
-            )}
+          <div className="flex items-center space-x-3 text-2xl font-bold text-green-600 dark:text-green-400">
+            <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center text-white text-xl">
+              🐝
+            </div>
+            BookTime
           </div>
           
-          {/* Barre de recherche centrale */}
-          <div className="flex-1 max-w-lg mx-4">
-            <AdvancedSearchBar
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              books={books}
-              filters={filters}
-              onFiltersChange={setFilters}
-              onOpenLibrarySearch={handleOpenLibrarySearch}
-            />
-          </div>
-
-          {/* Actions utilisateur */}
           <div className="flex items-center space-x-3">
-            {/* Bouton Ajouter un livre */}
             <button
               onClick={() => setShowAddModal(true)}
               className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
             >
               <span className="text-lg">+</span>
-              <span className="hidden sm:block">Ajouter</span>
+              <span>Ajouter</span>
             </button>
             
-            {/* Bouton Profil */}
             <button
               onClick={() => setShowProfileModal(true)}
-              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors profile-button"
+              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors"
             >
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
                 {user?.first_name?.charAt(0).toUpperCase()}{user?.last_name?.charAt(0).toUpperCase()}
               </div>
-              <span className="hidden sm:block">Profil</span>
+              <span>Profil</span>
             </button>
           </div>
         </div>
@@ -799,7 +505,7 @@ function AppContent() {
     </header>
   );
 
-  // Composant Navigation des onglets
+  // Tab Navigation Component
   const TabNavigation = () => (
     <div className="mb-6">
       <div className="border-b border-gray-200 dark:border-gray-700">
@@ -826,135 +532,7 @@ function AppContent() {
     </div>
   );
 
-  // Composant Grille de livres réorganisée
-  const BookGrid = () => {
-    if (loading) {
-      return (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-gray-200 dark:bg-gray-700 h-48 rounded-lg animate-pulse"></div>
-          ))}
-        </div>
-      );
-    }
-
-    // Séparer les livres par statut et trier par année de publication
-    const readingBooks = finalFilteredBooks
-      .filter(book => book.status === 'reading')
-      .sort((a, b) => (a.publication_year || 0) - (b.publication_year || 0));
-    
-    const toReadBooks = finalFilteredBooks
-      .filter(book => book.status === 'to_read')
-      .sort((a, b) => (a.publication_year || 0) - (b.publication_year || 0));
-
-    const renderBookSection = (books, title) => {
-      if (books.length === 0) return null;
-
-      return (
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-            {title === 'En cours de lecture' ? '📖' : '📚'} {title}
-            <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
-              ({books.length} livre{books.length > 1 ? 's' : ''})
-            </span>
-          </h2>
-          <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-3">
-            {books.map((book) => (
-              <div
-                key={book.id}
-                onClick={() => handleBookClick(book)}
-                className="cursor-pointer hover:shadow-lg transition-all hover:scale-105 group"
-              >
-                <div className="aspect-[2/3] bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden shadow-md">
-                  {book.cover_url ? (
-                    <img
-                      src={book.cover_url}
-                      alt={book.title}
-                      className="w-full h-full object-cover rounded-lg group-hover:scale-110 transition-transform duration-300"
-                    />
-                  ) : (
-                    <span className="text-4xl">📖</span>
-                  )}
-                </div>
-                <div className="mt-2 text-center">
-                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{book.title}</p>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAuthorClick(book.author);
-                    }}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline truncate block"
-                  >
-                    {book.author}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    };
-
-    if (finalFilteredBooks.length === 0) {
-      return (
-        <div className="text-center py-12">
-          <div className="max-w-md mx-auto">
-            <span className="text-6xl mb-4 block">🔍</span>
-            <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">
-              {searchStats.hasActiveFilters ? 'Aucun livre trouvé' : 'Aucun livre dans votre collection'}
-            </p>
-            <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">
-              {searchStats.hasActiveFilters 
-                ? 'Essayez de modifier vos critères de recherche' 
-                : 'Ajoutez votre premier livre pour commencer !'}
-            </p>
-            {searchStats.hasActiveFilters && (
-              <button
-                onClick={clearSearch}
-                className="px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors"
-              >
-                Effacer la recherche
-              </button>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div>
-        {/* Résumé des résultats */}
-        {searchStats.hasActiveFilters && (
-          <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                <strong>{finalFilteredBooks.length}</strong> livre{finalFilteredBooks.length > 1 ? 's' : ''} trouvé{finalFilteredBooks.length > 1 ? 's' : ''}
-                {searchStats.hiddenCount > 0 && (
-                  <span className="ml-2 text-gray-500 dark:text-gray-500">
-                    ({searchStats.hiddenCount} masqué{searchStats.hiddenCount > 1 ? 's' : ''})
-                  </span>
-                )}
-              </span>
-              <button
-                onClick={clearSearch}
-                className="text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 underline"
-              >
-                Effacer les filtres
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Livres en cours de lecture */}
-        {renderBookSection(readingBooks, 'En cours de lecture')}
-
-        {/* Livres à lire */}
-        {renderBookSection(toReadBooks, 'À lire')}
-      </div>
-    );
-  };
-
-  // Modal d'ajout simplifié
+  // Add Book Modal
   const AddBookModal = () => {
     const [formData, setFormData] = useState({
       title: '',
@@ -1038,6 +616,62 @@ function AppContent() {
     );
   };
 
+  // Book Grid Component
+  const BookGrid = () => {
+    if (loading) {
+      return (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="bg-gray-200 dark:bg-gray-700 h-48 rounded-lg animate-pulse"></div>
+          ))}
+        </div>
+      );
+    }
+
+    if (filteredBooks.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <div className="max-w-md mx-auto">
+            <span className="text-6xl mb-4 block">📚</span>
+            <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">
+              Aucun livre dans cette catégorie
+            </p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">
+              Ajoutez votre premier livre pour commencer !
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-3">
+        {filteredBooks.map((book) => (
+          <div
+            key={book.id}
+            className="cursor-pointer hover:shadow-lg transition-all hover:scale-105 group"
+          >
+            <div className="aspect-[2/3] bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden shadow-md">
+              {book.cover_url ? (
+                <img
+                  src={book.cover_url}
+                  alt={book.title}
+                  className="w-full h-full object-cover rounded-lg group-hover:scale-110 transition-transform duration-300"
+                />
+              ) : (
+                <span className="text-4xl">📖</span>
+              )}
+            </div>
+            <div className="mt-2 text-center">
+              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{book.title}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 truncate">{book.author}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header />
@@ -1049,24 +683,6 @@ function AppContent() {
 
       <AddBookModal />
       <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
-      
-      {/* Modal OpenLibrary */}
-      {showOpenLibraryModal && (
-        <OpenLibrarySearch
-          onImport={handleAddBook}
-          onClose={() => setShowOpenLibraryModal(false)}
-          defaultCategory={activeTab}
-        />
-      )}
-      
-      {/* Modal OpenLibrary */}
-      {showOpenLibraryModal && (
-        <OpenLibrarySearch
-          onImport={handleAddBook}
-          onClose={() => setShowOpenLibraryModal(false)}
-          defaultCategory={activeTab}
-        />
-      )}
     </div>
   );
 }
@@ -1086,16 +702,7 @@ function AuthWrapper() {
     );
   }
 
-  return user ? (
-    <Routes>
-      <Route path="/" element={<AppContent />} />
-      <Route path="/recherche" element={<SearchResultsPage />} />
-      <Route path="/livre/:bookId" element={<BookDetailPage />} />
-      <Route path="/livre/ol/:workKey" element={<OpenLibraryBookPage />} />
-      <Route path="/auteur/:authorName" element={<AuthorDetailPage />} />
-      <Route path="/auteur/ol/:authorName" element={<OpenLibraryAuthorPage />} />
-    </Routes>
-  ) : <LoginPage />;
+  return user ? <AppContent /> : <LoginPage />;
 }
 
 // Main App Component
