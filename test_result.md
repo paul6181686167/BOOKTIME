@@ -797,6 +797,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Verified that the login/registration page displays correctly with first name and last name fields only. The form is properly styled and the toggle between login and registration works as expected."
+      - working: true
+        agent: "testing"
+        comment: "The login/registration page is correctly implemented with only first name and last name fields. The form is properly styled with labels for 'Prénom' and 'Nom'. The toggle between 'Connexion' and 'Inscription' works as expected. The submit button is properly labeled as 'Se connecter' in login mode. The page has a clean design with the BookTime logo and title at the top."
 
   - task: "Authentication - Registration Form"
     implemented: true
