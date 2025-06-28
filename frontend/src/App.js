@@ -450,6 +450,17 @@ function AppContent() {
     clearSearch
   } = useAdvancedSearch(books);
 
+  // Hook de recherche groupée
+  const {
+    searchTerm: groupedSearchTerm,
+    setSearchTerm: setGroupedSearchTerm,
+    groupedResults,
+    isLoading: groupedSearchLoading,
+    searchStats: groupedSearchStats,
+    clearSearch: clearGroupedSearch,
+    hasResults: hasGroupedResults
+  } = useGroupedSearch();
+
   useEffect(() => {
     if (user) {
       loadBooks();
