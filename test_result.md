@@ -860,6 +860,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Session management continues to work correctly with the modified authentication system. The JWT token is properly stored in localStorage after login with first name and last name. The user remains logged in after page refresh. Logging out correctly removes the token and redirects to the login page."
+      - working: true
+        agent: "testing"
+        comment: "Comprehensive testing confirms that session management works correctly. Successfully logged out by clicking the profile button and then the 'Se déconnecter' button. The user was correctly redirected to the login page. After logging back in, the user was redirected to the main interface and the profile button displayed the user's initials 'TF'."
 
   - task: "Main Interface - Tab Navigation"
     implemented: true
