@@ -1042,6 +1042,19 @@ function AppContent() {
             className="cursor-pointer hover:shadow-lg transition-all hover:scale-105 group relative"
             onClick={() => handleBookClick(book)}
           >
+            {/* Badge de pertinence (uniquement en mode recherche) */}
+            {isSearchMode && book.relevanceInfo && book.relevanceScore > 50 && (
+              <div className="absolute top-1 left-1 z-10">
+                <div 
+                  className={`${book.relevanceInfo.color} text-white text-xs px-1.5 py-0.5 rounded-full flex items-center opacity-90`}
+                  title={`${book.relevanceInfo.label} (Score: ${book.relevanceScore})`}
+                >
+                  <span className="mr-0.5">{book.relevanceInfo.icon}</span>
+                  <span className="font-medium">{book.relevanceScore}</span>
+                </div>
+              </div>
+            )}
+            
             {/* Badge pour les livres Open Library */}
             {book.isFromOpenLibrary && (
               <div className="absolute top-1 right-1 z-10">
@@ -1059,6 +1072,10 @@ function AppContent() {
             
             <div className={`aspect-[2/3] bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden shadow-md ${
               book.isFromOpenLibrary && !book.isOwned ? 'ring-2 ring-blue-200 dark:ring-blue-800' : ''
+            } ${
+              isSearchMode && book.relevanceInfo?.level === 'excellent' ? 'ring-2 ring-green-300 dark:ring-green-600' : ''
+            } ${
+              isSearchMode && book.relevanceInfo?.level === 'good' ? 'ring-1 ring-blue-300 dark:ring-blue-600' : ''
             }`}>
               {book.cover_url ? (
                 <img
@@ -1071,10 +1088,16 @@ function AppContent() {
               )}
             </div>
             <div className="mt-2 text-center">
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{book.title}</p>
-              <p className="text-xs text-blue-600 dark:text-blue-400 truncate">{book.author}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400 truncate" title={book.title}>{book.title}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 truncate" title={book.author}>{book.author}</p>
               {book.isFromOpenLibrary && !book.isOwned && (
                 <p className="text-xs text-green-600 dark:text-green-400 font-medium">Open Library</p>
+              )}
+              {/* Indicateur de pertinence textuel en mode recherche */}
+              {isSearchMode && book.relevanceInfo && book.relevanceScore > 100 && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {book.relevanceInfo.label}
+                </p>
               )}
             </div>
           </div>
