@@ -111,9 +111,10 @@ def validate_category(category: str) -> str:
 app = FastAPI(title="BookTime API", description="Votre bibliothèque personnelle")
 
 # Ajouter CORS
+origins = ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"]
