@@ -399,7 +399,13 @@ const AdvancedSearchBar = React.memo(({
                   key={index}
                   onClick={() => {
                     // Simplifier : juste appliquer la suggestion
-                    handleSuggestionClick(suggestion);
+                    handleSuggestionClick({
+                      type: 'book',
+                      text: book.title,
+                      subtitle: `par ${book.author}`,
+                      icon: BookOpenIcon,
+                      data: book
+                    });
                     setShowSuggestions(false);
                   }}
                   className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md transition-colors"
