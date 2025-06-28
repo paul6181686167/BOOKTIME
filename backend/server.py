@@ -392,6 +392,394 @@ async def get_author_books(author_name: str, current_user: dict = Depends(get_cu
     
     return books
 
+# Routes pour les sagas
+@app.get("/api/sagas")
+async def get_sagas(current_user: dict = Depends(get_current_user)):
+    user_filter = {"user_id": current_user["id"]}
+    
+    # Grouper les livres par saga
+    pipeline = [
+        {"$match": {**user_filter, "saga": {"$ne": ""}}},
+        {"$group": {
+            "_id": "$saga",
+            "books_count": {"$sum": 1},
+            "completed_books": {"$sum": {"$cond": [{"$eq": ["$status", "completed"]}, 1, 0]}},
+            "author": {"$first": "$author"},
+            "category": {"$first": "$category"},
+            "max_volume": {"$max": "$volume_number"},
+            "volumes": {"$push": {"volume_number": "$volume_number", "status": "$status"}}
+        }},
+        {"$sort": {"books_count": -1}}
+    ]
+    
+    sagas_data = list(books_collection.aggregate(pipeline))
+    
+    sagas = []
+    for saga_data in sagas_data:
+        # Calculer le prochain tome
+        volumes = [v["volume_number"] for v in saga_data["volumes"] if v["volume_number"]]
+        next_volume = max(volumes) + 1 if volumes else 1
+        
+        saga = {
+            "name": saga_data["_id"],
+            "books_count": saga_data["books_count"],
+            "completed_books": saga_data["completed_books"],
+            "author": saga_data["author"],
+            "category": saga_data["category"],
+            "next_volume": next_volume,
+            "completion_percentage": round((saga_data["completed_books"] / saga_data["books_count"]) * 100) if saga_data["books_count"] > 0 else 0
+        }
+        sagas.append(saga)
+    
+    return sagas
+
+@app.get("/api/sagas/{saga_name}/books")
+async def get_saga_books(saga_name: str, current_user: dict = Depends(get_current_user)):
+    books = list(books_collection.find({
+        "user_id": current_user["id"],
+        "saga": saga_name
+    }, {"_id": 0}).sort("volume_number", 1))
+    
+    return books
+
+@app.post("/api/sagas/{saga_name}/auto-add")
+async def auto_add_next_volume(saga_name: str, current_user: dict = Depends(get_current_user)):
+    # Trouver les livres existants de cette saga
+    existing_books = list(books_collection.find({
+        "user_id": current_user["id"],
+        "saga": saga_name
+    }))
+    
+    if not existing_books:
+        raise HTTPException(status_code=404, detail="Saga non trouvée")
+    
+    # Calculer le prochain numéro de tome
+    volumes = [book.get("volume_number", 0) for book in existing_books if book.get("volume_number")]
+    next_volume = max(volumes) + 1 if volumes else 1
+    
+    # Utiliser les informations du premier livre comme modèle
+    template_book = existing_books[0]
+    
+    # Créer le nouveau livre
+    book_id = str(uuid.uuid4())
+    new_book = {
+        "id": book_id,
+        "user_id": current_user["id"],
+        "title": f"{saga_name} - Tome {next_volume}",
+        "author": template_book.get("author", ""),
+        "category": template_book.get("category", "roman"),
+        "saga": saga_name,
+        "volume_number": next_volume,
+        "status": "to_read",
+        "auto_added": True,
+        "date_added": datetime.utcnow(),
+        "date_started": None,
+        "date_completed": None,
+        "description": "",
+        "total_pages": None,
+        "current_page": None,
+        "rating": None,
+        "review": "",
+        "cover_url": "",
+        "genre": template_book.get("genre", ""),
+        "publication_year": None,
+        "publisher": "",
+        "isbn": ""
+    }
+    
+    books_collection.insert_one(new_book)
+    new_book.pop("_id", None)
+    
+    return {"message": f"Tome {next_volume} ajouté à la saga {saga_name}", "book": new_book}
+
+# Utilitaires pour Open Library
+def detect_category_from_subjects(subjects):
+    """Détecter la catégorie d'un livre basé sur ses sujets"""
+    if not subjects:
+        return "roman"
+    
+    subjects_str = " ".join(subjects).lower()
+    
+    # Détection BD
+    bd_keywords = [
+        "comic", "comics", "graphic novel", "bande dessinée", "bd",
+        "cartoons", "strips", "comic strips", "graphic novels",
+        "astérix", "tintin", "lucky luke", "gaston", "spirou"
+    ]
+    
+    # Détection Manga
+    manga_keywords = [
+        "manga", "anime", "japanese comic", "shonen", "shojo", "seinen",
+        "one piece", "naruto", "dragon ball", "attack on titan"
+    ]
+    
+    for keyword in bd_keywords:
+        if keyword in subjects_str:
+            return "bd"
+    
+    for keyword in manga_keywords:
+        if keyword in subjects_str:
+            return "manga"
+    
+    return "roman"
+
+def extract_cover_url(cover_data):
+    """Extraire l'URL de couverture depuis les données Open Library"""
+    if not cover_data:
+        return ""
+    
+    if isinstance(cover_data, list) and cover_data:
+        cover_id = cover_data[0]
+    elif isinstance(cover_data, int):
+        cover_id = cover_data
+    else:
+        return ""
+    
+    return f"https://covers.openlibrary.org/b/id/{cover_id}-L.jpg"
+
+def normalize_isbn(isbn):
+    """Normaliser un ISBN en supprimant les tirets et espaces"""
+    if not isbn:
+        return ""
+    return re.sub(r'[-\s]', '', str(isbn))
+
+# Routes Open Library
+@app.get("/api/openlibrary/search")
+async def search_open_library(
+    q: str,
+    limit: int = 10,
+    year_start: Optional[int] = None,
+    year_end: Optional[int] = None,
+    language: Optional[str] = None,
+    min_pages: Optional[int] = None,
+    max_pages: Optional[int] = None,
+    author_filter: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        params = {
+            "q": q,
+            "limit": limit,
+            "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,number_of_pages_median,publisher,language"
+        }
+        
+        # Construire la requête avec filtres
+        query_parts = [q]
+        
+        if year_start and year_end:
+            query_parts.append(f"first_publish_year:[{year_start} TO {year_end}]")
+        elif year_start:
+            query_parts.append(f"first_publish_year:[{year_start} TO *]")
+        elif year_end:
+            query_parts.append(f"first_publish_year:[* TO {year_end}]")
+        
+        if language:
+            query_parts.append(f"language:{language}")
+        
+        if author_filter:
+            query_parts.append(f"author:{author_filter}")
+        
+        params["q"] = " AND ".join(query_parts)
+        
+        response = requests.get("https://openlibrary.org/search.json", params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        books = []
+        for doc in data.get("docs", []):
+            # Appliquer filtres de pages
+            if min_pages and doc.get("number_of_pages_median", 0) < min_pages:
+                continue
+            if max_pages and doc.get("number_of_pages_median", float('inf')) > max_pages:
+                continue
+            
+            book = {
+                "ol_key": doc.get("key", ""),
+                "title": doc.get("title", ""),
+                "author": ", ".join(doc.get("author_name", [])) if doc.get("author_name") else "",
+                "category": detect_category_from_subjects(doc.get("subject", [])),
+                "cover_url": extract_cover_url(doc.get("cover_i")),
+                "first_publish_year": doc.get("first_publish_year"),
+                "isbn": doc.get("isbn", [""])[0] if doc.get("isbn") else "",
+                "subjects": doc.get("subject", [])[:5],  # Premiers 5 sujets
+                "number_of_pages": doc.get("number_of_pages_median"),
+                "publisher": ", ".join(doc.get("publisher", [])) if doc.get("publisher") else ""
+            }
+            books.append(book)
+        
+        return {
+            "books": books[:limit],
+            "total_found": data.get("numFound", 0),
+            "filters_applied": {
+                "year_range": f"{year_start}-{year_end}" if year_start or year_end else None,
+                "language": language,
+                "pages_range": f"{min_pages}-{max_pages}" if min_pages or max_pages else None,
+                "author": author_filter
+            }
+        }
+        
+    except requests.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la recherche: {str(e)}")
+
+@app.post("/api/openlibrary/import")
+async def import_from_open_library(
+    import_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    ol_key = import_data.get("ol_key")
+    category = import_data.get("category", "roman")
+    
+    if not ol_key:
+        raise HTTPException(status_code=400, detail="Clé Open Library manquante")
+    
+    try:
+        # Récupérer les détails du livre
+        response = requests.get(f"https://openlibrary.org{ol_key}.json", timeout=10)
+        response.raise_for_status()
+        book_data = response.json()
+        
+        # Vérifier les doublons par ISBN ou titre+auteur
+        isbn = ""
+        if book_data.get("isbn_13"):
+            isbn = book_data["isbn_13"][0]
+        elif book_data.get("isbn_10"):
+            isbn = book_data["isbn_10"][0]
+        
+        title = book_data.get("title", "")
+        authors = []
+        if book_data.get("authors"):
+            for author_ref in book_data["authors"]:
+                author_key = author_ref.get("author", {}).get("key") or author_ref.get("key")
+                if author_key:
+                    author_response = requests.get(f"https://openlibrary.org{author_key}.json", timeout=5)
+                    if author_response.ok:
+                        author_data = author_response.json()
+                        authors.append(author_data.get("name", ""))
+        
+        author_str = ", ".join(authors) if authors else ""
+        
+        # Vérifier doublons
+        existing_book = None
+        if isbn:
+            existing_book = books_collection.find_one({
+                "user_id": current_user["id"],
+                "isbn": normalize_isbn(isbn)
+            })
+        
+        if not existing_book and title and author_str:
+            existing_book = books_collection.find_one({
+                "user_id": current_user["id"],
+                "title": {"$regex": re.escape(title), "$options": "i"},
+                "author": {"$regex": re.escape(author_str), "$options": "i"}
+            })
+        
+        if existing_book:
+            raise HTTPException(status_code=409, detail="Ce livre existe déjà dans votre collection")
+        
+        # Créer le nouveau livre
+        book_id = str(uuid.uuid4())
+        new_book = {
+            "id": book_id,
+            "user_id": current_user["id"],
+            "title": title,
+            "author": author_str,
+            "category": validate_category(category),
+            "description": book_data.get("description", {}).get("value", "") if isinstance(book_data.get("description"), dict) else str(book_data.get("description", "")),
+            "cover_url": extract_cover_url(book_data.get("covers")),
+            "isbn": normalize_isbn(isbn),
+            "publication_year": book_data.get("publish_date"),
+            "publisher": ", ".join(book_data.get("publishers", [])) if book_data.get("publishers") else "",
+            "status": "to_read",
+            "date_added": datetime.utcnow(),
+            "date_started": None,
+            "date_completed": None,
+            "total_pages": book_data.get("number_of_pages"),
+            "current_page": None,
+            "rating": None,
+            "review": "",
+            "saga": "",
+            "volume_number": None,
+            "genre": "",
+            "auto_added": False
+        }
+        
+        books_collection.insert_one(new_book)
+        new_book.pop("_id", None)
+        
+        return {"message": "Livre importé avec succès", "book": new_book}
+        
+    except requests.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'import: {str(e)}")
+
+@app.post("/api/books/{book_id}/enrich")
+async def enrich_book(book_id: str, current_user: dict = Depends(get_current_user)):
+    # Récupérer le livre existant
+    book = books_collection.find_one({
+        "id": book_id,
+        "user_id": current_user["id"]
+    })
+    
+    if not book:
+        raise HTTPException(status_code=404, detail="Livre non trouvé")
+    
+    try:
+        # Rechercher sur Open Library
+        search_query = f"{book['title']} {book['author']}"
+        params = {
+            "q": search_query,
+            "limit": 1,
+            "fields": "key,title,author_name,isbn,cover_i,first_publish_year,publisher,number_of_pages_median"
+        }
+        
+        response = requests.get("https://openlibrary.org/search.json", params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        if not data.get("docs"):
+            raise HTTPException(status_code=404, detail="Aucune correspondance trouvée sur Open Library")
+        
+        ol_book = data["docs"][0]
+        
+        # Préparer les mises à jour (seulement les champs manquants)
+        updates = {}
+        
+        if not book.get("cover_url") and ol_book.get("cover_i"):
+            updates["cover_url"] = extract_cover_url(ol_book["cover_i"])
+        
+        if not book.get("isbn") and ol_book.get("isbn"):
+            updates["isbn"] = ol_book["isbn"][0]
+        
+        if not book.get("publication_year") and ol_book.get("first_publish_year"):
+            updates["publication_year"] = ol_book["first_publish_year"]
+        
+        if not book.get("publisher") and ol_book.get("publisher"):
+            updates["publisher"] = ", ".join(ol_book["publisher"]) if isinstance(ol_book["publisher"], list) else ol_book["publisher"]
+        
+        if not book.get("total_pages") and ol_book.get("number_of_pages_median"):
+            updates["total_pages"] = ol_book["number_of_pages_median"]
+        
+        if updates:
+            updates["updated_at"] = datetime.utcnow()
+            books_collection.update_one(
+                {"id": book_id, "user_id": current_user["id"]},
+                {"$set": updates}
+            )
+        
+        # Récupérer le livre mis à jour
+        updated_book = books_collection.find_one({
+            "id": book_id,
+            "user_id": current_user["id"]
+        }, {"_id": 0})
+        
+        return {
+            "message": "Livre enrichi avec succès",
+            "book": updated_book,
+            "fields_updated": list(updates.keys())
+        }
+        
+    except requests.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'enrichissement: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
