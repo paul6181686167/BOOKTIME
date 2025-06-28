@@ -258,8 +258,8 @@ class BookTimeAPITester:
         )
         
         if success:
-            print(f"Total books by author: {response.get('total_books')}")
-            print(f"Books in user library: {response.get('user_books_count')}")
+            print(f"Total books by author: {len(response)}")
+            print(f"Books in user library: {len([b for b in response if b.get('user_owned', False)])}")
         return success
 
     def test_get_openlibrary_book(self, work_key="OL82586W"):
