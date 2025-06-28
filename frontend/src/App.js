@@ -966,18 +966,52 @@ function AppContent() {
           <AdvancedSearchBar
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
+            onOpenLibrarySearch={searchOpenLibrary}
             books={books}
             filters={filters}
             onFiltersChange={setFilters}
             className="max-w-2xl mx-auto"
           />
           
-          {/* Statistiques de recherche */}
-          {searchStats.hasActiveFilters && (
+          {/* Bouton retour à la bibliothèque */}
+          {isSearchMode && (
             <div className="mt-3 text-center">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {searchStats.filtered} résultat{searchStats.filtered > 1 ? 's' : ''} trouvé{searchStats.filtered > 1 ? 's' : ''} 
-                {searchStats.hiddenCount > 0 && (
+              <button
+                onClick={backToLibrary}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40 rounded-lg transition-colors"
+              >
+                ← Retour à ma bibliothèque
+              </button>
+            </div>
+          )}
+          
+          {/* Statistiques de recherche */}
+          {(searchStats.hasActiveFilters || isSearchMode) && (
+            <div className="mt-3 text-center">
+              {isSearchMode ? (
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Recherche "{lastSearchTerm}" - {displayedBooks.filter(b => !b.isFromOpenLibrary).length} dans ma bibliothèque, {displayedBooks.filter(b => b.isFromOpenLibrary).length} sur Open Library
+                </p>
+              ) : (
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {searchStats.filtered} résultat{searchStats.filtered > 1 ? 's' : ''} trouvé{searchStats.filtered > 1 ? 's' : ''} 
+                  {searchStats.hiddenCount > 0 && (
+                    <span> ({searchStats.hiddenCount} masqué{searchStats.hiddenCount > 1 ? 's' : ''})</span>
+                  )}
+                </p>
+              )}
+            </div>
+          )}
+          
+          {/* Indicateur de chargement */}
+          {searchLoading && (
+            <div className="mt-3 text-center">
+              <div className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                Recherche en cours sur Open Library...
+              </div>
+            </div>
+          )}
                   <span> ({searchStats.hiddenCount} masqué{searchStats.hiddenCount > 1 ? 's' : ''})</span>
                 )}
               </p>
