@@ -1093,12 +1093,20 @@ function AppContent() {
             {/* Badge pour les livres Open Library */}
             {book.isFromOpenLibrary && (
               <div className="absolute top-1 right-1 z-10">
-                {book.isOwned ? (
+                {addingBooks.has(book.ol_key) ? (
+                  <div className="bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full flex items-center animate-pulse">
+                    ⏳
+                  </div>
+                ) : book.isOwned ? (
                   <div className="bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full flex items-center">
                     ✓
                   </div>
                 ) : (
-                  <div className="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full flex items-center">
+                  <div className="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full flex items-center cursor-pointer hover:bg-blue-600 transition-colors"
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         handleAddFromOpenLibrary(book);
+                       }}>
                     +
                   </div>
                 )}
