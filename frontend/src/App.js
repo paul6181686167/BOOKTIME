@@ -729,8 +729,17 @@ function AppContent() {
     }
   };
 
-  // Filter books by active tab AND search results
-  const displayedBooks = filteredBooks.filter(book => book.category === activeTab);
+  // Combiner les livres locaux et Open Library selon le mode
+  const displayedBooks = isSearchMode 
+    ? [
+        // D'abord les livres locaux correspondants à la recherche
+        ...filteredBooks.filter(book => book.category === activeTab),
+        // Puis les livres Open Library de la catégorie active
+        ...openLibraryResults.filter(book => 
+          !book.category || book.category === activeTab || activeTab === ''
+        )
+      ]
+    : filteredBooks.filter(book => book.category === activeTab);
 
   // Header Component
   const Header = () => (
