@@ -3,6 +3,8 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 export const useAdvancedSearch = (books = []) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [groupedResults, setGroupedResults] = useState([]);
+  const [isGroupedSearch, setIsGroupedSearch] = useState(false);
   const [filters, setFilters] = useState({
     category: '',
     status: '',
@@ -14,6 +16,8 @@ export const useAdvancedSearch = (books = []) => {
     hasReview: false
   });
 
+  const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+
   // Debounce pour la recherche - attendre 300ms après la dernière frappe
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
@@ -23,7 +27,54 @@ export const useAdvancedSearch = (books = []) => {
     return () => clearTimeout(debounceTimer);
   }, [searchTerm]);
 
-  // Logique de filtrage avancée utilisant le terme de recherche avec debounce
+  // Fonction pour recherche groupée via API
+  const performGroupedSearch = useCallback(async (term, category = '') => {
+    if (!term || term.length < 2) {
+      setGroupedResults([]);
+      setIsGroupedSearch(false);
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const params = new URLSearchParams({
+        q: term,
+        ...(category && { category })
+      });
+
+      const response = await fetch(`${backendUrl}/api/books/search-grouped?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setGroupedResults(data.results || []);
+        setIsGroupedSearch(true);
+      } else {
+        setGroupedResults([]);
+        setIsGroupedSearch(false);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la recherche groupée:', error);
+      setGroupedResults([]);
+      setIsGroupedSearch(false);
+    }
+  }, [backendUrl]);
+
+  // Déclencher la recherche groupée quand le terme change
+  useEffect(() => {
+    if (debouncedSearchTerm && debouncedSearchTerm.length >= 2) {
+      performGroupedSearch(debouncedSearchTerm, filters.category);
+    } else {
+      setGroupedResults([]);
+      setIsGroupedSearch(false);
+    }
+  }, [debouncedSearchTerm, filters.category, performGroupedSearch]);
+
+  // Logique de filtrage classique (utilisée quand pas de recherche groupée active)
   const filteredBooks = useMemo(() => {
     if (!books || books.length === 0) return [];
 
