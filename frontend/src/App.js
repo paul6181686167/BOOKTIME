@@ -788,6 +788,15 @@ function AppContent() {
     return Math.max(0, Math.round(score));
   };
 
+  // Fonction pour obtenir le niveau de pertinence d'un livre
+  const getRelevanceLevel = (score) => {
+    if (score >= 800) return { level: 'excellent', label: 'Très pertinent', color: 'bg-green-500', icon: '🎯' };
+    if (score >= 400) return { level: 'good', label: 'Pertinent', color: 'bg-blue-500', icon: '✨' };
+    if (score >= 100) return { level: 'moderate', label: 'Moyennement pertinent', color: 'bg-yellow-500', icon: '👁️' };
+    if (score >= 50) return { level: 'low', label: 'Peu pertinent', color: 'bg-orange-500', icon: '🔍' };
+    return { level: 'minimal', label: 'Faiblement pertinent', color: 'bg-gray-500', icon: '📄' };
+  };
+
   // Combiner et trier les livres locaux et Open Library selon le mode et la pertinence
   const displayedBooks = isSearchMode 
     ? [
@@ -796,23 +805,47 @@ function AppContent() {
         ...openLibraryResults.filter(book => 
           !book.category || book.category === activeTab || activeTab === ''
         )
-      ].sort((a, b) => {
-        // Trier par score de pertinence décroissant
-        const scoreA = calculateRelevanceScore(a, lastSearchTerm);
-        const scoreB = calculateRelevanceScore(b, lastSearchTerm);
-        
-        if (scoreA !== scoreB) {
-          return scoreB - scoreA; // Score décroissant
+      ].map(book => ({
+        ...book,
+        relevanceScore: calculateRelevanceScore(book, lastSearchTerm),
+        relevanceInfo: getRelevanceLevel(calculateRelevanceScore(book, lastSearchTerm))
+      }))
+      .sort((a, b) => {
+        // 1. Trier par score de pertinence décroissant (priorité principale)
+        if (a.relevanceScore !== b.relevanceScore) {
+          return b.relevanceScore - a.relevanceScore;
         }
         
-        // En cas d'égalité, prioriser les livres locaux
+        // 2. En cas d'égalité de score, prioriser les livres locaux
         if (a.isFromOpenLibrary !== b.isFromOpenLibrary) {
           return a.isFromOpenLibrary ? 1 : -1;
         }
         
-        // Puis trier par titre alphabétique
-        return (a.title || '').localeCompare(b.title || '');
+        // 3. Pour les livres Open Library, prioriser ceux déjà possédés
+        if (a.isFromOpenLibrary && b.isFromOpenLibrary) {
+          if (a.isOwned !== b.isOwned) {
+            return a.isOwned ? -1 : 1;
+          }
+        }
+        
+        // 4. Trier par qualité des métadonnées (livres avec plus d'infos en premier)
+        const qualityScoreA = (a.cover_url ? 10 : 0) + (a.description?.length > 100 ? 5 : 0) + (a.first_publish_year ? 3 : 0);
+        const qualityScoreB = (b.cover_url ? 10 : 0) + (b.description?.length > 100 ? 5 : 0) + (b.first_publish_year ? 3 : 0);
+        
+        if (qualityScoreA !== qualityScoreB) {
+          return qualityScoreB - qualityScoreA;
+        }
+        
+        // 5. Trier par année de publication (plus récent en premier pour les livres de qualité égale)
+        if (a.first_publish_year && b.first_publish_year) {
+          return b.first_publish_year - a.first_publish_year;
+        }
+        
+        // 6. Finalement, trier par titre alphabétique
+        return (a.title || '').localeCompare(b.title || '', 'fr', { numeric: true });
       })
+      // Filtrer les résultats avec un score minimum pour éviter le bruit
+      .filter(book => !lastSearchTerm || book.relevanceScore >= 10)
     : filteredBooks.filter(book => book.category === activeTab);
 
   // Header Component
