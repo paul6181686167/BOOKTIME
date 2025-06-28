@@ -1050,6 +1050,7 @@ function AppContent() {
           }}
           onUpdate={handleUpdateBook}
           onDelete={handleDeleteBook}
+          onAddFromOpenLibrary={handleAddFromOpenLibrary}
         />
       )}
     </div>
