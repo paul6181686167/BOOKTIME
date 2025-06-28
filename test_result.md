@@ -466,6 +466,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "ISBN search endpoint works correctly. Successfully tested with valid ISBNs, formatted ISBNs (with dashes), and invalid ISBNs. The endpoint correctly handles ISBN normalization and falls back to the Books API when necessary. Error handling for empty or invalid ISBNs works as expected."
+      - working: true
+        agent: "testing"
+        comment: "Comprehensive testing confirms the GET /api/openlibrary/search-isbn endpoint works correctly with all test cases. Successfully tested with a valid ISBN (9780747532743), a formatted ISBN with dashes (978-0-7475-3274-3), and an invalid ISBN. The endpoint correctly normalizes ISBNs and returns appropriate book data for valid ISBNs. For invalid ISBNs, it returns found=false. The endpoint also returns 422 Unprocessable Entity when no ISBN is provided."
 
   - task: "GET /api/openlibrary/search-author - Advanced author search"
     implemented: true
