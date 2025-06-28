@@ -300,7 +300,7 @@ function ProfileModal({ isOpen, onClose }) {
     }
   };
 
-  const logout = () => {
+  const handleLogout = () => {
     logout();
     onClose();
     toast.success('Déconnexion réussie');
