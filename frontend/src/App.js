@@ -431,6 +431,12 @@ function AppContent() {
   const [selectedBook, setSelectedBook] = useState(null);
   const [showBookModal, setShowBookModal] = useState(false);
 
+  // États pour la recherche Open Library
+  const [openLibraryResults, setOpenLibraryResults] = useState([]);
+  const [isSearchMode, setIsSearchMode] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [lastSearchTerm, setLastSearchTerm] = useState('');
+
   // Hook de recherche avancée
   const {
     searchTerm,
