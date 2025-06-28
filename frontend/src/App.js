@@ -516,35 +516,6 @@ function AppContent() {
       toast.error('Erreur lors de la suppression du livre');
     }
   };
-  };
-
-  const handleUpdateBook = async (bookData) => {
-    try {
-      await bookService.updateBook(selectedBook.id, bookData);
-      await loadBooks();
-      await loadStats();
-      setSelectedBook(null);
-      setShowBookModal(false);
-      toast.success('Livre mis à jour !');
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour du livre:', error);
-      toast.error('Erreur lors de la mise à jour du livre');
-    }
-  };
-
-  const handleDeleteBook = async (bookId) => {
-    try {
-      await bookService.deleteBook(bookId);
-      await loadBooks();
-      await loadStats();
-      setSelectedBook(null);
-      setShowBookModal(false);
-      toast.success('Livre supprimé !');
-    } catch (error) {
-      console.error('Erreur lors de la suppression du livre:', error);
-      toast.error('Erreur lors de la suppression du livre');
-    }
-  };
 
   // Filter books by active tab AND search results
   const displayedBooks = filteredBooks.filter(book => book.category === activeTab);
