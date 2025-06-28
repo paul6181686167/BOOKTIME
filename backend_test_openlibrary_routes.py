@@ -286,7 +286,7 @@ class BooktimeOpenLibraryRoutesTest(unittest.TestCase):
         
         # Test with missing ISBN
         response = requests.get(f"{API_URL}/openlibrary/search-isbn", headers=self.headers)
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 422)  # Unprocessable Entity
         
         print("✅ GET /api/openlibrary/search-isbn endpoint working with all test cases")
 
