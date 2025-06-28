@@ -53,7 +53,7 @@ const AdvancedSearchBar = React.memo(({
     try {
       setSearchingUniversal(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`${backendUrl}/api/openlibrary/search-universal?q=${encodeURIComponent(query)}&limit=10`, {
+      const response = await fetch(`${backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}&limit=10`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
