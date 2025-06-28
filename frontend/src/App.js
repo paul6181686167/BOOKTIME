@@ -576,6 +576,31 @@ function AppContent() {
     }
   };
 
+  // Fonction pour activer la recherche groupée locale
+  const performGroupedSearch = (query) => {
+    if (!query.trim()) {
+      setUseGroupedSearchMode(false);
+      return;
+    }
+    
+    setUseGroupedSearchMode(true);
+    setIsSearchMode(false);
+    setGroupedSearchTerm(query);
+    setLastSearchTerm(query);
+  };
+
+  // Fonction pour gérer les changements de recherche
+  const handleSearchChange = (query) => {
+    if (query && query.length >= 2) {
+      // Si c'est une recherche dans la bibliothèque locale, utiliser la recherche groupée
+      performGroupedSearch(query);
+    } else {
+      // Sinon, utiliser la recherche normale
+      setSearchTerm(query);
+      setUseGroupedSearchMode(false);
+    }
+  };
+
   // Fonction pour ajouter un livre depuis Open Library
   const handleAddFromOpenLibrary = async (openLibraryBook) => {
     try {
