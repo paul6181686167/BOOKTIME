@@ -741,6 +741,7 @@ function AppContent() {
           <div
             key={book.id}
             className="cursor-pointer hover:shadow-lg transition-all hover:scale-105 group"
+            onClick={() => handleBookClick(book)}
           >
             <div className="aspect-[2/3] bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden shadow-md">
               {book.cover_url ? (
