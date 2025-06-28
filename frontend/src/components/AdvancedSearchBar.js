@@ -398,11 +398,8 @@ const AdvancedSearchBar = React.memo(({
                 <button
                   key={index}
                   onClick={() => {
-                    if (book.in_user_library) {
-                      navigate(`/livre/${book.user_book_id}`);
-                    } else if (book.work_key) {
-                      navigate(`/livre/ol/${book.work_key}`);
-                    }
+                    // Simplifier : juste appliquer la suggestion
+                    handleSuggestionClick(suggestion);
                     setShowSuggestions(false);
                   }}
                   className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md transition-colors"
