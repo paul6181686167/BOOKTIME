@@ -253,6 +253,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Books by saga endpoint works correctly, returns books sorted by volume_number for Harry Potter and One Piece sagas. Each saga has at least 3 books as expected."
+      - working: true
+        agent: "testing"
+        comment: "Comprehensive testing confirms the GET /api/sagas/{saga_name}/books endpoint works correctly. It returns all books in a saga sorted by volume_number. Created a test saga with 3 volumes and verified the sorting works correctly. The endpoint also handles non-existent sagas appropriately."
 
   - task: "POST /api/sagas/{saga_name}/auto-add - Auto-add next volume"
     implemented: true
