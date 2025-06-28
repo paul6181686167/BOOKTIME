@@ -1012,11 +1012,6 @@ function AppContent() {
               </div>
             </div>
           )}
-                  <span> ({searchStats.hiddenCount} masqué{searchStats.hiddenCount > 1 ? 's' : ''})</span>
-                )}
-              </p>
-            </div>
-          )}
         </div>
 
         <TabNavigation />
