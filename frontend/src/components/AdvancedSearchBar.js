@@ -101,33 +101,14 @@ const AdvancedSearchBar = React.memo(({
     setLocalSearchTerm(value);
   }, []);
 
-  // Fonction pour déclencher la recherche
   const triggerSearch = useCallback(() => {
-    // Si on a un terme de recherche, naviguer vers la page de résultats
+    // Appliquer la recherche directement sans navigation
     if (localSearchTerm.trim()) {
       saveRecentSearch(localSearchTerm);
-      
-      // Construire les paramètres URL avec le terme de recherche et les filtres actifs
-      const params = new URLSearchParams();
-      params.set('q', localSearchTerm.trim());
-      
-      // Ajouter les filtres actifs
-      if (filters) {
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== '' && value !== false) {
-            params.set(key, value.toString());
-          }
-        });
-      }
-      
-      // Naviguer vers la page de recherche
-      navigate(`/recherche?${params.toString()}`);
-    } else {
-      // Si pas de terme de recherche, filtrer sur place comme avant
-      onSearchChange(localSearchTerm);
     }
+    onSearchChange(localSearchTerm);
     setShowSuggestions(false);
-  }, [localSearchTerm, onSearchChange, saveRecentSearch, navigate, filters]);
+  }, [localSearchTerm, onSearchChange, saveRecentSearch]);
 
   // Charger les recherches récentes depuis localStorage
   useEffect(() => {
