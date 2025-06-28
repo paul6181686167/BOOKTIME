@@ -235,6 +235,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Sagas endpoint works correctly, returns 7 sagas with their book counts, completed books, next volume, author, and category. Verified Harry Potter and One Piece sagas have at least 3 books each."
+      - working: true
+        agent: "testing"
+        comment: "Comprehensive testing confirms the GET /api/sagas endpoint works correctly. It returns all sagas with their statistics including name, books_count, completed_books, author, category, next_volume, and completion_percentage. All required fields are present and accurate."
 
   - task: "GET /api/sagas/{saga_name}/books - Books in saga sorted by volume"
     implemented: true
