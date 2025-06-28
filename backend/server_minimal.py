@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 import jwt
@@ -16,6 +17,15 @@ class UserAuth(BaseModel):
 
 # Créer l'application
 app = FastAPI(title="BookTime API Minimal", description="Version minimale pour tester l'authentification")
+
+# Ajouter CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 # Fonction pour créer un token
 def create_access_token(data: dict, expires_delta: timedelta = None):
