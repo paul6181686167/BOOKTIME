@@ -337,6 +337,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Open Library import endpoint works correctly. Successfully imported books with different categories (roman, bd, manga). Duplicate detection works properly, preventing the same book from being imported twice (by ISBN or title+author). The endpoint correctly handles invalid Open Library keys with a 404 error."
+      - working: true
+        agent: "testing"
+        comment: "Comprehensive testing confirms the POST /api/openlibrary/import endpoint works correctly. Successfully imported a book from Open Library with the correct category. The imported book has all the expected fields including title, author, category, and status. Duplicate detection works properly, returning a 409 Conflict error when trying to import the same book twice. The endpoint also correctly handles invalid keys and missing parameters."
 
   - task: "POST /api/books/{book_id}/enrich - Enrich existing book"
     implemented: true
