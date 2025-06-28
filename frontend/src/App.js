@@ -11,6 +11,7 @@ import { bookService } from './services/bookService';
 
 // Component imports
 import AdvancedSearchBar from './components/AdvancedSearchBar';
+import BookDetailModal from './components/BookDetailModal';
 import { useAdvancedSearch } from './hooks/useAdvancedSearch';
 
 import './App.css';
