@@ -699,7 +699,7 @@ frontend:
         agent: "testing"
         comment: "Comprehensive testing confirms the X icon functionality works correctly. The X icon appears when there's a search term entered and disappears when the search is empty. Clicking the X icon successfully clears the search term and any active filters. The implementation is visually consistent with the design and provides a good user experience for clearing searches."
         
-  - task: "Profile Modal Functionality"
+  - task: "Back to Library Button"
     implemented: true
     working: true
     file: "/app/frontend/src/App.js"
@@ -712,7 +712,37 @@ frontend:
         comment: "Initial setup, needs testing"
       - working: true
         agent: "testing"
-        comment: "Code review of the ProfileModal component (lines 392-584) confirms that it meets all the requirements. The modal has a max-height of 80vh (80% of viewport height), so it doesn't take the full screen height. It has a close button (X) in the top right corner that calls the onClose function when clicked. The modal can be closed by clicking outside on the backdrop. The content area has overflow-y: auto for scrolling, and the header with the close button has flex-shrink: 0 to remain fixed at the top. The modal uses responsive design with classes like w-full, max-w-md, and flex layouts. Unable to test directly due to authentication issues, but the code implementation appears correct."
+        comment: "Testing confirms that the 'Back to Library' button is correctly implemented and visible when in search mode. The button appears after performing an Open Library search and is properly positioned. Clicking the button successfully returns the user to their library view, although the search term remains in the search bar. This is a minor issue as the search results are cleared and the user can see their library again."
+        
+  - task: "Add Book from Open Library"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "Testing confirms that adding a book from Open Library works correctly. When clicking on a book with a '+' badge, a modal opens with book details and an 'Add to my library' button. Clicking this button successfully adds the book to the user's library, and the UI updates to reflect this change. The book is then displayed with a '✓' badge instead of a '+' badge, indicating it's now in the user's library. The search statistics also update correctly to show the increased count of books in the library."
+        
+  - task: "Search Statistics"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "Testing confirms that the search statistics are correctly implemented. When performing an Open Library search, the application displays statistics in the format 'X dans ma bibliothèque, Y sur Open Library', where X is the number of matching books in the user's library and Y is the number of matching books found on Open Library. These statistics update correctly when adding books from Open Library to the user's library."
 
   - task: "Authentication - Login/Registration Page"
     implemented: true
