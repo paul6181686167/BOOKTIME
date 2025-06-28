@@ -626,16 +626,84 @@ function AppContent() {
     }
   };
 
-  // Combiner les livres locaux et Open Library selon le mode
+  // Fonction de calcul de la pertinence d'un livre par rapport au terme de recherche
+  const calculateRelevanceScore = (book, searchTerm) => {
+    if (!searchTerm || !searchTerm.trim()) return 0;
+    
+    const term = searchTerm.toLowerCase().trim();
+    const title = (book.title || '').toLowerCase();
+    const author = (book.author || '').toLowerCase();
+    const description = (book.description || '').toLowerCase();
+    const genre = (book.genre || '').toLowerCase();
+    const saga = (book.saga || '').toLowerCase();
+    
+    let score = 0;
+    
+    // Score pour correspondance exacte du titre (très important)
+    if (title === term) score += 100;
+    else if (title.startsWith(term)) score += 80;
+    else if (title.includes(` ${term} `) || title.includes(`-${term}-`)) score += 60;
+    else if (title.includes(term)) score += 40;
+    
+    // Score pour correspondance exacte de l'auteur
+    if (author === term) score += 90;
+    else if (author.startsWith(term)) score += 70;
+    else if (author.includes(` ${term} `) || author.includes(`-${term}-`)) score += 50;
+    else if (author.includes(term)) score += 30;
+    
+    // Score pour correspondance dans la saga
+    if (saga && saga.includes(term)) {
+      if (saga === term) score += 70;
+      else if (saga.startsWith(term)) score += 50;
+      else score += 25;
+    }
+    
+    // Score pour correspondance dans la description
+    if (description.includes(term)) score += 15;
+    
+    // Score pour correspondance dans le genre
+    if (genre.includes(term)) score += 10;
+    
+    // Bonus pour les livres locaux (déjà dans la bibliothèque)
+    if (!book.isFromOpenLibrary) score += 5;
+    
+    // Bonus pour les livres populaires (Open Library avec note ou pages)
+    if (book.isFromOpenLibrary) {
+      if (book.first_publish_year && book.first_publish_year > 2000) score += 2;
+      if (book.number_of_pages && book.number_of_pages > 200) score += 1;
+    }
+    
+    // Malus pour les livres très anciens sans pertinence évidente
+    if (book.first_publish_year && book.first_publish_year < 1900 && score < 20) score -= 5;
+    
+    return Math.max(0, score);
+  };
+
+  // Combiner et trier les livres locaux et Open Library selon le mode et la pertinence
   const displayedBooks = isSearchMode 
     ? [
-        // D'abord les livres locaux correspondants à la recherche
+        // Combiner tous les livres
         ...filteredBooks.filter(book => book.category === activeTab),
-        // Puis les livres Open Library de la catégorie active
         ...openLibraryResults.filter(book => 
           !book.category || book.category === activeTab || activeTab === ''
         )
-      ]
+      ].sort((a, b) => {
+        // Trier par score de pertinence décroissant
+        const scoreA = calculateRelevanceScore(a, lastSearchTerm);
+        const scoreB = calculateRelevanceScore(b, lastSearchTerm);
+        
+        if (scoreA !== scoreB) {
+          return scoreB - scoreA; // Score décroissant
+        }
+        
+        // En cas d'égalité, prioriser les livres locaux
+        if (a.isFromOpenLibrary !== b.isFromOpenLibrary) {
+          return a.isFromOpenLibrary ? 1 : -1;
+        }
+        
+        // Puis trier par titre alphabétique
+        return (a.title || '').localeCompare(b.title || '');
+      })
     : filteredBooks.filter(book => book.category === activeTab);
 
   // Header Component
