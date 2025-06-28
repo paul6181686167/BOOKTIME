@@ -549,7 +549,15 @@ function AppContent() {
 
   // Fonction pour ajouter un livre depuis Open Library
   const handleAddFromOpenLibrary = async (openLibraryBook) => {
+    // Empêcher les clics multiples sur le même livre
+    if (addingBooks.has(openLibraryBook.ol_key)) {
+      return; // Si le livre est déjà en cours d'ajout, ne rien faire
+    }
+
     try {
+      // Marquer le livre comme en cours d'ajout
+      setAddingBooks(prev => new Set([...prev, openLibraryBook.ol_key]));
+      
       const token = localStorage.getItem('token');
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
       
@@ -582,6 +590,14 @@ function AppContent() {
         const error = await response.json();
         if (response.status === 409) {
           toast.error('Ce livre est déjà dans votre collection');
+          // Marquer le livre comme possédé même si l'ajout a échoué pour cause de doublon
+          setOpenLibraryResults(prev => 
+            prev.map(book => 
+              book.ol_key === openLibraryBook.ol_key 
+                ? { ...book, isOwned: true }
+                : book
+            )
+          );
         } else {
           toast.error(error.detail || 'Erreur lors de l\'ajout du livre');
         }
@@ -589,6 +605,13 @@ function AppContent() {
     } catch (error) {
       console.error('Erreur ajout livre:', error);
       toast.error('Erreur lors de l\'ajout du livre');
+    } finally {
+      // Retirer le livre de la liste des livres en cours d'ajout
+      setAddingBooks(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(openLibraryBook.ol_key);
+        return newSet;
+      });
     }
   };
 
