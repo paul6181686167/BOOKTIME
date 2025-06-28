@@ -448,6 +448,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Multi-criteria search endpoint works correctly. Successfully tested with various combinations of criteria including title, author, subject, publisher, ISBN, and year range. The endpoint correctly constructs complex search queries and returns appropriate results. Error handling for missing criteria works as expected."
+      - working: true
+        agent: "testing"
+        comment: "Comprehensive testing confirms the GET /api/openlibrary/search-advanced endpoint works correctly with all criteria. Successfully tested with various combinations including title+author, subject+year range, publisher only, and ISBN only. The endpoint correctly constructs complex search queries and returns appropriate results with the query used. It also returns 400 Bad Request when no criteria are provided."
 
   - task: "GET /api/openlibrary/search-isbn - Search by ISBN"
     implemented: true
