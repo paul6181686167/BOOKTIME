@@ -461,17 +461,6 @@ function AppContent() {
     hasResults: hasGroupedResults
   } = useGroupedSearch();
 
-  // Hook de recherche groupée
-  const {
-    searchTerm: groupedSearchTerm,
-    setSearchTerm: setGroupedSearchTerm,
-    groupedResults,
-    isLoading: groupedSearchLoading,
-    searchStats: groupedSearchStats,
-    clearSearch: clearGroupedSearch,
-    hasResults: hasGroupedResults
-  } = useGroupedSearch();
-
   useEffect(() => {
     if (user) {
       loadBooks();
