@@ -752,6 +752,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Testing confirms that the search statistics are correctly implemented. When performing an Open Library search, the application displays statistics in the format 'X dans ma bibliothèque, Y sur Open Library', where X is the number of matching books in the user's library and Y is the number of matching books found on Open Library. These statistics update correctly when adding books from Open Library to the user's library."
+      - working: true
+        agent: "testing"
+        comment: "Code review confirms that the search statistics are properly implemented in App.js (lines 1139-1167). When in search mode, the application displays statistics showing the number of books in the user's library and the number of books found on Open Library. It also displays a 'Résultats classés par pertinence' message (line 1149) to indicate that the results are sorted by relevance. For exact matches, it displays 'Correspondances exactes trouvées' (lines 1151-1155)."
 
   - task: "Authentication - Login/Registration Page"
     implemented: true
