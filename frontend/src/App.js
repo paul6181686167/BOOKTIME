@@ -799,6 +799,18 @@ function AppContent() {
 
       <AddBookModal />
       <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
+      
+      {selectedBook && (
+        <BookDetailModal
+          book={selectedBook}
+          onClose={() => {
+            setSelectedBook(null);
+            setShowBookModal(false);
+          }}
+          onUpdate={handleUpdateBook}
+          onDelete={handleDeleteBook}
+        />
+      )}
     </div>
   );
 }
