@@ -271,6 +271,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Auto-add next volume endpoint works correctly, adds the next volume to Harry Potter saga with the correct volume number, status 'to_read', and auto_added flag set to true. Returns 404 for non-existent sagas as expected."
+      - working: true
+        agent: "testing"
+        comment: "Comprehensive testing confirms the POST /api/sagas/{saga_name}/auto-add endpoint works correctly. Created a test saga with 3 volumes and successfully added a 4th volume. The new book has the correct saga name, volume_number (4), status ('to_read'), and auto_added flag (true). The endpoint also returns 404 for non-existent sagas as expected."
 
   - task: "Data validation - New fields"
     implemented: true
