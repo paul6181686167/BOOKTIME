@@ -35,7 +35,7 @@ export const useAdvancedSearch = (books = []) => {
         const matchesAuthor = book.author?.toLowerCase().includes(term);
         const matchesSaga = book.saga?.toLowerCase().includes(term);
         const matchesDescription = book.description?.toLowerCase().includes(term);
-        const matchesGenre = book.genre?.some(g => g.toLowerCase().includes(term));
+        const matchesGenre = book.genre?.toLowerCase().includes(term);
         const matchesPublisher = book.publisher?.toLowerCase().includes(term);
         const matchesIsbn = book.isbn?.toLowerCase().includes(term);
 
