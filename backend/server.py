@@ -780,6 +780,527 @@ async def enrich_book(book_id: str, current_user: dict = Depends(get_current_use
     except requests.RequestException as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de l'enrichissement: {str(e)}")
 
+@app.get("/api/openlibrary/search-advanced")
+async def search_open_library_advanced(
+    title: Optional[str] = None,
+    author: Optional[str] = None,
+    subject: Optional[str] = None,
+    publisher: Optional[str] = None,
+    isbn: Optional[str] = None,
+    year_start: Optional[int] = None,
+    year_end: Optional[int] = None,
+    limit: int = 10,
+    current_user: dict = Depends(get_current_user)
+):
+    if not any([title, author, subject, publisher, isbn]):
+        raise HTTPException(status_code=400, detail="Au moins un critère de recherche est requis")
+    
+    try:
+        query_parts = []
+        
+        if title:
+            query_parts.append(f"title:{title}")
+        if author:
+            query_parts.append(f"author:{author}")
+        if subject:
+            query_parts.append(f"subject:{subject}")
+        if publisher:
+            query_parts.append(f"publisher:{publisher}")
+        if isbn:
+            query_parts.append(f"isbn:{normalize_isbn(isbn)}")
+        
+        if year_start and year_end:
+            query_parts.append(f"first_publish_year:[{year_start} TO {year_end}]")
+        elif year_start:
+            query_parts.append(f"first_publish_year:[{year_start} TO *]")
+        elif year_end:
+            query_parts.append(f"first_publish_year:[* TO {year_end}]")
+        
+        params = {
+            "q": " AND ".join(query_parts),
+            "limit": limit,
+            "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,publisher"
+        }
+        
+        response = requests.get("https://openlibrary.org/search.json", params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        books = []
+        for doc in data.get("docs", []):
+            book = {
+                "ol_key": doc.get("key", ""),
+                "title": doc.get("title", ""),
+                "author": ", ".join(doc.get("author_name", [])) if doc.get("author_name") else "",
+                "category": detect_category_from_subjects(doc.get("subject", [])),
+                "cover_url": extract_cover_url(doc.get("cover_i")),
+                "first_publish_year": doc.get("first_publish_year"),
+                "isbn": doc.get("isbn", [""])[0] if doc.get("isbn") else "",
+                "publisher": ", ".join(doc.get("publisher", [])) if doc.get("publisher") else ""
+            }
+            books.append(book)
+        
+        return {
+            "books": books,
+            "total_found": data.get("numFound", 0),
+            "query_used": " AND ".join(query_parts)
+        }
+        
+    except requests.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la recherche avancée: {str(e)}")
+
+@app.get("/api/openlibrary/search-isbn")
+async def search_by_isbn(isbn: str, current_user: dict = Depends(get_current_user)):
+    if not isbn:
+        raise HTTPException(status_code=400, detail="ISBN requis")
+    
+    normalized_isbn = normalize_isbn(isbn)
+    
+    try:
+        # Essayer d'abord l'API ISBN spécifique
+        response = requests.get(f"https://openlibrary.org/isbn/{normalized_isbn}.json", timeout=10)
+        
+        if response.ok:
+            book_data = response.json()
+            # Récupérer les informations de l'œuvre
+            if book_data.get("works"):
+                work_key = book_data["works"][0]["key"]
+                work_response = requests.get(f"https://openlibrary.org{work_key}.json", timeout=5)
+                if work_response.ok:
+                    work_data = work_response.json()
+                    book_data.update(work_data)
+            
+            book = {
+                "ol_key": book_data.get("key", ""),
+                "title": book_data.get("title", ""),
+                "author": "",  # À récupérer séparément
+                "category": detect_category_from_subjects(book_data.get("subjects", [])),
+                "cover_url": extract_cover_url(book_data.get("covers")),
+                "first_publish_year": book_data.get("first_publish_date"),
+                "isbn": normalized_isbn,
+                "publisher": ", ".join(book_data.get("publishers", [])) if book_data.get("publishers") else ""
+            }
+            
+            return {"book": book, "found": True}
+        else:
+            # Fallback à la recherche générale
+            params = {
+                "q": f"isbn:{normalized_isbn}",
+                "limit": 1,
+                "fields": "key,title,author_name,first_publish_year,isbn,cover_i,publisher"
+            }
+            
+            search_response = requests.get("https://openlibrary.org/search.json", params=params, timeout=10)
+            search_response.raise_for_status()
+            search_data = search_response.json()
+            
+            if search_data.get("docs"):
+                doc = search_data["docs"][0]
+                book = {
+                    "ol_key": doc.get("key", ""),
+                    "title": doc.get("title", ""),
+                    "author": ", ".join(doc.get("author_name", [])) if doc.get("author_name") else "",
+                    "category": "roman",  # Par défaut
+                    "cover_url": extract_cover_url(doc.get("cover_i")),
+                    "first_publish_year": doc.get("first_publish_year"),
+                    "isbn": normalized_isbn,
+                    "publisher": ", ".join(doc.get("publisher", [])) if doc.get("publisher") else ""
+                }
+                return {"book": book, "found": True}
+            else:
+                return {"book": None, "found": False, "message": "Aucun livre trouvé pour cet ISBN"}
+        
+    except requests.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la recherche par ISBN: {str(e)}")
+
+@app.get("/api/openlibrary/search-author")
+async def search_by_author(
+    author: str,
+    limit: int = 20,
+    current_user: dict = Depends(get_current_user)
+):
+    if not author:
+        raise HTTPException(status_code=400, detail="Nom d'auteur requis")
+    
+    try:
+        params = {
+            "q": f"author:{author}",
+            "limit": limit,
+            "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,series"
+        }
+        
+        response = requests.get("https://openlibrary.org/search.json", params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        # Grouper les livres par série
+        series_books = {}
+        standalone_books = []
+        
+        for doc in data.get("docs", []):
+            book = {
+                "ol_key": doc.get("key", ""),
+                "title": doc.get("title", ""),
+                "author": ", ".join(doc.get("author_name", [])) if doc.get("author_name") else "",
+                "category": detect_category_from_subjects(doc.get("subject", [])),
+                "cover_url": extract_cover_url(doc.get("cover_i")),
+                "first_publish_year": doc.get("first_publish_year"),
+                "isbn": doc.get("isbn", [""])[0] if doc.get("isbn") else "",
+                "series": doc.get("series", [])
+            }
+            
+            if book["series"]:
+                series_name = book["series"][0] if isinstance(book["series"], list) else book["series"]
+                if series_name not in series_books:
+                    series_books[series_name] = []
+                series_books[series_name].append(book)
+            else:
+                standalone_books.append(book)
+        
+        return {
+            "author": author,
+            "series": [{"name": name, "books": books} for name, books in series_books.items()],
+            "standalone_books": standalone_books,
+            "total_found": data.get("numFound", 0)
+        }
+        
+    except requests.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la recherche par auteur: {str(e)}")
+
+@app.post("/api/openlibrary/import-bulk")
+async def import_bulk_from_open_library(
+    import_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    books_to_import = import_data.get("books", [])
+    
+    if not books_to_import:
+        raise HTTPException(status_code=400, detail="Liste de livres vide")
+    
+    results = {
+        "imported": [],
+        "errors": [],
+        "duplicates": []
+    }
+    
+    for book_data in books_to_import:
+        try:
+            ol_key = book_data.get("ol_key")
+            category = book_data.get("category", "roman")
+            
+            if not ol_key:
+                results["errors"].append({"book": book_data, "error": "Clé Open Library manquante"})
+                continue
+            
+            # Utiliser la fonction d'import simple
+            import_result = await import_from_open_library(
+                {"ol_key": ol_key, "category": category},
+                current_user
+            )
+            results["imported"].append(import_result["book"])
+            
+        except HTTPException as e:
+            if e.status_code == 409:  # Doublon
+                results["duplicates"].append({"book": book_data, "error": e.detail})
+            else:
+                results["errors"].append({"book": book_data, "error": e.detail})
+        except Exception as e:
+            results["errors"].append({"book": book_data, "error": str(e)})
+    
+    return {
+        "summary": {
+            "total_requested": len(books_to_import),
+            "imported": len(results["imported"]),
+            "duplicates": len(results["duplicates"]),
+            "errors": len(results["errors"])
+        },
+        "results": results
+    }
+
+@app.get("/api/openlibrary/recommendations")
+async def get_recommendations(
+    limit: int = 10,
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        # Analyser la collection de l'utilisateur
+        user_books = list(books_collection.find({"user_id": current_user["id"]}, {"_id": 0}))
+        
+        if not user_books:
+            return {"recommendations": [], "message": "Ajoutez des livres à votre collection pour obtenir des recommandations"}
+        
+        # Analyser les préférences
+        authors = {}
+        categories = {}
+        genres = {}
+        
+        for book in user_books:
+            # Compter les auteurs
+            author = book.get("author", "")
+            if author:
+                authors[author] = authors.get(author, 0) + 1
+            
+            # Compter les catégories
+            category = book.get("category", "")
+            if category:
+                categories[category] = categories.get(category, 0) + 1
+            
+            # Compter les genres
+            genre = book.get("genre", "")
+            if genre:
+                genres[genre] = genres.get(genre, 0) + 1
+        
+        # Trouver les auteurs favoris
+        favorite_authors = sorted(authors.items(), key=lambda x: x[1], reverse=True)[:3]
+        favorite_category = max(categories.items(), key=lambda x: x[1])[0] if categories else "roman"
+        
+        recommendations = []
+        
+        # Recommandations basées sur les auteurs favoris
+        for author, count in favorite_authors:
+            if len(recommendations) >= limit:
+                break
+            
+            try:
+                params = {
+                    "q": f"author:{author}",
+                    "limit": 3,
+                    "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject"
+                }
+                
+                response = requests.get("https://openlibrary.org/search.json", params=params, timeout=5)
+                if response.ok:
+                    data = response.json()
+                    
+                    for doc in data.get("docs", [])[:2]:  # Max 2 par auteur
+                        if len(recommendations) >= limit:
+                            break
+                        
+                        title = doc.get("title", "")
+                        # Vérifier que ce livre n'est pas déjà dans la collection
+                        existing = any(book.get("title", "").lower() == title.lower() for book in user_books)
+                        
+                        if not existing:
+                            recommendation = {
+                                "ol_key": doc.get("key", ""),
+                                "title": title,
+                                "author": ", ".join(doc.get("author_name", [])) if doc.get("author_name") else "",
+                                "category": detect_category_from_subjects(doc.get("subject", [])),
+                                "cover_url": extract_cover_url(doc.get("cover_i")),
+                                "first_publish_year": doc.get("first_publish_year"),
+                                "reason": f"Recommandé car vous aimez {author}"
+                            }
+                            recommendations.append(recommendation)
+            except:
+                continue
+        
+        return {
+            "recommendations": recommendations,
+            "based_on": {
+                "favorite_authors": [author for author, _ in favorite_authors],
+                "favorite_category": favorite_category,
+                "collection_size": len(user_books)
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la génération des recommandations: {str(e)}")
+
+@app.get("/api/openlibrary/missing-volumes")
+async def detect_missing_volumes(
+    saga: str,
+    current_user: dict = Depends(get_current_user)
+):
+    if not saga:
+        raise HTTPException(status_code=400, detail="Nom de saga requis")
+    
+    try:
+        # Récupérer les volumes existants
+        existing_books = list(books_collection.find({
+            "user_id": current_user["id"],
+            "saga": saga
+        }, {"_id": 0}).sort("volume_number", 1))
+        
+        if not existing_books:
+            raise HTTPException(status_code=404, detail="Saga non trouvée")
+        
+        existing_volumes = [book.get("volume_number") for book in existing_books if book.get("volume_number")]
+        
+        if not existing_volumes:
+            return {
+                "saga": saga,
+                "present_volumes": [],
+                "missing_volumes": [],
+                "next_volume": 1,
+                "suggestions": []
+            }
+        
+        min_vol = min(existing_volumes)
+        max_vol = max(existing_volumes)
+        
+        # Détecter les volumes manquants
+        missing_volumes = []
+        for i in range(min_vol, max_vol + 1):
+            if i not in existing_volumes:
+                missing_volumes.append(i)
+        
+        # Rechercher les volumes manquants sur Open Library
+        author = existing_books[0].get("author", "")
+        suggestions = []
+        
+        for vol in missing_volumes[:5]:  # Limiter à 5 suggestions
+            try:
+                search_query = f"{saga} tome {vol} {author}".strip()
+                params = {
+                    "q": search_query,
+                    "limit": 3,
+                    "fields": "key,title,author_name,first_publish_year,cover_i"
+                }
+                
+                response = requests.get("https://openlibrary.org/search.json", params=params, timeout=5)
+                if response.ok:
+                    data = response.json()
+                    
+                    for doc in data.get("docs", [])[:1]:  # Premier résultat
+                        suggestion = {
+                            "volume_number": vol,
+                            "ol_key": doc.get("key", ""),
+                            "title": doc.get("title", ""),
+                            "author": ", ".join(doc.get("author_name", [])) if doc.get("author_name") else "",
+                            "cover_url": extract_cover_url(doc.get("cover_i")),
+                            "first_publish_year": doc.get("first_publish_year")
+                        }
+                        suggestions.append(suggestion)
+                        break
+            except:
+                continue
+        
+        return {
+            "saga": saga,
+            "present_volumes": sorted(existing_volumes),
+            "missing_volumes": missing_volumes,
+            "next_volume": max_vol + 1,
+            "suggestions": suggestions
+        }
+        
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la détection des volumes manquants: {str(e)}")
+
+@app.get("/api/openlibrary/suggestions")
+async def get_import_suggestions(
+    limit: int = 15,
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        # Analyser la collection
+        user_books = list(books_collection.find({"user_id": current_user["id"]}, {"_id": 0}))
+        
+        if not user_books:
+            return {"suggestions": [], "message": "Ajoutez des livres pour obtenir des suggestions"}
+        
+        suggestions = []
+        
+        # Suggestions de continuation de sagas
+        sagas = {}
+        for book in user_books:
+            saga = book.get("saga", "")
+            if saga:
+                if saga not in sagas:
+                    sagas[saga] = {"books": [], "author": book.get("author", "")}
+                sagas[saga]["books"].append(book)
+        
+        for saga_name, saga_data in sagas.items():
+            volumes = [book.get("volume_number") for book in saga_data["books"] if book.get("volume_number")]
+            if volumes:
+                next_volume = max(volumes) + 1
+                
+                # Rechercher le tome suivant
+                try:
+                    search_query = f"{saga_name} tome {next_volume} {saga_data['author']}".strip()
+                    params = {
+                        "q": search_query,
+                        "limit": 1,
+                        "fields": "key,title,author_name,cover_i"
+                    }
+                    
+                    response = requests.get("https://openlibrary.org/search.json", params=params, timeout=3)
+                    if response.ok:
+                        data = response.json()
+                        
+                        if data.get("docs"):
+                            doc = data["docs"][0]
+                            suggestion = {
+                                "type": "saga_continuation",
+                                "ol_key": doc.get("key", ""),
+                                "title": doc.get("title", ""),
+                                "author": ", ".join(doc.get("author_name", [])) if doc.get("author_name") else "",
+                                "cover_url": extract_cover_url(doc.get("cover_i")),
+                                "reason": f"Tome suivant de la saga {saga_name}",
+                                "saga": saga_name,
+                                "volume_number": next_volume
+                            }
+                            suggestions.append(suggestion)
+                except:
+                    continue
+        
+        # Suggestions d'auteurs favoris
+        authors = {}
+        for book in user_books:
+            author = book.get("author", "")
+            if author:
+                authors[author] = authors.get(author, 0) + 1
+        
+        favorite_authors = sorted(authors.items(), key=lambda x: x[1], reverse=True)[:3]
+        
+        for author, count in favorite_authors:
+            if len(suggestions) >= limit:
+                break
+            
+            try:
+                params = {
+                    "q": f"author:{author}",
+                    "limit": 2,
+                    "fields": "key,title,author_name,cover_i"
+                }
+                
+                response = requests.get("https://openlibrary.org/search.json", params=params, timeout=3)
+                if response.ok:
+                    data = response.json()
+                    
+                    for doc in data.get("docs", []):
+                        if len(suggestions) >= limit:
+                            break
+                        
+                        title = doc.get("title", "")
+                        # Vérifier que ce livre n'est pas déjà dans la collection
+                        existing = any(book.get("title", "").lower() == title.lower() for book in user_books)
+                        
+                        if not existing:
+                            suggestion = {
+                                "type": "favorite_author",
+                                "ol_key": doc.get("key", ""),
+                                "title": title,
+                                "author": ", ".join(doc.get("author_name", [])) if doc.get("author_name") else "",
+                                "cover_url": extract_cover_url(doc.get("cover_i")),
+                                "reason": f"Nouvel ouvrage de {author} ({count} livre{'s' if count > 1 else ''} dans votre collection)"
+                            }
+                            suggestions.append(suggestion)
+            except:
+                continue
+        
+        return {
+            "suggestions": suggestions[:limit],
+            "types": {
+                "saga_continuation": len([s for s in suggestions if s.get("type") == "saga_continuation"]),
+                "favorite_author": len([s for s in suggestions if s.get("type") == "favorite_author"])
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la génération des suggestions: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
