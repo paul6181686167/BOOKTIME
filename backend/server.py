@@ -828,6 +828,7 @@ async def import_from_open_library(
         new_book = {
             "id": book_id,
             "user_id": current_user["id"],
+            "ol_key": ol_key,  # Ajout de la clé Open Library pour la détection des doublons
             "title": title,
             "author": author_str,
             "category": validate_category(category),
