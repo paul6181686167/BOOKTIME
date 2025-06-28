@@ -12,7 +12,9 @@ import { bookService } from './services/bookService';
 // Component imports
 import AdvancedSearchBar from './components/AdvancedSearchBar';
 import BookDetailModal from './components/BookDetailModal';
+import GroupedSearchResults from './components/GroupedSearchResults';
 import { useAdvancedSearch } from './hooks/useAdvancedSearch';
+import { useGroupedSearch } from './hooks/useGroupedSearch';
 
 import './App.css';
 
