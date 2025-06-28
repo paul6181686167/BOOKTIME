@@ -556,6 +556,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Suggestions endpoint works correctly. Successfully tested with an existing collection of books. The endpoint provides two types of suggestions: saga continuations and books by favorite authors. Each suggestion includes a reason explaining why it was suggested. The limit parameter works as expected."
+      - working: true
+        agent: "testing"
+        comment: "Comprehensive testing confirms the GET /api/openlibrary/suggestions endpoint works correctly. Created a test collection with books from different authors and sagas, then successfully retrieved import suggestions. The endpoint provides two types of suggestions (saga_continuation and favorite_author) with appropriate reasons. Each suggestion includes all required fields (type, ol_key, title, author, reason). The limit parameter works as expected, restricting the number of suggestions returned."
 
   - task: "POST /api/auth/register - User Registration"
     implemented: true
