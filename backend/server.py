@@ -780,20 +780,45 @@ async def import_from_open_library(
         
         author_str = ", ".join(authors) if authors else ""
         
-        # Vérifier doublons
+        # Vérifier doublons - Logique améliorée
         existing_book = None
+        
+        # 1. Vérification par ISBN (priorité élevée)
         if isbn:
             existing_book = books_collection.find_one({
                 "user_id": current_user["id"],
                 "isbn": normalize_isbn(isbn)
             })
         
-        if not existing_book and title and author_str:
+        # 2. Vérification par clé Open Library (nouvelle vérification)
+        if not existing_book:
             existing_book = books_collection.find_one({
                 "user_id": current_user["id"],
-                "title": {"$regex": re.escape(title), "$options": "i"},
-                "author": {"$regex": re.escape(author_str), "$options": "i"}
+                "ol_key": ol_key  # Ajouter cette vérification
             })
+        
+        # 3. Vérification par titre et auteur (avec une meilleure logique)
+        if not existing_book and title and author_str:
+            # Normaliser les chaînes pour une meilleure comparaison
+            normalized_title = re.sub(r'[^\w\s]', '', title.lower()).strip()
+            normalized_author = re.sub(r'[^\w\s]', '', author_str.lower()).strip()
+            
+            # Recherche exacte d'abord
+            existing_book = books_collection.find_one({
+                "user_id": current_user["id"],
+                "title": {"$regex": f"^{re.escape(title)}$", "$options": "i"},
+                "author": {"$regex": f"^{re.escape(author_str)}$", "$options": "i"}
+            })
+            
+            # Si pas trouvé, recherche avec normalisation
+            if not existing_book and len(normalized_title) > 3:
+                existing_book = books_collection.find_one({
+                    "user_id": current_user["id"],
+                    "$and": [
+                        {"title": {"$regex": re.escape(normalized_title), "$options": "i"}},
+                        {"author": {"$regex": re.escape(normalized_author), "$options": "i"}}
+                    ]
+                })
         
         if existing_book:
             raise HTTPException(status_code=409, detail="Ce livre existe déjà dans votre collection")
