@@ -432,6 +432,7 @@ function AppContent() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [lastSearchTerm, setLastSearchTerm] = useState('');
   const [useGroupedSearchMode, setUseGroupedSearchMode] = useState(false);
+  const [addingBooks, setAddingBooks] = useState(new Set()); // Suivi des livres en cours d'ajout
 
   // Hook de recherche avancée
   const {
