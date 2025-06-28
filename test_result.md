@@ -1138,7 +1138,7 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: ["Open Library Search Functionality", "Back to Library Button", "Add Book from Open Library", "Search Statistics"]
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
