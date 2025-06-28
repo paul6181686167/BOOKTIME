@@ -101,6 +101,18 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     }
   };
 
+  // Fonction pour ajouter un livre depuis Open Library
+  const handleAddFromOpenLibrary = async () => {
+    if (onAddFromOpenLibrary && book.isFromOpenLibrary) {
+      try {
+        await onAddFromOpenLibrary(book);
+        onClose();
+      } catch (error) {
+        console.error('Erreur ajout livre:', error);
+      }
+    }
+  };
+
   const handleRatingClick = (rating) => {
     setEditData(prev => ({ ...prev, rating }));
   };
