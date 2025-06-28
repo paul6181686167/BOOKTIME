@@ -17,13 +17,13 @@ load_dotenv()
 
 app = FastAPI(title="BookTime API", description="Votre bibliothèque personnelle")
 
-# Configuration CORS
+# Configuration CORS simplifiée
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"]
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
 )
 
 # Configuration
