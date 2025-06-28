@@ -502,6 +502,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Bulk import endpoint works correctly. Successfully tested importing multiple books with different categories. The endpoint correctly handles duplicate detection, error reporting, and provides a comprehensive summary of the import operation. Error handling for invalid keys and empty book arrays works as expected."
+      - working: true
+        agent: "testing"
+        comment: "Comprehensive testing confirms the POST /api/openlibrary/import-bulk endpoint works correctly with all test cases. Successfully imported multiple books from Open Library. The endpoint returns a detailed summary of the import operation including total_requested, imported, duplicates, and errors. It correctly handles a mix of valid and invalid keys, reporting errors for the invalid ones. The endpoint also returns 400 Bad Request when an empty book list is provided."
 
   - task: "GET /api/openlibrary/recommendations - Personalized recommendations"
     implemented: true
