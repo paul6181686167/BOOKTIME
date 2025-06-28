@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 
 # Get the backend URL from the frontend .env file
-BACKEND_URL = "https://268b4f21-ae47-4fee-8b5d-82bb3e9abba3.preview.emergentagent.com"
+BACKEND_URL = "https://31e96361-455a-4035-a2e5-513b590cfb6e.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 class BooktimeSagaRoutesTest(unittest.TestCase):
