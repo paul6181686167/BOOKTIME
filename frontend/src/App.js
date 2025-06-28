@@ -428,6 +428,8 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState('roman');
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [showBookModal, setShowBookModal] = useState(false);
 
   // Hook de recherche avancée
   const {
