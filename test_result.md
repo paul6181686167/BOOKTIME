@@ -520,6 +520,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Recommendations endpoint works correctly. Successfully tested with an existing collection of books. The endpoint correctly analyzes the user's preferences (authors, categories, genres) and provides relevant recommendations. Each recommendation includes a reason explaining why it was recommended. The limit parameter works as expected."
+      - working: true
+        agent: "testing"
+        comment: "Comprehensive testing confirms the GET /api/openlibrary/recommendations endpoint works correctly. Created a test collection with books from different authors and sagas, then successfully retrieved personalized recommendations. The endpoint correctly analyzes the user's preferences and provides relevant recommendations with reasons. Each recommendation includes all required fields (ol_key, title, author, category, reason). The limit parameter works as expected, restricting the number of recommendations returned."
 
   - task: "GET /api/openlibrary/missing-volumes - Detect missing saga volumes"
     implemented: true
