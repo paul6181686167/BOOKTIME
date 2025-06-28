@@ -102,13 +102,16 @@ const AdvancedSearchBar = React.memo(({
   }, []);
 
   const triggerSearch = useCallback(() => {
-    // Appliquer la recherche directement sans navigation
-    if (localSearchTerm.trim()) {
+    // Déclencher la recherche Open Library si un terme est présent
+    if (localSearchTerm.trim() && onOpenLibrarySearch) {
       saveRecentSearch(localSearchTerm);
+      onOpenLibrarySearch(localSearchTerm);
+    } else {
+      // Sinon, appliquer la recherche locale
+      onSearchChange(localSearchTerm);
     }
-    onSearchChange(localSearchTerm);
     setShowSuggestions(false);
-  }, [localSearchTerm, onSearchChange, saveRecentSearch]);
+  }, [localSearchTerm, onSearchChange, onOpenLibrarySearch, saveRecentSearch]);
 
   // Charger les recherches récentes depuis localStorage
   useEffect(() => {
