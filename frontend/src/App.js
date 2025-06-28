@@ -516,8 +516,6 @@ function AppContent() {
       toast.error('Erreur lors de la suppression du livre');
     }
   };
-    setSelectedBook(book);
-    setShowBookModal(true);
   };
 
   const handleUpdateBook = async (bookData) => {
