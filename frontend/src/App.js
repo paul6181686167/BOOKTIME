@@ -1137,11 +1137,24 @@ function AppContent() {
           
           {/* Statistiques de recherche */}
           {(searchStats.hasActiveFilters || isSearchMode) && (
-            <div className="mt-3 text-center">
+            <div className="mt-3 text-center space-y-1">
               {isSearchMode ? (
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Recherche "{lastSearchTerm}" - {displayedBooks.filter(b => !b.isFromOpenLibrary).length} dans ma bibliothèque, {displayedBooks.filter(b => b.isFromOpenLibrary).length} sur Open Library
-                </p>
+                <>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Recherche "{lastSearchTerm}" - {displayedBooks.filter(b => !b.isFromOpenLibrary).length} dans ma bibliothèque, {displayedBooks.filter(b => b.isFromOpenLibrary).length} sur Open Library
+                  </p>
+                  {displayedBooks.length > 0 && (
+                    <p className="text-xs text-gray-500 dark:text-gray-500 flex items-center justify-center">
+                      <span className="mr-1">🎯</span>
+                      Résultats classés par pertinence 
+                      {displayedBooks.some(book => book.relevanceScore >= 800) && (
+                        <span className="ml-1 text-green-600 dark:text-green-400 font-medium">
+                          - Correspondances exactes trouvées
+                        </span>
+                      )}
+                    </p>
+                  )}
+                </>
               ) : (
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {searchStats.filtered} résultat{searchStats.filtered > 1 ? 's' : ''} trouvé{searchStats.filtered > 1 ? 's' : ''} 
