@@ -30,7 +30,7 @@ const openLibraryService = {
   }
 };
 
-const BookDetailModal = ({ book, onClose, onUpdate, onDelete }) => {
+const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibrary }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     status: book.status,
