@@ -439,6 +439,7 @@ function AppContent() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [lastSearchTerm, setLastSearchTerm] = useState('');
   const [useGroupedSearchMode, setUseGroupedSearchMode] = useState(false);
+  const [useGroupedSearchMode, setUseGroupedSearchMode] = useState(false);
 
   // Hook de recherche avancée
   const {
