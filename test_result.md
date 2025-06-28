@@ -319,6 +319,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Open Library search endpoint works correctly. Successfully tested with queries like 'Harry Potter', 'Astérix', 'One Piece', and 'Le Seigneur des Anneaux'. The endpoint returns properly mapped book data including title, author, category, cover URL, and other metadata. Different limit parameters work as expected. Error cases (empty query, missing parameters) are handled correctly with appropriate status codes."
+      - working: true
+        agent: "testing"
+        comment: "Comprehensive testing confirms the GET /api/openlibrary/search endpoint works correctly with all filters. Successfully tested basic search and filters including year_start, year_end, language, min_pages, max_pages, and author_filter. All filters are properly applied and the results include appropriate metadata about the filters applied. Error cases are handled correctly."
 
   - task: "POST /api/openlibrary/import - Import book from Open Library"
     implemented: true
