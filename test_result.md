@@ -389,6 +389,21 @@ backend:
         agent: "testing"
         comment: "Cover image handling works correctly. The system properly extracts cover image URLs from Open Library data and formats them correctly (https://covers.openlibrary.org/b/id/{id}-L.jpg). Cover URLs are preserved during import and enrichment operations."
 
+  - task: "GET /api/books/search-grouped - Search with saga grouping"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "Search-grouped endpoint works correctly. Successfully tested with various search terms including 'harry potter', 'seigneur', and 'tome'. The API correctly groups books by saga when appropriate and returns individual books otherwise. The response structure includes all required fields (results, total_books, total_sagas, search_term, grouped_by_saga). Saga entries have type: 'saga' with books, total_books, completed_books, etc. Individual books have type: 'book'. Empty or short search terms return empty results as expected."
+
   - task: "ISBN validation - Handling and validation"
     implemented: true
     working: true
