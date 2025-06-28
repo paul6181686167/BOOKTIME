@@ -355,6 +355,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Book enrichment endpoint works correctly. Successfully enriched a basic book with additional data from Open Library (cover URL, ISBN, publisher, publication year). The endpoint only adds missing fields and preserves existing data. It correctly handles non-existent books and books with no Open Library match with appropriate error responses."
+      - working: true
+        agent: "testing"
+        comment: "Comprehensive testing confirms the POST /api/books/{book_id}/enrich endpoint works correctly. Created a basic book and successfully enriched it with additional data from Open Library. The endpoint only adds missing fields (cover_url, isbn, publication_year, publisher, total_pages) and preserves existing data. It correctly returns the updated book and a list of fields that were updated. The endpoint also returns 404 for non-existent books as expected."
 
   - task: "Category detection - Automatic category detection"
     implemented: true
