@@ -1180,8 +1180,8 @@ function AppContent() {
         {/* Barre de recherche */}
         <div className="mb-6">
           <AdvancedSearchBar
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
+            searchTerm={useGroupedSearchMode ? groupedSearchTerm : searchTerm}
+            onSearchChange={handleSearchChange}
             onOpenLibrarySearch={searchOpenLibrary}
             books={books}
             filters={filters}
