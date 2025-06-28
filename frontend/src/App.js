@@ -626,57 +626,166 @@ function AppContent() {
     }
   };
 
-  // Fonction de calcul de la pertinence d'un livre par rapport au terme de recherche
+  // Fonction avancée de calcul de la pertinence d'un livre par rapport au terme de recherche
   const calculateRelevanceScore = (book, searchTerm) => {
     if (!searchTerm || !searchTerm.trim()) return 0;
     
     const term = searchTerm.toLowerCase().trim();
+    const termWords = term.split(/\s+/).filter(word => word.length > 2); // Mots de plus de 2 caractères
+    
+    // Normalisation des champs de recherche
     const title = (book.title || '').toLowerCase();
     const author = (book.author || '').toLowerCase();
     const description = (book.description || '').toLowerCase();
     const genre = (book.genre || '').toLowerCase();
     const saga = (book.saga || '').toLowerCase();
+    const publisher = (book.publisher || '').toLowerCase();
+    const isbn = (book.isbn || '').toLowerCase();
     
     let score = 0;
     
-    // Score pour correspondance exacte du titre (très important)
-    if (title === term) score += 100;
-    else if (title.startsWith(term)) score += 80;
-    else if (title.includes(` ${term} `) || title.includes(`-${term}-`)) score += 60;
-    else if (title.includes(term)) score += 40;
+    // === CORRESPONDANCES EXACTES (Score très élevé) ===
     
-    // Score pour correspondance exacte de l'auteur
-    if (author === term) score += 90;
-    else if (author.startsWith(term)) score += 70;
-    else if (author.includes(` ${term} `) || author.includes(`-${term}-`)) score += 50;
-    else if (author.includes(term)) score += 30;
+    // Correspondance exacte du titre complet
+    if (title === term) score += 1000;
     
-    // Score pour correspondance dans la saga
+    // Correspondance exacte de l'auteur complet
+    if (author === term) score += 900;
+    
+    // Correspondance exacte de la saga
+    if (saga && saga === term) score += 800;
+    
+    // === CORRESPONDANCES PARTIELLES DU TITRE (Score élevé) ===
+    
+    // Titre commence par le terme
+    if (title.startsWith(term)) score += 700;
+    
+    // Titre contient le terme comme mot entier
+    if (title.includes(` ${term} `) || title.includes(`${term} `) || title.includes(` ${term}`)) score += 600;
+    
+    // Titre contient le terme avec délimiteurs
+    if (title.includes(`-${term}-`) || title.includes(`(${term})`) || title.includes(`[${term}]`)) score += 550;
+    
+    // Titre contient le terme n'importe où
+    if (title.includes(term)) score += 400;
+    
+    // === CORRESPONDANCES PARTIELLES DE L'AUTEUR (Score élevé) ===
+    
+    // Auteur commence par le terme
+    if (author.startsWith(term)) score += 650;
+    
+    // Auteur contient le terme comme mot entier
+    if (author.includes(` ${term} `) || author.includes(`${term} `) || author.includes(` ${term}`)) score += 500;
+    
+    // Auteur contient le terme n'importe où
+    if (author.includes(term)) score += 300;
+    
+    // === CORRESPONDANCES PAR MOTS MULTIPLES ===
+    
+    if (termWords.length > 1) {
+      let multiWordScore = 0;
+      let matchedWords = 0;
+      
+      termWords.forEach(word => {
+        // Correspondances dans le titre
+        if (title.includes(word)) {
+          multiWordScore += 50;
+          matchedWords++;
+        }
+        
+        // Correspondances dans l'auteur
+        if (author.includes(word)) {
+          multiWordScore += 40;
+          matchedWords++;
+        }
+        
+        // Correspondances dans la saga
+        if (saga && saga.includes(word)) {
+          multiWordScore += 30;
+          matchedWords++;
+        }
+      });
+      
+      // Bonus si plusieurs mots correspondent
+      if (matchedWords > 1) {
+        multiWordScore *= (1 + (matchedWords - 1) * 0.5); // Bonus exponentiel
+      }
+      
+      score += multiWordScore;
+    }
+    
+    // === CORRESPONDANCES DANS D'AUTRES CHAMPS ===
+    
+    // Correspondances dans la saga
     if (saga && saga.includes(term)) {
-      if (saga === term) score += 70;
-      else if (saga.startsWith(term)) score += 50;
-      else score += 25;
+      if (saga.startsWith(term)) score += 350;
+      else score += 200;
     }
     
-    // Score pour correspondance dans la description
-    if (description.includes(term)) score += 15;
+    // Correspondances dans la description
+    if (description.includes(term)) score += 100;
     
-    // Score pour correspondance dans le genre
-    if (genre.includes(term)) score += 10;
+    // Correspondances dans le genre
+    if (genre.includes(term)) score += 80;
     
-    // Bonus pour les livres locaux (déjà dans la bibliothèque)
-    if (!book.isFromOpenLibrary) score += 5;
+    // Correspondances dans l'éditeur
+    if (publisher.includes(term)) score += 60;
     
-    // Bonus pour les livres populaires (Open Library avec note ou pages)
+    // Correspondances dans l'ISBN
+    if (isbn.includes(term.replace(/[-\s]/g, ''))) score += 150;
+    
+    // === BONUS ET MALUS ===
+    
+    // Bonus important pour les livres de la bibliothèque locale
+    if (!book.isFromOpenLibrary) {
+      score += 100; // Priorité aux livres possédés
+    }
+    
+    // Bonus pour les livres déjà possédés d'Open Library
+    if (book.isFromOpenLibrary && book.isOwned) {
+      score += 80;
+    }
+    
+    // Bonus pour la qualité des métadonnées
     if (book.isFromOpenLibrary) {
-      if (book.first_publish_year && book.first_publish_year > 2000) score += 2;
-      if (book.number_of_pages && book.number_of_pages > 200) score += 1;
+      // Livres récents
+      if (book.first_publish_year && book.first_publish_year > 2000) score += 10;
+      
+      // Livres avec couverture
+      if (book.cover_url) score += 15;
+      
+      // Livres avec nombre de pages raisonnable
+      if (book.number_of_pages && book.number_of_pages > 50 && book.number_of_pages < 2000) score += 10;
+      
+      // Livres avec description
+      if (book.description && book.description.length > 50) score += 10;
     }
     
-    // Malus pour les livres très anciens sans pertinence évidente
-    if (book.first_publish_year && book.first_publish_year < 1900 && score < 20) score -= 5;
+    // Malus pour les livres avec métadonnées manquantes
+    if (!book.author || book.author.trim() === '') score -= 50;
+    if (!book.title || book.title.trim() === '') score -= 100;
     
-    return Math.max(0, score);
+    // Malus pour les livres très anciens avec peu de pertinence
+    if (book.first_publish_year && book.first_publish_year < 1900 && score < 100) score -= 30;
+    
+    // Malus pour les livres sans couverture (moins attrayants visuellement)
+    if (book.isFromOpenLibrary && !book.cover_url) score -= 10;
+    
+    // === BONUS SPÉCIAUX SELON LE CONTEXTE ===
+    
+    // Bonus pour les correspondances de langue cohérente
+    if (term.match(/[àáâäéèêëïîôöùûüç]/)) { // Caractères français détectés
+      if (description.includes('français') || description.includes('france')) score += 20;
+    }
+    
+    // Bonus pour les séries populaires
+    const popularSeries = ['harry potter', 'one piece', 'naruto', 'astérix', 'tintin', 'dragon ball'];
+    if (popularSeries.some(series => title.includes(series) || saga.includes(series))) {
+      score += 25;
+    }
+    
+    // Score final avec minimum à 0
+    return Math.max(0, Math.round(score));
   };
 
   // Combiner et trier les livres locaux et Open Library selon le mode et la pertinence
