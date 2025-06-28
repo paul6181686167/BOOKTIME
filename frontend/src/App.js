@@ -1243,8 +1243,22 @@ function AppContent() {
           )}
         </div>
 
-        <TabNavigation />
-        <BookGrid />
+        {/* Affichage des résultats groupés ou interface normale */}
+        {useGroupedSearchMode && hasGroupedResults ? (
+          <GroupedSearchResults
+            results={groupedResults}
+            searchStats={groupedSearchStats}
+            onBookClick={(book) => {
+              setSelectedBook(book);
+              setShowBookModal(true);
+            }}
+          />
+        ) : (
+          <>
+            <TabNavigation />
+            <BookGrid />
+          </>
+        )}
       </main>
 
       <AddBookModal />
