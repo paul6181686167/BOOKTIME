@@ -716,6 +716,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Testing confirms that the 'Back to Library' button is correctly implemented and visible when in search mode. The button appears after performing an Open Library search and is properly positioned. Clicking the button successfully returns the user to their library view, although the search term remains in the search bar. This is a minor issue as the search results are cleared and the user can see their library again."
+      - working: true
+        agent: "testing"
+        comment: "Code review confirms that the 'Back to Library' button is properly implemented in App.js (lines 1127-1136). The button is conditionally rendered when isSearchMode is true, and clicking it calls the backToLibrary function (lines 531-536) which resets the search state and clears the search results."
         
   - task: "Add Book from Open Library"
     implemented: true
