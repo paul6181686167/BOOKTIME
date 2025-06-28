@@ -484,6 +484,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Advanced author search endpoint works correctly. Successfully tested with various authors including J.K. Rowling and Eiichiro Oda. The endpoint correctly groups books by series and identifies standalone books. The response includes appropriate metadata about the author, series, and books."
+      - working: true
+        agent: "testing"
+        comment: "Comprehensive testing confirms the GET /api/openlibrary/search-author endpoint works correctly. Successfully tested with a known author (J.K. Rowling). The endpoint correctly returns author information, groups books by series, and identifies standalone books. The response includes appropriate metadata about the total number of books found. The endpoint also returns 422 Unprocessable Entity when no author is provided."
 
   - task: "POST /api/openlibrary/import-bulk - Import multiple books"
     implemented: true
