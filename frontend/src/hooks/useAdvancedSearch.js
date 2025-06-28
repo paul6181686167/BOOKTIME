@@ -84,7 +84,7 @@ export const useAdvancedSearch = (books = []) => {
 
       return true;
     });
-  }, [books, searchTerm, filters]);
+  }, [books, debouncedSearchTerm, filters]);
 
   // Statistiques de recherche
   const searchStats = useMemo(() => {
