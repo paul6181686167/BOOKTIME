@@ -1192,6 +1192,8 @@ test_plan:
   test_priority: "high_first"
 
 agent_communication:
+    - agent: "testing"
+      message: "I've tested the login/registration page and found that the frontend is correctly implemented with first name and last name fields only, as required. The form is properly styled and the toggle between login and registration works as expected. However, there's a critical issue with the backend authentication middleware that's causing a 'ValueError: too many values to unpack (expected 2)' error. This prevents the actual registration and login processes from working. I created a minimal backend server to test the frontend functionality, which confirmed that the frontend UI is correctly implemented. The main agent should focus on fixing the backend middleware issue to enable full authentication functionality."
   - agent: "testing"
     message: "Starting backend API testing for BOOKTIME application"
   - agent: "testing"
