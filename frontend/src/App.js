@@ -782,18 +782,6 @@ function AppContent() {
           onDelete={handleDeleteBook}
         />
       )}
-      
-      {selectedBook && (
-        <BookDetailModal
-          book={selectedBook}
-          onClose={() => {
-            setSelectedBook(null);
-            setShowBookModal(false);
-          }}
-          onUpdate={handleUpdateBook}
-          onDelete={handleDeleteBook}
-        />
-      )}
     </div>
   );
 }
