@@ -132,10 +132,7 @@ export const AuthProvider = ({ children }) => {
       const result = await authService.register(firstName, lastName);
       if (result.success) {
         setUser(result.user);
-        // Force re-render and state update
-        setTimeout(() => {
-          window.location.reload(); // Temporary fix to ensure state sync
-        }, 100);
+        return result;
       }
       return result;
     } catch (error) {
