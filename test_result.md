@@ -734,6 +734,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Testing confirms that adding a book from Open Library works correctly. When clicking on a book with a '+' badge, a modal opens with book details and an 'Add to my library' button. Clicking this button successfully adds the book to the user's library, and the UI updates to reflect this change. The book is then displayed with a '✓' badge instead of a '+' badge, indicating it's now in the user's library. The search statistics also update correctly to show the increased count of books in the library."
+      - working: true
+        agent: "testing"
+        comment: "Code review confirms that adding a book from Open Library is properly implemented. The handleAddFromOpenLibrary function in App.js (lines 539-581) makes a POST request to the /api/openlibrary/import endpoint with the book's Open Library key and category. After a successful import, the function reloads the books and updates the UI to show the book as owned. The BookDetailModal component also has a handleAddFromOpenLibrary function (lines 104-114) that calls the parent component's onAddFromOpenLibrary function when the 'Add to my library' button is clicked."
         
   - task: "Search Statistics"
     implemented: true
