@@ -538,6 +538,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Missing volumes detection endpoint works correctly. Successfully tested with the Harry Potter saga. The endpoint correctly identifies present volumes, missing volumes, and suggests next volumes. It also searches Open Library for missing volumes and provides detailed information about each volume. Error handling for non-existent sagas works as expected."
+      - working: true
+        agent: "testing"
+        comment: "Comprehensive testing confirms the GET /api/openlibrary/missing-volumes endpoint works correctly. Created a test saga with 3 volumes, deleted the middle volume, and successfully detected the missing volume. The endpoint correctly identifies present volumes [1, 3], missing volumes [2], and the next volume (4). It also returns 404 for non-existent sagas and 400 when no saga parameter is provided."
 
   - task: "GET /api/openlibrary/suggestions - Import suggestions"
     implemented: true
