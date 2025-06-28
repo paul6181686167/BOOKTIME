@@ -932,10 +932,27 @@ function AppContent() {
         {displayedBooks.map((book) => (
           <div
             key={book.id}
-            className="cursor-pointer hover:shadow-lg transition-all hover:scale-105 group"
+            className="cursor-pointer hover:shadow-lg transition-all hover:scale-105 group relative"
             onClick={() => handleBookClick(book)}
           >
-            <div className="aspect-[2/3] bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden shadow-md">
+            {/* Badge pour les livres Open Library */}
+            {book.isFromOpenLibrary && (
+              <div className="absolute top-1 right-1 z-10">
+                {book.isOwned ? (
+                  <div className="bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full flex items-center">
+                    ✓
+                  </div>
+                ) : (
+                  <div className="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full flex items-center">
+                    +
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <div className={`aspect-[2/3] bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden shadow-md ${
+              book.isFromOpenLibrary && !book.isOwned ? 'ring-2 ring-blue-200 dark:ring-blue-800' : ''
+            }`}>
               {book.cover_url ? (
                 <img
                   src={book.cover_url}
@@ -949,6 +966,9 @@ function AppContent() {
             <div className="mt-2 text-center">
               <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{book.title}</p>
               <p className="text-xs text-blue-600 dark:text-blue-400 truncate">{book.author}</p>
+              {book.isFromOpenLibrary && !book.isOwned && (
+                <p className="text-xs text-green-600 dark:text-green-400 font-medium">Open Library</p>
+              )}
             </div>
           </div>
         ))}
