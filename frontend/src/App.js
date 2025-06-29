@@ -1873,7 +1873,7 @@ function MainApp() {
           />
           
           {/* Bouton retour à la bibliothèque */}
-          {(isSearchMode || useGroupedSearchMode) && (
+          {isSearchMode && (
             <div className="mt-3 text-center">
               <button
                 onClick={backToLibrary}
