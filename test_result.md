@@ -206,6 +206,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Latest testing confirms the GET /api/books endpoint is working correctly. Successfully tested with a newly registered user. The endpoint returns an empty array for a new user with no books, which is the expected behavior."
+      - working: true
+        agent: "testing"
+        comment: "Additional testing confirms the GET /api/books endpoint is working correctly with different view_mode values. Successfully tested with view_mode=series and view_mode=books parameters. For a new user with no books, both modes correctly return empty arrays. The endpoint structure and behavior are as expected."
 
   - task: "GET /api/books with filters - Filter books by category and status"
     implemented: true
