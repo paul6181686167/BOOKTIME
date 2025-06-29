@@ -563,6 +563,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Latest testing confirms the GET /api/books/search-grouped endpoint is working correctly. Successfully tested with 'Harry Potter' search term. The endpoint correctly returns the expected response structure with results, total_books, total_sagas, search_term, and grouped_by_saga fields. For a new user with no books, the endpoint correctly returns empty results."
+      - working: true
+        agent: "testing"
+        comment: "Additional testing confirms the GET /api/books/search-grouped endpoint is working correctly. Successfully tested with a different test user and the search term 'Harry'. The endpoint correctly returns the expected response structure with results, total_books, total_sagas, and search_term fields. For a new user with no books, the endpoint correctly returns empty results with the appropriate structure."
 
   - task: "ISBN validation - Handling and validation"
     implemented: true
