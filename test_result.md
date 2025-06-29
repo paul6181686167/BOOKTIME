@@ -905,6 +905,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Rapid testing confirms all CRUD operations for books work correctly. Successfully created a new book 'Le Petit Prince' by 'Antoine de Saint-Exupéry', retrieved it by ID, updated its status to 'reading' and current page to 42, and deleted it. All operations returned the expected status codes and data. The book was properly associated with the authenticated user."
+      - working: true
+        agent: "testing"
+        comment: "Audit testing confirms all CRUD operations for books work correctly. Successfully created a new test book, retrieved it in the list of books, and deleted it. All operations returned the expected status codes and data. The book was properly associated with the authenticated user."
 
   - task: "Open Library - Search functionality"
     implemented: true
