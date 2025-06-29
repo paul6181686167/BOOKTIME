@@ -1387,15 +1387,23 @@ frontend:
 
 test_plan:
   current_focus:
-    - "Harry Potter Series Detection"
+    - "Interface principale - Bouton Gestionnaire de Séries"
+    - "Interface principale - Bouton Découvrir une Série"
+    - "Gestionnaire de Séries - Modal avec onglets"
+    - "Gestionnaire de Séries - Onglet Découvrir des Séries"
+    - "Gestionnaire de Séries - Onglet Détecter une Série"
+    - "Recherche intelligente - Pertinence pour séries"
+    - "Intégration Open Library - Badges de pertinence"
   stuck_tasks:
     - "Saga Information Update"
-  test_all: false
+  test_all: true
   test_priority: "high_first"
 
 agent_communication:
   - agent: "testing"
     message: "I've completed comprehensive testing of the new series API endpoints. All three endpoints (/api/series/popular, /api/series/detect, and /api/series/complete) are working correctly. The popular series endpoint correctly filters by category (roman, manga, bd) and respects the limit parameter. The series detection endpoint successfully identifies Harry Potter (confidence: 180), One Piece (confidence: 140), and Astérix (confidence: 180) with detailed match reasons. The series auto-completion endpoint correctly creates multiple volumes for a series with the proper metadata. All tests passed successfully with no issues found."
+  - agent: "testing"
+    message: "Initialisation des tests pour le système de séries étendu dans l'interface utilisateur. Je vais tester les fonctionnalités principales selon le plan de test."
   - agent: "testing"
     message: "I've completed testing the Harry Potter series detection functionality in BookTime. The login system works correctly with first name and last name. The Open Library search functionality works correctly, allowing users to search for Harry Potter books. The import functionality works correctly, allowing users to import Harry Potter books from Open Library. The series discovery feature works correctly, allowing users to discover Harry Potter books and related information. The search by author and keywords works correctly, allowing users to find Harry Potter books by searching for 'J.K. Rowling', 'poudlard', or 'sorcier'. However, there seems to be an issue with updating the saga information for books. The books are imported correctly, but the saga information is not being updated when using the PUT /api/books/{book_id} endpoint. This might be a bug in the backend API."
     - agent: "testing"
