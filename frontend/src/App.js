@@ -1329,6 +1329,15 @@ function AppContent() {
           
           <div className="flex items-center space-x-3">
             <button
+              onClick={() => setShowSeriesManager(true)}
+              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors"
+              title="Gestionnaire de séries avancé"
+            >
+              <span className="text-lg">📚</span>
+              <span>Gestionnaire de Séries</span>
+            </button>
+            
+            <button
               onClick={() => setShowSeriesDiscovery(true)}
               className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-colors"
               title="Découvrir une série complète"
