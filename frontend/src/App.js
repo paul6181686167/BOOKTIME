@@ -1863,8 +1863,8 @@ function MainApp() {
         {/* Barre de recherche */}
         <div className="mb-6">
           <AdvancedSearchBar
-            searchTerm={useGroupedSearchMode ? groupedSearchTerm : searchTerm}
-            onSearchChange={(value) => useGroupedSearchMode ? setGroupedSearchTerm(value) : setSearchTerm(value)}
+            searchTerm={lastSearchTerm}
+            onSearchChange={(value) => setLastSearchTerm(value)}
             onOpenLibrarySearch={searchOpenLibrary}
             books={books}
             filters={filters}
