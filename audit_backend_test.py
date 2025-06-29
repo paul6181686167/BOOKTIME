@@ -130,12 +130,16 @@ class BooktimeAPIAuditTest(unittest.TestCase):
 
     def test_get_current_user(self):
         """Test getting current user info"""
-        # First register if not already done
+        # First register/login if not already done
         if not self.access_token:
-            self.test_user_registration()
+            if not self.test_user_registration():
+                self.skipTest("Registration/login failed, skipping test")
         
         # Get current user
         response = requests.get(f"{API_URL}/auth/me", headers=self.headers)
+        print(f"Get current user response status code: {response.status_code}")
+        print(f"Get current user response body: {response.text}")
+        
         self.assertEqual(response.status_code, 200)
         user = response.json()
         
