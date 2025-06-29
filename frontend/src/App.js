@@ -775,18 +775,7 @@ function MainApp() {
     }
   };
 
-  const handleAddBook = async (bookData) => {
-    try {
-      await bookService.createBook(bookData);
-      await loadBooks();
-      await loadStats();
-      setShowAddModal(false);
-      toast.success(`"${bookData.title}" ajouté à votre collection !`);
-    } catch (error) {
-      console.error('Erreur lors de l\'ajout du livre:', error);
-      toast.error('Erreur lors de l\'ajout du livre');
-    }
-  };
+
 
   // Gestionnaire de clic sur série pour afficher la fiche dédiée
   const handleSeriesClick = (series) => {
