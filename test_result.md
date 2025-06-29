@@ -197,6 +197,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Get all books endpoint is working correctly, now returns 18 books as expected with all required fields including new saga and author fields"
+      - working: true
+        agent: "testing"
+        comment: "Latest testing confirms the GET /api/books endpoint is working correctly. Successfully tested with a newly registered user. The endpoint returns an empty array for a new user with no books, which is the expected behavior."
 
   - task: "GET /api/books with filters - Filter books by category and status"
     implemented: true
