@@ -5,7 +5,7 @@ import os
 import sys
 
 # Get the backend URL from the frontend .env file
-BACKEND_URL = "https://aab14546-30e1-4f64-bbab-d554cb50c977.preview.emergentagent.com"
+BACKEND_URL = "https://3a40feec-7935-4b29-94ef-127ea92b221f.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 class TranslationFunctionalityTest(unittest.TestCase):
