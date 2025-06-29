@@ -66,7 +66,11 @@ class BooktimeAPIAuditTest(unittest.TestCase):
 
     def test_user_registration(self):
         """Test user registration"""
+        print(f"Attempting to register user: {self.test_user}")
         response = requests.post(f"{API_URL}/auth/register", json=self.test_user)
+        print(f"Registration response status code: {response.status_code}")
+        print(f"Registration response body: {response.text}")
+        
         self.assertEqual(response.status_code, 200)
         data = response.json()
         
