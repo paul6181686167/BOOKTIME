@@ -475,7 +475,8 @@ function AppContent() {
   const loadBooks = async () => {
     try {
       setLoading(true);
-      const data = await bookService.getBooks();
+      // Charger soit les séries soit les livres selon le mode sélectionné
+      const data = await bookService.getBooks(null, null, viewMode);
       setBooks(data);
     } catch (error) {
       console.error('Erreur lors du chargement des livres:', error);
