@@ -147,6 +147,21 @@ backend:
         agent: "testing"
         comment: "Additional testing confirms the GET /api/series/detect endpoint is working correctly. Successfully tested with a different test user and the same test cases: 'Harry Potter et la Chambre des Secrets', 'One Piece Tome 42', and 'Astérix et Obélix: Mission Cléopâtre'. The endpoint correctly identifies all three series with appropriate confidence scores and match reasons. The response structure is correct and includes all required information."
 
+  - task: "GET /api/series/search - Search series"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "Series search endpoint is working correctly. Successfully tested with 'Harry Potter' search term and found relevant series with appropriate search scores and match reasons. The endpoint returns the expected response structure with series, total, and search_term fields. Each series includes all required metadata and additional search-specific fields like search_score and match_reasons."
+
   - task: "POST /api/series/complete - Auto-complete series"
     implemented: true
     working: true
