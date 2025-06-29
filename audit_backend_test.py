@@ -93,7 +93,11 @@ class BooktimeAPIAuditTest(unittest.TestCase):
             self.test_user_registration()
         
         # Now try to login
+        print(f"Attempting to login with user: {self.test_user}")
         response = requests.post(f"{API_URL}/auth/login", json=self.test_user)
+        print(f"Login response status code: {response.status_code}")
+        print(f"Login response body: {response.text}")
+        
         self.assertEqual(response.status_code, 200)
         data = response.json()
         
