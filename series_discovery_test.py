@@ -12,16 +12,16 @@ class SeriesDiscoveryTest(unittest.TestCase):
     """Test suite for the Series Discovery feature"""
 
     def setUp(self):
-        """Setup for each test - create a test user and authenticate"""
-        # Create a test user
+        """Setup for each test - login with an existing user"""
+        # Use an existing user
         self.test_user = {
-            "first_name": "Test",
-            "last_name": "User"
+            "first_name": "Jean",
+            "last_name": "Dupont"
         }
         
-        # Register the user
-        response = requests.post(f"{API_URL}/auth/register", json=self.test_user)
-        self.assertEqual(response.status_code, 200, "Failed to register test user")
+        # Login with the user
+        response = requests.post(f"{API_URL}/auth/login", json=self.test_user)
+        self.assertEqual(response.status_code, 200, "Failed to login with test user")
         
         user_data = response.json()
         self.token = user_data["access_token"]
