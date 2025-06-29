@@ -434,19 +434,15 @@ function AppContent() {
 // Composant principal de l'application
 function MainApp() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [books, setBooks] = useState([]);
-  const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('roman');
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
-  const [showBookModal, setShowBookModal] = useState(false);
 
   // États pour la recherche Open Library
   const [openLibraryResults, setOpenLibraryResults] = useState([]);
-  const [detectedSeries, setDetectedSeries] = useState([]);
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [lastSearchTerm, setLastSearchTerm] = useState('');
@@ -459,25 +455,12 @@ function MainApp() {
 
   // Hook de recherche avancée
   const {
-    searchTerm,
-    setSearchTerm,
     filters,
     setFilters,
     filteredBooks,
     searchStats,
     clearSearch
   } = useAdvancedSearch(books);
-
-  // Hook de recherche groupée
-  const {
-    searchTerm: groupedSearchTerm,
-    setSearchTerm: setGroupedSearchTerm,
-    groupedResults,
-    isLoading: groupedSearchLoading,
-    searchStats: groupedSearchStats,
-    clearSearch: clearGroupedSearch,
-    hasResults: hasGroupedResults
-  } = useGroupedSearch();
 
   // Mettre à jour le service bookService pour supporter le nouveau paramètre
   const updateBookService = () => {
