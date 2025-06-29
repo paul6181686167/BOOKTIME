@@ -1346,36 +1346,49 @@ function AppContent() {
     return { level: 'minimal', label: 'Faiblement pertinent', color: 'bg-gray-500', icon: '📄' };
   };
 
-  // RECHERCHE GLOBALE : Combiner et trier les livres de TOUTES les catégories
+  // RECHERCHE GLOBALE : Combiner et trier les livres de TOUTES les catégories avec PRIORITÉ SÉRIES
   const displayedBooks = isSearchMode 
     ? [
         // Combiner TOUS les livres (recherche globale)
         ...filteredBooks, // Tous les livres locaux sans filtre de catégorie
-        ...openLibraryResults // Tous les livres Open Library
+        ...openLibraryResults // Tous les livres Open Library (contient déjà les cartes séries)
       ].map(book => ({
         ...book,
         relevanceScore: calculateRelevanceScore(book, lastSearchTerm),
         relevanceInfo: getRelevanceLevel(calculateRelevanceScore(book, lastSearchTerm))
       }))
       .sort((a, b) => {
-        // 1. Trier par score de pertinence décroissant (priorité principale)
+        // 1. PRIORITÉ ABSOLUE : Les cartes séries en PREMIER
+        if (a.isSeriesCard && !b.isSeriesCard) {
+          return -1; // a (série) avant b (livre)
+        }
+        if (!a.isSeriesCard && b.isSeriesCard) {
+          return 1; // b (série) avant a (livre)
+        }
+        
+        // 2. Entre séries : trier par score de pertinence
+        if (a.isSeriesCard && b.isSeriesCard) {
+          return b.relevanceScore - a.relevanceScore;
+        }
+        
+        // 3. Entre livres : trier par score de pertinence décroissant
         if (a.relevanceScore !== b.relevanceScore) {
           return b.relevanceScore - a.relevanceScore;
         }
         
-        // 2. En cas d'égalité de score, prioriser les livres locaux
+        // 4. En cas d'égalité de score, prioriser les livres locaux
         if (a.isFromOpenLibrary !== b.isFromOpenLibrary) {
           return a.isFromOpenLibrary ? 1 : -1;
         }
         
-        // 3. Pour les livres Open Library, prioriser ceux déjà possédés
+        // 5. Pour les livres Open Library, prioriser ceux déjà possédés
         if (a.isFromOpenLibrary && b.isFromOpenLibrary) {
           if (a.isOwned !== b.isOwned) {
             return a.isOwned ? -1 : 1;
           }
         }
         
-        // 4. Trier par qualité des métadonnées (livres avec plus d'infos en premier)
+        // 6. Trier par qualité des métadonnées (livres avec plus d'infos en premier)
         const qualityScoreA = (a.cover_url ? 10 : 0) + (a.description?.length > 100 ? 5 : 0) + (a.first_publish_year ? 3 : 0);
         const qualityScoreB = (b.cover_url ? 10 : 0) + (b.description?.length > 100 ? 5 : 0) + (b.first_publish_year ? 3 : 0);
         
@@ -1383,12 +1396,12 @@ function AppContent() {
           return qualityScoreB - qualityScoreA;
         }
         
-        // 5. Trier par année de publication (plus récent en premier pour les livres de qualité égale)
+        // 7. Trier par année de publication (plus récent en premier pour les livres de qualité égale)
         if (a.first_publish_year && b.first_publish_year) {
           return b.first_publish_year - a.first_publish_year;
         }
         
-        // 6. Finalement, trier par titre alphabétique
+        // 8. Finalement, trier par titre alphabétique
         return (a.title || '').localeCompare(b.title || '', 'fr', { numeric: true });
       })
       // Filtrer les résultats avec un score minimum pour éviter le bruit
