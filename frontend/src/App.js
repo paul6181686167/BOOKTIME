@@ -720,49 +720,286 @@ function AppContent() {
     
     // === DÉTECTION INTELLIGENTE DES SÉRIES POPULAIRES ===
     
-    // Mapping des séries avec leurs variations et auteurs
+    // Mapping complet des séries populaires avec leurs variations et auteurs
     const seriesMapping = {
+      // === ROMANS FANTASY/SF ===
       'harry potter': {
-        score: 15000,
-        keywords: ['harry', 'potter', 'hogwarts', 'sorcier', 'wizard', 'poudlard'],
+        score: 18000,
+        category: 'roman',
+        keywords: ['harry', 'potter', 'hogwarts', 'sorcier', 'wizard', 'poudlard', 'voldemort', 'hermione', 'ron', 'dumbledore'],
         authors: ['j.k. rowling', 'jk rowling', 'rowling'],
-        variations: ['harry potter', 'école des sorciers', 'chambre des secrets', 'prisonnier d\'azkaban', 'coupe de feu', 'ordre du phénix', 'prince de sang-mêlé', 'reliques de la mort']
+        variations: ['harry potter', 'école des sorciers', 'chambre des secrets', 'prisonnier d\'azkaban', 'coupe de feu', 'ordre du phénix', 'prince de sang-mêlé', 'reliques de la mort'],
+        volumes: 7,
+        language: ['fr', 'en']
       },
       'seigneur des anneaux': {
-        score: 15000,
-        keywords: ['anneau', 'communauté', 'deux tours', 'retour du roi', 'terre du milieu', 'middle earth', 'hobbit', 'frodo', 'gandalf'],
+        score: 18000,
+        category: 'roman',
+        keywords: ['anneau', 'communauté', 'deux tours', 'retour du roi', 'terre du milieu', 'middle earth', 'hobbit', 'frodo', 'gandalf', 'aragorn', 'legolas', 'gimli'],
         authors: ['j.r.r. tolkien', 'jrr tolkien', 'tolkien'],
-        variations: ['seigneur des anneaux', 'lord of the rings', 'communauté de l\'anneau', 'fellowship', 'deux tours', 'two towers', 'retour du roi', 'return of the king']
+        variations: ['seigneur des anneaux', 'lord of the rings', 'communauté de l\'anneau', 'fellowship', 'deux tours', 'two towers', 'retour du roi', 'return of the king', 'hobbit'],
+        volumes: 3,
+        language: ['fr', 'en']
       },
-      'one piece': {
+      'game of thrones': {
+        score: 16000,
+        category: 'roman',
+        keywords: ['game of thrones', 'trône de fer', 'westeros', 'jon snow', 'daenerys', 'tyrion', 'stark', 'lannister', 'targaryen'],
+        authors: ['george r.r. martin', 'george martin', 'martin'],
+        variations: ['game of thrones', 'trône de fer', 'song of ice and fire', 'chanson de glace et de feu'],
+        volumes: 5,
+        language: ['fr', 'en']
+      },
+      'witcher': {
         score: 15000,
-        keywords: ['one piece', 'luffy', 'zoro', 'sanji', 'pirates'],
+        category: 'roman',
+        keywords: ['witcher', 'sorceleur', 'geralt', 'rivia', 'ciri', 'yennefer', 'triss'],
+        authors: ['andrzej sapkowski', 'sapkowski'],
+        variations: ['witcher', 'sorceleur', 'geralt de rivia'],
+        volumes: 8,
+        language: ['fr', 'en', 'pl']
+      },
+      'dune': {
+        score: 16000,
+        category: 'roman',
+        keywords: ['dune', 'arrakis', 'paul atreides', 'fremen', 'spice', 'épice', 'muad\'dib'],
+        authors: ['frank herbert', 'herbert'],
+        variations: ['dune', 'cycle de dune'],
+        volumes: 6,
+        language: ['fr', 'en']
+      },
+
+      // === MANGAS ===
+      'one piece': {
+        score: 18000,
+        category: 'manga',
+        keywords: ['one piece', 'luffy', 'zoro', 'sanji', 'pirates', 'chapeau de paille', 'grand line', 'nami', 'usopp', 'chopper'],
         authors: ['eiichiro oda', 'oda'],
-        variations: ['one piece']
+        variations: ['one piece'],
+        volumes: 100,
+        language: ['fr', 'en', 'jp']
       },
       'naruto': {
-        score: 15000,
-        keywords: ['naruto', 'sasuke', 'sakura', 'kakashi', 'ninja'],
+        score: 17000,
+        category: 'manga',
+        keywords: ['naruto', 'sasuke', 'sakura', 'kakashi', 'ninja', 'konoha', 'sharingan', 'hokage', 'boruto'],
         authors: ['masashi kishimoto', 'kishimoto'],
-        variations: ['naruto']
+        variations: ['naruto', 'boruto'],
+        volumes: 72,
+        language: ['fr', 'en', 'jp']
       },
       'dragon ball': {
-        score: 15000,
-        keywords: ['dragon ball', 'goku', 'vegeta', 'kamehameha'],
+        score: 17000,
+        category: 'manga',
+        keywords: ['dragon ball', 'goku', 'vegeta', 'kamehameha', 'saiyan', 'piccolo', 'gohan', 'frieza', 'cell'],
         authors: ['akira toriyama', 'toriyama'],
-        variations: ['dragon ball', 'dragonball']
+        variations: ['dragon ball', 'dragonball', 'dragon ball z', 'dragon ball super'],
+        volumes: 42,
+        language: ['fr', 'en', 'jp']
       },
-      'astérix': {
+      'attack on titan': {
+        score: 16000,
+        category: 'manga',
+        keywords: ['attack on titan', 'attaque des titans', 'eren', 'mikasa', 'armin', 'titans', 'murs', 'shingeki no kyojin'],
+        authors: ['hajime isayama', 'isayama'],
+        variations: ['attack on titan', 'attaque des titans', 'shingeki no kyojin'],
+        volumes: 34,
+        language: ['fr', 'en', 'jp']
+      },
+      'death note': {
         score: 15000,
-        keywords: ['astérix', 'asterix', 'obélix', 'obelix', 'gaulois'],
+        category: 'manga',
+        keywords: ['death note', 'light', 'l', 'kira', 'ryuk', 'shinigami', 'yagami'],
+        authors: ['tsugumi ohba', 'takeshi obata', 'ohba', 'obata'],
+        variations: ['death note'],
+        volumes: 12,
+        language: ['fr', 'en', 'jp']
+      },
+      'bleach': {
+        score: 15000,
+        category: 'manga',
+        keywords: ['bleach', 'ichigo', 'rukia', 'shinigami', 'hollow', 'soul society', 'zanpakuto'],
+        authors: ['tite kubo', 'kubo'],
+        variations: ['bleach'],
+        volumes: 74,
+        language: ['fr', 'en', 'jp']
+      },
+      'fullmetal alchemist': {
+        score: 15000,
+        category: 'manga',
+        keywords: ['fullmetal alchemist', 'edward elric', 'alphonse', 'alchemy', 'alchimie', 'philosopher stone'],
+        authors: ['hiromu arakawa', 'arakawa'],
+        variations: ['fullmetal alchemist', 'full metal alchemist'],
+        volumes: 27,
+        language: ['fr', 'en', 'jp']
+      },
+      'demon slayer': {
+        score: 16000,
+        category: 'manga',
+        keywords: ['demon slayer', 'kimetsu no yaiba', 'tanjiro', 'nezuko', 'demons', 'hashira'],
+        authors: ['koyoharu gotouge', 'gotouge'],
+        variations: ['demon slayer', 'kimetsu no yaiba'],
+        volumes: 23,
+        language: ['fr', 'en', 'jp']
+      },
+      'my hero academia': {
+        score: 15000,
+        category: 'manga',
+        keywords: ['my hero academia', 'boku no hero', 'midoriya', 'deku', 'quirk', 'all might', 'bakugo'],
+        authors: ['kohei horikoshi', 'horikoshi'],
+        variations: ['my hero academia', 'boku no hero academia'],
+        volumes: 35,
+        language: ['fr', 'en', 'jp']
+      },
+
+      // === BANDES DESSINÉES ===
+      'astérix': {
+        score: 18000,
+        category: 'bd',
+        keywords: ['astérix', 'asterix', 'obélix', 'obelix', 'gaulois', 'potion magique', 'panoramix', 'idéfix'],
         authors: ['rené goscinny', 'albert uderzo', 'goscinny', 'uderzo'],
-        variations: ['astérix', 'asterix']
+        variations: ['astérix', 'asterix'],
+        volumes: 39,
+        language: ['fr', 'en']
       },
       'tintin': {
-        score: 15000,
-        keywords: ['tintin', 'milou', 'capitaine haddock', 'tournesol'],
+        score: 18000,
+        category: 'bd',
+        keywords: ['tintin', 'milou', 'capitaine haddock', 'tournesol', 'dupont', 'dupond', 'mille sabords'],
         authors: ['hergé', 'herge'],
-        variations: ['tintin', 'aventures de tintin']
+        variations: ['tintin', 'aventures de tintin'],
+        volumes: 24,
+        language: ['fr', 'en']
+      },
+      'gaston lagaffe': {
+        score: 15000,
+        category: 'bd',
+        keywords: ['gaston', 'lagaffe', 'spirou', 'fantasio', 'prunelle', 'longtarin'],
+        authors: ['andré franquin', 'franquin'],
+        variations: ['gaston lagaffe', 'gaston'],
+        volumes: 19,
+        language: ['fr']
+      },
+      'lucky luke': {
+        score: 15000,
+        category: 'bd',
+        keywords: ['lucky luke', 'dalton', 'jolly jumper', 'rantanplan', 'cowboy', 'western'],
+        authors: ['morris', 'rené goscinny', 'goscinny'],
+        variations: ['lucky luke'],
+        volumes: 70,
+        language: ['fr', 'en']
+      },
+      'spirou': {
+        score: 15000,
+        category: 'bd',
+        keywords: ['spirou', 'fantasio', 'marsupilami', 'spip', 'zorglub', 'champignac'],
+        authors: ['andré franquin', 'franquin', 'rob-vel'],
+        variations: ['spirou et fantasio', 'spirou'],
+        volumes: 55,
+        language: ['fr']
+      },
+      'thorgal': {
+        score: 14000,
+        category: 'bd',
+        keywords: ['thorgal', 'aaricia', 'jolan', 'louve', 'viking', 'nordique'],
+        authors: ['jean van hamme', 'grzegorz rosinski', 'van hamme', 'rosinski'],
+        variations: ['thorgal'],
+        volumes: 38,
+        language: ['fr']
+      },
+      'xiii': {
+        score: 14000,
+        category: 'bd',
+        keywords: ['xiii', 'treize', 'jason fly', 'conspiracy', 'conspiration'],
+        authors: ['jean van hamme', 'william vance', 'van hamme', 'vance'],
+        variations: ['xiii', 'treize'],
+        volumes: 27,
+        language: ['fr', 'en']
+      },
+      'blake et mortimer': {
+        score: 14000,
+        category: 'bd',
+        keywords: ['blake', 'mortimer', 'francis blake', 'philip mortimer', 'jacobs'],
+        authors: ['edgar p. jacobs', 'jacobs'],
+        variations: ['blake et mortimer', 'blake mortimer'],
+        volumes: 27,
+        language: ['fr', 'en']
+      },
+
+      // === COMICS AMÉRICAINS ===
+      'batman': {
+        score: 16000,
+        category: 'bd',
+        keywords: ['batman', 'bruce wayne', 'gotham', 'joker', 'robin', 'alfred', 'dark knight'],
+        authors: ['dc comics', 'bob kane', 'bill finger'],
+        variations: ['batman', 'dark knight', 'chevalier noir'],
+        volumes: 1000,
+        language: ['fr', 'en']
+      },
+      'superman': {
+        score: 16000,
+        category: 'bd',
+        keywords: ['superman', 'clark kent', 'metropolis', 'lois lane', 'lex luthor', 'kryptonite'],
+        authors: ['dc comics', 'jerry siegel', 'joe shuster'],
+        variations: ['superman', 'man of steel'],
+        volumes: 1000,
+        language: ['fr', 'en']
+      },
+      'spider-man': {
+        score: 16000,
+        category: 'bd',
+        keywords: ['spider-man', 'spiderman', 'peter parker', 'new york', 'web', 'toile'],
+        authors: ['marvel comics', 'stan lee', 'steve ditko'],
+        variations: ['spider-man', 'spiderman', 'amazing spider-man'],
+        volumes: 1000,
+        language: ['fr', 'en']
+      },
+      'x-men': {
+        score: 15000,
+        category: 'bd',
+        keywords: ['x-men', 'wolverine', 'cyclops', 'storm', 'xavier', 'magneto', 'mutants'],
+        authors: ['marvel comics', 'stan lee', 'jack kirby'],
+        variations: ['x-men', 'uncanny x-men'],
+        volumes: 1000,
+        language: ['fr', 'en']
+      },
+      'walking dead': {
+        score: 15000,
+        category: 'bd',
+        keywords: ['walking dead', 'rick grimes', 'zombies', 'walkers', 'apocalypse'],
+        authors: ['robert kirkman', 'kirkman'],
+        variations: ['walking dead'],
+        volumes: 193,
+        language: ['fr', 'en']
+      },
+
+      // === ROMANS POLICIERS ===
+      'sherlock holmes': {
+        score: 16000,
+        category: 'roman',
+        keywords: ['sherlock holmes', 'watson', 'baker street', 'moriarty', 'london', 'detective'],
+        authors: ['arthur conan doyle', 'conan doyle', 'doyle'],
+        variations: ['sherlock holmes', 'adventures of sherlock holmes'],
+        volumes: 60,
+        language: ['fr', 'en']
+      },
+      'hercule poirot': {
+        score: 15000,
+        category: 'roman',
+        keywords: ['hercule poirot', 'agatha christie', 'orient express', 'nil', 'belgian', 'detective'],
+        authors: ['agatha christie', 'christie'],
+        variations: ['hercule poirot', 'poirot'],
+        volumes: 39,
+        language: ['fr', 'en']
+      },
+      'san antonio': {
+        score: 14000,
+        category: 'roman',
+        keywords: ['san antonio', 'bérurier', 'pinaud', 'police', 'commissaire'],
+        authors: ['frédéric dard', 'dard'],
+        variations: ['san antonio', 'san-antonio'],
+        volumes: 175,
+        language: ['fr']
       }
     };
     
