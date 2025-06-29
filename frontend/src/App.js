@@ -1163,12 +1163,30 @@ function AppContent() {
     
     // === BONUS GÉNÉRAUX ===
     
-    // Séries génériquement populaires (fallback)
+    // Séries génériquement populaires (fallback) - Version étendue
     const generalPopularKeywords = [
-      'batman', 'superman', 'spider-man', 'x-men', 'avengers',
-      'bleach', 'death note', 'fullmetal alchemist', 'cowboy bebop',
-      'walking dead', 'sandman', 'watchmen', 'game of thrones',
-      'sherlock holmes', 'agatha christie'
+      // Comics/BD supplémentaires
+      'wolverine', 'deadpool', 'iron man', 'captain america', 'hulk', 'thor', 'avengers',
+      'wonder woman', 'flash', 'green lantern', 'aquaman', 'justice league',
+      'sandman', 'watchmen', 'v for vendetta', 'hellboy', 'spawn',
+      
+      // Mangas supplémentaires
+      'one punch man', 'tokyo ghoul', 'fairy tail', 'black clover', 'jujutsu kaisen',
+      'chainsaw man', 'mob psycho', 'hunter x hunter', 'yu yu hakusho',
+      'cowboy bebop', 'akira', 'ghost in the shell', 'evangelion',
+      
+      // Romans supplémentaires
+      'percy jackson', 'twilight', 'hunger games', 'divergent', 'maze runner',
+      'outlander', 'fifty shades', 'dark tower', 'foundation', 'hyperion',
+      'mistborn', 'wheel of time', 'chronicles of narnia', 'his dark materials',
+      
+      // BD franco-belges supplémentaires
+      'largo winch', 'blacksad', 'corto maltese', 'lanfeust', 'trolls de troy',
+      'donjon', 'dungeon', 'bone', 'fables', 'saga', 'invincible',
+      
+      // Classiques
+      'james bond', 'indiana jones', 'conan', 'tarzan', 'flash gordon',
+      'buck rogers', 'phantom', 'prince valiant', 'dick tracy'
     ];
     
     if (!detectedSeries) {
