@@ -438,6 +438,7 @@ function AppContent() {
 
   // État pour la découverte de série
   const [showSeriesDiscovery, setShowSeriesDiscovery] = useState(false);
+  const [showSeriesManager, setShowSeriesManager] = useState(false);
 
   // Hook de recherche avancée
   const {
