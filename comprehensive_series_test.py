@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 
 # Get the backend URL from the frontend .env file
-BACKEND_URL = "https://2107414c-f182-4135-ac20-124a8d5aeb36.preview.emergentagent.com"
+BACKEND_URL = "https://3ca4ae47-6888-4f06-9508-999b8a008aa6.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 class ComprehensiveSeriesAPITest(unittest.TestCase):
