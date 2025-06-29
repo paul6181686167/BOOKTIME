@@ -1831,21 +1831,10 @@ function MainApp() {
       <Header />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Barre de recherche */}
         <div className="mb-6">
-          <UnifiedSearchBar
-            searchTerm={lastSearchTerm}
-            onSearchChange={(value) => setLastSearchTerm(value)}
-            onOpenLibrarySearch={searchOpenLibrary}
-            books={books}
-            filters={filters}
-            onFiltersChange={setFilters}
-            className="max-w-2xl mx-auto"
-          />
-          
           {/* Bouton retour à la bibliothèque */}
           {isSearchMode && (
-            <div className="mt-3 text-center">
+            <div className="text-center">
               <button
                 onClick={backToLibrary}
                 className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40 rounded-lg transition-colors"
