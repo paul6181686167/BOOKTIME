@@ -17,12 +17,12 @@ load_dotenv()
 
 app = FastAPI(title="BookTime API", description="Votre bibliothèque personnelle")
 
-# Configuration CORS simplifiée
+# Configuration CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -225,7 +225,7 @@ async def search_books_grouped(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Recherche de livres avec regroupement intelligent par saga
+    Recherche de livres avec regroupement intelligent par saga - SÉRIE FIRST
     """
     if not q or len(q.strip()) < 2:
         return {"results": [], "total_books": 0, "total_sagas": 0, "search_term": q}
@@ -257,18 +257,18 @@ async def search_books_grouped(
     if not matching_books:
         return {"results": [], "total_books": 0, "total_sagas": 0, "search_term": q}
     
-    # Grouper par saga et identifier les livres individuels
+    # NOUVELLE LOGIQUE: Grouper TOUS les livres par saga d'abord
     saga_groups = {}
-    individual_books = []
+    books_without_saga = []
     
     for book in matching_books:
         saga = book.get("saga", "").strip()
         
-        # Si le livre a une saga et que la recherche correspond à la saga
-        if saga and saga.lower().find(search_term) != -1:
+        if saga:  # Si le livre appartient à une saga
             if saga not in saga_groups:
                 saga_groups[saga] = {
                     "type": "saga",
+                    "id": f"saga_{saga.lower().replace(' ', '_')}",
                     "name": saga,
                     "books": [],
                     "total_books": 0,
@@ -279,7 +279,8 @@ async def search_books_grouped(
                     "category": book.get("category", "roman"),
                     "cover_url": book.get("cover_url", ""),
                     "latest_volume": 0,
-                    "match_reason": "saga_name"
+                    "status": "to_read",  # Statut global de la série
+                    "match_reason": "saga_match" if saga.lower().find(search_term) != -1 else "title_match"
                 }
             
             saga_groups[saga]["books"].append(book)
@@ -298,46 +299,61 @@ async def search_books_grouped(
             volume = book.get("volume_number", 0)
             if volume > saga_groups[saga]["latest_volume"]:
                 saga_groups[saga]["latest_volume"] = volume
-        
-        # Si pas de saga ou recherche ne correspond pas directement à la saga
+                
+            # Mise à jour de la couverture avec le dernier tome
+            if volume > 0 and book.get("cover_url"):
+                saga_groups[saga]["cover_url"] = book.get("cover_url")
         else:
-            # Vérifier si c'est un livre individuel pertinent
-            title_match = book.get("title", "").lower().find(search_term) != -1
-            author_match = book.get("author", "").lower().find(search_term) != -1
-            
-            if title_match or author_match:
-                individual_books.append({
-                    "type": "book",
-                    **book,
-                    "match_reason": "title" if title_match else "author"
-                })
+            # Livre sans saga
+            books_without_saga.append({
+                "type": "book",
+                **book,
+                "match_reason": "individual_book"
+            })
     
-    # Préparer les résultats finaux
-    results = []
-    
-    # Ajouter les sagas (triées par nombre de livres)
-    for saga_data in sorted(saga_groups.values(), key=lambda x: x["total_books"], reverse=True):
-        # Calculer le pourcentage de completion
+    # Calculer le statut global des sagas
+    for saga_name, saga_data in saga_groups.items():
+        # Pourcentage de completion
         completion_percentage = 0
         if saga_data["total_books"] > 0:
             completion_percentage = round((saga_data["completed_books"] / saga_data["total_books"]) * 100)
-        
         saga_data["completion_percentage"] = completion_percentage
-        results.append(saga_data)
+        
+        # Statut global de la série
+        if saga_data["reading_books"] > 0:
+            saga_data["status"] = "reading"
+        elif saga_data["completed_books"] == saga_data["total_books"]:
+            saga_data["status"] = "completed"
+        else:
+            saga_data["status"] = "to_read"
+        
+        # Trier les livres par numéro de tome
+        saga_data["books"].sort(key=lambda x: x.get("volume_number", 0))
     
-    # Ajouter les livres individuels (ceux qui ne sont pas dans des sagas correspondantes)
-    for book in individual_books:
-        # Éviter les doublons si le livre fait partie d'une saga déjà listée
-        book_saga = book.get("saga", "").strip()
-        if not book_saga or book_saga not in saga_groups:
-            results.append(book)
+    # Préparer les résultats finaux - SÉRIE FIRST
+    results = []
+    
+    # 1. D'abord toutes les sagas trouvées (triées par pertinence puis par nombre de livres)
+    sorted_sagas = sorted(saga_groups.values(), key=lambda x: (
+        -1 if x["match_reason"] == "saga_match" else 0,  # Priorité aux matchs sur le nom de saga
+        -x["total_books"],  # Puis par nombre de livres
+        x["name"].lower()  # Puis par ordre alphabétique
+    ))
+    
+    results.extend(sorted_sagas)
+    
+    # 2. Ensuite les livres individuels SEULEMENT s'ils ne font pas partie d'une saga
+    # Et seulement si moins de 3 sagas trouvées (pour éviter l'encombrement)
+    if len(saga_groups) < 3:
+        results.extend(books_without_saga)
     
     return {
         "results": results,
         "total_books": len(matching_books),
         "total_sagas": len(saga_groups),
         "search_term": q,
-        "grouped_by_saga": True
+        "grouped_by_saga": True,
+        "series_first": True
     }
 
 @app.get("/api/books/{book_id}")
@@ -614,6 +630,268 @@ async def auto_add_next_volume(saga_name: str, current_user: dict = Depends(get_
     
     return {"message": f"Tome {next_volume} ajouté à la saga {saga_name}", "book": new_book}
 
+# Nouvelle API pour la gestion simplifiée des états de série
+@app.put("/api/sagas/{saga_name}/bulk-status")
+async def update_saga_bulk_status(
+    saga_name: str,
+    bulk_update: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Mise à jour en lot des statuts d'une série
+    Format: {"tome_1": "completed", "tome_2": "to_read", ...}
+    Ou: {"from_volume": 1, "to_volume": 10, "status": "completed"}
+    """
+    # Vérifier que la saga existe
+    existing_books = list(books_collection.find({
+        "user_id": current_user["id"],
+        "saga": saga_name
+    }))
+    
+    if not existing_books:
+        raise HTTPException(status_code=404, detail="Saga non trouvée")
+    
+    updates_made = 0
+    
+    # Mise à jour par plage de volumes
+    if "from_volume" in bulk_update and "to_volume" in bulk_update:
+        from_vol = bulk_update["from_volume"]
+        to_vol = bulk_update["to_volume"]
+        new_status = bulk_update.get("status", "completed")
+        
+        for book in existing_books:
+            vol_num = book.get("volume_number", 0)
+            if from_vol <= vol_num <= to_vol:
+                update_data = {"status": new_status, "updated_at": datetime.utcnow()}
+                
+                # Gérer les dates selon le nouveau statut
+                if new_status == "reading" and book.get("status") != "reading":
+                    update_data["date_started"] = datetime.utcnow()
+                elif new_status == "completed" and book.get("status") != "completed":
+                    if not book.get("date_started"):
+                        update_data["date_started"] = datetime.utcnow()
+                    update_data["date_completed"] = datetime.utcnow()
+                
+                books_collection.update_one(
+                    {"id": book["id"], "user_id": current_user["id"]},
+                    {"$set": update_data}
+                )
+                updates_made += 1
+    
+    # Mise à jour individuelle par tome
+    elif "tome_updates" in bulk_update:
+        tome_updates = bulk_update["tome_updates"]
+        for book in existing_books:
+            vol_num = book.get("volume_number")
+            tome_key = f"tome_{vol_num}"
+            
+            if tome_key in tome_updates:
+                new_status = tome_updates[tome_key]
+                update_data = {"status": new_status, "updated_at": datetime.utcnow()}
+                
+                # Gérer les dates selon le nouveau statut
+                if new_status == "reading" and book.get("status") != "reading":
+                    update_data["date_started"] = datetime.utcnow()
+                elif new_status == "completed" and book.get("status") != "completed":
+                    if not book.get("date_started"):
+                        update_data["date_started"] = datetime.utcnow()
+                    update_data["date_completed"] = datetime.utcnow()
+                
+                books_collection.update_one(
+                    {"id": book["id"], "user_id": current_user["id"]},
+                    {"$set": update_data}
+                )
+                updates_made += 1
+    
+    return {
+        "message": f"{updates_made} tome(s) mis à jour dans la saga {saga_name}",
+        "updates_made": updates_made
+    }
+
+@app.post("/api/sagas/{saga_name}/auto-complete")
+async def auto_complete_saga(
+    saga_name: str,
+    completion_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Auto-complétion intelligente d'une saga
+    Format: {"target_volume": 50, "source": "manual"} ou {"source": "openlibrary"}
+    """
+    # Trouver les livres existants de cette saga
+    existing_books = list(books_collection.find({
+        "user_id": current_user["id"],
+        "saga": saga_name
+    }))
+    
+    if not existing_books:
+        raise HTTPException(status_code=404, detail="Saga non trouvée")
+    
+    # Analyser les volumes existants
+    existing_volumes = set()
+    template_book = existing_books[0]
+    max_volume = 0
+    
+    for book in existing_books:
+        vol_num = book.get("volume_number", 0)
+        if vol_num > 0:
+            existing_volumes.add(vol_num)
+            max_volume = max(max_volume, vol_num)
+    
+    # Déterminer le nombre de tomes à créer
+    target_volume = completion_data.get("target_volume", max_volume + 10)
+    source = completion_data.get("source", "manual")
+    
+    # Créer les tomes manquants
+    created_books = []
+    
+    for vol_num in range(1, target_volume + 1):
+        if vol_num not in existing_volumes:
+            book_id = str(uuid.uuid4())
+            new_book = {
+                "id": book_id,
+                "user_id": current_user["id"],
+                "title": f"{saga_name} - Tome {vol_num}",
+                "author": template_book.get("author", ""),
+                "category": template_book.get("category", "roman"),
+                "saga": saga_name,
+                "volume_number": vol_num,
+                "status": "to_read",
+                "auto_added": True,
+                "date_added": datetime.utcnow(),
+                "date_started": None,
+                "date_completed": None,
+                "description": f"Tome {vol_num} de la série {saga_name}",
+                "total_pages": None,
+                "current_page": None,
+                "rating": None,
+                "review": "",
+                "cover_url": "",
+                "genre": template_book.get("genre", ""),
+                "publication_year": None,
+                "publisher": template_book.get("publisher", ""),
+                "isbn": ""
+            }
+            
+            books_collection.insert_one(new_book)
+            new_book.pop("_id", None)
+            created_books.append(new_book)
+    
+    return {
+        "message": f"{len(created_books)} tome(s) ajouté(s) à la saga {saga_name}",
+        "created_books": created_books,
+        "total_volumes": target_volume,
+        "existing_volumes": len(existing_volumes)
+    }
+
+@app.get("/api/sagas/{saga_name}/missing-analysis")
+async def analyze_missing_volumes(
+    saga_name: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Analyse des tomes manquants dans une saga
+    """
+    # Trouver les livres existants de cette saga
+    existing_books = list(books_collection.find({
+        "user_id": current_user["id"],
+        "saga": saga_name
+    }))
+    
+    if not existing_books:
+        raise HTTPException(status_code=404, detail="Saga non trouvée")
+    
+    # Analyser les volumes
+    existing_volumes = []
+    missing_volumes = []
+    
+    for book in existing_books:
+        vol_num = book.get("volume_number", 0)
+        if vol_num > 0:
+            existing_volumes.append(vol_num)
+    
+    existing_volumes.sort()
+    
+    if existing_volumes:
+        # Détecter les trous dans la série
+        for i in range(1, max(existing_volumes) + 1):
+            if i not in existing_volumes:
+                missing_volumes.append(i)
+    
+    # Statistiques
+    total_expected = max(existing_volumes) if existing_volumes else 0
+    completion_rate = len(existing_volumes) / total_expected * 100 if total_expected > 0 else 0
+    
+    return {
+        "saga_name": saga_name,
+        "existing_volumes": existing_volumes,
+        "missing_volumes": missing_volumes,
+        "total_existing": len(existing_volumes),
+        "total_missing": len(missing_volumes),
+        "max_volume": max(existing_volumes) if existing_volumes else 0,
+        "completion_rate": round(completion_rate, 1),
+        "suggestions": {
+            "next_volume": max(existing_volumes) + 1 if existing_volumes else 1,
+            "fill_gaps": len(missing_volumes) > 0,
+            "estimated_total": max(existing_volumes) + 5 if existing_volumes else 10
+        }
+    }
+
+@app.post("/api/sagas/{saga_name}/toggle-tome-status")
+async def toggle_tome_status(
+    saga_name: str,
+    tome_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Toggle simple Lu/Non Lu pour un tome spécifique
+    Format: {"volume_number": 1, "is_read": true}
+    """
+    volume_number = tome_data.get("volume_number")
+    is_read = tome_data.get("is_read", False)
+    
+    if volume_number is None:
+        raise HTTPException(status_code=400, detail="Numéro de tome requis")
+    
+    # Trouver le livre
+    book = books_collection.find_one({
+        "user_id": current_user["id"],
+        "saga": saga_name,
+        "volume_number": volume_number
+    })
+    
+    if not book:
+        raise HTTPException(status_code=404, detail="Tome non trouvé")
+    
+    # Déterminer le nouveau statut
+    new_status = "completed" if is_read else "to_read"
+    update_data = {"status": new_status, "updated_at": datetime.utcnow()}
+    
+    # Gérer les dates
+    if new_status == "completed":
+        if not book.get("date_started"):
+            update_data["date_started"] = datetime.utcnow()
+        update_data["date_completed"] = datetime.utcnow()
+    elif new_status == "to_read":
+        update_data["date_started"] = None
+        update_data["date_completed"] = None
+    
+    books_collection.update_one(
+        {"id": book["id"], "user_id": current_user["id"]},
+        {"$set": update_data}
+    )
+    
+    # Récupérer le livre mis à jour
+    updated_book = books_collection.find_one({
+        "id": book["id"],
+        "user_id": current_user["id"]
+    }, {"_id": 0})
+    
+    return {
+        "message": f"Tome {volume_number} de {saga_name} marqué comme {'lu' if is_read else 'non lu'}",
+        "book": updated_book
+    }
+
 # Utilitaires pour Open Library
 def detect_category_from_subjects(subjects):
     """Détecter la catégorie d'un livre basé sur ses sujets"""
@@ -780,20 +1058,45 @@ async def import_from_open_library(
         
         author_str = ", ".join(authors) if authors else ""
         
-        # Vérifier doublons
+        # Vérifier doublons - Logique améliorée
         existing_book = None
+        
+        # 1. Vérification par ISBN (priorité élevée)
         if isbn:
             existing_book = books_collection.find_one({
                 "user_id": current_user["id"],
                 "isbn": normalize_isbn(isbn)
             })
         
-        if not existing_book and title and author_str:
+        # 2. Vérification par clé Open Library (nouvelle vérification)
+        if not existing_book:
             existing_book = books_collection.find_one({
                 "user_id": current_user["id"],
-                "title": {"$regex": re.escape(title), "$options": "i"},
-                "author": {"$regex": re.escape(author_str), "$options": "i"}
+                "ol_key": ol_key  # Ajouter cette vérification
             })
+        
+        # 3. Vérification par titre et auteur (avec une meilleure logique)
+        if not existing_book and title and author_str:
+            # Normaliser les chaînes pour une meilleure comparaison
+            normalized_title = re.sub(r'[^\w\s]', '', title.lower()).strip()
+            normalized_author = re.sub(r'[^\w\s]', '', author_str.lower()).strip()
+            
+            # Recherche exacte d'abord
+            existing_book = books_collection.find_one({
+                "user_id": current_user["id"],
+                "title": {"$regex": f"^{re.escape(title)}$", "$options": "i"},
+                "author": {"$regex": f"^{re.escape(author_str)}$", "$options": "i"}
+            })
+            
+            # Si pas trouvé, recherche avec normalisation
+            if not existing_book and len(normalized_title) > 3:
+                existing_book = books_collection.find_one({
+                    "user_id": current_user["id"],
+                    "$and": [
+                        {"title": {"$regex": re.escape(normalized_title), "$options": "i"}},
+                        {"author": {"$regex": re.escape(normalized_author), "$options": "i"}}
+                    ]
+                })
         
         if existing_book:
             raise HTTPException(status_code=409, detail="Ce livre existe déjà dans votre collection")
@@ -803,6 +1106,7 @@ async def import_from_open_library(
         new_book = {
             "id": book_id,
             "user_id": current_user["id"],
+            "ol_key": ol_key,  # Ajout de la clé Open Library pour la détection des doublons
             "title": title,
             "author": author_str,
             "category": validate_category(category),
