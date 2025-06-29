@@ -1,3 +1,88 @@
+frontend:
+  - task: "Interface principale - Bouton Gestionnaire de Séries"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+
+  - task: "Interface principale - Bouton Découvrir une Série"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+
+  - task: "Gestionnaire de Séries - Modal avec onglets"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/SeriesManager.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+
+  - task: "Gestionnaire de Séries - Onglet Découvrir des Séries"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/SeriesManager.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+
+  - task: "Gestionnaire de Séries - Onglet Détecter une Série"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/SeriesManager.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+
+  - task: "Recherche intelligente - Pertinence pour séries"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+
+  - task: "Intégration Open Library - Badges de pertinence"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+
 backend:
   - task: "GET /api/series/popular - Popular series"
     implemented: true
