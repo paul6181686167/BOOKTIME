@@ -1842,7 +1842,7 @@ function MainApp() {
                 ← Retour à ma bibliothèque
               </button>
             </div>
-          )}
+          )})}
           
           {/* Statistiques de recherche */}
           {(searchStats.hasActiveFilters || isSearchMode) && (
