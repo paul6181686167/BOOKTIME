@@ -507,12 +507,51 @@ function AppContent() {
       if (response.ok) {
         const data = await response.json();
         
-        // Marquer les livres déjà possédés
+        // Marquer les livres déjà possédés avec une logique améliorée
         const resultsWithOwnership = data.books.map(book => {
-          const isOwned = books.some(localBook => 
-            localBook.title.toLowerCase() === book.title.toLowerCase() &&
-            localBook.author.toLowerCase() === book.author.toLowerCase()
-          );
+          const isOwned = books.some(localBook => {
+            // Normaliser les titres et auteurs pour la comparaison
+            const normalizeString = (str) => {
+              if (!str) return '';
+              return str.toLowerCase()
+                .trim()
+                .replace(/[^\w\s]/g, '') // Supprimer la ponctuation
+                .replace(/\s+/g, ' '); // Normaliser les espaces
+            };
+            
+            const localTitle = normalizeString(localBook.title);
+            const localAuthor = normalizeString(localBook.author);
+            const openLibTitle = normalizeString(book.title);
+            const openLibAuthor = normalizeString(book.author);
+            
+            // Vérification par ol_key d'abord (plus précise)
+            if (localBook.ol_key && book.ol_key && localBook.ol_key === book.ol_key) {
+              return true;
+            }
+            
+            // Vérification par ISBN si disponible
+            if (localBook.isbn && book.isbn && 
+                localBook.isbn.replace(/[-\s]/g, '') === book.isbn.replace(/[-\s]/g, '')) {
+              return true;
+            }
+            
+            // Vérification par titre et auteur (comparaison exacte)
+            if (localTitle === openLibTitle && localAuthor === openLibAuthor) {
+              return true;
+            }
+            
+            // Vérification par titre et auteur (comparaison flexible)
+            // Le titre de Open Library doit contenir le titre local OU vice versa
+            const titleMatch = (localTitle.includes(openLibTitle) || openLibTitle.includes(localTitle)) && 
+                              (localTitle.length > 3 && openLibTitle.length > 3); // Éviter les correspondances trop courtes
+            
+            // L'auteur doit correspondre exactement ou l'un doit contenir l'autre
+            const authorMatch = localAuthor === openLibAuthor || 
+                               (localAuthor.includes(openLibAuthor) && openLibAuthor.length > 3) ||
+                               (openLibAuthor.includes(localAuthor) && localAuthor.length > 3);
+            
+            return titleMatch && authorMatch;
+          });
           
           return {
             ...book,
