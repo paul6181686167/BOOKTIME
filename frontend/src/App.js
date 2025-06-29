@@ -1029,6 +1029,7 @@ function AppContent() {
       const bookTitle = book.title.toLowerCase();
       const bookAuthor = book.author.toLowerCase();
       const bookSaga = book.saga ? book.saga.toLowerCase() : '';
+      const bookCategory = book.category ? book.category.toLowerCase() : '';
       
       let confidence = 0;
       
@@ -1037,9 +1038,14 @@ function AppContent() {
         confidence += 100;
       }
       
-      // Vérification par auteur
+      // Vérification par auteur (très fiable pour les séries uniques)
       if (seriesData.authors.some(author => bookAuthor.includes(author))) {
-        confidence += 80;
+        confidence += 90;
+      }
+      
+      // Bonus pour correspondance de catégorie
+      if (seriesData.category && bookCategory === seriesData.category) {
+        confidence += 20;
       }
       
       // Vérification par mots-clés dans le titre
@@ -1051,15 +1057,27 @@ function AppContent() {
       });
       
       if (keywordMatches > 0) {
-        confidence += keywordMatches * 30;
+        confidence += keywordMatches * 25; // Réduction du score pour éviter les faux positifs
       }
       
-      // Vérification par variations dans le titre
+      // Vérification par variations dans le titre (très importante)
       seriesData.variations.forEach(variation => {
         if (bookTitle.includes(variation)) {
-          confidence += 60;
+          confidence += 70;
         }
       });
+      
+      // Bonus pour titre exact ou quasi-exact
+      if (seriesData.variations.some(variation => bookTitle === variation || bookTitle.startsWith(variation))) {
+        confidence += 50;
+      }
+      
+      // Vérification des langues supportées
+      if (seriesData.language && book.language) {
+        if (seriesData.language.includes(book.language)) {
+          confidence += 10;
+        }
+      }
       
       return confidence;
     }
