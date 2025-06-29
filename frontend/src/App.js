@@ -1468,29 +1468,58 @@ function AppContent() {
     </header>
   );
 
-  // Tab Navigation Component
+  // Tab Navigation Component avec toggle Vue Livres/Séries
   const TabNavigation = () => (
     <div className="mb-6">
       <div className="border-b border-gray-200 dark:border-gray-700">
-        <nav className="-mb-px flex space-x-12">
-          {[
-            { key: 'roman', label: 'Roman' },
-            { key: 'bd', label: 'Bande Dessinée' },
-            { key: 'manga', label: 'Manga' }
-          ].map((category) => (
-            <button
-              key={category.key}
-              onClick={() => setActiveTab(category.key)}
-              className={`py-3 px-2 border-b-2 font-medium text-lg ${
-                activeTab === category.key
-                  ? 'border-green-500 text-green-600 dark:text-green-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              {category.label}
-            </button>
-          ))}
-        </nav>
+        <div className="flex justify-between items-center">
+          <nav className="-mb-px flex space-x-12">
+            {[
+              { key: 'roman', label: 'Roman' },
+              { key: 'bd', label: 'Bande Dessinée' },
+              { key: 'manga', label: 'Manga' }
+            ].map((category) => (
+              <button
+                key={category.key}
+                onClick={() => setActiveTab(category.key)}
+                className={`py-3 px-2 border-b-2 font-medium text-lg ${
+                  activeTab === category.key
+                    ? 'border-green-500 text-green-600 dark:text-green-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                {category.label}
+              </button>
+            ))}
+          </nav>
+          
+          {/* Toggle Vue Livres/Séries */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Affichage :</span>
+            <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('books')}
+                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                  viewMode === 'books'
+                    ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                📚 Livres
+              </button>
+              <button
+                onClick={() => setViewMode('series')}
+                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                  viewMode === 'series'
+                    ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                📖 Séries
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
