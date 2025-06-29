@@ -420,6 +420,16 @@ function ProfileModal({ isOpen, onClose }) {
 
 // Main App Content
 function AppContent() {
+  return (
+    <Routes>
+      <Route path="/" element={<MainApp />} />
+      <Route path="/series/:seriesName" element={<SeriesDetailPage />} />
+    </Routes>
+  );
+}
+
+// Composant principal de l'application
+function MainApp() {
   const { user } = useAuth();
   const [books, setBooks] = useState([]);
   const [stats, setStats] = useState({});
