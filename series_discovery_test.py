@@ -15,8 +15,8 @@ class SeriesDiscoveryTest(unittest.TestCase):
         """Setup for each test - login with an existing user"""
         # Use an existing user
         self.test_user = {
-            "first_name": "Jean",
-            "last_name": "Dupont"
+            "first_name": "Test",
+            "last_name": "User"
         }
         
         # Login with the user
