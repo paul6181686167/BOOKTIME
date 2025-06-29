@@ -1905,7 +1905,7 @@ async def discover_complete_series(
                 continue
         
         # Trier par pertinence et organiser
-        all_discovered_books.sort(key=lambda x: (-x["relevance_score"], x.get("volume_number", 999), x["title"]))
+        all_discovered_books.sort(key=lambda x: (-x["relevance_score"], x.get("volume_number", 999) or 999, x["title"]))
         
         # Grouper par type
         main_series = [b for b in all_discovered_books if b["book_type"] == "main_series"]
