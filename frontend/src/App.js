@@ -1593,9 +1593,9 @@ function AppContent() {
               </div>
             )}
             
-            {/* Badge pour les livres Open Library */}
+            {/* Badge pour les livres Open Library avec indicateur de catégorie */}
             {book.isFromOpenLibrary && (
-              <div className="absolute top-1 right-1 z-10">
+              <div className="absolute top-1 right-1 z-10 flex flex-col items-end space-y-1">
                 {addingBooks.has(book.ol_key) ? (
                   <div className="bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full flex items-center animate-pulse">
                     ⏳
@@ -1613,6 +1613,38 @@ function AppContent() {
                     +
                   </div>
                 )}
+                
+                {/* Badge de catégorie */}
+                {book.category && (
+                  <div className={`text-xs px-1.5 py-0.5 rounded-full text-white font-medium ${
+                    book.category === 'roman' ? 'bg-blue-500' :
+                    book.category === 'bd' ? 'bg-green-500' :
+                    book.category === 'manga' ? 'bg-purple-500' :
+                    'bg-gray-500'
+                  }`}>
+                    {book.category === 'roman' ? 'Roman' :
+                     book.category === 'bd' ? 'BD' :
+                     book.category === 'manga' ? 'Manga' :
+                     book.category}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Badge de catégorie pour les livres locaux en mode recherche */}
+            {!book.isFromOpenLibrary && isSearchMode && book.category && (
+              <div className="absolute top-1 right-1 z-10">
+                <div className={`text-xs px-1.5 py-0.5 rounded-full text-white font-medium ${
+                  book.category === 'roman' ? 'bg-blue-500' :
+                  book.category === 'bd' ? 'bg-green-500' :
+                  book.category === 'manga' ? 'bg-purple-500' :
+                  'bg-gray-500'
+                }`}>
+                  {book.category === 'roman' ? 'Roman' :
+                   book.category === 'bd' ? 'BD' :
+                   book.category === 'manga' ? 'Manga' :
+                   book.category}
+                </div>
               </div>
             )}
             
