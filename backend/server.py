@@ -1921,7 +1921,8 @@ async def discover_complete_series(
         
         # Détecter les tomes manquants dans la série principale
         if main_series:
-            volume_numbers = [b["volume_number"] for b in main_series if b["volume_number"]]
+            # Filter out None values and ensure we only have integers
+            volume_numbers = [b["volume_number"] for b in main_series if b["volume_number"] is not None]
             if volume_numbers:
                 max_volume = max(volume_numbers)
                 missing_volumes = []
