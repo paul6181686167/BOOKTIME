@@ -697,9 +697,7 @@ function MainApp() {
     setIsSearchMode(false);
     setOpenLibraryResults([]);
     setLastSearchTerm('');
-    setUseGroupedSearchMode(false);
     clearSearch();
-    clearGroupedSearch();
   };
 
 
