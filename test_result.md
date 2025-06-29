@@ -1231,8 +1231,10 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
-  stuck_tasks: []
+  current_focus:
+    - "Harry Potter Series Detection"
+  stuck_tasks:
+    - "Saga Information Update"
   test_all: false
   test_priority: "high_first"
 
