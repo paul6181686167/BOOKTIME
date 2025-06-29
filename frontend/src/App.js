@@ -700,7 +700,7 @@ function AppContent() {
     }
   };
 
-  // Fonction simplifiée de calcul de la pertinence basée sur la popularité
+  // Fonction intelligente de calcul de la pertinence basée sur la popularité et la détection de séries
   const calculateRelevanceScore = (book, searchTerm) => {
     if (!searchTerm || !searchTerm.trim()) return 0;
     
@@ -714,114 +714,233 @@ function AppContent() {
     
     let score = 0;
     
-    // === BASE DE POPULARITÉ ===
+    // === DÉTECTION INTELLIGENTE DES SÉRIES POPULAIRES ===
     
-    // Livres/séries ultra-populaires (score de base très élevé)
-    const megaPopularSeries = [
-      'harry potter', 'lord of the rings', 'le seigneur des anneaux', 'hobbit',
-      'one piece', 'naruto', 'dragon ball', 'attack on titan', 'demon slayer',
-      'astérix', 'tintin', 'lucky luke', 'gaston lagaffe',
-      'game of thrones', 'witcher', 'dune', 'foundation',
-      'sherlock holmes', 'agatha christie'
-    ];
+    // Mapping des séries avec leurs variations et auteurs
+    const seriesMapping = {
+      'harry potter': {
+        score: 15000,
+        keywords: ['harry', 'potter', 'hogwarts', 'sorcier', 'wizard', 'poudlard'],
+        authors: ['j.k. rowling', 'jk rowling', 'rowling'],
+        variations: ['harry potter', 'école des sorciers', 'chambre des secrets', 'prisonnier d\'azkaban', 'coupe de feu', 'ordre du phénix', 'prince de sang-mêlé', 'reliques de la mort']
+      },
+      'seigneur des anneaux': {
+        score: 15000,
+        keywords: ['anneau', 'communauté', 'deux tours', 'retour du roi', 'terre du milieu', 'middle earth', 'hobbit', 'frodo', 'gandalf'],
+        authors: ['j.r.r. tolkien', 'jrr tolkien', 'tolkien'],
+        variations: ['seigneur des anneaux', 'lord of the rings', 'communauté de l\'anneau', 'fellowship', 'deux tours', 'two towers', 'retour du roi', 'return of the king']
+      },
+      'one piece': {
+        score: 15000,
+        keywords: ['one piece', 'luffy', 'zoro', 'sanji', 'pirates'],
+        authors: ['eiichiro oda', 'oda'],
+        variations: ['one piece']
+      },
+      'naruto': {
+        score: 15000,
+        keywords: ['naruto', 'sasuke', 'sakura', 'kakashi', 'ninja'],
+        authors: ['masashi kishimoto', 'kishimoto'],
+        variations: ['naruto']
+      },
+      'dragon ball': {
+        score: 15000,
+        keywords: ['dragon ball', 'goku', 'vegeta', 'kamehameha'],
+        authors: ['akira toriyama', 'toriyama'],
+        variations: ['dragon ball', 'dragonball']
+      },
+      'astérix': {
+        score: 15000,
+        keywords: ['astérix', 'asterix', 'obélix', 'obelix', 'gaulois'],
+        authors: ['rené goscinny', 'albert uderzo', 'goscinny', 'uderzo'],
+        variations: ['astérix', 'asterix']
+      },
+      'tintin': {
+        score: 15000,
+        keywords: ['tintin', 'milou', 'capitaine haddock', 'tournesol'],
+        authors: ['hergé', 'herge'],
+        variations: ['tintin', 'aventures de tintin']
+      }
+    };
     
-    const popularSeries = [
-      'batman', 'superman', 'spider-man', 'x-men', 'avengers',
-      'bleach', 'death note', 'fullmetal alchemist', 'cowboy bebop',
-      'walking dead', 'sandman', 'watchmen', 'v for vendetta',
-      'hunger games', 'twilight', 'fifty shades', 'divergent'
-    ];
+    // Fonction pour détecter si un livre appartient à une série populaire
+    function detectSeries(searchQuery) {
+      const query = searchQuery.toLowerCase();
+      
+      for (const [seriesName, seriesData] of Object.entries(seriesMapping)) {
+        // Vérification directe du nom de série dans la requête
+        if (query.includes(seriesName)) {
+          return { series: seriesName, data: seriesData, confidence: 'high' };
+        }
+        
+        // Vérification des variations
+        for (const variation of seriesData.variations) {
+          if (query.includes(variation)) {
+            return { series: seriesName, data: seriesData, confidence: 'high' };
+          }
+        }
+      }
+      
+      return null;
+    }
     
-    // Check si c'est une série mega-populaire
-    const titleAndSaga = `${title} ${saga} ${author}`.toLowerCase();
+    // Fonction pour vérifier si un livre correspond à une série
+    function isBookInSeries(book, seriesName, seriesData) {
+      const bookTitle = book.title.toLowerCase();
+      const bookAuthor = book.author.toLowerCase();
+      const bookSaga = book.saga ? book.saga.toLowerCase() : '';
+      
+      let confidence = 0;
+      
+      // Vérification par saga (le plus fiable)
+      if (bookSaga.includes(seriesName) || seriesData.variations.some(v => bookSaga.includes(v))) {
+        confidence += 100;
+      }
+      
+      // Vérification par auteur
+      if (seriesData.authors.some(author => bookAuthor.includes(author))) {
+        confidence += 80;
+      }
+      
+      // Vérification par mots-clés dans le titre
+      let keywordMatches = 0;
+      seriesData.keywords.forEach(keyword => {
+        if (bookTitle.includes(keyword)) {
+          keywordMatches++;
+        }
+      });
+      
+      if (keywordMatches > 0) {
+        confidence += keywordMatches * 30;
+      }
+      
+      // Vérification par variations dans le titre
+      seriesData.variations.forEach(variation => {
+        if (bookTitle.includes(variation)) {
+          confidence += 60;
+        }
+      });
+      
+      return confidence;
+    }
+    
+    // === CALCUL DE SCORE PRINCIPAL ===
+    
+    // Détecter si la recherche concerne une série populaire
+    const detectedSeries = detectSeries(term);
+    
+    let matchScore = 0;
     let popularityBonus = 0;
     
-    for (const series of megaPopularSeries) {
-      if (titleAndSaga.includes(series) || term.includes(series)) {
-        popularityBonus = 10000;
-        break;
+    if (detectedSeries) {
+      const { series, data } = detectedSeries;
+      
+      // Vérifier si ce livre appartient à la série recherchée
+      const seriesConfidence = isBookInSeries(book, series, data);
+      
+      if (seriesConfidence >= 100) {
+        // Livre confirmé de la série (par saga ou auteur + mots-clés)
+        popularityBonus = data.score;
+        matchScore = 40000; // Score très élevé pour les vrais livres de la série
+      } else if (seriesConfidence >= 80) {
+        // Livre probable de la série
+        popularityBonus = data.score * 0.8;
+        matchScore = 30000;
+      } else if (seriesConfidence >= 50) {
+        // Livre possible de la série
+        popularityBonus = data.score * 0.5;
+        matchScore = 20000;
       }
     }
     
-    if (popularityBonus === 0) {
-      for (const series of popularSeries) {
-        if (titleAndSaga.includes(series) || term.includes(series)) {
-          popularityBonus = 5000;
-          break;
+    // === CORRESPONDANCES EXACTES CLASSIQUES ===
+    
+    // Si pas de série détectée ou score faible, utiliser la correspondance classique
+    if (matchScore < 20000) {
+      // Correspondance exacte complète
+      if (title === term) {
+        matchScore = Math.max(matchScore, 35000);
+      }
+      // Correspondance de séquence complète
+      else if (title.includes(term)) {
+        if (title.startsWith(term)) {
+          matchScore = Math.max(matchScore, 25000);
+        } else {
+          matchScore = Math.max(matchScore, 18000);
+        }
+      }
+      // Multi-mots : tous les mots présents
+      else if (termWords.length > 1) {
+        let wordsFound = 0;
+        termWords.forEach(word => {
+          if (title.includes(word)) wordsFound++;
+        });
+        
+        const completeness = wordsFound / termWords.length;
+        if (completeness === 1) {
+          matchScore = Math.max(matchScore, 15000); // Tous les mots trouvés
+        } else if (completeness >= 0.8) {
+          matchScore = Math.max(matchScore, 12000); // 80%+ des mots
+        } else if (completeness >= 0.6) {
+          matchScore = Math.max(matchScore, 8000);  // 60%+ des mots
+        } else if (completeness >= 0.4) {
+          matchScore = Math.max(matchScore, 5000);  // 40%+ des mots
+        }
+      }
+      // Mot simple
+      else {
+        if (title.startsWith(term)) {
+          matchScore = Math.max(matchScore, 8000);
+        } else if (title.includes(` ${term} `) || title.includes(`${term} `) || title.includes(` ${term}`)) {
+          matchScore = Math.max(matchScore, 6000); // Mot entier
+        } else if (title.includes(term)) {
+          matchScore = Math.max(matchScore, 4000); // Contient le mot
         }
       }
     }
     
-    // === CORRESPONDANCES EXACTES (toujours prioritaires) ===
-    
-    let matchScore = 0;
-    
-    // Correspondance exacte complète
-    if (title === term) {
-      matchScore = 50000; // Score énorme pour match exact
-    }
-    // Correspondance de séquence complète
-    else if (title.includes(term)) {
-      if (title.startsWith(term)) {
-        matchScore = 25000; // Commence par le terme
-      } else {
-        matchScore = 15000; // Contient la séquence
-      }
-    }
-    // Multi-mots : tous les mots présents
-    else if (termWords.length > 1) {
-      let wordsFound = 0;
-      termWords.forEach(word => {
-        if (title.includes(word)) wordsFound++;
-      });
-      
-      const completeness = wordsFound / termWords.length;
-      if (completeness === 1) {
-        matchScore = 20000; // Tous les mots trouvés
-      } else if (completeness >= 0.8) {
-        matchScore = 12000; // 80%+ des mots
-      } else if (completeness >= 0.6) {
-        matchScore = 8000;  // 60%+ des mots
-      } else if (completeness >= 0.4) {
-        matchScore = 4000;  // 40%+ des mots
-      }
-    }
-    // Mot simple
-    else {
-      if (title.startsWith(term)) {
-        matchScore = 8000;
-      } else if (title.includes(` ${term} `) || title.includes(`${term} `) || title.includes(` ${term}`)) {
-        matchScore = 6000; // Mot entier
-      } else if (title.includes(term)) {
-        matchScore = 3000; // Contient le mot
-      }
-    }
-    
-    // Correspondances dans l'auteur (score réduit)
+    // Correspondances dans l'auteur
     if (author.includes(term)) {
       if (author === term) {
-        matchScore += 15000;
+        matchScore += 10000;
       } else if (author.startsWith(term)) {
-        matchScore += 8000;
-      } else {
-        matchScore += 4000;
-      }
-    }
-    
-    // Correspondances dans la saga
-    if (saga && saga.includes(term)) {
-      if (saga === term) {
-        matchScore += 12000;
-      } else if (saga.startsWith(term)) {
         matchScore += 6000;
       } else {
         matchScore += 3000;
       }
     }
     
-    // === BONUS DE POPULARITÉ ADDITIONNELS ===
+    // Correspondances dans la saga
+    if (saga && saga.includes(term)) {
+      if (saga === term) {
+        matchScore += 8000;
+      } else if (saga.startsWith(term)) {
+        matchScore += 5000;
+      } else {
+        matchScore += 2000;
+      }
+    }
     
-    // Bonus pour livres récents (plus populaires)
+    // === BONUS GÉNÉRAUX ===
+    
+    // Séries génériquement populaires (fallback)
+    const generalPopularKeywords = [
+      'batman', 'superman', 'spider-man', 'x-men', 'avengers',
+      'bleach', 'death note', 'fullmetal alchemist', 'cowboy bebop',
+      'walking dead', 'sandman', 'watchmen', 'game of thrones',
+      'sherlock holmes', 'agatha christie'
+    ];
+    
+    if (!detectedSeries) {
+      const titleAndSaga = `${title} ${saga} ${author}`.toLowerCase();
+      for (const keyword of generalPopularKeywords) {
+        if (titleAndSaga.includes(keyword) || term.includes(keyword)) {
+          popularityBonus += 8000;
+          break;
+        }
+      }
+    }
+    
+    // Bonus pour livres récents
     if (book.first_publish_year) {
       const year = book.first_publish_year;
       if (year >= 2020) popularityBonus += 1000;
@@ -831,38 +950,28 @@ function AppContent() {
       else if (year >= 1990) popularityBonus += 200;
     }
     
-    // Bonus pour livres avec couverture (plus populaires/professionnels)
-    if (book.cover_url) {
-      popularityBonus += 500;
-    }
-    
-    // Bonus pour nombre de pages raisonnable
-    if (book.number_of_pages) {
-      const pages = book.number_of_pages;
-      if (pages >= 100 && pages <= 800) {
-        popularityBonus += 300; // Longueur standard
-      } else if (pages >= 50 && pages <= 1200) {
-        popularityBonus += 100;
-      }
+    // Bonus pour métadonnées de qualité
+    if (book.cover_url) popularityBonus += 500;
+    if (book.number_of_pages && book.number_of_pages >= 100 && book.number_of_pages <= 800) {
+      popularityBonus += 300;
     }
     
     // === BONUS POUR LIVRES LOCAUX ===
     
     let localBonus = 0;
     if (!book.isFromOpenLibrary) {
-      localBonus = 2000; // Bonus modéré pour livres possédés
+      localBonus = 3000; // Bonus pour livres possédés
     } else if (book.isFromOpenLibrary && book.isOwned) {
-      localBonus = 1000;
+      localBonus = 1500;
     }
     
     // === CALCUL FINAL ===
     
-    // Le score final privilégie : match exact > popularité > possession
     score = matchScore + popularityBonus + localBonus;
     
     // Malus pour livres sans métadonnées importantes
-    if (!book.author || book.author.trim() === '') score -= 1000;
-    if (!book.title || book.title.trim() === '') score -= 2000;
+    if (!book.author || book.author.trim() === '') score -= 2000;
+    if (!book.title || book.title.trim() === '') score -= 3000;
     
     return Math.max(0, Math.round(score));
   };
