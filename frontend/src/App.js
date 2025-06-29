@@ -435,6 +435,9 @@ function AppContent() {
   const [useGroupedSearchMode, setUseGroupedSearchMode] = useState(false);
   const [addingBooks, setAddingBooks] = useState(new Set()); // Suivi des livres en cours d'ajout
 
+  // État pour la découverte de série
+  const [showSeriesDiscovery, setShowSeriesDiscovery] = useState(false);
+
   // Hook de recherche avancée
   const {
     searchTerm,
