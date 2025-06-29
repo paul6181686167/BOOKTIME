@@ -439,7 +439,7 @@ function MainApp() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('roman');
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
+
   const [selectedBook, setSelectedBook] = useState(null);
   const [showBookModal, setShowBookModal] = useState(false);
 
