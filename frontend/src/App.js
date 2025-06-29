@@ -1691,6 +1691,16 @@ function AppContent() {
       <AddBookModal />
       <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
       
+      {/* Modal de gestionnaire de séries */}
+      <SeriesManager 
+        isOpen={showSeriesManager}
+        onClose={() => setShowSeriesManager(false)}
+        onSeriesComplete={(data) => {
+          loadBooks();
+          loadStats();
+        }}
+      />
+      
       {/* Modal de découverte de série */}
       <SeriesDiscovery 
         isOpen={showSeriesDiscovery}
