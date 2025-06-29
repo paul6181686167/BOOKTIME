@@ -1699,15 +1699,15 @@ function AppContent() {
           loadBooks();
           loadStats();
         }}
-      {/* Modal de gestionnaire de séries */}
-      <SeriesManager 
-        isOpen={showSeriesManager}
-        onClose={() => setShowSeriesManager(false)}
-        onSeriesComplete={(data) => {
-          loadBooks();
-          loadStats();
-        }}
       />
+      
+      {/* Modal de découverte de série */}
+      <SeriesDiscovery 
+        isOpen={showSeriesDiscovery}
+        onClose={() => setShowSeriesDiscovery(false)}
+      />
+      
+      {selectedBook && (
       
       {/* Modal de découverte de série */}
       <SeriesDiscovery 
