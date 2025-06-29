@@ -1,4 +1,49 @@
 backend:
+  - task: "GET /api/series/popular - Popular series"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "Popular series endpoint is working correctly. Successfully tested with an authenticated user. Filters by category (roman, manga, bd) work correctly, returning the appropriate series for each category. The limit parameter works correctly, restricting the number of series returned. Each series includes complete metadata with name, category, score, keywords, authors, variations, volumes, languages, description, first_published, and status."
+
+  - task: "GET /api/series/detect - Series detection"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "Series detection endpoint is working correctly. Successfully tested with 'Harry Potter', 'One Piece', and 'Astérix'. The endpoint correctly identifies the series with high confidence scores (140-180). Match reasons are properly provided, including author_match, title_variation, and keywords_match. The response includes all required information about the detected series."
+
+  - task: "POST /api/series/complete - Auto-complete series"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "Series auto-completion endpoint is working correctly. Successfully created a test book for a series and used the API to auto-complete it with 4 additional volumes. The created books have the correct metadata including saga name, author, category, volume numbers, and auto_added flag set to true. All volumes are properly created with sequential volume numbers."
+
   - task: "GET / - Welcome message"
     implemented: true
     working: true
