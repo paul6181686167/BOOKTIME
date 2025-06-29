@@ -272,10 +272,12 @@ def run_audit_tests():
         print("\n✅ All audit tests passed successfully!")
     else:
         print("\n❌ Some audit tests failed:")
-        for failure in result.failures:
-            print(f"- {failure[0]}")
-        for error in result.errors:
-            print(f"- {error[0]}")
+        for i, failure in enumerate(result.failures):
+            print(f"\nFailure {i+1}: {failure[0]}")
+            print(f"Error message: {failure[1]}")
+        for i, error in enumerate(result.errors):
+            print(f"\nError {i+1}: {error[0]}")
+            print(f"Error message: {error[1]}")
 
 if __name__ == "__main__":
     run_audit_tests()
