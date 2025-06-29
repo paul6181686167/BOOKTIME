@@ -801,7 +801,7 @@ function MainApp() {
   const handleSeriesClick = (series) => {
     // Naviguer vers la page dédiée de la série
     setSelectedSeries(series);
-    setShowSeriesDetailModal(true);
+    setShowSeriesDetail(true);
   };
 
   // Gestionnaire de clic sur livre
