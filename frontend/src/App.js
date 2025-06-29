@@ -556,6 +556,9 @@ function AppContent() {
       const token = localStorage.getItem('token');
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
       
+      // Rechercher les séries en parallèle
+      const seriesPromise = searchSeries(query);
+      
       const response = await fetch(`${backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}&limit=20`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -565,6 +568,10 @@ function AppContent() {
 
       if (response.ok) {
         const data = await response.json();
+        
+        // Récupérer les séries détectées
+        const detectedSeriesData = await seriesPromise;
+        setDetectedSeries(detectedSeriesData);
         
         // Marquer les livres déjà possédés avec une logique améliorée
         const resultsWithOwnership = data.books.map(book => {
