@@ -13,7 +13,6 @@ import { bookService } from './services/bookService';
 import AdvancedSearchBar from './components/AdvancedSearchBar';
 import BookDetailModal from './components/BookDetailModal';
 import GroupedSearchResults from './components/GroupedSearchResults';
-import SeriesDiscovery from './components/SeriesDiscovery';
 import SeriesCard from './components/SeriesCard';
 import SeriesDetailModal from './components/SeriesDetailModal';
 import SeriesDetailPage from './pages/SeriesDetailPage';
