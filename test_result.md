@@ -176,6 +176,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Extended stats endpoint is working correctly, now includes sagas_count (7), authors_count (9), and auto_added_count (5) as required"
+      - working: true
+        agent: "testing"
+        comment: "Latest testing confirms the GET /api/stats endpoint is working correctly. Successfully tested with a newly registered user. The endpoint returns all required fields including total_books, completed_books, reading_books, to_read_books, categories, authors_count, sagas_count, and auto_added_count. For a new user, all counts are correctly set to 0."
 
   - task: "GET /api/books - Get all books"
     implemented: true
