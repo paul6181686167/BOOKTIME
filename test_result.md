@@ -84,6 +84,21 @@ frontend:
         comment: "Initial setup, needs testing"
 
 backend:
+  - task: "GET /health - Health check"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "Health check endpoint is working correctly. Successfully tested and received a 200 status code with the expected response structure including status: 'ok', database: 'connected', and a timestamp. This confirms that the backend server is running properly and connected to the database."
+
   - task: "GET /api/series/popular - Popular series"
     implemented: true
     working: true
