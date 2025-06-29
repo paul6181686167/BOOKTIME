@@ -10,7 +10,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { bookService } from './services/bookService';
 
 // Component imports
-import AdvancedSearchBar from './components/AdvancedSearchBar';
+import UnifiedSearchBar from './components/UnifiedSearchBar';
 import BookDetailModal from './components/BookDetailModal';
 import GroupedSearchResults from './components/GroupedSearchResults';
 import SeriesCard from './components/SeriesCard';
