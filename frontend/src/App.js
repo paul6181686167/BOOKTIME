@@ -14,6 +14,7 @@ import AdvancedSearchBar from './components/AdvancedSearchBar';
 import BookDetailModal from './components/BookDetailModal';
 import GroupedSearchResults from './components/GroupedSearchResults';
 import SeriesDiscovery from './components/SeriesDiscovery';
+import SeriesManager from './components/SeriesManager';
 import { useAdvancedSearch } from './hooks/useAdvancedSearch';
 import { useGroupedSearch } from './hooks/useGroupedSearch';
 
