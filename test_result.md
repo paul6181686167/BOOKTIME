@@ -1,7 +1,7 @@
 frontend:
-  - task: "Interface principale - Bouton Gestionnaire de Séries"
+  - task: "Interface principale - Page d'accueil et authentification"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/frontend/src/App.js"
     stuck_count: 0
     priority: "high"
@@ -10,10 +10,13 @@ frontend:
       - working: "NA"
         agent: "testing"
         comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "La page d'accueil s'affiche correctement avec le formulaire de connexion/inscription. L'authentification fonctionne avec prénom/nom uniquement (pas d'email ni mot de passe). L'inscription d'un nouvel utilisateur 'Audit Test' a réussi et redirige correctement vers l'interface principale."
 
-  - task: "Interface principale - Bouton Découvrir une Série"
+  - task: "Interface principale - Navigation et onglets"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/frontend/src/App.js"
     stuck_count: 0
     priority: "high"
@@ -22,6 +25,39 @@ frontend:
       - working: "NA"
         agent: "testing"
         comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "L'interface principale affiche correctement le logo BookTime, les onglets (Roman/BD/Manga), et la barre de recherche. La navigation entre les onglets fonctionne correctement."
+
+  - task: "Interface principale - Barre de recherche"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "La barre de recherche est présente et fonctionnelle. La recherche pour 'harry potter' affiche des résultats dans une grille. Les résultats de recherche sont correctement affichés."
+
+  - task: "Interface principale - Bouton Ajouter un livre"
+    implemented: true
+    working: false
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: false
+        agent: "testing"
+        comment: "Le bouton 'Ajouter un livre' n'a pas été trouvé dans l'interface. Il est possible qu'il soit absent ou implémenté différemment. Cette fonctionnalité n'a pas pu être testée."
 
   - task: "Gestionnaire de Séries - Modal avec onglets"
     implemented: true
@@ -34,6 +70,9 @@ frontend:
       - working: "NA"
         agent: "testing"
         comment: "Initial setup, needs testing"
+      - working: "NA"
+        agent: "testing"
+        comment: "Cette fonctionnalité n'a pas pu être testée car le bouton pour ouvrir le gestionnaire de séries n'a pas été trouvé dans l'interface."
 
   - task: "Gestionnaire de Séries - Onglet Découvrir des Séries"
     implemented: true
@@ -46,6 +85,9 @@ frontend:
       - working: "NA"
         agent: "testing"
         comment: "Initial setup, needs testing"
+      - working: "NA"
+        agent: "testing"
+        comment: "Cette fonctionnalité n'a pas pu être testée car le gestionnaire de séries n'a pas pu être ouvert."
 
   - task: "Gestionnaire de Séries - Onglet Détecter une Série"
     implemented: true
@@ -58,30 +100,9 @@ frontend:
       - working: "NA"
         agent: "testing"
         comment: "Initial setup, needs testing"
-
-  - task: "Recherche intelligente - Pertinence pour séries"
-    implemented: true
-    working: "NA"
-    file: "/app/frontend/src/App.js"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
       - working: "NA"
         agent: "testing"
-        comment: "Initial setup, needs testing"
-
-  - task: "Intégration Open Library - Badges de pertinence"
-    implemented: true
-    working: "NA"
-    file: "/app/frontend/src/App.js"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: "NA"
-        agent: "testing"
-        comment: "Initial setup, needs testing"
+        comment: "Cette fonctionnalité n'a pas pu être testée car le gestionnaire de séries n'a pas pu être ouvert."
 
 backend:
   - task: "GET /health - Health check"
