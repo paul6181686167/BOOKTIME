@@ -1853,7 +1853,7 @@ function MainApp() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Barre de recherche */}
         <div className="mb-6">
-          <AdvancedSearchBar
+          <UnifiedSearchBar
             searchTerm={lastSearchTerm}
             onSearchChange={(value) => setLastSearchTerm(value)}
             onOpenLibrarySearch={searchOpenLibrary}
