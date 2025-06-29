@@ -548,6 +548,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Search-grouped endpoint works correctly. Successfully tested with various search terms including 'harry potter', 'seigneur', and 'tome'. The API correctly groups books by saga when appropriate and returns individual books otherwise. The response structure includes all required fields (results, total_books, total_sagas, search_term, grouped_by_saga). Saga entries have type: 'saga' with books, total_books, completed_books, etc. Individual books have type: 'book'. Empty or short search terms return empty results as expected."
+      - working: true
+        agent: "testing"
+        comment: "Latest testing confirms the GET /api/books/search-grouped endpoint is working correctly. Successfully tested with 'Harry Potter' search term. The endpoint correctly returns the expected response structure with results, total_books, total_sagas, search_term, and grouped_by_saga fields. For a new user with no books, the endpoint correctly returns empty results."
 
   - task: "ISBN validation - Handling and validation"
     implemented: true
