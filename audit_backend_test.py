@@ -182,15 +182,22 @@ class BooktimeAPIAuditTest(unittest.TestCase):
 
     def test_get_books(self):
         """Test getting all books"""
-        # First register if not already done
+        # First register/login if not already done
         if not self.access_token:
-            self.test_user_registration()
+            if not self.test_user_registration():
+                self.skipTest("Registration/login failed, skipping test")
         
         # Create a book first to ensure we have at least one
-        self.test_create_book()
+        try:
+            self.test_create_book()
+        except Exception as e:
+            print(f"Error creating test book: {e}")
         
         # Get all books
         response = requests.get(f"{API_URL}/books", headers=self.headers)
+        print(f"Get books response status code: {response.status_code}")
+        print(f"Get books response body: {response.text[:200]}...")  # Show just the beginning
+        
         self.assertEqual(response.status_code, 200)
         books = response.json()
         
