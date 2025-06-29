@@ -701,6 +701,91 @@ async def get_popular_series(
         "language": language
     }
 
+@app.get("/api/series/search")
+async def search_series(
+    q: str,
+    category: Optional[str] = None,
+    limit: int = 20,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Recherche de séries par nom avec scoring de pertinence
+    """
+    if not q or len(q.strip()) < 2:
+        return {"series": [], "total": 0, "search_term": q}
+    
+    search_term = q.strip().lower()
+    
+    # Récupérer les séries populaires
+    series_response = await get_popular_series(category=category, limit=1000, current_user=current_user)
+    all_series = series_response["series"]
+    
+    matching_series = []
+    
+    for series in all_series:
+        score = 0
+        match_reasons = []
+        
+        # Correspondance exacte du nom
+        if series["name"].lower() == search_term:
+            score += 10000
+            match_reasons.append("exact_name")
+        # Correspondance partielle du nom
+        elif search_term in series["name"].lower():
+            if series["name"].lower().startswith(search_term):
+                score += 8000
+                match_reasons.append("name_starts_with")
+            else:
+                score += 5000
+                match_reasons.append("name_contains")
+        
+        # Correspondance variations
+        for variation in series["variations"]:
+            if variation.lower() == search_term:
+                score += 9000
+                match_reasons.append("exact_variation")
+                break
+            elif search_term in variation.lower():
+                score += 4000
+                match_reasons.append("variation_contains")
+        
+        # Correspondance auteur
+        for author in series["authors"]:
+            if search_term in author.lower():
+                score += 3000
+                match_reasons.append("author_match")
+                break
+        
+        # Correspondance mots-clés
+        keyword_matches = 0
+        for keyword in series["keywords"]:
+            if keyword in search_term or search_term in keyword:
+                keyword_matches += 1
+        
+        if keyword_matches > 0:
+            score += keyword_matches * 1000
+            match_reasons.append(f"keywords_{keyword_matches}")
+        
+        # Bonus pour séries populaires
+        score += series.get("score", 0) // 10
+        
+        if score > 500:  # Seuil de pertinence
+            matching_series.append({
+                **series,
+                "isSeriesCard": True,
+                "search_score": score,
+                "match_reasons": match_reasons
+            })
+    
+    # Trier par score de pertinence
+    matching_series.sort(key=lambda x: x["search_score"], reverse=True)
+    
+    return {
+        "series": matching_series[:limit],
+        "total": len(matching_series),
+        "search_term": q
+    }
+
 @app.get("/api/series/detect")
 async def detect_series_from_book(
     title: str,
