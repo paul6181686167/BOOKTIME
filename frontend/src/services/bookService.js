@@ -464,4 +464,79 @@ export const bookService = {
   }
 };
 
+  // === NOUVELLES MÉTHODES POUR LA GESTION DES SÉRIES ===
+
+  // Mise à jour en lot des statuts d'une série
+  async updateSagaBulkStatus(sagaName, updateData) {
+    try {
+      const response = await api.put(`/api/sagas/${encodeURIComponent(sagaName)}/bulk-status`, updateData);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour en lot:', error);
+      throw new Error('Erreur lors de la mise à jour en lot');
+    }
+  },
+
+  // Toggle Lu/Non Lu pour un tome spécifique
+  async toggleTomeStatus(sagaName, volumeNumber, isRead) {
+    try {
+      const response = await api.post(`/api/sagas/${encodeURIComponent(sagaName)}/toggle-tome-status`, {
+        volume_number: volumeNumber,
+        is_read: isRead
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors du toggle du statut:', error);
+      throw new Error('Erreur lors de la mise à jour du statut du tome');
+    }
+  },
+
+  // Auto-complétion intelligente d'une saga
+  async autoCompleteSaga(sagaName, targetVolume, source = 'manual') {
+    try {
+      const response = await api.post(`/api/sagas/${encodeURIComponent(sagaName)}/auto-complete`, {
+        target_volume: targetVolume,
+        source: source
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de l\'auto-complétion:', error);
+      throw new Error('Erreur lors de l\'auto-complétion de la saga');
+    }
+  },
+
+  // Analyse des tomes manquants
+  async analyzeMissingVolumes(sagaName) {
+    try {
+      const response = await api.get(`/api/sagas/${encodeURIComponent(sagaName)}/missing-analysis`);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de l\'analyse des tomes manquants:', error);
+      throw new Error('Erreur lors de l\'analyse des tomes manquants');
+    }
+  },
+
+  // Récupérer les sagas avec le nouveau format
+  async getSagas() {
+    try {
+      const response = await api.get('/api/sagas');
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des sagas:', error);
+      throw new Error('Erreur lors de la récupération des sagas');
+    }
+  },
+
+  // Récupérer les livres d'une saga avec le nouveau format
+  async getBooksBySaga(sagaName) {
+    try {
+      const response = await api.get(`/api/sagas/${encodeURIComponent(sagaName)}/books`);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des livres de la saga:', error);
+      throw new Error('Erreur lors de la récupération des livres de la saga');
+    }
+  }
+};
+
 export default bookService;
