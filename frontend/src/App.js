@@ -1407,6 +1407,12 @@ function AppContent() {
       <AddBookModal />
       <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
       
+      {/* Modal de découverte de série */}
+      <SeriesDiscovery 
+        isOpen={showSeriesDiscovery}
+        onClose={() => setShowSeriesDiscovery(false)}
+      />
+      
       {selectedBook && (
         <BookDetailModal
           book={selectedBook}
