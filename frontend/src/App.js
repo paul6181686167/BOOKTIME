@@ -538,7 +538,7 @@ function AppContent() {
     }));
   };
 
-  // Fonction pour rechercher dans Open Library
+  // Fonction pour rechercher dans Open Library avec gestion des séries
   const searchOpenLibrary = async (query) => {
     if (!query.trim()) return;
     
@@ -563,9 +563,12 @@ function AppContent() {
       if (response.ok) {
         const data = await response.json();
         
-        // Récupérer les séries détectées
+        // Récupérer les séries détectées et créer les cartes séries
         const detectedSeriesData = await seriesPromise;
         setDetectedSeries(detectedSeriesData);
+        
+        // Créer les cartes séries
+        const seriesCards = createSeriesCards(detectedSeriesData);
         
         // Marquer les livres déjà possédés avec une logique améliorée
         const resultsWithOwnership = data.books.map(book => {
@@ -621,8 +624,9 @@ function AppContent() {
           };
         });
         
-        setOpenLibraryResults(resultsWithOwnership);
-        toast.success(`${data.books.length} livres trouvés sur Open Library`);
+        // Stocker les résultats combinés avec les cartes séries en premier
+        setOpenLibraryResults([...seriesCards, ...resultsWithOwnership]);
+        toast.success(`${data.books.length} livres trouvés${seriesCards.length > 0 ? ` + ${seriesCards.length} série(s) détectée(s)` : ''}`);
       } else {
         toast.error('Erreur lors de la recherche Open Library');
       }
