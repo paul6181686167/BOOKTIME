@@ -182,6 +182,10 @@ function LoginPage() {
 
       if (result.success) {
         toast.success(isLogin ? 'Connexion réussie !' : 'Inscription réussie !');
+        // Force immediate navigation after successful auth
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
       } else {
         toast.error(result.error || 'Une erreur est survenue');
       }
