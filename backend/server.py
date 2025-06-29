@@ -708,59 +708,133 @@ async def update_saga_bulk_status(
         "updates_made": updates_made
     }
 
-@app.post("/api/sagas/{saga_name}/toggle-tome-status")
-async def toggle_tome_status(
+@app.post("/api/sagas/{saga_name}/auto-complete")
+async def auto_complete_saga(
     saga_name: str,
-    tome_data: dict,
+    completion_data: dict,
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Toggle simple Lu/Non Lu pour un tome spécifique
-    Format: {"volume_number": 1, "is_read": true}
+    Auto-complétion intelligente d'une saga
+    Format: {"target_volume": 50, "source": "manual"} ou {"source": "openlibrary"}
     """
-    volume_number = tome_data.get("volume_number")
-    is_read = tome_data.get("is_read", False)
-    
-    if volume_number is None:
-        raise HTTPException(status_code=400, detail="Numéro de tome requis")
-    
-    # Trouver le livre
-    book = books_collection.find_one({
+    # Trouver les livres existants de cette saga
+    existing_books = list(books_collection.find({
         "user_id": current_user["id"],
-        "saga": saga_name,
-        "volume_number": volume_number
-    })
+        "saga": saga_name
+    }))
     
-    if not book:
-        raise HTTPException(status_code=404, detail="Tome non trouvé")
+    if not existing_books:
+        raise HTTPException(status_code=404, detail="Saga non trouvée")
     
-    # Déterminer le nouveau statut
-    new_status = "completed" if is_read else "to_read"
-    update_data = {"status": new_status, "updated_at": datetime.utcnow()}
+    # Analyser les volumes existants
+    existing_volumes = set()
+    template_book = existing_books[0]
+    max_volume = 0
     
-    # Gérer les dates
-    if new_status == "completed":
-        if not book.get("date_started"):
-            update_data["date_started"] = datetime.utcnow()
-        update_data["date_completed"] = datetime.utcnow()
-    elif new_status == "to_read":
-        update_data["date_started"] = None
-        update_data["date_completed"] = None
+    for book in existing_books:
+        vol_num = book.get("volume_number", 0)
+        if vol_num > 0:
+            existing_volumes.add(vol_num)
+            max_volume = max(max_volume, vol_num)
     
-    books_collection.update_one(
-        {"id": book["id"], "user_id": current_user["id"]},
-        {"$set": update_data}
-    )
+    # Déterminer le nombre de tomes à créer
+    target_volume = completion_data.get("target_volume", max_volume + 10)
+    source = completion_data.get("source", "manual")
     
-    # Récupérer le livre mis à jour
-    updated_book = books_collection.find_one({
-        "id": book["id"],
-        "user_id": current_user["id"]
-    }, {"_id": 0})
+    # Créer les tomes manquants
+    created_books = []
+    
+    for vol_num in range(1, target_volume + 1):
+        if vol_num not in existing_volumes:
+            book_id = str(uuid.uuid4())
+            new_book = {
+                "id": book_id,
+                "user_id": current_user["id"],
+                "title": f"{saga_name} - Tome {vol_num}",
+                "author": template_book.get("author", ""),
+                "category": template_book.get("category", "roman"),
+                "saga": saga_name,
+                "volume_number": vol_num,
+                "status": "to_read",
+                "auto_added": True,
+                "date_added": datetime.utcnow(),
+                "date_started": None,
+                "date_completed": None,
+                "description": f"Tome {vol_num} de la série {saga_name}",
+                "total_pages": None,
+                "current_page": None,
+                "rating": None,
+                "review": "",
+                "cover_url": "",
+                "genre": template_book.get("genre", ""),
+                "publication_year": None,
+                "publisher": template_book.get("publisher", ""),
+                "isbn": ""
+            }
+            
+            books_collection.insert_one(new_book)
+            new_book.pop("_id", None)
+            created_books.append(new_book)
     
     return {
-        "message": f"Tome {volume_number} de {saga_name} marqué comme {'lu' if is_read else 'non lu'}",
-        "book": updated_book
+        "message": f"{len(created_books)} tome(s) ajouté(s) à la saga {saga_name}",
+        "created_books": created_books,
+        "total_volumes": target_volume,
+        "existing_volumes": len(existing_volumes)
+    }
+
+@app.get("/api/sagas/{saga_name}/missing-analysis")
+async def analyze_missing_volumes(
+    saga_name: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Analyse des tomes manquants dans une saga
+    """
+    # Trouver les livres existants de cette saga
+    existing_books = list(books_collection.find({
+        "user_id": current_user["id"],
+        "saga": saga_name
+    }))
+    
+    if not existing_books:
+        raise HTTPException(status_code=404, detail="Saga non trouvée")
+    
+    # Analyser les volumes
+    existing_volumes = []
+    missing_volumes = []
+    
+    for book in existing_books:
+        vol_num = book.get("volume_number", 0)
+        if vol_num > 0:
+            existing_volumes.append(vol_num)
+    
+    existing_volumes.sort()
+    
+    if existing_volumes:
+        # Détecter les trous dans la série
+        for i in range(1, max(existing_volumes) + 1):
+            if i not in existing_volumes:
+                missing_volumes.append(i)
+    
+    # Statistiques
+    total_expected = max(existing_volumes) if existing_volumes else 0
+    completion_rate = len(existing_volumes) / total_expected * 100 if total_expected > 0 else 0
+    
+    return {
+        "saga_name": saga_name,
+        "existing_volumes": existing_volumes,
+        "missing_volumes": missing_volumes,
+        "total_existing": len(existing_volumes),
+        "total_missing": len(missing_volumes),
+        "max_volume": max(existing_volumes) if existing_volumes else 0,
+        "completion_rate": round(completion_rate, 1),
+        "suggestions": {
+            "next_volume": max(existing_volumes) + 1 if existing_volumes else 1,
+            "fill_gaps": len(missing_volumes) > 0,
+            "estimated_total": max(existing_volumes) + 5 if existing_volumes else 10
+        }
     }
 
 # Utilitaires pour Open Library
