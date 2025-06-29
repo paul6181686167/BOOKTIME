@@ -470,7 +470,7 @@ function AppContent() {
       loadBooks();
       loadStats();
     }
-  }, [user]);
+  }, [user, viewMode]); // Recharger quand le mode de vue change
 
   const loadBooks = async () => {
     try {
