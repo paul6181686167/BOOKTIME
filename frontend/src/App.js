@@ -1842,11 +1842,10 @@ function MainApp() {
                 ← Retour à ma bibliothèque
               </button>
             </div>
-          )}
           
           {/* Statistiques de recherche */}
           {(searchStats.hasActiveFilters || isSearchMode) && (
-            <div className="mt-3 text-center space-y-1">
+            <div className="mt-4 text-center space-y-1">
               {isSearchMode ? (
                 <>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
