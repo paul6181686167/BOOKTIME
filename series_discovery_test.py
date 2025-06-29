@@ -133,15 +133,16 @@ class SeriesDiscoveryTest(unittest.TestCase):
         books = data["books"]
         
         # Count books in each category
-        total_books = (
+        total_books_in_response = (
             len(books["main_series"]) + 
             len(books["spin_offs"]) + 
             len(books["companions"]) + 
             len(books["related"])
         )
         
-        # Verify total_discovered matches the sum of all book categories
-        self.assertLessEqual(total_books, stats["total_discovered"], 
+        # Verify total_discovered is at least as many as the books in the response
+        # (There might be more books discovered than returned in the response due to limits)
+        self.assertLessEqual(total_books_in_response, stats["total_discovered"], 
                            "Total discovered books should match or exceed the sum of all categories")
         
         # Count owned books
