@@ -745,9 +745,19 @@ function AppContent() {
     }
   };
 
-  const handleBookClick = (book) => {
-    setSelectedBook(book);
-    setShowBookModal(true);
+  // Gestionnaire de clic sur série pour afficher la fiche dédiée
+  const handleSeriesClick = (series) => {
+    setSelectedSeries(series);
+    setShowSeriesDetail(true);
+  };
+
+  // Gestionnaire de clic conditionnel (livre ou série)
+  const handleItemClick = (item) => {
+    if (item.isSeriesCard) {
+      handleSeriesClick(item);
+    } else {
+      handleBookClick(item);
+    }
   };
 
   const handleUpdateBook = async (bookData) => {
