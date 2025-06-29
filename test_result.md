@@ -941,6 +941,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Rapid testing confirms the user statistics functionality works correctly. Successfully retrieved stats for a new user (0 books) and verified that all required fields are present (total_books, completed_books, reading_books, to_read_books, categories, authors_count, sagas_count, auto_added_count). Also verified that stats update correctly after adding a new book, with total_books, to_read_books, and roman category count all increasing by 1."
+      - working: true
+        agent: "testing"
+        comment: "Audit testing confirms the user statistics functionality works correctly. Successfully retrieved stats for a new user with one book and verified that all required fields are present (total_books, completed_books, reading_books, to_read_books, categories, authors_count, sagas_count, auto_added_count). The stats correctly showed 1 total book, 1 to_read book, and 1 roman category book."
     implemented: true
     working: true
     file: "/app/frontend/src/App.js"
