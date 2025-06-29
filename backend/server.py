@@ -409,7 +409,7 @@ async def update_book(
     if not book:
         raise HTTPException(status_code=404, detail="Livre non trouvé")
     
-    update_data = book_update.dict(exclude_unset=True)
+    update_data = book_update.model_dump(exclude_unset=True)
     update_data["updated_at"] = datetime.utcnow()
     
     # Gérer les changements de statut
