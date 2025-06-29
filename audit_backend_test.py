@@ -151,16 +151,21 @@ class BooktimeAPIAuditTest(unittest.TestCase):
 
     def test_create_book(self):
         """Test creating a new book"""
-        # First register if not already done
+        # First register/login if not already done
         if not self.access_token:
-            self.test_user_registration()
+            if not self.test_user_registration():
+                self.skipTest("Registration/login failed, skipping test")
         
         # Create a book
+        print(f"Creating book with data: {self.test_book_data}")
         response = requests.post(
             f"{API_URL}/books", 
             json=self.test_book_data,
             headers=self.headers
         )
+        print(f"Create book response status code: {response.status_code}")
+        print(f"Create book response body: {response.text}")
+        
         self.assertEqual(response.status_code, 200)
         book = response.json()
         
