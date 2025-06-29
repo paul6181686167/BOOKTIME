@@ -448,7 +448,300 @@ async def delete_book(book_id: str, current_user: dict = Depends(get_current_use
     
     return {"message": "Livre supprimé avec succès"}
 
-# Routes pour les statistiques
+# Routes pour les séries étendues
+@app.get("/api/series/popular")
+async def get_popular_series(
+    category: Optional[str] = None,
+    language: Optional[str] = "fr",
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Récupérer la liste des séries populaires avec métadonnées complètes
+    """
+    # Mapping complet des séries populaires (côté backend)
+    series_data = {
+        # ROMANS FANTASY/SF
+        "harry_potter": {
+            "name": "Harry Potter",
+            "category": "roman",
+            "score": 18000,
+            "keywords": ["harry", "potter", "hogwarts", "sorcier", "wizard", "poudlard", "voldemort"],
+            "authors": ["J.K. Rowling"],
+            "variations": ["Harry Potter", "École des Sorciers", "Chambre des Secrets"],
+            "volumes": 7,
+            "languages": ["fr", "en"],
+            "description": "La saga emblématique du jeune sorcier Harry Potter",
+            "first_published": 1997,
+            "status": "completed"
+        },
+        "seigneur_des_anneaux": {
+            "name": "Le Seigneur des Anneaux",
+            "category": "roman",
+            "score": 18000,
+            "keywords": ["anneau", "terre du milieu", "hobbit", "frodo", "gandalf"],
+            "authors": ["J.R.R. Tolkien"],
+            "variations": ["Seigneur des Anneaux", "Lord of the Rings"],
+            "volumes": 3,
+            "languages": ["fr", "en"],
+            "description": "L'épopée fantasy légendaire de Tolkien",
+            "first_published": 1954,
+            "status": "completed"
+        },
+        "game_of_thrones": {
+            "name": "Game of Thrones",
+            "category": "roman",
+            "score": 16000,
+            "keywords": ["trône de fer", "westeros", "stark", "lannister"],
+            "authors": ["George R.R. Martin"],
+            "variations": ["Game of Thrones", "Trône de Fer"],
+            "volumes": 5,
+            "languages": ["fr", "en"],
+            "description": "La saga politique et fantastique de Westeros",
+            "first_published": 1996,
+            "status": "ongoing"
+        },
+        # MANGAS
+        "one_piece": {
+            "name": "One Piece",
+            "category": "manga",
+            "score": 18000,
+            "keywords": ["luffy", "pirates", "chapeau de paille", "grand line"],
+            "authors": ["Eiichiro Oda"],
+            "variations": ["One Piece"],
+            "volumes": 108,
+            "languages": ["fr", "en", "jp"],
+            "description": "L'aventure du pirate Luffy à la recherche du One Piece",
+            "first_published": 1997,
+            "status": "ongoing"
+        },
+        "naruto": {
+            "name": "Naruto",
+            "category": "manga",
+            "score": 17000,
+            "keywords": ["naruto", "ninja", "konoha", "sasuke", "hokage"],
+            "authors": ["Masashi Kishimoto"],
+            "variations": ["Naruto", "Boruto"],
+            "volumes": 72,
+            "languages": ["fr", "en", "jp"],
+            "description": "L'histoire du ninja Naruto Uzumaki",
+            "first_published": 1999,
+            "status": "completed"
+        },
+        "dragon_ball": {
+            "name": "Dragon Ball",
+            "category": "manga",
+            "score": 17000,
+            "keywords": ["goku", "saiyan", "kamehameha", "vegeta"],
+            "authors": ["Akira Toriyama"],
+            "variations": ["Dragon Ball", "Dragon Ball Z", "Dragon Ball Super"],
+            "volumes": 42,
+            "languages": ["fr", "en", "jp"],
+            "description": "Les aventures de Son Goku et des Dragon Balls",
+            "first_published": 1984,
+            "status": "completed"
+        },
+        # BANDES DESSINÉES
+        "asterix": {
+            "name": "Astérix",
+            "category": "bd",
+            "score": 18000,
+            "keywords": ["astérix", "obélix", "gaulois", "potion magique"],
+            "authors": ["René Goscinny", "Albert Uderzo"],
+            "variations": ["Astérix", "Asterix"],
+            "volumes": 39,
+            "languages": ["fr", "en"],
+            "description": "Les aventures du petit gaulois Astérix",
+            "first_published": 1959,
+            "status": "ongoing"
+        },
+        "tintin": {
+            "name": "Tintin",
+            "category": "bd",
+            "score": 18000,
+            "keywords": ["tintin", "milou", "capitaine haddock", "tournesol"],
+            "authors": ["Hergé"],
+            "variations": ["Tintin", "Aventures de Tintin"],
+            "volumes": 24,
+            "languages": ["fr", "en"],
+            "description": "Les aventures du jeune reporter Tintin",
+            "first_published": 1929,
+            "status": "completed"
+        }
+    }
+    
+    # Filtrer par catégorie si spécifiée
+    filtered_series = {}
+    for key, series in series_data.items():
+        if category and series["category"] != category:
+            continue
+        if language and language not in series["languages"]:
+            continue
+        filtered_series[key] = series
+    
+    # Trier par score et limiter
+    sorted_series = sorted(
+        filtered_series.items(), 
+        key=lambda x: x[1]["score"], 
+        reverse=True
+    )[:limit]
+    
+    return {
+        "series": [series[1] for series in sorted_series],
+        "total": len(sorted_series),
+        "category": category,
+        "language": language
+    }
+
+@app.get("/api/series/detect")
+async def detect_series_from_book(
+    title: str,
+    author: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Détecter automatiquement à quelle série appartient un livre
+    """
+    # Récupérer les séries populaires
+    series_response = await get_popular_series(limit=100, current_user=current_user)
+    series_list = series_response["series"]
+    
+    detected_series = []
+    title_lower = title.lower()
+    author_lower = author.lower() if author else ""
+    
+    for series in series_list:
+        confidence = 0
+        match_reasons = []
+        
+        # Vérification auteur
+        if author and any(a.lower() in author_lower for a in series["authors"]):
+            confidence += 80
+            match_reasons.append("author_match")
+        
+        # Vérification variations dans le titre
+        for variation in series["variations"]:
+            if variation.lower() in title_lower:
+                confidence += 60
+                match_reasons.append("title_variation")
+                break
+        
+        # Vérification mots-clés
+        keyword_matches = 0
+        for keyword in series["keywords"]:
+            if keyword in title_lower:
+                keyword_matches += 1
+        
+        if keyword_matches > 0:
+            confidence += keyword_matches * 20
+            match_reasons.append(f"keywords_match_{keyword_matches}")
+        
+        # Seuil de confiance
+        if confidence >= 60:
+            detected_series.append({
+                "series": series,
+                "confidence": confidence,
+                "match_reasons": match_reasons
+            })
+    
+    # Trier par confiance
+    detected_series.sort(key=lambda x: x["confidence"], reverse=True)
+    
+    return {
+        "detected_series": detected_series[:5],  # Top 5
+        "book_info": {
+            "title": title,
+            "author": author
+        }
+    }
+
+@app.post("/api/series/complete")
+async def auto_complete_series(
+    series_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Auto-compléter une série en ajoutant tous les volumes manquants
+    """
+    series_name = series_data.get("series_name")
+    target_volumes = series_data.get("target_volumes", 10)
+    template_book_id = series_data.get("template_book_id")
+    
+    if not series_name:
+        raise HTTPException(status_code=400, detail="Nom de série requis")
+    
+    # Récupérer le livre modèle
+    template_book = None
+    if template_book_id:
+        template_book = books_collection.find_one({
+            "id": template_book_id,
+            "user_id": current_user["id"]
+        })
+    
+    # Sinon, chercher un livre de cette série
+    if not template_book:
+        template_book = books_collection.find_one({
+            "user_id": current_user["id"],
+            "saga": {"$regex": re.escape(series_name), "$options": "i"}
+        })
+    
+    if not template_book:
+        raise HTTPException(status_code=404, detail="Aucun livre de cette série trouvé")
+    
+    # Récupérer les volumes existants
+    existing_books = list(books_collection.find({
+        "user_id": current_user["id"],
+        "saga": {"$regex": re.escape(series_name), "$options": "i"}
+    }))
+    
+    existing_volumes = set()
+    for book in existing_books:
+        vol_num = book.get("volume_number", 0)
+        if vol_num > 0:
+            existing_volumes.add(vol_num)
+    
+    # Créer les volumes manquants
+    created_books = []
+    for vol_num in range(1, target_volumes + 1):
+        if vol_num not in existing_volumes:
+            book_id = str(uuid.uuid4())
+            new_book = {
+                "id": book_id,
+                "user_id": current_user["id"],
+                "title": f"{series_name} - Tome {vol_num}",
+                "author": template_book.get("author", ""),
+                "category": template_book.get("category", "roman"),
+                "saga": series_name,
+                "volume_number": vol_num,
+                "status": "to_read",
+                "auto_added": True,
+                "date_added": datetime.utcnow(),
+                "description": f"Tome {vol_num} de la série {series_name}",
+                "total_pages": None,
+                "current_page": None,
+                "rating": None,
+                "review": "",
+                "cover_url": "",
+                "genre": template_book.get("genre", ""),
+                "publication_year": None,
+                "publisher": template_book.get("publisher", ""),
+                "isbn": "",
+                "date_started": None,
+                "date_completed": None
+            }
+            
+            books_collection.insert_one(new_book)
+            new_book.pop("_id", None)
+            created_books.append(new_book)
+    
+    return {
+        "message": f"{len(created_books)} tome(s) ajouté(s) à la série {series_name}",
+        "created_books": created_books,
+        "series_name": series_name,
+        "total_volumes": target_volumes,
+        "existing_volumes": len(existing_volumes),
+        "created_volumes": len(created_books)
+    }
 @app.get("/api/stats")
 async def get_stats(current_user: dict = Depends(get_current_user)):
     user_filter = {"user_id": current_user["id"]}
