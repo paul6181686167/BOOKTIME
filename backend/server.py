@@ -837,6 +837,61 @@ async def analyze_missing_volumes(
         }
     }
 
+@app.post("/api/sagas/{saga_name}/toggle-tome-status")
+async def toggle_tome_status(
+    saga_name: str,
+    tome_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Toggle simple Lu/Non Lu pour un tome spécifique
+    Format: {"volume_number": 1, "is_read": true}
+    """
+    volume_number = tome_data.get("volume_number")
+    is_read = tome_data.get("is_read", False)
+    
+    if volume_number is None:
+        raise HTTPException(status_code=400, detail="Numéro de tome requis")
+    
+    # Trouver le livre
+    book = books_collection.find_one({
+        "user_id": current_user["id"],
+        "saga": saga_name,
+        "volume_number": volume_number
+    })
+    
+    if not book:
+        raise HTTPException(status_code=404, detail="Tome non trouvé")
+    
+    # Déterminer le nouveau statut
+    new_status = "completed" if is_read else "to_read"
+    update_data = {"status": new_status, "updated_at": datetime.utcnow()}
+    
+    # Gérer les dates
+    if new_status == "completed":
+        if not book.get("date_started"):
+            update_data["date_started"] = datetime.utcnow()
+        update_data["date_completed"] = datetime.utcnow()
+    elif new_status == "to_read":
+        update_data["date_started"] = None
+        update_data["date_completed"] = None
+    
+    books_collection.update_one(
+        {"id": book["id"], "user_id": current_user["id"]},
+        {"$set": update_data}
+    )
+    
+    # Récupérer le livre mis à jour
+    updated_book = books_collection.find_one({
+        "id": book["id"],
+        "user_id": current_user["id"]
+    }, {"_id": 0})
+    
+    return {
+        "message": f"Tome {volume_number} de {saga_name} marqué comme {'lu' if is_read else 'non lu'}",
+        "book": updated_book
+    }
+
 # Utilitaires pour Open Library
 def detect_category_from_subjects(subjects):
     """Détecter la catégorie d'un livre basé sur ses sujets"""
