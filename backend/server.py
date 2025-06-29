@@ -225,7 +225,7 @@ async def search_books_grouped(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Recherche de livres avec regroupement intelligent par saga
+    Recherche de livres avec regroupement intelligent par saga - SÉRIE FIRST
     """
     if not q or len(q.strip()) < 2:
         return {"results": [], "total_books": 0, "total_sagas": 0, "search_term": q}
@@ -257,18 +257,18 @@ async def search_books_grouped(
     if not matching_books:
         return {"results": [], "total_books": 0, "total_sagas": 0, "search_term": q}
     
-    # Grouper par saga et identifier les livres individuels
+    # NOUVELLE LOGIQUE: Grouper TOUS les livres par saga d'abord
     saga_groups = {}
-    individual_books = []
+    books_without_saga = []
     
     for book in matching_books:
         saga = book.get("saga", "").strip()
         
-        # Si le livre a une saga et que la recherche correspond à la saga
-        if saga and saga.lower().find(search_term) != -1:
+        if saga:  # Si le livre appartient à une saga
             if saga not in saga_groups:
                 saga_groups[saga] = {
                     "type": "saga",
+                    "id": f"saga_{saga.lower().replace(' ', '_')}",
                     "name": saga,
                     "books": [],
                     "total_books": 0,
@@ -279,7 +279,8 @@ async def search_books_grouped(
                     "category": book.get("category", "roman"),
                     "cover_url": book.get("cover_url", ""),
                     "latest_volume": 0,
-                    "match_reason": "saga_name"
+                    "status": "to_read",  # Statut global de la série
+                    "match_reason": "saga_match" if saga.lower().find(search_term) != -1 else "title_match"
                 }
             
             saga_groups[saga]["books"].append(book)
@@ -298,46 +299,61 @@ async def search_books_grouped(
             volume = book.get("volume_number", 0)
             if volume > saga_groups[saga]["latest_volume"]:
                 saga_groups[saga]["latest_volume"] = volume
-        
-        # Si pas de saga ou recherche ne correspond pas directement à la saga
+                
+            # Mise à jour de la couverture avec le dernier tome
+            if volume > 0 and book.get("cover_url"):
+                saga_groups[saga]["cover_url"] = book.get("cover_url")
         else:
-            # Vérifier si c'est un livre individuel pertinent
-            title_match = book.get("title", "").lower().find(search_term) != -1
-            author_match = book.get("author", "").lower().find(search_term) != -1
-            
-            if title_match or author_match:
-                individual_books.append({
-                    "type": "book",
-                    **book,
-                    "match_reason": "title" if title_match else "author"
-                })
+            # Livre sans saga
+            books_without_saga.append({
+                "type": "book",
+                **book,
+                "match_reason": "individual_book"
+            })
     
-    # Préparer les résultats finaux
-    results = []
-    
-    # Ajouter les sagas (triées par nombre de livres)
-    for saga_data in sorted(saga_groups.values(), key=lambda x: x["total_books"], reverse=True):
-        # Calculer le pourcentage de completion
+    # Calculer le statut global des sagas
+    for saga_name, saga_data in saga_groups.items():
+        # Pourcentage de completion
         completion_percentage = 0
         if saga_data["total_books"] > 0:
             completion_percentage = round((saga_data["completed_books"] / saga_data["total_books"]) * 100)
-        
         saga_data["completion_percentage"] = completion_percentage
-        results.append(saga_data)
+        
+        # Statut global de la série
+        if saga_data["reading_books"] > 0:
+            saga_data["status"] = "reading"
+        elif saga_data["completed_books"] == saga_data["total_books"]:
+            saga_data["status"] = "completed"
+        else:
+            saga_data["status"] = "to_read"
+        
+        # Trier les livres par numéro de tome
+        saga_data["books"].sort(key=lambda x: x.get("volume_number", 0))
     
-    # Ajouter les livres individuels (ceux qui ne sont pas dans des sagas correspondantes)
-    for book in individual_books:
-        # Éviter les doublons si le livre fait partie d'une saga déjà listée
-        book_saga = book.get("saga", "").strip()
-        if not book_saga or book_saga not in saga_groups:
-            results.append(book)
+    # Préparer les résultats finaux - SÉRIE FIRST
+    results = []
+    
+    # 1. D'abord toutes les sagas trouvées (triées par pertinence puis par nombre de livres)
+    sorted_sagas = sorted(saga_groups.values(), key=lambda x: (
+        -1 if x["match_reason"] == "saga_match" else 0,  # Priorité aux matchs sur le nom de saga
+        -x["total_books"],  # Puis par nombre de livres
+        x["name"].lower()  # Puis par ordre alphabétique
+    ))
+    
+    results.extend(sorted_sagas)
+    
+    # 2. Ensuite les livres individuels SEULEMENT s'ils ne font pas partie d'une saga
+    # Et seulement si moins de 3 sagas trouvées (pour éviter l'encombrement)
+    if len(saga_groups) < 3:
+        results.extend(books_without_saga)
     
     return {
         "results": results,
         "total_books": len(matching_books),
         "total_sagas": len(saga_groups),
         "search_term": q,
-        "grouped_by_saga": True
+        "grouped_by_saga": True,
+        "series_first": True
     }
 
 @app.get("/api/books/{book_id}")
