@@ -866,12 +866,73 @@ async def get_sagas(current_user: dict = Depends(get_current_user)):
 
 @app.get("/api/sagas/{saga_name}/books")
 async def get_saga_books(saga_name: str, current_user: dict = Depends(get_current_user)):
+    """
+    Récupérer les livres d'une série spécifique avec filtrage strict.
+    Ne retourne QUE les livres appartenant exactement à cette série.
+    """
+    # Filtrage strict par série ET auteur spécifique
     books = list(books_collection.find({
         "user_id": current_user["id"],
         "saga": saga_name
     }, {"_id": 0}).sort("volume_number", 1))
     
-    return books
+    if not books:
+        return books
+    
+    # Obtenir l'auteur principal de la série (du premier livre trouvé)
+    main_author = books[0].get("author", "").lower().strip()
+    
+    # Filtrer strictement par série ET auteur principal pour exclure :
+    # - Les spin-offs par d'autres auteurs
+    # - Les suites non-officielles  
+    # - Les adaptations par d'autres créateurs
+    # - Les continuations posthumes non autorisées
+    filtered_books = []
+    for book in books:
+        book_author = book.get("author", "").lower().strip()
+        book_title = book.get("title", "").lower()
+        
+        # Vérifications pour inclusion stricte
+        include_book = True
+        
+        # 1. Vérifier que l'auteur correspond (avec tolérance pour co-auteurs)
+        if main_author and book_author:
+            # Accepter si l'auteur principal est mentionné dans l'auteur du livre
+            # ou si le livre est du même auteur principal
+            author_match = (
+                main_author in book_author or 
+                book_author in main_author or
+                any(word in book_author for word in main_author.split() if len(word) > 2)
+            )
+            if not author_match:
+                include_book = False
+        
+        # 2. Vérifier que le titre contient bien le nom de la série
+        if saga_name.lower() not in book_title and not any(
+            variant.lower() in book_title for variant in [
+                saga_name.replace(" ", ""),  # Sans espaces
+                saga_name.replace("-", " "),  # Tirets remplacés par espaces
+            ]
+        ):
+            # Tolérance pour les titres de tomes qui peuvent être différents
+            # mais seulement si c'est le même auteur principal
+            if not author_match:
+                include_book = False
+        
+        # 3. Exclure explicitement certains mots-clés suspects
+        suspicious_keywords = [
+            "spin-off", "spinoff", "hors-série", "guide", "artbook", 
+            "companion", "compagnon", "making of", "adaptation", 
+            "suite", "continuation", "legacy", "next generation",
+            "prequel", "sequel", "side story"
+        ]
+        if any(keyword in book_title for keyword in suspicious_keywords):
+            include_book = False
+        
+        if include_book:
+            filtered_books.append(book)
+    
+    return filtered_books
 
 @app.post("/api/sagas/{saga_name}/auto-add")
 async def auto_add_next_volume(saga_name: str, current_user: dict = Depends(get_current_user)):
