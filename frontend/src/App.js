@@ -432,6 +432,7 @@ function AppContent() {
 
   // États pour la recherche Open Library
   const [openLibraryResults, setOpenLibraryResults] = useState([]);
+  const [detectedSeries, setDetectedSeries] = useState([]);
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [lastSearchTerm, setLastSearchTerm] = useState('');
