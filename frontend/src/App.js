@@ -494,7 +494,7 @@ function AppContent() {
     }
   };
 
-  // Fonction pour rechercher des séries populaires
+  // Fonction pour rechercher et créer des cartes séries
   const searchSeries = async (query) => {
     if (!query.trim()) return [];
     
@@ -519,29 +519,23 @@ function AppContent() {
     return [];
   };
 
-  // Fonction pour rechercher des séries populaires
-  const searchSeries = async (query) => {
-    if (!query.trim()) return [];
-    
-    try {
-      const token = localStorage.getItem('token');
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
-      
-      const response = await fetch(`${backendUrl}/api/series/detect?title=${encodeURIComponent(query)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        return data.detected_series || [];
-      }
-    } catch (error) {
-      console.error('Erreur recherche série:', error);
-    }
-    return [];
+  // Fonction pour créer les cartes séries à partir des résultats détectés
+  const createSeriesCards = (detectedSeries) => {
+    return detectedSeries.map(detected => ({
+      id: `series_${detected.series.name.toLowerCase().replace(/\s+/g, '_')}`,
+      name: detected.series.name,
+      author: detected.series.authors?.join(', ') || 'Auteur inconnu',
+      category: detected.series.category,
+      description: detected.series.description,
+      volumes: detected.series.volumes,
+      first_published: detected.series.first_published,
+      status: detected.series.status,
+      confidence: detected.confidence,
+      match_reasons: detected.match_reasons,
+      isSeriesCard: true,
+      relevanceScore: 50000 + detected.confidence, // Score très élevé pour prioriser les séries
+      relevanceInfo: { level: 'excellent', label: 'Série détectée', color: 'bg-purple-600', icon: '📚' }
+    }));
   };
 
   // Fonction pour rechercher dans Open Library
