@@ -465,7 +465,6 @@ function MainApp() {
   // Mettre à jour le service bookService pour supporter le nouveau paramètre
   const updateBookService = () => {
     // Modifier temporairement la fonction getBooks pour inclure viewMode
-    const originalGetBooks = bookService.getBooks;
     bookService.getBooks = async (category = null, status = null, viewMode = 'books') => {
       try {
         const params = {};
