@@ -1404,8 +1404,16 @@ function MainApp() {
   // RECHERCHE GLOBALE : Combiner et trier les livres de TOUTES les catégories avec PRIORITÉ SÉRIES
   const displayedBooks = isSearchMode 
     ? [
-        // Combiner TOUS les livres (recherche globale)
-        ...filteredBooks, // Tous les livres locaux sans filtre de catégorie
+        // Combiner TOUS les livres (recherche globale - toutes catégories)
+        ...books.filter(book => {
+          if (!lastSearchTerm) return false;
+          const term = lastSearchTerm.toLowerCase();
+          return (
+            (book.title || '').toLowerCase().includes(term) ||
+            (book.author || '').toLowerCase().includes(term) ||
+            (book.saga || '').toLowerCase().includes(term)
+          );
+        }).map(book => ({ ...book, isFromOpenLibrary: false, isOwned: true })),
         ...openLibraryResults // Tous les livres Open Library (contient déjà les cartes séries)
       ].map(book => ({
         ...book,
@@ -1461,7 +1469,10 @@ function MainApp() {
       })
       // Filtrer les résultats avec un score minimum pour éviter le bruit
       .filter(book => !lastSearchTerm || book.relevanceScore >= 10)
-    : filteredBooks.filter(book => book.category === activeTab);
+    : (viewMode === 'series' ? 
+        filteredBooks.filter(book => book.isSeriesCard) : 
+        filteredBooks.filter(book => book.category === activeTab && !book.isSeriesCard)
+      );
 
   // Header Component
   const Header = () => (
