@@ -4,14 +4,18 @@ import {
   ChevronRightIcon, 
   ChevronDownIcon,
   UserIcon,
-  BookmarkIcon
+  BookmarkIcon,
+  PlusIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
+import SeriesDetailModal from './SeriesDetailModal';
 
 const GroupedSearchResults = ({ 
   results = [], 
   searchStats = {}, 
   onBookClick, 
-  onSagaExpand 
+  onSagaExpand,
+  onAddFromOpenLibrary 
 }) => {
   const [expandedSagas, setExpandedSagas] = useState(new Set());
 
