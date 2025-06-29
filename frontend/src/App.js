@@ -705,7 +705,7 @@ function AppContent() {
     if (!searchTerm || !searchTerm.trim()) return 0;
     
     const term = searchTerm.toLowerCase().trim();
-    const termWords = term.split(/\s+/).filter(word => word.length > 2); // Mots de plus de 2 caractères
+    const termWords = term.split(/\s+/).filter(word => word.length > 1); // Mots de plus de 1 caractère
     
     // Normalisation des champs de recherche
     const title = (book.title || '').toLowerCase();
@@ -718,83 +718,151 @@ function AppContent() {
     
     let score = 0;
     
-    // === CORRESPONDANCES EXACTES (Score très élevé) ===
+    // === CORRESPONDANCES EXACTES MULTI-MOTS (Score maximal) ===
     
-    // Correspondance exacte du titre complet
-    if (title === term) score += 1000;
+    // Correspondance exacte de la séquence complète dans le titre
+    if (title.includes(term)) {
+      // Bonus énorme si c'est exactement le titre
+      if (title === term) {
+        score += 10000;
+      }
+      // Gros bonus si la séquence commence le titre
+      else if (title.startsWith(term)) {
+        score += 5000;
+      }
+      // Bonus important si c'est une séquence complète dans le titre
+      else if (title.includes(` ${term} `) || title.includes(`${term} `) || title.includes(` ${term}`)) {
+        score += 3000;
+      }
+      // Bonus si la séquence est dans le titre n'importe où
+      else {
+        score += 2000;
+      }
+    }
     
-    // Correspondance exacte de l'auteur complet
-    if (author === term) score += 900;
+    // Correspondance exacte de la séquence dans l'auteur
+    if (author.includes(term)) {
+      if (author === term) {
+        score += 8000;
+      } else if (author.startsWith(term)) {
+        score += 4000;
+      } else {
+        score += 1500;
+      }
+    }
     
-    // Correspondance exacte de la saga
-    if (saga && saga === term) score += 800;
+    // Correspondance exacte de la séquence dans la saga
+    if (saga && saga.includes(term)) {
+      if (saga === term) {
+        score += 7000;
+      } else if (saga.startsWith(term)) {
+        score += 3500;
+      } else {
+        score += 1200;
+      }
+    }
     
-    // === CORRESPONDANCES PARTIELLES DU TITRE (Score élevé) ===
-    
-    // Titre commence par le terme
-    if (title.startsWith(term)) score += 700;
-    
-    // Titre contient le terme comme mot entier
-    if (title.includes(` ${term} `) || title.includes(`${term} `) || title.includes(` ${term}`)) score += 600;
-    
-    // Titre contient le terme avec délimiteurs
-    if (title.includes(`-${term}-`) || title.includes(`(${term})`) || title.includes(`[${term}]`)) score += 550;
-    
-    // Titre contient le terme n'importe où
-    if (title.includes(term)) score += 400;
-    
-    // === CORRESPONDANCES PARTIELLES DE L'AUTEUR (Score élevé) ===
-    
-    // Auteur commence par le terme
-    if (author.startsWith(term)) score += 650;
-    
-    // Auteur contient le terme comme mot entier
-    if (author.includes(` ${term} `) || author.includes(`${term} `) || author.includes(` ${term}`)) score += 500;
-    
-    // Auteur contient le terme n'importe où
-    if (author.includes(term)) score += 300;
-    
-    // === CORRESPONDANCES PAR MOTS MULTIPLES ===
+    // === CORRESPONDANCES PAR MOTS MULTIPLES AVEC PROXIMITÉ ===
     
     if (termWords.length > 1) {
-      let multiWordScore = 0;
-      let matchedWords = 0;
+      let titleMatchScore = 0;
+      let authorMatchScore = 0;
+      let sagaMatchScore = 0;
+      let titleWordsMatched = 0;
+      let authorWordsMatched = 0;
+      let sagaWordsMatched = 0;
       
       termWords.forEach(word => {
-        // Correspondances dans le titre
+        // Correspondances dans le titre avec scoring progressif
         if (title.includes(word)) {
-          multiWordScore += 50;
-          matchedWords++;
+          if (title.startsWith(word)) {
+            titleMatchScore += 200; // Mot au début du titre
+          } else if (title.includes(` ${word} `) || title.includes(`${word} `) || title.includes(` ${word}`)) {
+            titleMatchScore += 150; // Mot entier dans le titre
+          } else {
+            titleMatchScore += 100; // Mot partiel dans le titre
+          }
+          titleWordsMatched++;
         }
         
         // Correspondances dans l'auteur
         if (author.includes(word)) {
-          multiWordScore += 40;
-          matchedWords++;
+          if (author.startsWith(word)) {
+            authorMatchScore += 150;
+          } else if (author.includes(` ${word} `) || author.includes(`${word} `) || author.includes(` ${word}`)) {
+            authorMatchScore += 120;
+          } else {
+            authorMatchScore += 80;
+          }
+          authorWordsMatched++;
         }
         
         // Correspondances dans la saga
         if (saga && saga.includes(word)) {
-          multiWordScore += 30;
-          matchedWords++;
+          if (saga.startsWith(word)) {
+            sagaMatchScore += 100;
+          } else {
+            sagaMatchScore += 60;
+          }
+          sagaWordsMatched++;
         }
       });
       
-      // Bonus si plusieurs mots correspondent
-      if (matchedWords > 1) {
-        multiWordScore *= (1 + (matchedWords - 1) * 0.5); // Bonus exponentiel
+      // Bonus exponentiel si tous les mots ou la plupart sont trouvés
+      const titleCompleteness = titleWordsMatched / termWords.length;
+      const authorCompleteness = authorWordsMatched / termWords.length;
+      const sagaCompleteness = sagaWordsMatched / termWords.length;
+      
+      // Bonus énorme si tous les mots sont dans le titre
+      if (titleCompleteness === 1) {
+        titleMatchScore *= 5; // Multiplier par 5 si tous les mots sont trouvés
+      } else if (titleCompleteness >= 0.8) {
+        titleMatchScore *= 3; // Multiplier par 3 si 80%+ des mots sont trouvés
+      } else if (titleCompleteness >= 0.6) {
+        titleMatchScore *= 2; // Multiplier par 2 si 60%+ des mots sont trouvés
       }
       
-      score += multiWordScore;
+      // Bonus pour auteur et saga
+      if (authorCompleteness === 1) {
+        authorMatchScore *= 4;
+      } else if (authorCompleteness >= 0.8) {
+        authorMatchScore *= 2.5;
+      }
+      
+      if (sagaCompleteness === 1) {
+        sagaMatchScore *= 3;
+      } else if (sagaCompleteness >= 0.8) {
+        sagaMatchScore *= 2;
+      }
+      
+      score += titleMatchScore + authorMatchScore + sagaMatchScore;
+    }
+    
+    // === CORRESPONDANCES INDIVIDUELLES (Score plus bas) ===
+    
+    // Si ce n'est pas une recherche multi-mots, utiliser l'ancien système
+    if (termWords.length === 1) {
+      const singleWord = termWords[0];
+      
+      // Titre
+      if (title === singleWord) score += 1000;
+      else if (title.startsWith(singleWord)) score += 700;
+      else if (title.includes(` ${singleWord} `) || title.includes(`${singleWord} `) || title.includes(` ${singleWord}`)) score += 600;
+      else if (title.includes(singleWord)) score += 400;
+      
+      // Auteur
+      if (author === singleWord) score += 900;
+      else if (author.startsWith(singleWord)) score += 650;
+      else if (author.includes(` ${singleWord} `) || author.includes(`${singleWord} `) || author.includes(` ${singleWord}`)) score += 500;
+      else if (author.includes(singleWord)) score += 300;
+      
+      // Saga
+      if (saga && saga === singleWord) score += 800;
+      else if (saga && saga.startsWith(singleWord)) score += 350;
+      else if (saga && saga.includes(singleWord)) score += 200;
     }
     
     // === CORRESPONDANCES DANS D'AUTRES CHAMPS ===
-    
-    // Correspondances dans la saga
-    if (saga && saga.includes(term)) {
-      if (saga.startsWith(term)) score += 350;
-      else score += 200;
-    }
     
     // Correspondances dans la description
     if (description.includes(term)) score += 100;
@@ -812,12 +880,12 @@ function AppContent() {
     
     // Bonus important pour les livres de la bibliothèque locale
     if (!book.isFromOpenLibrary) {
-      score += 100; // Priorité aux livres possédés
+      score += 500; // Priorité renforcée aux livres possédés
     }
     
     // Bonus pour les livres déjà possédés d'Open Library
     if (book.isFromOpenLibrary && book.isOwned) {
-      score += 80;
+      score += 200;
     }
     
     // Bonus pour la qualité des métadonnées
@@ -839,23 +907,11 @@ function AppContent() {
     if (!book.author || book.author.trim() === '') score -= 50;
     if (!book.title || book.title.trim() === '') score -= 100;
     
-    // Malus pour les livres très anciens avec peu de pertinence
-    if (book.first_publish_year && book.first_publish_year < 1900 && score < 100) score -= 30;
-    
-    // Malus pour les livres sans couverture (moins attrayants visuellement)
-    if (book.isFromOpenLibrary && !book.cover_url) score -= 10;
-    
-    // === BONUS SPÉCIAUX SELON LE CONTEXTE ===
-    
-    // Bonus pour les correspondances de langue cohérente
-    if (term.match(/[àáâäéèêëïîôöùûüç]/)) { // Caractères français détectés
-      if (description.includes('français') || description.includes('france')) score += 20;
-    }
-    
     // Bonus pour les séries populaires
-    const popularSeries = ['harry potter', 'one piece', 'naruto', 'astérix', 'tintin', 'dragon ball'];
-    if (popularSeries.some(series => title.includes(series) || saga.includes(series))) {
-      score += 25;
+    const popularSeries = ['harry potter', 'one piece', 'naruto', 'astérix', 'tintin', 'dragon ball', 'le seigneur des anneaux'];
+    const titleAndSaga = `${title} ${saga}`.toLowerCase();
+    if (popularSeries.some(series => titleAndSaga.includes(series) || term.includes(series))) {
+      score += 100;
     }
     
     // Score final avec minimum à 0
