@@ -798,8 +798,8 @@ function MainApp() {
 
   // Gestionnaire de clic sur série pour afficher la fiche dédiée
   const handleSeriesClick = (series) => {
-    setSelectedSeries(series);
-    setShowSeriesDetail(true);
+    // Naviguer vers la page dédiée de la série
+    navigate(`/series/${encodeURIComponent(series.name)}`);
   };
 
   // Gestionnaire de clic conditionnel (livre ou série)
