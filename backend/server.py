@@ -1727,6 +1727,355 @@ async def get_import_suggestions(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la génération des suggestions: {str(e)}")
 
+# === FONCTIONNALITÉ DE DÉCOUVERTE COMPLÈTE DE SÉRIE ===
+
+@app.get("/api/series/discover")
+async def discover_complete_series(
+    series_name: str,
+    author: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Découverte complète d'une série - Identifier tous les tomes et œuvres connexes
+    """
+    try:
+        # Normaliser le nom de série pour la recherche
+        normalized_series = series_name.strip().lower()
+        
+        # Mapping des séries populaires avec leurs variantes
+        series_variants = {
+            "harry potter": [
+                "harry potter", "harry potter and", "harry potter et",
+                "école des sorciers", "chamber of secrets", "chambre des secrets",
+                "prisoner of azkaban", "prisonnier d'azkaban", "goblet of fire", "coupe de feu",
+                "order of the phoenix", "ordre du phénix", "half-blood prince", "prince de sang-mêlé",
+                "deathly hallows", "reliques de la mort", "cursed child", "l'enfant maudit",
+                "fantastic beasts", "animaux fantastiques", "quidditch through the ages",
+                "le quidditch à travers les âges", "tales of beedle the bard", "contes de beedle le barde"
+            ],
+            "seigneur des anneaux": [
+                "lord of the rings", "seigneur des anneaux", "fellowship of the ring",
+                "communauté de l'anneau", "two towers", "deux tours", "return of the king",
+                "retour du roi", "hobbit", "silmarillion"
+            ],
+            "one piece": [
+                "one piece", "wan pīsu"
+            ],
+            "naruto": [
+                "naruto", "boruto"
+            ],
+            "astérix": [
+                "astérix", "asterix", "obelix"
+            ]
+        }
+        
+        # Détecter les variantes de recherche pour la série
+        search_terms = []
+        for series_key, variants in series_variants.items():
+            if any(variant in normalized_series for variant in variants[:3]):  # Check first 3 main variants
+                search_terms = variants
+                break
+        
+        if not search_terms:
+            search_terms = [series_name]
+        
+        # Récupérer les livres existants de l'utilisateur pour cette série
+        user_filter = {"user_id": current_user["id"]}
+        existing_books = list(books_collection.find({
+            **user_filter,
+            "$or": [
+                {"saga": {"$regex": re.escape(series_name), "$options": "i"}},
+                {"title": {"$regex": re.escape(series_name), "$options": "i"}},
+                {"author": {"$regex": re.escape(author), "$options": "i"}} if author else {}
+            ]
+        }, {"_id": 0}))
+        
+        # Recherche complète sur Open Library
+        all_discovered_books = []
+        unique_books = set()  # Pour éviter les doublons
+        
+        # 1. Recherche par termes de série
+        for search_term in search_terms[:5]:  # Limiter à 5 termes pour éviter trop de requêtes
+            try:
+                # Recherche principale
+                params = {
+                    "q": search_term,
+                    "limit": 50,
+                    "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,number_of_pages_median,publisher,language,edition_count"
+                }
+                
+                if author:
+                    params["q"] += f" AND author:{author}"
+                
+                response = requests.get("https://openlibrary.org/search.json", params=params, timeout=15)
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    for doc in data.get("docs", []):
+                        title = doc.get("title", "").lower()
+                        book_key = doc.get("key", "")
+                        
+                        # Éviter les doublons
+                        if book_key in unique_books:
+                            continue
+                        unique_books.add(book_key)
+                        
+                        # Filtrage intelligent pour la série
+                        is_relevant = False
+                        relevance_score = 0
+                        book_type = "unknown"
+                        
+                        # Détecter le type de livre
+                        if any(term in title for term in ["tome", "volume", "book", "part", "partie"]):
+                            book_type = "main_series"
+                            relevance_score += 10
+                        elif any(term in title for term in ["guide", "companion", "encyclopedia", "encyclopédie"]):
+                            book_type = "companion"
+                            relevance_score += 5
+                        elif any(term in title for term in ["spin-off", "prequel", "sequel", "side story"]):
+                            book_type = "spin_off"
+                            relevance_score += 7
+                        else:
+                            book_type = "related"
+                            relevance_score += 3
+                        
+                        # Calcul de pertinence
+                        for variant in search_terms[:3]:  # Check main variants
+                            if variant.lower() in title:
+                                is_relevant = True
+                                if title.startswith(variant.lower()):
+                                    relevance_score += 20
+                                else:
+                                    relevance_score += 10
+                                break
+                        
+                        # Vérification de l'auteur
+                        authors = doc.get("author_name", [])
+                        author_match = False
+                        if author and authors:
+                            for auth in authors:
+                                if author.lower() in auth.lower():
+                                    author_match = True
+                                    relevance_score += 15
+                                    break
+                        
+                        if is_relevant or author_match:
+                            # Extraire le numéro de tome si possible
+                            volume_number = None
+                            volume_patterns = [
+                                r'tome\s*(\d+)', r'volume\s*(\d+)', r'book\s*(\d+)',
+                                r'part\s*(\d+)', r'partie\s*(\d+)', r'#(\d+)',
+                                r'\b(\d+)\b'  # Numéro isolé
+                            ]
+                            
+                            for pattern in volume_patterns:
+                                match = re.search(pattern, title, re.IGNORECASE)
+                                if match:
+                                    volume_number = int(match.group(1))
+                                    break
+                            
+                            # Vérifier si déjà possédé
+                            is_owned = any(
+                                existing_book.get("title", "").lower() == doc.get("title", "").lower() or
+                                existing_book.get("isbn", "") == (doc.get("isbn", [""])[0] if doc.get("isbn") else "")
+                                for existing_book in existing_books
+                            )
+                            
+                            discovered_book = {
+                                "ol_key": book_key,
+                                "title": doc.get("title", ""),
+                                "author": ", ".join(authors) if authors else "",
+                                "first_publish_year": doc.get("first_publish_year"),
+                                "isbn": doc.get("isbn", [""])[0] if doc.get("isbn") else "",
+                                "cover_url": extract_cover_url(doc.get("cover_i")),
+                                "number_of_pages": doc.get("number_of_pages_median"),
+                                "publisher": ", ".join(doc.get("publisher", [])) if doc.get("publisher") else "",
+                                "category": detect_category_from_subjects(doc.get("subject", [])),
+                                "volume_number": volume_number,
+                                "book_type": book_type,
+                                "relevance_score": relevance_score,
+                                "is_owned": is_owned,
+                                "edition_count": doc.get("edition_count", 1)
+                            }
+                            
+                            all_discovered_books.append(discovered_book)
+                            
+            except Exception as e:
+                print(f"Erreur lors de la recherche pour '{search_term}': {e}")
+                continue
+        
+        # Trier par pertinence et organiser
+        all_discovered_books.sort(key=lambda x: (-x["relevance_score"], x.get("volume_number", 999), x["title"]))
+        
+        # Grouper par type
+        main_series = [b for b in all_discovered_books if b["book_type"] == "main_series"]
+        spin_offs = [b for b in all_discovered_books if b["book_type"] == "spin_off"]
+        companions = [b for b in all_discovered_books if b["book_type"] == "companion"]
+        related = [b for b in all_discovered_books if b["book_type"] == "related"]
+        
+        # Statistiques
+        total_discovered = len(all_discovered_books)
+        owned_count = len([b for b in all_discovered_books if b["is_owned"]])
+        main_series_count = len(main_series)
+        owned_main_series = len([b for b in main_series if b["is_owned"]])
+        
+        # Détecter les tomes manquants dans la série principale
+        if main_series:
+            volume_numbers = [b["volume_number"] for b in main_series if b["volume_number"]]
+            if volume_numbers:
+                max_volume = max(volume_numbers)
+                missing_volumes = []
+                for i in range(1, max_volume + 1):
+                    if i not in volume_numbers:
+                        missing_volumes.append(i)
+            else:
+                missing_volumes = []
+        else:
+            missing_volumes = []
+        
+        return {
+            "series_name": series_name,
+            "author": author,
+            "search_terms_used": search_terms[:5],
+            "statistics": {
+                "total_discovered": total_discovered,
+                "owned_count": owned_count,
+                "completion_percentage": round((owned_count / total_discovered * 100)) if total_discovered > 0 else 0,
+                "main_series_count": main_series_count,
+                "main_series_owned": owned_main_series,
+                "main_series_completion": round((owned_main_series / main_series_count * 100)) if main_series_count > 0 else 0,
+                "missing_volumes": missing_volumes
+            },
+            "books": {
+                "main_series": main_series[:20],  # Limiter pour éviter une réponse trop lourde
+                "spin_offs": spin_offs[:10],
+                "companions": companions[:10],
+                "related": related[:10]
+            },
+            "recommendations": {
+                "next_to_buy": [b for b in main_series if not b["is_owned"]][:5],
+                "missing_volumes": missing_volumes,
+                "highly_rated": [b for b in all_discovered_books if b["relevance_score"] >= 15 and not b["is_owned"]][:5]
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la découverte de série: {str(e)}")
+
+@app.post("/api/series/import-missing")
+async def import_missing_books(
+    import_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Importer en lot les livres manquants d'une série
+    """
+    try:
+        ol_keys = import_data.get("ol_keys", [])
+        series_name = import_data.get("series_name", "")
+        
+        if not ol_keys:
+            raise HTTPException(status_code=400, detail="Aucun livre à importer")
+        
+        imported_books = []
+        errors = []
+        
+        for ol_key in ol_keys:
+            try:
+                # Récupérer les détails du livre depuis Open Library
+                if not ol_key.startswith('/works/'):
+                    ol_key = f"/works/{ol_key}"
+                
+                # Rechercher le livre sur Open Library pour obtenir ses détails
+                search_params = {
+                    "q": f"key:{ol_key}",
+                    "limit": 1,
+                    "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,number_of_pages_median,publisher"
+                }
+                
+                response = requests.get("https://openlibrary.org/search.json", params=search_params, timeout=10)
+                if response.status_code == 200:
+                    data = response.json()
+                    docs = data.get("docs", [])
+                    
+                    if docs:
+                        doc = docs[0]
+                        
+                        # Vérifier si le livre n'existe pas déjà
+                        existing_book = books_collection.find_one({
+                            "user_id": current_user["id"],
+                            "$or": [
+                                {"title": doc.get("title", "")},
+                                {"isbn": doc.get("isbn", [""])[0] if doc.get("isbn") else ""}
+                            ]
+                        })
+                        
+                        if existing_book:
+                            errors.append(f"'{doc.get('title', '')}' est déjà dans votre collection")
+                            continue
+                        
+                        # Extraire le numéro de tome
+                        title = doc.get("title", "")
+                        volume_number = None
+                        volume_patterns = [
+                            r'tome\s*(\d+)', r'volume\s*(\d+)', r'book\s*(\d+)',
+                            r'part\s*(\d+)', r'#(\d+)', r'\b(\d+)\b'
+                        ]
+                        
+                        for pattern in volume_patterns:
+                            match = re.search(pattern, title, re.IGNORECASE)
+                            if match:
+                                volume_number = int(match.group(1))
+                                break
+                        
+                        # Créer le livre
+                        book_id = str(uuid.uuid4())
+                        new_book = {
+                            "id": book_id,
+                            "user_id": current_user["id"],
+                            "title": doc.get("title", ""),
+                            "author": ", ".join(doc.get("author_name", [])) if doc.get("author_name") else "",
+                            "category": detect_category_from_subjects(doc.get("subject", [])),
+                            "description": f"Importé depuis Open Library - Série: {series_name}",
+                            "total_pages": doc.get("number_of_pages_median"),
+                            "status": "to_read",
+                            "current_page": None,
+                            "rating": None,
+                            "review": "",
+                            "cover_url": extract_cover_url(doc.get("cover_i")),
+                            "saga": series_name,
+                            "volume_number": volume_number,
+                            "genre": "",
+                            "publication_year": doc.get("first_publish_year"),
+                            "publisher": ", ".join(doc.get("publisher", [])) if doc.get("publisher") else "",
+                            "isbn": doc.get("isbn", [""])[0] if doc.get("isbn") else "",
+                            "auto_added": False,
+                            "date_added": datetime.utcnow(),
+                            "date_started": None,
+                            "date_completed": None
+                        }
+                        
+                        books_collection.insert_one(new_book)
+                        new_book.pop("_id", None)
+                        imported_books.append(new_book)
+                        
+            except Exception as e:
+                errors.append(f"Erreur lors de l'import de {ol_key}: {str(e)}")
+        
+        return {
+            "message": f"{len(imported_books)} livre(s) importé(s) avec succès",
+            "imported_books": imported_books,
+            "errors": errors,
+            "statistics": {
+                "total_requested": len(ol_keys),
+                "imported": len(imported_books),
+                "errors": len(errors)
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'import en lot: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
