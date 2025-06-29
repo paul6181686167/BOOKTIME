@@ -104,6 +104,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Latest testing confirms the GET /api/series/popular endpoint is working correctly. Successfully tested with a newly registered user and received 8 series without filters, 3 series with category=roman filter, and 3 series with limit=3 parameter. All responses include the correct metadata and structure."
+      - working: true
+        agent: "testing"
+        comment: "Additional testing confirms the GET /api/series/popular endpoint is working correctly. Successfully tested with a different test user and received 8 series without filters, 3 series with category=roman filter, 3 series with category=manga filter, 2 series with category=bd filter, and 3 series with limit=3 parameter. All responses include the correct metadata and structure with all required fields."
 
   - task: "GET /api/series/detect - Series detection"
     implemented: true
