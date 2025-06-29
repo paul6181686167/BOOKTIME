@@ -1927,7 +1927,7 @@ function MainApp() {
         </div>
 
         {/* Affichage des résultats groupés ou interface normale */}
-        {useGroupedSearchMode && hasGroupedResults ? (
+        {isSearchMode && openLibraryResults.length > 0 ? (
           <GroupedSearchResults
             results={groupedResults}
             searchStats={groupedSearchStats}
