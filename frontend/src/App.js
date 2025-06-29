@@ -1060,6 +1060,15 @@ function AppContent() {
           
           <div className="flex items-center space-x-3">
             <button
+              onClick={() => setShowSeriesDiscovery(true)}
+              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-colors"
+              title="Découvrir une série complète"
+            >
+              <span className="text-lg">🔍</span>
+              <span>Découvrir une Série</span>
+            </button>
+            
+            <button
               onClick={() => setShowProfileModal(true)}
               className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors"
             >
