@@ -495,7 +495,7 @@ function MainApp() {
     updateBookService();
   }, []);
 
-  // Fonction pour basculer entre vue livres et vue séries
+  // Fonction pour basculer entre vue livres et vue séries (utilisée dans le toggle)
   const toggleViewMode = () => {
     setViewMode(viewMode === 'books' ? 'series' : 'books');
   };
