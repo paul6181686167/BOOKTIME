@@ -839,6 +839,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Comprehensive testing confirms the authentication endpoints are working correctly. Successfully registered a new user with first_name and last_name, and received a valid JWT token. Login with the same credentials also works correctly. The /api/auth/me endpoint correctly returns the user information. The JWT token is properly used for protecting routes. All authentication endpoints return the expected status codes and data."
+      - working: true
+        agent: "testing"
+        comment: "Additional testing confirms the simplified authentication system is working correctly. Successfully ran the simplified_auth_test.py test suite which tests all aspects of the authentication system including registration, login, duplicate user detection, missing field validation, and protected routes. All 10 tests passed successfully."
 
   - task: "CRUD Livres - Create, Read, Update, Delete"
     implemented: true
