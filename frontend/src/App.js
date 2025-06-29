@@ -465,12 +465,44 @@ function AppContent() {
     hasResults: hasGroupedResults
   } = useGroupedSearch();
 
+  // Mettre à jour le service bookService pour supporter le nouveau paramètre
+  const updateBookService = () => {
+    // Modifier temporairement la fonction getBooks pour inclure viewMode
+    const originalGetBooks = bookService.getBooks;
+    bookService.getBooks = async (category = null, status = null, viewMode = 'books') => {
+      try {
+        const params = {};
+        if (category) params.category = category;
+        if (status) params.status = status;
+        if (viewMode) params.view_mode = viewMode;
+        
+        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/books?${new URLSearchParams(params)}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Erreur lors de la récupération des données');
+        }
+        
+        return response.json();
+      } catch (error) {
+        console.error('Erreur lors de la récupération des livres:', error);
+        throw new Error('Erreur lors de la récupération des livres');
+      }
+    };
+  };
+
   useEffect(() => {
-    if (user) {
-      loadBooks();
-      loadStats();
-    }
-  }, [user, viewMode]); // Recharger quand le mode de vue change
+    updateBookService();
+  }, []);
+
+  // Fonction pour basculer entre vue livres et vue séries
+  const toggleViewMode = () => {
+    setViewMode(viewMode === 'books' ? 'series' : 'books');
+  };
 
   const loadBooks = async () => {
     try {
