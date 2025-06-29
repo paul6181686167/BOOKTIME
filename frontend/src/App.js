@@ -436,7 +436,7 @@ function AppContent() {
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [lastSearchTerm, setLastSearchTerm] = useState('');
-  const [useGroupedSearchMode, setUseGroupedSearchMode] = useState(false);
+  const [viewMode, setViewMode] = useState('books'); // 'books' ou 'series'
   const [addingBooks, setAddingBooks] = useState(new Set()); // Suivi des livres en cours d'ajout
 
   // État pour les séries simplifiées
