@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 
 class BookTimeDuplicationTest:
-    def __init__(self, base_url="https://6dc40bfe-9c61-4096-b5ba-c71cd4cd9883.preview.emergentagent.com"):
+    def __init__(self, base_url="https://98c3b9a8-f97f-475f-862c-5125aa777726.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
         self.user = None
