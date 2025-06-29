@@ -95,6 +95,47 @@ Le fichier `test_result.md` constitue la documentation technique la plus complè
 
 ---
 
+### [SUPPRESSION] - Supprimer Définitivement le Bouton "Ajouter un Livre"
+**Date** : Mars 2025  
+**Prompt Utilisateur** : `"non je veux que tu supprime définitivement le bouton ajouter un livre"`
+
+#### Context
+- Le bouton "Ajouter un livre" était identifié comme manquant dans l'interface (working: false)
+- L'utilisateur a décidé de supprimer définitivement cette fonctionnalité plutôt que de l'implémenter
+
+#### Action Effectuée
+- ✅ Suppression du state `showAddModal` dans App.js
+- ✅ Suppression de la fonction `handleAddBook` dans App.js  
+- ✅ Suppression complète du composant `AddBookModal` dans App.js
+- ✅ Suppression du fichier `/app/frontend/src/components/AddBookModal.js`
+- ✅ Suppression de la référence `<AddBookModal />` dans le render
+- ✅ Vérification absence d'imports du composant
+
+#### Résultats
+✅ **Fonctionnalité complètement supprimée** :
+- Plus aucune référence au bouton "Ajouter un livre" dans le code
+- Interface allégée sans modal d'ajout manuel
+- Utilisateurs peuvent maintenant seulement ajouter des livres via Open Library
+
+❌ **Impact sur l'expérience utilisateur** :
+- Suppression de la possibilité d'ajouter manuellement des livres
+- Dépendance complète sur l'intégration Open Library pour l'ajout
+
+#### Fichiers Modifiés
+- `/app/frontend/src/App.js` : Suppression états, fonctions et composant
+- `/app/frontend/src/components/AddBookModal.js` : Fichier supprimé
+
+#### Tests à Effectuer
+- ✅ Vérifier absence de bouton "Ajouter livre" dans l'interface
+- ✅ Confirmer que l'ajout via Open Library fonctionne toujours
+- ✅ Valider que l'application ne crash pas
+
+#### Documentation Mise à Jour
+- Modification documentée dans CHANGELOG.md
+- Points d'amélioration mis à jour (problème résolu par suppression)
+
+---
+
 ### [IDENTIFICATION] - Retrouver Modifications Demandées
 **Date** : Mars 2025  
 **Prompt Utilisateur** : `"est-tu capable de retrouver les modifications qui avaient été demandées?"`
