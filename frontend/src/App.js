@@ -491,6 +491,31 @@ function AppContent() {
     }
   };
 
+  // Fonction pour rechercher des séries populaires
+  const searchSeries = async (query) => {
+    if (!query.trim()) return [];
+    
+    try {
+      const token = localStorage.getItem('token');
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+      
+      const response = await fetch(`${backendUrl}/api/series/detect?title=${encodeURIComponent(query)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.detected_series || [];
+      }
+    } catch (error) {
+      console.error('Erreur recherche série:', error);
+    }
+    return [];
+  };
+
   // Fonction pour rechercher dans Open Library
   const searchOpenLibrary = async (query) => {
     if (!query.trim()) return;
