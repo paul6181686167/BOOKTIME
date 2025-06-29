@@ -431,6 +431,7 @@ function AppContent() {
 // Composant principal de l'application
 function MainApp() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [books, setBooks] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
