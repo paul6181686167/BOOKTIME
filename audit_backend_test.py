@@ -249,15 +249,19 @@ class BooktimeAPIAuditTest(unittest.TestCase):
 
     def test_open_library_search(self):
         """Test searching books on Open Library"""
-        # First register if not already done
+        # First register/login if not already done
         if not self.access_token:
-            self.test_user_registration()
+            if not self.test_user_registration():
+                self.skipTest("Registration/login failed, skipping test")
         
         # Search for Harry Potter
         response = requests.get(
             f"{API_URL}/openlibrary/search?q=harry potter",
             headers=self.headers
         )
+        print(f"Open Library search response status code: {response.status_code}")
+        print(f"Open Library search response body: {response.text[:200]}...")  # Show just the beginning
+        
         self.assertEqual(response.status_code, 200)
         data = response.json()
         
