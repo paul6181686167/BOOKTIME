@@ -202,18 +202,126 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     return current_user
 
 # Routes pour les livres (protégées)
+@app.get("/api/library/series")
+async def get_library_series(
+    category: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Récupérer les séries de la bibliothèque comme entités uniques.
+    Chaque série est représentée comme UNE carte avec indicateur de progression.
+    """
+    filter_dict = {"user_id": current_user["id"]}
+    
+    if category:
+        filter_dict["category"] = category
+    
+    # Grouper les livres par saga avec informations de progression
+    pipeline = [
+        {"$match": {**filter_dict, "saga": {"$ne": "", "$exists": True}}},
+        {"$group": {
+            "_id": {
+                "saga": "$saga",
+                "author": "$author",
+                "category": "$category"
+            },
+            "books_count": {"$sum": 1},
+            "completed_books": {"$sum": {"$cond": [{"$eq": ["$status", "completed"]}, 1, 0]}},
+            "reading_books": {"$sum": {"$cond": [{"$eq": ["$status", "reading"]}, 1, 0]}},
+            "to_read_books": {"$sum": {"$cond": [{"$eq": ["$status", "to_read"]}, 1, 0]}},
+            "first_added": {"$min": "$date_added"},
+            "last_updated": {"$max": "$updated_at"},
+            "cover_url": {"$first": "$cover_url"},  # Prendre la première couverture disponible
+            "max_volume": {"$max": "$volume_number"},
+            "books": {"$push": {
+                "id": "$id",
+                "title": "$title", 
+                "volume_number": "$volume_number",
+                "status": "$status",
+                "cover_url": "$cover_url"
+            }}
+        }},
+        {"$sort": {"last_updated": -1, "first_added": -1}}
+    ]
+    
+    series_data = list(books_collection.aggregate(pipeline))
+    
+    # Formater les données pour l'affichage en cartes séries
+    formatted_series = []
+    for series in series_data:
+        # Calculer le pourcentage de progression
+        completion_percentage = 0
+        if series["books_count"] > 0:
+            completion_percentage = round((series["completed_books"] / series["books_count"]) * 100)
+        
+        # Déterminer le statut global de la série
+        global_status = "to_read"
+        if series["reading_books"] > 0:
+            global_status = "reading"
+        elif series["completed_books"] == series["books_count"]:
+            global_status = "completed"
+        
+        # Trouver la meilleure couverture (priorité aux derniers tomes)
+        best_cover = ""
+        if series["books"]:
+            sorted_books = sorted(series["books"], key=lambda x: x.get("volume_number", 0), reverse=True)
+            for book in sorted_books:
+                if book.get("cover_url"):
+                    best_cover = book["cover_url"]
+                    break
+        
+        formatted_series.append({
+            "id": f"series_{series['_id']['saga'].lower().replace(' ', '_')}",
+            "name": series["_id"]["saga"],
+            "author": series["_id"]["author"],
+            "category": series["_id"]["category"],
+            "isSeriesCard": True,
+            "isOwnedSeries": True,  # Marquer comme série possédée
+            "total_books": series["books_count"],
+            "completed_books": series["completed_books"],
+            "reading_books": series["reading_books"],
+            "to_read_books": series["to_read_books"],
+            "completion_percentage": completion_percentage,
+            "status": global_status,
+            "cover_url": best_cover,
+            "max_volume": series["max_volume"] or 0,
+            "first_added": series["first_added"],
+            "last_updated": series["last_updated"],
+            "progress_text": f"{series['completed_books']}/{series['books_count']} tomes lus",
+            "books": series["books"]  # Liste des tomes pour la fiche détaillée
+        })
+    
+    return formatted_series
+
 @app.get("/api/books")
 async def get_books(
     category: Optional[str] = None,
     status: Optional[str] = None,
+    view_mode: Optional[str] = "books",  # "books" ou "series"
     current_user: dict = Depends(get_current_user)
 ):
+    """
+    Route mise à jour pour supporter l'affichage par séries ou par livres individuels.
+    """
+    # Si le mode série est demandé, retourner les séries comme entités uniques
+    if view_mode == "series":
+        return await get_library_series(category, current_user)
+    
+    # Mode livres classique : retourner tous les livres individuels SAUF ceux qui font partie d'une série
     filter_dict = {"user_id": current_user["id"]}
     
     if category:
         filter_dict["category"] = category
     if status:
         filter_dict["status"] = status
+    
+    # Exclure les livres qui font partie d'une série (pour éviter la duplication)
+    # En mode livres, on ne montre que les livres isolés
+    filter_dict["$or"] = [
+        {"saga": {"$exists": False}},
+        {"saga": ""},
+        {"saga": None}
+    ]
     
     books = list(books_collection.find(filter_dict, {"_id": 0}))
     return books
