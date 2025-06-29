@@ -377,7 +377,7 @@ async def create_book(book_data: BookCreate, current_user: dict = Depends(get_cu
     book = {
         "id": book_id,
         "user_id": current_user["id"],
-        **book_data.dict(),
+        **book_data.model_dump(),
         "category": validated_category,
         "date_added": datetime.utcnow(),
         "date_started": None,
