@@ -683,8 +683,50 @@ backend:
         agent: "testing"
         comment: "Rapid testing confirms the authentication system works correctly. Successfully registered a new user 'Jean Dupont' with just first_name and last_name, and received a valid JWT token. Login with the same credentials also works correctly. The /api/auth/me endpoint correctly returns the user information. Also successfully registered and logged in as a second user 'Marie Durand'. This confirms that the authentication system has been successfully simplified to use only first name and last name instead of email and password."
 
-frontend:
-  - task: "Open Library Search Functionality"
+  - task: "CRUD Livres - Create, Read, Update, Delete"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "Rapid testing confirms all CRUD operations for books work correctly. Successfully created a new book 'Le Petit Prince' by 'Antoine de Saint-Exupéry', retrieved it by ID, updated its status to 'reading' and current page to 42, and deleted it. All operations returned the expected status codes and data. The book was properly associated with the authenticated user."
+
+  - task: "Open Library - Search functionality"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "Rapid testing confirms the Open Library search functionality works correctly. Successfully searched for 'Harry Potter' and found 3619 books. The search results include all required fields (title, author, category, cover URL). Also tested search with filters (year range) for 'Lord of the Rings' and ISBN search for '9780747532743', both working correctly. The API properly formats and returns the search results."
+
+  - task: "User Statistics - Get user stats"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "Rapid testing confirms the user statistics functionality works correctly. Successfully retrieved stats for a new user (0 books) and verified that all required fields are present (total_books, completed_books, reading_books, to_read_books, categories, authors_count, sagas_count, auto_added_count). Also verified that stats update correctly after adding a new book, with total_books, to_read_books, and roman category count all increasing by 1."
     implemented: true
     working: true
     file: "/app/frontend/src/App.js"
