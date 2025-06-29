@@ -1811,7 +1811,7 @@ function MainApp() {
         )}
       </main>
 
-      <AddBookModal />
+
       <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
       
       {/* Modal de détail de série */}
