@@ -461,8 +461,7 @@ export const bookService = {
       console.error('Erreur lors de la récupération des livres de la saga:', error);
       throw new Error('Erreur lors de la récupération des livres de la saga');
     }
-  }
-};
+  },
 
   // === NOUVELLES MÉTHODES POUR LA GESTION DES SÉRIES ===
 
@@ -513,28 +512,6 @@ export const bookService = {
     } catch (error) {
       console.error('Erreur lors de l\'analyse des tomes manquants:', error);
       throw new Error('Erreur lors de l\'analyse des tomes manquants');
-    }
-  },
-
-  // Récupérer les sagas avec le nouveau format
-  async getSagas() {
-    try {
-      const response = await api.get('/api/sagas');
-      return response.data;
-    } catch (error) {
-      console.error('Erreur lors de la récupération des sagas:', error);
-      throw new Error('Erreur lors de la récupération des sagas');
-    }
-  },
-
-  // Récupérer les livres d'une saga avec le nouveau format
-  async getBooksBySaga(sagaName) {
-    try {
-      const response = await api.get(`/api/sagas/${encodeURIComponent(sagaName)}/books`);
-      return response.data;
-    } catch (error) {
-      console.error('Erreur lors de la récupération des livres de la saga:', error);
-      throw new Error('Erreur lors de la récupération des livres de la saga');
     }
   }
 };
