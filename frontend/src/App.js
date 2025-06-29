@@ -1469,7 +1469,7 @@ function MainApp() {
         filteredBooks.filter(book => book.category === activeTab && !book.isSeriesCard)
       );
 
-  // Header Component avec barre de recherche globale
+  // Header Component avec barre de recherche unifiée
   const Header = () => (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1483,36 +1483,16 @@ function MainApp() {
               BookTime
             </div>
             
-            {/* Barre de recherche globale */}
-            <div className="flex-1 max-w-lg">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Rechercher une série, un livre..."
-                  value={lastSearchTerm}
-                  onChange={(e) => {
-                    const term = e.target.value;
-                    setLastSearchTerm(term);
-                    if (term.trim()) {
-                      searchOpenLibrary(term);
-                    } else {
-                      backToLibrary();
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && lastSearchTerm.trim()) {
-                      searchOpenLibrary(lastSearchTerm);
-                    }
-                  }}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
+            {/* Barre de recherche unifiée compacte */}
+            <UnifiedSearchBar
+              searchTerm={lastSearchTerm}
+              onSearchChange={setLastSearchTerm}
+              onOpenLibrarySearch={searchOpenLibrary}
+              books={books}
+              filters={filters}
+              onFiltersChange={setFilters}
+              isCompact={true}
+            />
           </div>
           
           <div className="flex items-center space-x-3">
