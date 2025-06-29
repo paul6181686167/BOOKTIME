@@ -652,7 +652,7 @@ function AppContent() {
 
 
 
-  // Fonction pour ajouter un livre depuis Open Library
+  // AJOUT INTELLIGENT : Placement automatique dans le bon onglet selon la catégorie
   const handleAddFromOpenLibrary = async (openLibraryBook) => {
     // Empêcher les clics multiples sur le même livre
     if (addingBooks.has(openLibraryBook.ol_key)) {
@@ -666,6 +666,13 @@ function AppContent() {
       const token = localStorage.getItem('token');
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
       
+      // Déterminer la catégorie correcte automatiquement
+      let targetCategory = openLibraryBook.category;
+      if (!targetCategory || !['roman', 'bd', 'manga'].includes(targetCategory)) {
+        // Si pas de catégorie ou catégorie invalide, utiliser l'onglet actuel par défaut
+        targetCategory = activeTab;
+      }
+      
       const response = await fetch(`${backendUrl}/api/openlibrary/import`, {
         method: 'POST',
         headers: {
@@ -674,14 +681,21 @@ function AppContent() {
         },
         body: JSON.stringify({
           ol_key: openLibraryBook.ol_key,
-          category: openLibraryBook.category || activeTab
+          category: targetCategory
         })
       });
 
       if (response.ok) {
         await loadBooks();
         await loadStats();
-        toast.success(`"${openLibraryBook.title}" ajouté à votre collection !`);
+        
+        // Message de succès avec indication de l'onglet
+        const categoryLabels = {
+          'roman': 'Roman',
+          'bd': 'BD',
+          'manga': 'Manga'
+        };
+        toast.success(`"${openLibraryBook.title}" ajouté à l'onglet ${categoryLabels[targetCategory]} !`);
         
         // Mettre à jour le statut de possession dans les résultats
         setOpenLibraryResults(prev => 
