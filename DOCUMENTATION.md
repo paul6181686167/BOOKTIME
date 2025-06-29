@@ -509,7 +509,7 @@ REACT_APP_BACKEND_URL=https://api.domain.com
 - **MAINTENIR cohérence** avec l'architecture existante
 
 ### Points d'Amélioration Identifiés
-1. **Bouton "Ajouter livre"** manquant dans l'interface
+1. ~~**Bouton "Ajouter livre"** manquant dans l'interface~~ ✅ **SUPPRIMÉ DÉFINITIVEMENT**
 2. **Gestionnaire de séries** non accessible depuis l'UI
 3. **Documentation API** pourrait être Swagger/OpenAPI
 4. **Tests E2E** pourraient être automatisés
