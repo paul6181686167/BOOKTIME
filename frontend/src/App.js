@@ -432,7 +432,6 @@ function AppContent() {
 function MainApp() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const navigate = useNavigate();
   const [books, setBooks] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
