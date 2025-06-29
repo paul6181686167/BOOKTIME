@@ -1582,111 +1582,127 @@ function AppContent() {
 
     return (
       <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-3">
-        {displayedBooks.map((book) => (
-          <div
-            key={book.id}
-            className="cursor-pointer hover:shadow-lg transition-all hover:scale-105 group relative"
-            onClick={() => handleBookClick(book)}
-          >
-            {/* Badge de pertinence (uniquement en mode recherche) */}
-            {isSearchMode && book.relevanceInfo && book.relevanceScore > 50 && (
-              <div className="absolute top-1 left-1 z-10">
-                <div 
-                  className={`${book.relevanceInfo.color} text-white text-xs px-1.5 py-0.5 rounded-full flex items-center opacity-90`}
-                  title={`${book.relevanceInfo.label} (Score: ${book.relevanceScore})`}
-                >
-                  <span className="mr-0.5">{book.relevanceInfo.icon}</span>
-                  <span className="font-medium">{book.relevanceScore}</span>
+        {displayedBooks.map((item) => (
+          item.isSeriesCard ? (
+            /* Carte Série - Affichage distinctif */
+            <div
+              key={item.id}
+              className="col-span-2 cursor-pointer hover:shadow-xl transition-all hover:scale-105 group relative"
+              onClick={() => handleItemClick(item)}
+            >
+              <SeriesCard 
+                series={item}
+                onClick={() => handleItemClick(item)}
+                showProgress={false}
+              />
+            </div>
+          ) : (
+            /* Carte Livre normale */
+            <div
+              key={item.id}
+              className="cursor-pointer hover:shadow-lg transition-all hover:scale-105 group relative"
+              onClick={() => handleItemClick(item)}
+            >
+              {/* Badge de pertinence (uniquement en mode recherche) */}
+              {isSearchMode && item.relevanceInfo && item.relevanceScore > 50 && (
+                <div className="absolute top-1 left-1 z-10">
+                  <div 
+                    className={`${item.relevanceInfo.color} text-white text-xs px-1.5 py-0.5 rounded-full flex items-center opacity-90`}
+                    title={`${item.relevanceInfo.label} (Score: ${item.relevanceScore})`}
+                  >
+                    <span className="mr-0.5">{item.relevanceInfo.icon}</span>
+                    <span className="font-medium">{item.relevanceScore}</span>
+                  </div>
                 </div>
-              </div>
-            )}
-            
-            {/* Badge pour les livres Open Library avec indicateur de catégorie */}
-            {book.isFromOpenLibrary && (
-              <div className="absolute top-1 right-1 z-10 flex flex-col items-end space-y-1">
-                {addingBooks.has(book.ol_key) ? (
-                  <div className="bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full flex items-center animate-pulse">
-                    ⏳
-                  </div>
-                ) : book.isOwned ? (
-                  <div className="bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full flex items-center">
-                    ✓
-                  </div>
-                ) : (
-                  <div className="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full flex items-center cursor-pointer hover:bg-blue-600 transition-colors"
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         handleAddFromOpenLibrary(book);
-                       }}>
-                    +
-                  </div>
-                )}
-                
-                {/* Badge de catégorie */}
-                {book.category && (
+              )}
+              
+              {/* Badge pour les livres Open Library avec indicateur de catégorie */}
+              {item.isFromOpenLibrary && (
+                <div className="absolute top-1 right-1 z-10 flex flex-col items-end space-y-1">
+                  {addingBooks.has(item.ol_key) ? (
+                    <div className="bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full flex items-center animate-pulse">
+                      ⏳
+                    </div>
+                  ) : item.isOwned ? (
+                    <div className="bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full flex items-center">
+                      ✓
+                    </div>
+                  ) : (
+                    <div className="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full flex items-center cursor-pointer hover:bg-blue-600 transition-colors"
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           handleAddFromOpenLibrary(item);
+                         }}>
+                      +
+                    </div>
+                  )}
+                  
+                  {/* Badge de catégorie */}
+                  {item.category && (
+                    <div className={`text-xs px-1.5 py-0.5 rounded-full text-white font-medium ${
+                      item.category === 'roman' ? 'bg-blue-500' :
+                      item.category === 'bd' ? 'bg-green-500' :
+                      item.category === 'manga' ? 'bg-purple-500' :
+                      'bg-gray-500'
+                    }`}>
+                      {item.category === 'roman' ? 'Roman' :
+                       item.category === 'bd' ? 'BD' :
+                       item.category === 'manga' ? 'Manga' :
+                       item.category}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Badge de catégorie pour les livres locaux en mode recherche */}
+              {!item.isFromOpenLibrary && isSearchMode && item.category && (
+                <div className="absolute top-1 right-1 z-10">
                   <div className={`text-xs px-1.5 py-0.5 rounded-full text-white font-medium ${
-                    book.category === 'roman' ? 'bg-blue-500' :
-                    book.category === 'bd' ? 'bg-green-500' :
-                    book.category === 'manga' ? 'bg-purple-500' :
+                    item.category === 'roman' ? 'bg-blue-500' :
+                    item.category === 'bd' ? 'bg-green-500' :
+                    item.category === 'manga' ? 'bg-purple-500' :
                     'bg-gray-500'
                   }`}>
-                    {book.category === 'roman' ? 'Roman' :
-                     book.category === 'bd' ? 'BD' :
-                     book.category === 'manga' ? 'Manga' :
-                     book.category}
+                    {item.category === 'roman' ? 'Roman' :
+                     item.category === 'bd' ? 'BD' :
+                     item.category === 'manga' ? 'Manga' :
+                     item.category}
                   </div>
+                </div>
+              )}
+              
+              <div className={`aspect-[2/3] bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden shadow-md ${
+                item.isFromOpenLibrary && !item.isOwned ? 'ring-2 ring-blue-200 dark:ring-blue-800' : ''
+              } ${
+                isSearchMode && item.relevanceInfo?.level === 'excellent' ? 'ring-2 ring-green-300 dark:ring-green-600' : ''
+              } ${
+                isSearchMode && item.relevanceInfo?.level === 'good' ? 'ring-1 ring-blue-300 dark:ring-blue-600' : ''
+              }`}>
+                {item.cover_url ? (
+                  <img
+                    src={item.cover_url}
+                    alt={item.title}
+                    className="w-full h-full object-cover rounded-lg group-hover:scale-110 transition-transform duration-300"
+                  />
+                ) : (
+                  <span className="text-4xl">📖</span>
                 )}
               </div>
-            )}
-            
-            {/* Badge de catégorie pour les livres locaux en mode recherche */}
-            {!book.isFromOpenLibrary && isSearchMode && book.category && (
-              <div className="absolute top-1 right-1 z-10">
-                <div className={`text-xs px-1.5 py-0.5 rounded-full text-white font-medium ${
-                  book.category === 'roman' ? 'bg-blue-500' :
-                  book.category === 'bd' ? 'bg-green-500' :
-                  book.category === 'manga' ? 'bg-purple-500' :
-                  'bg-gray-500'
-                }`}>
-                  {book.category === 'roman' ? 'Roman' :
-                   book.category === 'bd' ? 'BD' :
-                   book.category === 'manga' ? 'Manga' :
-                   book.category}
-                </div>
+              <div className="mt-2 text-center">
+                <p className="text-xs text-gray-600 dark:text-gray-400 truncate" title={item.title}>{item.title}</p>
+                <p className="text-xs text-blue-600 dark:text-blue-400 truncate" title={item.author}>{item.author}</p>
+                {item.isFromOpenLibrary && !item.isOwned && (
+                  <p className="text-xs text-green-600 dark:text-green-400 font-medium">Open Library</p>
+                )}
+                {/* Indicateur de pertinence textuel en mode recherche */}
+                {isSearchMode && item.relevanceInfo && item.relevanceScore > 100 && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {item.relevanceInfo.label}
+                  </p>
+                )}
               </div>
-            )}
-            
-            <div className={`aspect-[2/3] bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden shadow-md ${
-              book.isFromOpenLibrary && !book.isOwned ? 'ring-2 ring-blue-200 dark:ring-blue-800' : ''
-            } ${
-              isSearchMode && book.relevanceInfo?.level === 'excellent' ? 'ring-2 ring-green-300 dark:ring-green-600' : ''
-            } ${
-              isSearchMode && book.relevanceInfo?.level === 'good' ? 'ring-1 ring-blue-300 dark:ring-blue-600' : ''
-            }`}>
-              {book.cover_url ? (
-                <img
-                  src={book.cover_url}
-                  alt={book.title}
-                  className="w-full h-full object-cover rounded-lg group-hover:scale-110 transition-transform duration-300"
-                />
-              ) : (
-                <span className="text-4xl">📖</span>
-              )}
             </div>
-            <div className="mt-2 text-center">
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate" title={book.title}>{book.title}</p>
-              <p className="text-xs text-blue-600 dark:text-blue-400 truncate" title={book.author}>{book.author}</p>
-              {book.isFromOpenLibrary && !book.isOwned && (
-                <p className="text-xs text-green-600 dark:text-green-400 font-medium">Open Library</p>
-              )}
-              {/* Indicateur de pertinence textuel en mode recherche */}
-              {isSearchMode && book.relevanceInfo && book.relevanceScore > 100 && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {book.relevanceInfo.label}
-                </p>
-              )}
-            </div>
-          </div>
+          )
         ))}
       </div>
     );
