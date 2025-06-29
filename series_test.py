@@ -4,7 +4,7 @@ import sys
 from datetime import datetime
 
 class SeriesAPITester:
-    def __init__(self, base_url="https://4d0fa139-856b-4b90-9226-6c383550f064.preview.emergentagent.com"):
+    def __init__(self, base_url="https://d874c399-44fd-489e-9471-3b235212eaf1.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
