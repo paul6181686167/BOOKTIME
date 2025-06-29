@@ -1324,14 +1324,12 @@ function AppContent() {
     return { level: 'minimal', label: 'Faiblement pertinent', color: 'bg-gray-500', icon: '📄' };
   };
 
-  // Combiner et trier les livres locaux et Open Library selon le mode et la pertinence
+  // RECHERCHE GLOBALE : Combiner et trier les livres de TOUTES les catégories
   const displayedBooks = isSearchMode 
     ? [
-        // Combiner tous les livres
-        ...filteredBooks.filter(book => book.category === activeTab),
-        ...openLibraryResults.filter(book => 
-          !book.category || book.category === activeTab || activeTab === ''
-        )
+        // Combiner TOUS les livres (recherche globale)
+        ...filteredBooks, // Tous les livres locaux sans filtre de catégorie
+        ...openLibraryResults // Tous les livres Open Library
       ].map(book => ({
         ...book,
         relevanceScore: calculateRelevanceScore(book, lastSearchTerm),
