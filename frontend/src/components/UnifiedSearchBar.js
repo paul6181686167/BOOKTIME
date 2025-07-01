@@ -34,12 +34,10 @@ const UnifiedSearchBar = React.memo(({
   const filtersRef = useRef(null);
   const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
-  // Synchroniser l'état local avec la prop searchTerm
+  // Synchroniser l'état local avec la prop searchTerm seulement quand elle change
   useEffect(() => {
-    if (searchTerm !== localSearchTerm) {
-      setLocalSearchTerm(searchTerm || '');
-    }
-  }, [searchTerm, localSearchTerm]);
+    setLocalSearchTerm(searchTerm || '');
+  }, [searchTerm]);
 
   // Charger les recherches récentes
   useEffect(() => {
