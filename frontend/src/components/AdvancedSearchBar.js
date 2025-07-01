@@ -394,8 +394,7 @@ const AdvancedSearchBar = React.memo(({
           {universalResults.length > 0 && (
             <div className="p-2">
               <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-1 flex items-center space-x-1">
-                <GlobeAltIcon className="h-3 w-3" />
-                <span>🌐 OpenLibrary</span>
+                <span>Suggestions de livres</span>
                 {searchingUniversal && <span className="text-blue-500">...</span>}
               </h4>
               {universalResults.map((book, index) => (
