@@ -757,8 +757,11 @@ function MainApp() {
       const token = localStorage.getItem('token');
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
       
-      // Déterminer la catégorie correcte automatiquement
-      let targetCategory = openLibraryBook.category;
+      // PLACEMENT INTELLIGENT : Déterminer la catégorie automatiquement via le badge
+      const categoryBadge = openLibraryBook.categoryBadge || getCategoryBadgeFromBook(openLibraryBook);
+      let targetCategory = categoryBadge.key; // Utiliser la catégorie détectée par le badge
+      
+      // Validation : s'assurer que la catégorie est valide
       if (!targetCategory || !['roman', 'bd', 'manga'].includes(targetCategory)) {
         // Si pas de catégorie ou catégorie invalide, utiliser l'onglet actuel par défaut
         targetCategory = activeTab;
