@@ -583,16 +583,16 @@ function MainApp() {
     }));
   };
 
-  // Fonction pour rechercher dans Open Library avec cartes séries automatiques
+  // Fonction pour rechercher dans Open Library avec RECHERCHE GLOBALE (toutes catégories)
   const searchOpenLibrary = async (query) => {
-    console.log('🚀 searchOpenLibrary appelée avec:', query);
+    console.log('🚀 searchOpenLibrary GLOBALE appelée avec:', query);
     if (!query.trim()) {
       console.log('❌ Recherche annulée: query vide');
       return;
     }
     
     try {
-      console.log('✅ Début de la recherche Open Library');
+      console.log('✅ Début de la recherche globale Open Library (toutes catégories)');
       setSearchLoading(true);
       setIsSearchMode(true);
       setLastSearchTerm(query);
@@ -600,7 +600,8 @@ function MainApp() {
       const token = localStorage.getItem('token');
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
       
-      const response = await fetch(`${backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}&limit=20`, {
+      // RECHERCHE GLOBALE : pas de filtre par catégorie, recherche dans TOUTES les catégories
+      const response = await fetch(`${backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}&limit=40`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -613,7 +614,7 @@ function MainApp() {
         // Générer automatiquement les cartes séries basées sur le terme de recherche
         const seriesCards = generateSeriesCardsForSearch(query, data.books);
         
-        // Marquer les livres déjà possédés avec une logique améliorée
+        // AJOUT DES BADGES CATÉGORIE : Marquer les livres avec leur catégorie et badge
         const resultsWithOwnership = data.books.map(book => {
           const isOwned = books.some(localBook => {
             // Normaliser les titres et auteurs pour la comparaison
