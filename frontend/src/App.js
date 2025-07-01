@@ -585,9 +585,14 @@ function MainApp() {
 
   // Fonction pour rechercher dans Open Library avec gestion des séries
   const searchOpenLibrary = async (query) => {
-    if (!query.trim()) return;
+    console.log('🚀 searchOpenLibrary appelée avec:', query);
+    if (!query.trim()) {
+      console.log('❌ Recherche annulée: query vide');
+      return;
+    }
     
     try {
+      console.log('✅ Début de la recherche Open Library');
       setSearchLoading(true);
       setIsSearchMode(true);
       setLastSearchTerm(query);
