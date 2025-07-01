@@ -583,6 +583,44 @@ function MainApp() {
     }));
   };
 
+  // FONCTION UTILITAIRE : Déterminer le badge de catégorie depuis un livre Open Library
+  const getCategoryBadgeFromBook = (book) => {
+    // Si la catégorie est déjà définie dans le livre
+    if (book.category) {
+      switch (book.category.toLowerCase()) {
+        case 'roman':
+          return { key: 'roman', text: 'Roman', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300', emoji: '📚' };
+        case 'bd':
+          return { key: 'bd', text: 'BD', class: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300', emoji: '🎨' };
+        case 'manga':
+          return { key: 'manga', text: 'Manga', class: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300', emoji: '🇯🇵' };
+      }
+    }
+    
+    // Sinon, détecter automatiquement basé sur le titre et la description
+    const title = (book.title || '').toLowerCase();
+    const description = (book.description || '').toLowerCase();
+    const subjects = (book.subjects || []).join(' ').toLowerCase();
+    const allText = `${title} ${description} ${subjects}`;
+    
+    // Détection Manga
+    if (allText.includes('manga') || allText.includes('japonais') || allText.includes('japan') || 
+        allText.includes('anime') || allText.includes('otaku') || allText.includes('shonen') || 
+        allText.includes('shojo') || allText.includes('seinen') || allText.includes('josei')) {
+      return { key: 'manga', text: 'Manga', class: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300', emoji: '🇯🇵' };
+    }
+    
+    // Détection BD
+    if (allText.includes('bande dessinée') || allText.includes('comic') || allText.includes('comics') || 
+        allText.includes('graphic novel') || allText.includes('bd') || allText.includes('illustration') ||
+        allText.includes('dessins') || allText.includes('album')) {
+      return { key: 'bd', text: 'BD', class: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300', emoji: '🎨' };
+    }
+    
+    // Par défaut : Roman
+    return { key: 'roman', text: 'Roman', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300', emoji: '📚' };
+  };
+
   // Fonction pour rechercher dans Open Library avec RECHERCHE GLOBALE (toutes catégories)
   const searchOpenLibrary = async (query) => {
     console.log('🚀 searchOpenLibrary GLOBALE appelée avec:', query);
