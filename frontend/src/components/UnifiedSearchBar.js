@@ -106,14 +106,14 @@ const UnifiedSearchBar = React.memo(({
   const handleInputChange = useCallback((e) => {
     const value = e.target.value;
     setLocalSearchTerm(value);
-    // Ne plus synchroniser automatiquement avec le parent pour éviter l'écriture lettre par lettre
+    onSearchChange(value); // Remettre la synchronisation pour permettre l'écriture
     
     if (value.length >= 2) {
       setShowSuggestions(true);
     } else {
       setShowSuggestions(false);
     }
-  }, []);
+  }, [onSearchChange]);
 
   // Déclencher la recherche
   const triggerSearch = useCallback(() => {
