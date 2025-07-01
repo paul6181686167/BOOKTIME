@@ -101,14 +101,17 @@ const AdvancedSearchBar = React.memo(({
   }, []);
 
   const triggerSearch = useCallback(() => {
+    const searchTerm = localSearchTerm.trim();
+    
+    // TOUJOURS synchroniser avec le parent au moment de la recherche
+    onSearchChange(searchTerm);
+    
     // Déclencher la recherche Open Library si un terme est présent
-    if (localSearchTerm.trim() && onOpenLibrarySearch) {
-      saveRecentSearch(localSearchTerm);
-      onOpenLibrarySearch(localSearchTerm);
-    } else {
-      // Sinon, appliquer la recherche locale
-      onSearchChange(localSearchTerm);
+    if (searchTerm && onOpenLibrarySearch) {
+      saveRecentSearch(searchTerm);
+      onOpenLibrarySearch(searchTerm);
     }
+    
     setShowSuggestions(false);
   }, [localSearchTerm, onSearchChange, onOpenLibrarySearch, saveRecentSearch]);
 
