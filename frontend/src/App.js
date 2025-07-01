@@ -1480,7 +1480,7 @@ function MainApp() {
             {/* Barre de recherche unifiée compacte */}
             <UnifiedSearchBar
               searchTerm={lastSearchTerm}
-              onSearchChange={setLastSearchTerm}
+              onSearchChange={handleSearchTermChange}
               onOpenLibrarySearch={searchOpenLibrary}
               books={books}
               filters={filters}
