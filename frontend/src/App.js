@@ -952,9 +952,18 @@ function MainApp() {
 
   // Gestionnaire de clic sur série pour afficher la fiche dédiée
   const handleSeriesClick = (series) => {
-    // Naviguer vers la page dédiée de la série
-    setSelectedSeries(series);
-    setShowSeriesDetail(true);
+    if (series.isLibrarySeries) {
+      // Série de bibliothèque : créer une fiche dédiée locale
+      // Pour l'instant, on peut montrer une modal avec les livres de la série
+      setSelectedSeries(series);
+      setShowSeriesModal(true);
+    } else {
+      // Série Open Library : naviguer vers la page dédiée
+      const navigate = window.location.pathname !== '/' ? 
+        (path) => window.location.href = path : 
+        (path) => window.history.pushState({}, '', path);
+      navigate(`/series/${encodeURIComponent(series.name)}`);
+    }
   };
 
   // Gestionnaire de clic sur livre
