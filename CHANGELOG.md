@@ -326,6 +326,62 @@ Le fichier `test_result.md` constitue la documentation technique la plus complè
 
 ---
 
+### [CORRECTION URGENTE] - Restauration Saisie Barre de Recherche
+**Date** : Mars 2025  
+**Prompt Utilisateur** : `"on ne peut rien écrire dans la barre de recherche"`
+
+#### Context
+- Problème critique détecté après les corrections précédentes
+- Impossible de saisir du texte dans la barre de recherche
+- Régression fonctionnelle majeure nécessitant correction immédiate
+- Impact utilisateur critique
+
+#### Action Effectuée
+- 🔍 **Diagnostic du problème** :
+  - Identification de la cause : suppression excessive de `onSearchChange(value)`
+  - La synchronisation avec l'état parent était nécessaire pour la saisie
+  - Différence entre synchronisation et déclenchement automatique de recherche
+
+- ✅ **Correction immédiate** :
+  - Restauration de `onSearchChange(value)` dans `handleInputChange`
+  - Maintien de la suppression du débounce automatique
+  - Synchronisation état local ↔ état parent restaurée
+  - Dépendances callback corrigées
+
+- ✅ **Validation technique** :
+  - UnifiedSearchBar.js : `onSearchChange(value)` restauré
+  - AdvancedSearchBar.js : `onSearchChange(value)` restauré
+  - Frontend redémarré pour appliquer les corrections
+  - Services vérifiés opérationnels
+
+#### Résultats
+✅ **Fonctionnalité Restaurée** :
+- ✅ Saisie de texte dans la barre de recherche fonctionnelle
+- ✅ Synchronisation état local/parent maintenue
+- ✅ Recherche uniquement sur Entrée (objectif conservé)
+- ✅ Interface épurée sans logos (objectif conservé)
+
+✅ **Équilibre Trouvé** :
+- Saisie fluide ET contrôle de la recherche
+- Synchronisation nécessaire SANS déclenchement automatique
+- Transparence Open Library maintenue
+- Expérience utilisateur optimale
+
+#### Leçon Apprise
+🎯 **Distinction Importante** :
+- **Synchronisation état** ≠ **Déclenchement recherche**
+- La synchronisation `onSearchChange()` est nécessaire pour la saisie
+- Le débounce automatique était le vrai problème à supprimer
+- Les deux concepts étaient indépendants
+
+#### Impact Final
+- ✅ Tous les objectifs initiaux atteints
+- ✅ Fonctionnalité de base préservée
+- ✅ Expérience utilisateur optimisée
+- ✅ Interface épurée maintenue
+
+---
+
 ## 🎯 MODÈLE POUR FUTURES MODIFICATIONS
 
 ### [TYPE] - Titre de la Modification
