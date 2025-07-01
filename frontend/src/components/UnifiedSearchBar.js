@@ -106,8 +106,7 @@ const UnifiedSearchBar = React.memo(({
   const handleInputChange = useCallback((e) => {
     const value = e.target.value;
     setLocalSearchTerm(value);
-    // NE PAS synchroniser automatiquement pour éviter les boucles de re-rendus
-    // La synchronisation se fera uniquement sur Entrée via triggerSearch
+    // NE PAS synchroniser automatiquement - uniquement sur Entrée ou submit
     
     if (value.length >= 2) {
       setShowSuggestions(true);
