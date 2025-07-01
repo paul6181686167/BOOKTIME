@@ -115,10 +115,15 @@ const UnifiedSearchBar = React.memo(({
 
   // Déclencher la recherche
   const triggerSearch = useCallback(() => {
-    if (localSearchTerm.trim()) {
-      saveRecentSearch(localSearchTerm);
-      onOpenLibrarySearch(localSearchTerm);
+    const searchTerm = localSearchTerm.trim();
+    if (searchTerm) {
+      console.log('🔍 Déclenchement recherche avec:', searchTerm);
+      saveRecentSearch(searchTerm);
+      onOpenLibrarySearch(searchTerm);
       setShowSuggestions(false);
+      // Ne pas effacer le terme de recherche pour que l'utilisateur puisse voir ce qu'il a cherché
+    } else {
+      console.log('⚠️ Terme de recherche vide, pas de recherche lancée');
     }
   }, [localSearchTerm, saveRecentSearch, onOpenLibrarySearch]);
 
