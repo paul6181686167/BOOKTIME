@@ -99,8 +99,9 @@ const AdvancedSearchBar = React.memo(({
   const handleInputChange = useCallback((e) => {
     const value = e.target.value;
     setLocalSearchTerm(value);
-    // Ne plus synchroniser automatiquement avec le parent pour éviter l'écriture lettre par lettre
-  }, []);
+    // Synchroniser avec le parent mais sans déclencher de recherche automatique
+    onSearchChange(value);
+  }, [onSearchChange]);
 
   const triggerSearch = useCallback(() => {
     // Déclencher la recherche Open Library si un terme est présent
