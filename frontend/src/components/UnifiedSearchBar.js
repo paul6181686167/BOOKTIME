@@ -313,17 +313,6 @@ const UnifiedSearchBar = React.memo(({
               )}
             </button>
           )}
-
-          {/* Bouton Recherche Open Library (compact) */}
-          {isCompact && localSearchTerm && (
-            <button
-              onClick={triggerSearch}
-              className="p-1 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 transition-colors"
-              title="Rechercher sur Open Library"
-            >
-              <GlobeAltIcon className="h-4 w-4" />
-            </button>
-          )}
         </div>
       </div>
 
