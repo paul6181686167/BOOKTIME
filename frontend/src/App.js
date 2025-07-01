@@ -455,6 +455,7 @@ function MainApp() {
   // État pour les séries simplifiées
   const [selectedSeries, setSelectedSeries] = useState(null);
   const [showSeriesDetail, setShowSeriesDetail] = useState(false);
+  const [showSeriesModal, setShowSeriesModal] = useState(false);
 
   // Hook de recherche avancée
   const {
