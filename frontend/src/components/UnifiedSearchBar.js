@@ -54,7 +54,7 @@ const UnifiedSearchBar = React.memo(({
     }
   }, []);
 
-  // Recherche universelle OpenLibrary
+  // Recherche universelle Open Library uniquement sur demande explicite
   const searchUniversal = useCallback(async (query) => {
     if (!query.trim() || query.length < 3) {
       setUniversalResults([]);
@@ -79,16 +79,16 @@ const UnifiedSearchBar = React.memo(({
     }
   }, [backendUrl]);
 
-  // Débounce pour la recherche universelle
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (localSearchTerm && showSuggestions) {
-        searchUniversal(localSearchTerm);
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [localSearchTerm, showSuggestions, searchUniversal]);
+  // Supprimer le débounce automatique - la recherche se fait uniquement sur Entrée
+  // useEffect(() => {
+  //   const timer = setTimeout(() => {
+  //     if (localSearchTerm && showSuggestions) {
+  //       searchUniversal(localSearchTerm);
+  //     }
+  //   }, 500);
+  //
+  //   return () => clearTimeout(timer);
+  // }, [localSearchTerm, showSuggestions, searchUniversal]);
 
   // Sauvegarder les recherches récentes
   const saveRecentSearch = useCallback((term) => {
