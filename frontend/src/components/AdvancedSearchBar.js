@@ -8,8 +8,7 @@ import {
   BookOpenIcon,
   UserIcon,
   ClockIcon,
-  BookmarkIcon,
-  GlobeAltIcon
+  BookmarkIcon
 } from '@heroicons/react/24/outline';
 
 const AdvancedSearchBar = React.memo(({ 
