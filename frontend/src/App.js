@@ -666,11 +666,16 @@ function MainApp() {
           // BADGES CATÉGORIE AUTOMATIQUES : Ajouter badge selon la catégorie détectée
           const categoryBadge = getCategoryBadgeFromBook(book);
           
+          // BADGES CATÉGORIE AUTOMATIQUES : Ajouter badge selon la catégorie détectée
+          const categoryBadge = getCategoryBadgeFromBook(book);
+          
           return {
             ...book,
             isFromOpenLibrary: true,
             isOwned: isOwned,
             id: `ol_${book.ol_key}`,
+            categoryBadge: categoryBadge,
+            category: book.category || categoryBadge.key || 'roman' // Défaut roman si non détecté,
             // Badge catégorie pour affichage visuel
             categoryBadge: categoryBadge,
             // S'assurer que la catégorie est bien définie pour le placement intelligent
