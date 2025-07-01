@@ -36,11 +36,9 @@ const AdvancedSearchBar = React.memo(({
   const suggestionsRef = useRef(null);
   const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
-  // Synchroniser l'état local avec la prop searchTerm seulement si différent
+  // Synchroniser l'état local avec la prop searchTerm seulement quand elle change
   useEffect(() => {
-    if (searchTerm !== localSearchTerm) {
-      setLocalSearchTerm(searchTerm || '');
-    }
+    setLocalSearchTerm(searchTerm || '');
   }, [searchTerm]);
 
   // Recherche universelle OpenLibrary
