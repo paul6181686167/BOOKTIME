@@ -1558,10 +1558,10 @@ function MainApp() {
     return { level: 'minimal', label: 'Faiblement pertinent', color: 'bg-gray-500', icon: '📄' };
   };
 
-  // RECHERCHE GLOBALE : Combiner et trier les livres de TOUTES les catégories avec PRIORITÉ SÉRIES
+  // AFFICHAGE INTELLIGENT : Recherche vs Bibliothèque avec regroupement séries
   const displayedBooks = isSearchMode 
     ? [
-        // Combiner TOUS les livres (recherche globale - toutes catégories)
+        // RECHERCHE GLOBALE : Combiner TOUS les livres (toutes catégories)
         ...books.filter(book => {
           if (!lastSearchTerm) return false;
           const term = lastSearchTerm.toLowerCase();
