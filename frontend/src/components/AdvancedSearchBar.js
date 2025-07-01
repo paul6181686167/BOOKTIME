@@ -71,16 +71,16 @@ const AdvancedSearchBar = React.memo(({
     }
   }, [backendUrl]);
 
-  // Débounce pour la recherche universelle
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (localSearchTerm && showSuggestions) {
-        searchUniversal(localSearchTerm);
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [localSearchTerm, showSuggestions, searchUniversal]);
+  // Supprimer le débounce automatique - la recherche se fait uniquement sur Entrée
+  // useEffect(() => {
+  //   const timer = setTimeout(() => {
+  //     if (localSearchTerm && showSuggestions) {
+  //       searchUniversal(localSearchTerm);
+  //     }
+  //   }, 500);
+  //
+  //   return () => clearTimeout(timer);
+  // }, [localSearchTerm, showSuggestions, searchUniversal]);
 
   // Sauvegarder les recherches récentes (mémorisé)
   const saveRecentSearch = useCallback((term) => {
