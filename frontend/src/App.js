@@ -683,6 +683,11 @@ function MainApp() {
     }
   };
 
+  // Gestionnaire stable pour éviter les re-rendus excessifs
+  const handleSearchTermChange = useCallback((term) => {
+    setLastSearchTerm(term);
+  }, []);
+
   // Fonction pour revenir à la bibliothèque locale
   const backToLibrary = () => {
     setIsSearchMode(false);
