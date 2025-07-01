@@ -583,7 +583,7 @@ function MainApp() {
     }));
   };
 
-  // Fonction pour rechercher dans Open Library avec gestion des séries
+  // Fonction pour rechercher dans Open Library avec cartes séries automatiques
   const searchOpenLibrary = async (query) => {
     console.log('🚀 searchOpenLibrary appelée avec:', query);
     if (!query.trim()) {
@@ -600,9 +600,6 @@ function MainApp() {
       const token = localStorage.getItem('token');
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
       
-      // Rechercher les séries en parallèle
-      const seriesPromise = searchSeries(query);
-      
       const response = await fetch(`${backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}&limit=20`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -613,12 +610,8 @@ function MainApp() {
       if (response.ok) {
         const data = await response.json();
         
-        // Récupérer les séries détectées et créer les cartes séries
-        const detectedSeriesData = await seriesPromise;
-        setDetectedSeries(detectedSeriesData);
-        
-        // Créer les cartes séries
-        const seriesCards = createSeriesCards(detectedSeriesData);
+        // Générer automatiquement les cartes séries basées sur le terme de recherche
+        const seriesCards = generateSeriesCardsForSearch(query, data.books);
         
         // Marquer les livres déjà possédés avec une logique améliorée
         const resultsWithOwnership = data.books.map(book => {
