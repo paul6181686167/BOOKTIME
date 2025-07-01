@@ -120,15 +120,18 @@ const UnifiedSearchBar = React.memo(({
     if (searchTerm) {
       console.log('🔍 Déclenchement recherche avec:', searchTerm);
       alert('🔍 Recherche déclenchée avec: ' + searchTerm); // Alert temporaire pour debug
+      
+      // Synchroniser avec le parent SEULEMENT au moment de la recherche
+      onSearchChange(searchTerm);
+      
       saveRecentSearch(searchTerm);
       onOpenLibrarySearch(searchTerm);
       setShowSuggestions(false);
-      // Ne pas effacer le terme de recherche pour que l'utilisateur puisse voir ce qu'il a cherché
     } else {
       console.log('⚠️ Terme de recherche vide, pas de recherche lancée');
       alert('⚠️ Terme de recherche vide!'); // Alert temporaire pour debug
     }
-  }, [localSearchTerm, saveRecentSearch, onOpenLibrarySearch]);
+  }, [localSearchTerm, onSearchChange, saveRecentSearch, onOpenLibrarySearch]);
 
   // Générer les suggestions locales
   const memoizedSuggestions = useMemo(() => {
