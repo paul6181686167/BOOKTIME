@@ -449,7 +449,7 @@ function MainApp() {
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [lastSearchTerm, setLastSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState('books'); // 'books' ou 'series'
+  const [viewMode, setViewMode] = useState('series'); // 'books' ou 'series' - défaut séries pour gestion simplifiée
   const [addingBooks, setAddingBooks] = useState(new Set()); // Suivi des livres en cours d'ajout
 
   // État pour les séries simplifiées
