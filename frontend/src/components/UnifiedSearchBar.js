@@ -352,8 +352,7 @@ const UnifiedSearchBar = React.memo(({
           {universalResults.length > 0 && (
             <div className="border-t border-gray-200 dark:border-gray-700 p-2">
               <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-2 flex items-center">
-                <GlobeAltIcon className="h-3 w-3 mr-1" />
-                Sur Open Library
+                Suggestions de livres
               </div>
               {universalResults.map((result, index) => (
                 <button
