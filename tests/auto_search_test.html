@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .search-container {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        input {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .results {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            min-height: 200px;
+        }
+        .log {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Search Test</h1>
+    
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Enter search term...">
+        <button id="searchButton">Search</button>
+    </div>
+    
+    <div class="results" id="results">
+        <p>Search results will appear here</p>
+    </div>
+    
+    <div class="log">
+        <h3>Console Log</h3>
+        <div id="logContainer"></div>
+    </div>
+    
+    <script>
+        // Override console.log to display in our log container
+        const originalConsoleLog = console.log;
+        console.log = function() {
+            // Call the original console.log
+            originalConsoleLog.apply(console, arguments);
+            
+            // Create a log entry
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            
+            // Convert arguments to string
+            const args = Array.from(arguments).map(arg => {
+                if (typeof arg === 'object') {
+                    return JSON.stringify(arg);
+                }
+                return arg;
+            }).join(' ');
+            
+            logEntry.textContent = args;
+            
+            // Add to log container
+            document.getElementById('logContainer').appendChild(logEntry);
+        };
+        
+        // Mock the triggerSearch function from UnifiedSearchBar.js
+        function triggerSearch(searchTerm) {
+            if (searchTerm) {
+                console.log('🔍 Déclenchement recherche avec:', searchTerm);
+                // Mock search results
+                document.getElementById('results').innerHTML = `
+                    <p>Found results for "${searchTerm}"</p>
+                    <ul>
+                        <li>Result 1</li>
+                        <li>Result 2</li>
+                        <li>Result 3</li>
+                    </ul>
+                `;
+                return true;
+            } else {
+                console.log('⚠️ Terme de recherche vide, pas de recherche lancée');
+                document.getElementById('results').innerHTML = `
+                    <p>No search term provided</p>
+                `;
+                return false;
+            }
+        }
+        
+        // Add event listeners
+        document.getElementById('searchButton').addEventListener('click', function() {
+            const searchTerm = document.getElementById('searchInput').value;
+            triggerSearch(searchTerm);
+        });
+        
+        document.getElementById('searchInput').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                const searchTerm = document.getElementById('searchInput').value;
+                triggerSearch(searchTerm);
+            }
+        });
+        
+        // Log initial message
+        console.log('Search test page loaded. Enter a search term and press Enter or click Search.');
+        
+        // Automatically test with "Harry Potter" after 1 second
+        setTimeout(() => {
+            document.getElementById('searchInput').value = "Harry Potter";
+            triggerSearch("Harry Potter");
+            console.log("Search term remains in the search bar after Enter");
+            
+            // Test with empty search term after 1 more second
+            setTimeout(() => {
+                document.getElementById('searchInput').value = "";
+                triggerSearch("");
+            }, 1000);
+        }, 1000);
+    </script>
+</body>
+</html>
