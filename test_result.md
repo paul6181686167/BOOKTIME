@@ -117,9 +117,9 @@ frontend:
         comment: "FONCTIONNALITÉ SUPPRIMÉE DÉFINITIVEMENT sur demande utilisateur. Le fichier SeriesManager.js et toutes ses fonctionnalités ont été supprimés pour simplifier l'interface. Statut résolu par suppression."
 
   - task: "Gestionnaire de Séries - Onglet Découvrir des Séries"
-    implemented: true
-    working: "NA"
-    file: "/app/frontend/src/components/SeriesManager.js"
+    implemented: false
+    working: true
+    file: "/app/frontend/src/components/SeriesManager.js (SUPPRIMÉ)"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -130,6 +130,9 @@ frontend:
       - working: "NA"
         agent: "testing"
         comment: "Cette fonctionnalité n'a pas pu être testée car le gestionnaire de séries n'a pas pu être ouvert."
+      - working: true
+        agent: "modification"
+        comment: "FONCTIONNALITÉ SUPPRIMÉE DÉFINITIVEMENT sur demande utilisateur. Le fichier SeriesManager.js et toutes ses fonctionnalités ont été supprimés pour simplifier l'interface. Statut résolu par suppression."
 
   - task: "Gestionnaire de Séries - Onglet Détecter une Série"
     implemented: true
