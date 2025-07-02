@@ -1117,14 +1117,14 @@ function MainApp() {
             matchType = 'keyword_match';
           }
           
-          // 4. CORRESPONDANCE FUZZY BASIQUE (Score : 100000 + 120)
+          // 4. CORRESPONDANCE FUZZY AVANCÉE (Score : 100000 + 120)
           else {
-            // Algorithme simple de distance pour tolérance orthographique
+            // Algorithme avancé de tolérance orthographique avec Levenshtein
             for (const variation of series.variations) {
-              const distance = calculateSimpleDistance(query, variation);
-              if (distance <= 2 && variation.length > 3) { // Tolérance 1-2 erreurs
-                bestScore = Math.max(bestScore, 120 - (distance * 10));
-                matchType = 'fuzzy_match';
+              const fuzzyScore = fuzzyMatch(query, variation, 3);
+              if (fuzzyScore >= 25 && variation.length > 3) { // Score minimum de 25%
+                bestScore = Math.max(bestScore, Math.round(120 * (fuzzyScore / 100)));
+                matchType = 'fuzzy_match_advanced';
               }
             }
           }
