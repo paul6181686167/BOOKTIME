@@ -11,7 +11,13 @@ const SeriesCard = ({
   onClick, 
   isOwned = false, 
   showProgress = false,
-  progressInfo = null 
+  progressInfo = null,
+  showAddButton = true, // Nouveau : contrôle l'affichage du bouton d'ajout
+  onAddToLibrary = null, // Nouveau : callback pour ajout
+  onUpdateVolume = null, // Nouveau : pour séries bibliothèque
+  onUpdateStatus = null, // Nouveau : pour séries bibliothèque  
+  onDelete = null, // Nouveau : pour séries bibliothèque
+  context = "search" // Nouveau : "search" ou "library"
 }) => {
   const getCategoryBadge = (category) => {
     switch (category) {
