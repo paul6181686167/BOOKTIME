@@ -409,6 +409,7 @@ const SeriesDetailPage = () => {
             <button
               onClick={() => {
                 console.log('[DEBUG] Bouton cliqué !');
+                console.log('[DEBUG] Series state:', series);
                 addSeriesToLibrary();
               }}
               disabled={addingToLibrary}
@@ -425,6 +426,19 @@ const SeriesDetailPage = () => {
                   <span>Ajouter toute la série à ma bibliothèque</span>
                 </>
               )}
+            </button>
+            
+            {/* Bouton de test temporaire */}
+            <button
+              onClick={() => {
+                console.log('[TEST] Test direct - Token:', localStorage.getItem('token') ? 'Présent' : 'Absent');
+                console.log('[TEST] Backend URL:', backendUrl);
+                console.log('[TEST] Series state:', series);
+                alert('Test clic - voir console pour détails');
+              }}
+              className="mt-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm"
+            >
+              🧪 Test Debug (temporaire)
             </button>
           </div>
         )}
