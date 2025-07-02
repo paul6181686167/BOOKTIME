@@ -1857,12 +1857,8 @@ function MainApp() {
       })
       // Filtrer les résultats avec un score minimum pour éviter le bruit
       .filter(book => !lastSearchTerm || book.relevanceScore >= 10)
-    : (viewMode === 'series' ? 
-        // BIBLIOTHÈQUE SÉRIES : Regrouper automatiquement les livres par série
-        groupBooksIntoSeries(filteredBooks.filter(book => book.category === activeTab && !book.isSeriesCard)) : 
-        // BIBLIOTHÈQUE LIVRES : Affichage classique par livres individuels
-        filteredBooks.filter(book => book.category === activeTab && !book.isSeriesCard)
-      );
+    : // BIBLIOTHÈQUE UNIFIÉE : Séries et livres individuels mélangés par date d'ajout
+        createUnifiedDisplay(filteredBooks.filter(book => book.category === activeTab && !book.isSeriesCard));
 
   // Header Component avec barre de recherche unifiée
   const Header = () => (
