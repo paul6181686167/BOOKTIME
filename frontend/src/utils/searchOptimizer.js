@@ -327,15 +327,7 @@ export class SearchOptimizer {
     }
   }
 
-  // Formatage de la description de série
-  static formatSeriesDescription(series, detected) {
-    const baseDescription = series.description || '';
-    const volumeInfo = `${series.volumes} tome(s)`;
-    const matchInfo = detected.matchDetails || '';
-    const statusInfo = series.status === 'completed' ? '✅ Complète' : '🔄 En cours';
-    
-    return `${baseDescription} | ${volumeInfo} | ${statusInfo} | 🎯 ${matchInfo}`;
-  }
+
 
   // Label de pertinence selon le type de correspondance
   static getRelevanceLabel(detected) {
