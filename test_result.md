@@ -31,6 +31,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "L'interface principale affiche correctement le logo BookTime, les onglets (Roman/BD/Manga), et la barre de recherche. La navigation entre les onglets fonctionne correctement."
+      - working: true
+        agent: "testing"
+        comment: "Vérification de l'interface unifiée après suppression du toggle livre/série. Les onglets (Roman/BD/Manga) sont toujours présents et fonctionnels. Le toggle livre/série a bien été supprimé. La navigation entre les onglets fonctionne correctement et filtre le contenu par catégorie."
 
   - task: "Interface principale - Barre de recherche"
     implemented: true
