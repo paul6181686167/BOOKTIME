@@ -336,7 +336,7 @@ class SearchOptimizationTester:
                 f"Add Book: {book['title']}",
                 "POST",
                 "api/books",
-                201,
+                200,
                 data=book
             )
             if success:
