@@ -8,8 +8,7 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   PlayIcon,
-  PlusIcon,
-  CheckIcon
+  PlusIcon
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
