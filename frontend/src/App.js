@@ -1216,6 +1216,25 @@ COUNT: 1
     }
   };
 
+  // Charger les séries de la bibliothèque utilisateur
+  const loadUserSeriesLibrary = async () => {
+    try {
+      setSeriesLibraryLoading(true);
+      const token = localStorage.getItem('token');
+      const result = await seriesLibraryService.getUserSeriesLibrary(token);
+      setUserSeriesLibrary(result.series || []);
+      console.log('📚 Séries bibliothèque chargées:', result.series?.length || 0);
+    } catch (error) {
+      console.error('Erreur chargement séries bibliothèque:', error);
+      // Ne pas afficher d'erreur toast si c'est juste qu'il n'y a pas de séries
+      if (!error.message.includes('404')) {
+        toast.error('Erreur lors du chargement des séries');
+      }
+    } finally {
+      setSeriesLibraryLoading(false);
+    }
+  };
+
   // Mettre à jour le statut d'un tome
   const handleUpdateVolumeStatus = async (seriesId, volumeNumber, isRead) => {
     try {
