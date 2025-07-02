@@ -7,108 +7,114 @@ import { SeriesValidator } from './seriesValidator.js';
 
 export class SearchOptimizer {
   
-  // Algorithme de détection avec scoring prioritaire optimisé
+  // Algorithme de détection avec scoring prioritaire optimisé - NOUVELLE ARCHITECTURE MODULAIRE
   static detectSeriesWithAdvancedScoring(searchQuery) {
-    const query = FuzzyMatcher.normalizeString(searchQuery);
     const detectedSeries = [];
     
-    // Parcourir toutes les catégories de séries
+    // Parcourir toutes les catégories de séries avec nouveaux modules
     for (const [categoryKey, seriesCategory] of Object.entries(EXTENDED_SERIES_DATABASE)) {
       for (const [seriesKey, series] of Object.entries(seriesCategory)) {
         
+        let bestMatch = null;
         let bestScore = 0;
-        let matchType = '';
-        let matchDetails = '';
         
-        // 1. CORRESPONDANCE EXACTE (Score maximum : 100000 + 200)
-        const exactMatch = series.variations.find(variation => 
-          FuzzyMatcher.normalizeString(variation) === query
+        // 1. CORRESPONDANCE MULTICRITÈRES AVANCÉE avec FuzzyMatcher
+        // Tester le nom principal de la série
+        const mainNameMatch = FuzzyMatcher.advancedMatch(searchQuery, series.name, {
+          exactWeight: 200,
+          fuzzyWeight: 180,
+          partialWeight: 160,
+          phoneticWeight: 140,
+          transposeWeight: 170
+        });
+        
+        if (mainNameMatch > bestScore) {
+          bestScore = mainNameMatch;
+          bestMatch = {
+            type: 'main_name',
+            target: series.name,
+            score: mainNameMatch
+          };
+        }
+        
+        // 2. CORRESPONDANCE AVEC VARIATIONS OFFICIELLES
+        for (const variation of series.variations || []) {
+          const variationMatch = FuzzyMatcher.advancedMatch(searchQuery, variation, {
+            exactWeight: 190,
+            fuzzyWeight: 170,
+            partialWeight: 150,
+            phoneticWeight: 130,
+            transposeWeight: 160
+          });
+          
+          if (variationMatch > bestScore) {
+            bestScore = variationMatch;
+            bestMatch = {
+              type: 'variation',
+              target: variation,
+              score: variationMatch
+            };
+          }
+        }
+        
+        // 3. CORRESPONDANCE LINGUISTIQUE MULTILINGUE
+        const linguisticScore = FuzzyMatcher.checkLinguisticVariations(
+          searchQuery, 
+          seriesKey, 
+          series.variations || []
         );
-        if (exactMatch) {
-          bestScore = 200;
-          matchType = 'exact_match';
-          matchDetails = `Correspondance exacte avec "${exactMatch}"`;
+        
+        if (linguisticScore > bestScore) {
+          bestScore = linguisticScore;
+          bestMatch = {
+            type: 'linguistic_variation',
+            target: series.name,
+            score: linguisticScore
+          };
         }
         
-        // 2. CORRESPONDANCE PARTIELLE FORTE (Score : 100000 + 180)
-        else {
-          for (const variation of series.variations) {
-            const normalizedVariation = FuzzyMatcher.normalizeString(variation);
-            if (query.includes(normalizedVariation) || normalizedVariation.includes(query)) {
-              if (bestScore < 180) {
-                bestScore = 180;
-                matchType = 'partial_strong_match';
-                matchDetails = `Correspondance partielle forte avec "${variation}"`;
-              }
-            }
-          }
-        }
-        
-        // 3. CORRESPONDANCE PAR MOTS-CLÉS (Score : 100000 + 160)
-        if (bestScore < 160) {
-          for (const keyword of series.keywords) {
-            if (query.includes(FuzzyMatcher.normalizeString(keyword))) {
-              bestScore = Math.max(bestScore, 160);
-              matchType = 'keyword_match';
-              matchDetails = `Correspondance par mot-clé "${keyword}"`;
-              break;
-            }
-          }
-        }
-        
-        // 4. CORRESPONDANCE FUZZY AVANCÉE (Score : 100000 + 120-150)
-        if (bestScore < 150) {
-          let maxFuzzyScore = 0;
-          let bestFuzzyVariation = '';
+        // 4. CORRESPONDANCE PAR MOTS-CLÉS ÉTENDUS
+        for (const keyword of series.keywords || []) {
+          const keywordMatch = FuzzyMatcher.advancedMatch(searchQuery, keyword, {
+            exactWeight: 150,
+            fuzzyWeight: 120,
+            partialWeight: 100,
+            phoneticWeight: 80,
+            transposeWeight: 110
+          });
           
-          for (const variation of series.variations) {
-            const fuzzyScore = FuzzyMatcher.fuzzyMatch(query, variation, 4);
-            if (fuzzyScore >= 60 && fuzzyScore > maxFuzzyScore) { // Seuil minimum de 60%
-              maxFuzzyScore = fuzzyScore;
-              bestFuzzyVariation = variation;
-            }
-          }
-          
-          if (maxFuzzyScore > 0) {
-            // Score basé sur la qualité de la correspondance floue
-            bestScore = Math.max(bestScore, Math.round(120 + (maxFuzzyScore * 0.3)));
-            matchType = 'fuzzy_match_advanced';
-            matchDetails = `Correspondance floue ${maxFuzzyScore}% avec "${bestFuzzyVariation}"`;
+          if (keywordMatch > bestScore && keywordMatch >= 80) { // Seuil plus élevé pour mots-clés
+            bestScore = keywordMatch;
+            bestMatch = {
+              type: 'keyword_match',
+              target: keyword,
+              score: keywordMatch
+            };
           }
         }
         
-        // 5. CORRESPONDANCE PHONÉTIQUE (Score : 100000 + 100-120)
-        if (bestScore < 120) {
-          for (const variation of series.variations) {
-            const phoneticDistance = FuzzyMatcher.phoneticMatch(query, variation);
-            if (phoneticDistance <= 2 && variation.length > 3) {
-              const phoneticScore = Math.max(0, 120 - (phoneticDistance * 10));
-              if (phoneticScore > bestScore) {
-                bestScore = phoneticScore;
-                matchType = 'phonetic_match';
-                matchDetails = `Correspondance phonétique avec "${variation}" (distance: ${phoneticDistance})`;
-              }
-            }
-          }
-        }
+        // 5. VALIDATION QUALITÉ DE CORRESPONDANCE
+        const matchQuality = FuzzyMatcher.validateMatchQuality(searchQuery, bestMatch?.target || '', 60);
         
-        // Si une correspondance est trouvée, ajouter avec score prioritaire
-        if (bestScore >= 100) { // Seuil minimum pour être considéré
+        // Si correspondance valide trouvée, ajouter avec score prioritaire
+        if (bestMatch && matchQuality.isValid && bestScore >= 60) {
           detectedSeries.push({
             series: series,
-            confidence: 100000 + bestScore, // SCORE PRIORITAIRE 100000+
-            match_reasons: [matchType, 'official_wikipedia_series'],
-            matchType: matchType,
+            confidence: 100000 + bestScore, // SCORE PRIORITAIRE ABSOLU 100000+
+            match_reasons: [bestMatch.type, 'wikipedia_validated', 'advanced_fuzzy'],
+            matchType: bestMatch.type,
             originalScore: bestScore,
-            matchDetails: matchDetails,
+            matchDetails: `${bestMatch.type} ${bestScore}% avec "${bestMatch.target}"`,
+            matchQuality: matchQuality,
             category: categoryKey,
-            seriesKey: seriesKey
+            seriesKey: seriesKey,
+            targetMatched: bestMatch.target
           });
         }
       }
     }
     
-    // Retourner les séries triées par score de confiance
+    // Retourner les séries triées par score de confiance décroissant
     return detectedSeries.sort((a, b) => b.confidence - a.confidence);
   }
 
