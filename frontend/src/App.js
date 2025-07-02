@@ -528,7 +528,7 @@ function MainApp() {
 
   // Fonction modifiée pour la recherche Open Library incluant les séries
 
-  // Fonction pour créer les cartes séries à partir des résultats détectés
+  // Fonction pour créer les cartes séries à partir des résultats détectés avec scoring prioritaire optimisé
   const createSeriesCards = (detectedSeries) => {
     return detectedSeries.map(detected => ({
       id: `series_${detected.series.name.toLowerCase().replace(/\s+/g, '_')}`,
@@ -542,8 +542,15 @@ function MainApp() {
       confidence: detected.confidence,
       match_reasons: detected.match_reasons,
       isSeriesCard: true,
-      relevanceScore: 50000 + detected.confidence, // Score très élevé pour prioriser les séries
-      relevanceInfo: { level: 'excellent', label: 'Série détectée', color: 'bg-purple-600', icon: '📚' }
+      // SCORING PRIORITAIRE : Les séries ont déjà des scores 100000+, on garde ce score
+      relevanceScore: detected.confidence, // Utilise directement le score prioritaire (100000+)
+      relevanceInfo: { 
+        level: 'prioritaire', 
+        label: detected.matchType === 'exact_match' ? 'Série (correspondance exacte)' : 
+               detected.matchType === 'fuzzy_match' ? 'Série (correspondance approximative)' : 'Série détectée',
+        color: 'bg-purple-600', 
+        icon: '📚' 
+      }
     }));
   };
 
