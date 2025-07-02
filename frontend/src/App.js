@@ -1388,10 +1388,10 @@ function MainApp() {
     
     // Fonction pour vérifier si un livre correspond à une série
     function isBookInSeries(book, seriesName, seriesData) {
-      const bookTitle = book.title.toLowerCase();
-      const bookAuthor = book.author.toLowerCase();
-      const bookSaga = book.saga ? book.saga.toLowerCase() : '';
-      const bookCategory = book.category ? book.category.toLowerCase() : '';
+      const bookTitle = (book.title || '').toLowerCase();
+      const bookAuthor = (book.author || '').toLowerCase();
+      const bookSaga = (book.saga || '').toLowerCase();
+      const bookCategory = (book.category || '').toLowerCase();
       
       let confidence = 0;
       
