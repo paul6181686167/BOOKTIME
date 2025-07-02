@@ -2166,21 +2166,19 @@ COUNT: 1
                       />
                     ) : (
                       <div className="p-4">
-                        {/* Badges de pertinence et catégorie (en mode recherche) */}
-                        {isSearchMode && (
-                          <div className="flex justify-between mb-2">
-                            {item.relevanceInfo && (
-                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white ${item.relevanceInfo.color}`}>
-                                {item.relevanceInfo.icon} {item.relevanceInfo.label}
-                              </span>
-                            )}
-                            {item.categoryBadge && (
-                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${item.categoryBadge.class}`}>
-                                {item.categoryBadge.emoji} {item.categoryBadge.text}
-                              </span>
-                            )}
-                          </div>
-                        )}
+                        {/* Badges toujours visibles pour cohérence */}
+                        <div className="flex justify-between mb-2">
+                          {item.relevanceInfo && (
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white ${item.relevanceInfo.color}`}>
+                              {item.relevanceInfo.icon} {item.relevanceInfo.label}
+                            </span>
+                          )}
+                          {item.categoryBadge && (
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${item.categoryBadge.class}`}>
+                              {item.categoryBadge.emoji} {item.categoryBadge.text}
+                            </span>
+                          )}
+                        </div>
                         
                         <div className="flex items-start space-x-4">
                           <div className="w-16 h-24 bg-gray-100 dark:bg-gray-700 rounded flex-shrink-0 overflow-hidden">
