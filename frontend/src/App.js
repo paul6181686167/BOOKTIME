@@ -739,7 +739,7 @@ function MainApp() {
   // FONCTION OPTIMISÉE : Génération cartes séries avec scoring prioritaire et tolérance orthographique
   const generateSeriesCardsForSearch = (query, books) => {
     
-    // BASE DE DONNÉES SÉRIES OFFICIELLES ÉTENDUE (Phase 2: Extension 50+ séries)
+    // BASE DE DONNÉES SÉRIES OFFICIELLES ÉTENDUE (Phase 3: Extension 70+ séries - OPTIMISATION COMPLÈTE)
     const OFFICIAL_SERIES_DATABASE = {
       romans: {
         'harry_potter': {
