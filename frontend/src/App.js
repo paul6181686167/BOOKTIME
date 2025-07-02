@@ -1146,21 +1146,147 @@ function MainApp() {
       return detectedSeries.sort((a, b) => b.confidence - a.confidence);
     };
 
-    // ALGORITHME SIMPLE DE DISTANCE (Phase 1: Basique, Phase 2: Levenshtein complet)
-    const calculateSimpleDistance = (str1, str2) => {
-      if (str1.length === 0) return str2.length;
-      if (str2.length === 0) return str1.length;
+    // ALGORITHME AVANCÉ DE TOLÉRANCE ORTHOGRAPHIQUE (Levenshtein + phonétique)
+    const calculateLevenshteinDistance = (str1, str2) => {
+      const matrix = [];
       
-      let distance = 0;
-      const maxLength = Math.max(str1.length, str2.length);
+      // Initialiser la matrice
+      for (let i = 0; i <= str2.length; i++) {
+        matrix[i] = [i];
+      }
+      for (let j = 0; j <= str1.length; j++) {
+        matrix[0][j] = j;
+      }
       
-      for (let i = 0; i < maxLength; i++) {
-        if (str1[i] !== str2[i]) {
-          distance++;
+      // Calculer la distance
+      for (let i = 1; i <= str2.length; i++) {
+        for (let j = 1; j <= str1.length; j++) {
+          if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j - 1] + 1, // substitution
+              matrix[i][j - 1] + 1,     // insertion
+              matrix[i - 1][j] + 1      // suppression
+            );
+          }
         }
       }
       
-      return distance;
+      return matrix[str2.length][str1.length];
+    };
+
+    // NORMALISATION AVANCÉE DES CHAÎNES
+    const normalizeString = (str) => {
+      if (!str) return '';
+      return str.toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Supprimer les accents
+        .replace(/[^\w\s]/g, ' ')        // Remplacer ponctuation par espaces
+        .replace(/\s+/g, ' ')            // Normaliser les espaces
+        .trim();
+    };
+
+    // CORRESPONDANCES PHONÉTIQUES POUR FRANÇAIS
+    const phoneticMatch = (str1, str2) => {
+      const phoneticRules = {
+        'ph': 'f', 'ck': 'k', 'qu': 'k', 'ch': 'sh',
+        'tion': 'sion', 'x': 'ks', 'y': 'i',
+        'ç': 'c', 'é': 'e', 'è': 'e', 'ê': 'e'
+      };
+      
+      let phonetic1 = normalizeString(str1);
+      let phonetic2 = normalizeString(str2);
+      
+      Object.entries(phoneticRules).forEach(([pattern, replacement]) => {
+        phonetic1 = phonetic1.replace(new RegExp(pattern, 'g'), replacement);
+        phonetic2 = phonetic2.replace(new RegExp(pattern, 'g'), replacement);
+      });
+      
+      return calculateLevenshteinDistance(phonetic1, phonetic2);
+    };
+
+    // ALGORITHME DE CORRESPONDANCE FLOUE AVANCÉ
+    const fuzzyMatch = (query, target, maxDistance = 3) => {
+      const normalizedQuery = normalizeString(query);
+      const normalizedTarget = normalizeString(target);
+      
+      // 1. Correspondance exacte après normalisation
+      if (normalizedQuery === normalizedTarget) return 100;
+      
+      // 2. Correspondance par inclusion
+      if (normalizedTarget.includes(normalizedQuery) || normalizedQuery.includes(normalizedTarget)) {
+        return 90;
+      }
+      
+      // 3. Distance de Levenshtein
+      const levenshteinDist = calculateLevenshteinDistance(normalizedQuery, normalizedTarget);
+      if (levenshteinDist <= maxDistance) {
+        return Math.max(70 - (levenshteinDist * 10), 10);
+      }
+      
+      // 4. Correspondance phonétique
+      const phoneticDist = phoneticMatch(query, target);
+      if (phoneticDist <= maxDistance) {
+        return Math.max(60 - (phoneticDist * 10), 5);
+      }
+      
+      // 5. Correspondance par mots (pour requêtes multi-mots)
+      const queryWords = normalizedQuery.split(' ').filter(w => w.length > 2);
+      const targetWords = normalizedTarget.split(' ').filter(w => w.length > 2);
+      
+      if (queryWords.length > 1 && targetWords.length > 1) {
+        let matchingWords = 0;
+        queryWords.forEach(qWord => {
+          targetWords.forEach(tWord => {
+            if (calculateLevenshteinDistance(qWord, tWord) <= 1) {
+              matchingWords++;
+            }
+          });
+        });
+        
+        const wordMatchRatio = matchingWords / Math.max(queryWords.length, targetWords.length);
+        if (wordMatchRatio >= 0.5) {
+          return Math.max(50 * wordMatchRatio, 25);
+        }
+      }
+      
+      return 0;
+    };
+
+    // FILTRAGE STRICT DES ŒUVRES DANS LES SÉRIES
+    const validateSeriesWork = (bookTitle, bookAuthor, seriesData) => {
+      const normalizedTitle = normalizeString(bookTitle);
+      const normalizedAuthor = normalizeString(bookAuthor);
+      const seriesName = normalizeString(seriesData.name);
+      
+      // 1. Vérification auteurs originaux
+      const authorMatch = seriesData.authors.some(author => 
+        fuzzyMatch(normalizedAuthor, normalizeString(author)) >= 70
+      );
+      
+      // 2. Vérification que le titre contient le nom de la série
+      const titleContainsSeries = normalizedTitle.includes(seriesName) || 
+                                 seriesName.includes(normalizedTitle.split(' ')[0]);
+      
+      // 3. Exclusions automatiques par mots-clés
+      const exclusionKeywords = [
+        ...seriesData.exclusions,
+        'spin-off', 'spinoff', 'hors-série', 'guide', 'artbook',
+        'companion', 'compagnon', 'making of', 'adaptation',
+        'suite', 'continuation', 'legacy', 'next generation',
+        'prequel', 'sequel', 'side story', 'spin off',
+        'by ', 'adaptation de', 'd\'après', 'unofficial',
+        'fan fiction', 'parody', 'parodie', 'inspired by'
+      ];
+      
+      const hasExcludedWords = exclusionKeywords.some(keyword => 
+        normalizedTitle.includes(normalizeString(keyword)) ||
+        normalizedAuthor.includes(normalizeString(keyword))
+      );
+      
+      // Validation finale : (auteur correspond OU titre contient série) ET PAS d'exclusions
+      return (authorMatch || titleContainsSeries) && !hasExcludedWords;
     };
     
     // Détecter les séries avec le nouveau système de scoring
