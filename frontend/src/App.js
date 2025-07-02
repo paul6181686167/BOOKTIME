@@ -1059,9 +1059,30 @@ function MainApp() {
           };
         });
         
-        // Stocker les résultats combinés avec les cartes séries en premier
-        setOpenLibraryResults([...seriesCards, ...resultsWithOwnership]);
-        toast.success(`${data.books.length} livres trouvés${seriesCards.length > 0 ? ` + ${seriesCards.length} série(s) détectée(s)` : ''}`);
+        // ALGORITHME DE TRI PRIORITAIRE : Garantir fiches séries EN PREMIER avec scores 100000+
+        const allResults = [...seriesCards, ...resultsWithOwnership];
+        
+        // Tri final optimisé : 
+        // 1) Séries officielles (100000+) par pertinence
+        // 2) Séries bibliothèque (90000+) par pertinence  
+        // 3) Livres Open Library très pertinents (scores variables)
+        const sortedResults = allResults.sort((a, b) => {
+          // Les séries ont toujours la priorité absolue
+          if (a.isSeriesCard && !b.isSeriesCard) return -1;
+          if (!a.isSeriesCard && b.isSeriesCard) return 1;
+          
+          // Si les deux sont des séries, trier par score de confiance
+          if (a.isSeriesCard && b.isSeriesCard) {
+            return (b.relevanceScore || b.confidence || 0) - (a.relevanceScore || a.confidence || 0);
+          }
+          
+          // Si les deux sont des livres, garder l'ordre original (pertinence Open Library)
+          return 0;
+        });
+        
+        // Stocker les résultats triés avec priorité absolue aux fiches séries
+        setOpenLibraryResults(sortedResults);
+        toast.success(`${data.books.length} livres trouvés${seriesCards.length > 0 ? ` + ${seriesCards.length} série(s) détectée(s) EN PREMIER` : ''}`);
       } else {
         toast.error('Erreur lors de la recherche Open Library');
       }
