@@ -472,46 +472,12 @@ function MainApp() {
     searchStats: groupedSearchStats,
   } = useGroupedSearch();
 
-  // Mettre à jour le service bookService pour supporter le nouveau paramètre
-  const updateBookService = () => {
-    // Modifier temporairement la fonction getBooks pour inclure viewMode
-    bookService.getBooks = async (category = null, status = null, viewMode = 'books') => {
-      try {
-        const params = {};
-        if (category) params.category = category;
-        if (status) params.status = status;
-        if (viewMode) params.view_mode = viewMode;
-        
-        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/books?${new URLSearchParams(params)}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error('Erreur lors de la récupération des données');
-        }
-        
-        return response.json();
-      } catch (error) {
-        console.error('Erreur lors de la récupération des livres:', error);
-        throw new Error('Erreur lors de la récupération des livres');
-      }
-    };
-  };
-
-  useEffect(() => {
-    updateBookService();
-  }, []);
-
-  // SUPPRESSION TOGGLEVIEWMODE : Plus de fonction de basculement nécessaire
-
+  // AFFICHAGE UNIFIÉ : Plus besoin de paramètre viewMode - simplifié
   const loadBooks = async () => {
     try {
       setLoading(true);
-      // AFFICHAGE UNIFIÉ : Charger tous les livres (plus de distinction viewMode)
-      const data = await bookService.getBooks(null, null, 'books');
+      // Charger tous les livres sans distinction de mode d'affichage
+      const data = await bookService.getBooks();
       setBooks(data);
     } catch (error) {
       console.error('Erreur lors du chargement des livres:', error);
