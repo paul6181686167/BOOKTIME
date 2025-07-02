@@ -195,9 +195,25 @@ const SeriesDetailPage = () => {
   };
 
   const addSeriesToLibrary = async () => {
+    console.log('🔵 BOUTON BLEU CLIQUÉ !');
+    console.log('📊 État actuel:', { 
+      seriesName: series?.name, 
+      volumes: series?.volumes, 
+      isOwned, 
+      addingToLibrary 
+    });
+    
     try {
       setAddingToLibrary(true);
       const token = localStorage.getItem('token');
+      console.log('🔑 Token trouvé:', token ? 'OUI' : 'NON');
+
+      const requestBody = {
+        series_name: series.name,
+        target_volumes: series.volumes
+      };
+      console.log('📤 Envoi requête:', requestBody);
+      console.log('🌐 URL:', `${backendUrl}/api/series/complete`);
 
       const response = await fetch(`${backendUrl}/api/series/complete`, {
         method: 'POST',
@@ -205,25 +221,28 @@ const SeriesDetailPage = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          series_name: series.name,
-          target_volumes: series.volumes
-        })
+        body: JSON.stringify(requestBody)
       });
+
+      console.log('📥 Réponse reçue:', response.status, response.statusText);
 
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Succès:', data);
         toast.success(`${data.created_volumes} tome(s) ajouté(s) à votre bibliothèque !`);
         await loadSeriesDetails(); // Recharger pour mettre à jour l'état
+        console.log('🔄 Rechargement terminé');
       } else {
         const error = await response.json();
+        console.log('❌ Erreur response:', error);
         toast.error(error.detail || 'Erreur lors de l\'ajout');
       }
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('💥 Erreur catch:', error);
       toast.error('Erreur lors de l\'ajout de la série');
     } finally {
       setAddingToLibrary(false);
+      console.log('🏁 Fonction terminée');
     }
   };
 
