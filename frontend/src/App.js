@@ -1927,28 +1927,7 @@ function MainApp() {
             ))}
           </nav>
           
-          <div className="flex items-center space-x-4">
-            {/* Toggle Vue Livres/Séries */}
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-500 dark:text-gray-400">Vue :</span>
-              <button
-                onClick={toggleViewMode}
-                className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
-                  viewMode === 'series' ? 'bg-green-600' : 'bg-gray-200 dark:bg-gray-700'
-                }`}
-              >
-                <span className="sr-only">Basculer entre vue livres et séries</span>
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    viewMode === 'series' ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {viewMode === 'series' ? 'Séries' : 'Livres'}
-              </span>
-            </div>
-          </div>
+          {/* SUPPRESSION TOGGLE : Plus de toggle Vue Livres/Séries - affichage unifié */}
         </div>
       </div>
     </div>
