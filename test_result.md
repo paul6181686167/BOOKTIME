@@ -84,9 +84,9 @@ frontend:
         comment: "L'affichage unifié des livres et séries fonctionne correctement. Le toggle livre/série a été supprimé et l'interface affiche maintenant les livres et les séries dans une grille unifiée. Les onglets de catégorie (Roman/BD/Manga) permettent de filtrer le contenu. La recherche fonctionne sur l'ensemble des livres et séries, avec des badges de catégorie pour faciliter l'identification."
 
   - task: "Interface principale - Bouton Ajouter un livre"
-    implemented: true
-    working: false
-    file: "/app/frontend/src/App.js"
+    implemented: false
+    working: true
+    file: "/app/frontend/src/App.js (SUPPRIMÉ)"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -97,6 +97,9 @@ frontend:
       - working: false
         agent: "testing"
         comment: "Le bouton 'Ajouter un livre' n'a pas été trouvé dans l'interface. Il est possible qu'il soit absent ou implémenté différemment. Cette fonctionnalité n'a pas pu être testée."
+      - working: true
+        agent: "modification"
+        comment: "FONCTIONNALITÉ SUPPRIMÉE DÉFINITIVEMENT sur demande utilisateur. Le bouton 'Ajouter un livre' et toutes ses fonctionnalités associées ont été supprimés pour simplifier l'interface. Statut résolu par suppression."
 
   - task: "Gestionnaire de Séries - Modal avec onglets"
     implemented: false
