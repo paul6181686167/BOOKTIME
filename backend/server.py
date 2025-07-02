@@ -883,7 +883,49 @@ async def auto_complete_series(
     if not series_name:
         raise HTTPException(status_code=400, detail="Nom de série requis")
     
-    # Récupérer le livre modèle
+    # Base de données des séries pour obtenir les informations par défaut
+    SERIES_INFO = {
+        "Le Seigneur des Anneaux": {
+            "author": "J.R.R. Tolkien",
+            "category": "roman",
+            "volumes": 3,
+            "tomes": ["La Communauté de l'Anneau", "Les Deux Tours", "Le Retour du Roi"]
+        },
+        "Harry Potter": {
+            "author": "J.K. Rowling", 
+            "category": "roman",
+            "volumes": 7,
+            "tomes": [
+                "Harry Potter à l'école des sorciers",
+                "Harry Potter et la Chambre des secrets", 
+                "Harry Potter et le Prisonnier d'Azkaban",
+                "Harry Potter et la Coupe de feu",
+                "Harry Potter et l'Ordre du phénix",
+                "Harry Potter et le Prince de sang-mêlé",
+                "Harry Potter et les Reliques de la Mort"
+            ]
+        },
+        "One Piece": {
+            "author": "Eiichiro Oda",
+            "category": "manga", 
+            "volumes": 100,
+            "tomes": []
+        },
+        "Naruto": {
+            "author": "Masashi Kishimoto",
+            "category": "manga",
+            "volumes": 72,
+            "tomes": []
+        },
+        "Astérix": {
+            "author": "René Goscinny et Albert Uderzo",
+            "category": "bd",
+            "volumes": 39,
+            "tomes": []
+        }
+    }
+    
+    # Récupérer le livre modèle si existe
     template_book = None
     if template_book_id:
         template_book = books_collection.find_one({
@@ -898,8 +940,24 @@ async def auto_complete_series(
             "saga": {"$regex": re.escape(series_name), "$options": "i"}
         })
     
-    if not template_book:
-        raise HTTPException(status_code=404, detail="Aucun livre de cette série trouvé")
+    # Si pas de livre modèle, utiliser les informations de la base de données
+    series_info = SERIES_INFO.get(series_name)
+    if not template_book and not series_info:
+        raise HTTPException(status_code=404, detail="Série non reconnue et aucun livre modèle trouvé")
+    
+    # Déterminer les informations de base
+    if template_book:
+        base_author = template_book.get("author", "")
+        base_category = template_book.get("category", "roman")
+        base_genre = template_book.get("genre", "")
+        base_publisher = template_book.get("publisher", "")
+    elif series_info:
+        base_author = series_info["author"]
+        base_category = series_info["category"]
+        base_genre = ""
+        base_publisher = ""
+        if series_info["volumes"] < target_volumes:
+            target_volumes = series_info["volumes"]
     
     # Récupérer les volumes existants
     existing_books = list(books_collection.find({
