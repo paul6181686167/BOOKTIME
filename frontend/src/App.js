@@ -917,10 +917,10 @@ function MainApp() {
       return distance;
     };
     
-    // Détecter si la recherche correspond à une série populaire
-    const detectedSeries = detectPopularSeries(query);
-    if (detectedSeries) {
-      return [detectedSeries];
+    // Détecter les séries avec le nouveau système de scoring
+    const detectedSeries = detectSeriesWithScoring(query);
+    if (detectedSeries.length > 0) {
+      return detectedSeries;
     }
     
     // Si aucune série populaire n'est détectée, essayer de détecter des séries basées sur les livres
