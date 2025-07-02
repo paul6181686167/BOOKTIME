@@ -44,6 +44,19 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   const [isLoading, setIsLoading] = useState(false);
   const [enriching, setEnriching] = useState(false);
 
+  // 🔧 CORRECTION RCA : Synchronisation editData avec les props book mises à jour
+  useEffect(() => {
+    setEditData({
+      status: book.status,
+      current_page: book.current_page || 0,
+      rating: book.rating || 0,
+      review: book.review || '',
+      original_language: book.original_language || 'français',
+      available_translations: book.available_translations || [],
+      reading_language: book.reading_language || 'français',
+    });
+  }, [book]);  // Se déclenche quand book change après handleUpdateBook
+
   const statusOptions = [
     { value: 'to_read', label: 'À lire', color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300' },
     { value: 'reading', label: 'En cours', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300' },
