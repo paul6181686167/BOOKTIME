@@ -1151,12 +1151,17 @@ SEARCH_KEYWORDS: ${seriesData.name}, book series, cover art
 COUNT: 1
 `;
         
-        // Simuler l'appel vision_expert_agent (pour le moment)
-        // const imageResult = await vision_expert_agent({ task: imageTask });
-        // cover_image_url = imageResult.selectedImageUrl || '';
-        
-        // Fallback: image par défaut
-        cover_image_url = '/default-series-cover.jpg';
+        // Utiliser vision_expert_agent pour récupérer une image de qualité
+        try {
+          // Pour le moment, utiliser l'image par défaut
+          // TODO: Intégrer vision_expert_agent quand disponible
+          cover_image_url = '/default-series-cover.jpg';
+          
+          console.log('🖼️ Image par défaut utilisée (vision_expert_agent non disponible)');
+        } catch (error) {
+          console.warn('⚠️ Erreur vision_expert_agent:', error);
+          cover_image_url = '/default-series-cover.jpg';
+        }
         
         console.log('🖼️ Image récupérée:', cover_image_url);
       } catch (error) {
