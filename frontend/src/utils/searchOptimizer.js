@@ -13,7 +13,7 @@ export class SearchOptimizer {
     const detectedSeries = [];
     
     // Parcourir toutes les catégories de séries
-    for (const [categoryKey, seriesCategory] of Object.entries(OFFICIAL_SERIES_DATABASE)) {
+    for (const [categoryKey, seriesCategory] of Object.entries(EXTENDED_SERIES_DATABASE)) {
       for (const [seriesKey, series] of Object.entries(seriesCategory)) {
         
         let bestScore = 0;
