@@ -1,7 +1,9 @@
 // Optimiseur de recherche avec algorithme de priorisation et scoring avancé
-// OPTIMISATION ALGORITHME RECHERCHE - Priorisation fiches séries et tolérance orthographique
+// OPTIMISATION ALGORITHME RECHERCHE - Priorisation fiches séries et tolérance orthographique universelle
 
-import { OFFICIAL_SERIES_DATABASE, FuzzyMatcher, SeriesValidator } from './seriesDatabase.js';
+import { EXTENDED_SERIES_DATABASE } from './seriesDatabaseExtended.js';
+import { FuzzyMatcher } from './fuzzyMatcher.js';
+import { SeriesValidator } from './seriesValidator.js';
 
 export class SearchOptimizer {
   
