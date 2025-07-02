@@ -144,6 +144,80 @@ frontend:
         comment: "Cette fonctionnalité n'a pas pu être testée car le gestionnaire de séries n'a pas pu être ouvert."
 
 backend:
+  - task: "POST /api/series/library - Ajouter une série complète à la bibliothèque"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "The POST /api/series/library endpoint works correctly. Successfully tested adding a series with complete metadata including series_name, authors, category, volumes, description, and other fields. The endpoint correctly validates required fields and prevents duplicate series. The created series has the correct structure with all fields preserved as provided."
+
+  - task: "GET /api/series/library - Récupérer les séries de la bibliothèque"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "The GET /api/series/library endpoint works correctly. Successfully tested retrieving all series from the library. The endpoint correctly returns the series with all metadata including volumes, completion percentage, and status. Filtering by category and status works correctly, returning only the series that match the specified criteria."
+
+  - task: "PUT /api/series/library/{series_id}/volume/{volume_number} - Toggle statut tome"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "The PUT /api/series/library/{series_id}/volume/{volume_number} endpoint works correctly. Successfully tested toggling the read status of volumes. The endpoint correctly updates the volume status and automatically recalculates the series completion percentage. The series status is automatically updated based on the completion percentage: 'to_read' when 0%, 'reading' when partially complete, and 'completed' when 100%. The endpoint also correctly handles invalid series IDs and volume numbers with appropriate error responses."
+
+  - task: "DELETE /api/series/library/{series_id} - Supprimer une série"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "The DELETE /api/series/library/{series_id} endpoint works correctly. Successfully tested deleting a series from the library. The endpoint correctly removes the series and returns a success message. The endpoint also correctly handles invalid series IDs with appropriate error responses."
+
+  - task: "Tests d'intégration complets - Séries en bibliothèque"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "Comprehensive integration testing confirms that the series library functionality works correctly. Successfully tested the full workflow: adding series of different categories (roman, bd, manga), marking volumes as read, checking progress, and deleting series. The series progress is correctly calculated based on the number of volumes read. The series status is automatically updated based on the completion percentage. All operations work correctly for all categories, and the data is consistent throughout the workflow."
   - task: "GET /health - Health check"
     implemented: true
     working: true
