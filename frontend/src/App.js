@@ -1021,9 +1021,9 @@ function MainApp() {
     }
   };
 
-  const handleUpdateBook = async (bookData) => {
+  const handleUpdateBook = async (bookId, bookData) => {
     try {
-      await bookService.updateBook(selectedBook.id, bookData);
+      await bookService.updateBook(bookId, bookData);
       await loadBooks();
       await loadStats();
       setSelectedBook(null);
@@ -1031,7 +1031,7 @@ function MainApp() {
       toast.success('Livre mis à jour !');
     } catch (error) {
       console.error('Erreur lors de la mise à jour du livre:', error);
-      toast.error('Erreur lors de la mise à jour du livre');
+      toast.error('Erreur lors de la mise à jour du statut');
     }
   };
 
