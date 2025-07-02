@@ -132,24 +132,7 @@ const SeriesCard = ({
           </div>
         </div>
 
-        {/* Bouton d'action */}
-        {!isOwned && (
-          <div className="mt-4 pt-3 border-t border-indigo-200 dark:border-indigo-800">
-            <div className="text-center">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (series.onAddToLibrary) {
-                    series.onAddToLibrary(series);
-                  }
-                }}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm flex items-center justify-center space-x-2"
-              >
-                <span>📚</span>
-                <span>Ajouter toute la série à ma bibliothèque</span>
-              </button>
-            </div>
-          </div>
+        {/* Section des livres supprimée - bouton d'ajout retiré pour éviter le doublon */}
         )}
       </div>
     </div>
