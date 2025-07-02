@@ -38,6 +38,7 @@ db = client.booktime
 users_collection = db.users
 books_collection = db.books
 authors_collection = db.authors
+series_library_collection = db.series_library
 
 # Security
 security = HTTPBearer()
