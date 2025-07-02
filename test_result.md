@@ -53,6 +53,21 @@ frontend:
         agent: "testing"
         comment: "Vérification de l'interface unifiée après suppression du toggle livre/série. La barre de recherche fonctionne correctement et permet de rechercher des livres et des séries simultanément. La recherche pour 'harry potter' affiche des résultats avec des badges de catégorie (Roman/BD/Manga) et un bouton 'Retour à ma bibliothèque' qui permet de revenir à l'affichage principal."
 
+  - task: "Affichage unifié livres et séries"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "L'affichage unifié des livres et séries fonctionne correctement. Le toggle livre/série a été supprimé et l'interface affiche maintenant les livres et les séries dans une grille unifiée. Les onglets de catégorie (Roman/BD/Manga) permettent de filtrer le contenu. La recherche fonctionne sur l'ensemble des livres et séries, avec des badges de catégorie pour faciliter l'identification."
+
   - task: "Interface principale - Bouton Ajouter un livre"
     implemented: true
     working: false
