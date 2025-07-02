@@ -739,7 +739,7 @@ function MainApp() {
   // FONCTION OPTIMISÉE : Génération cartes séries avec scoring prioritaire et tolérance orthographique
   const generateSeriesCardsForSearch = (query, books) => {
     
-    // BASE DE DONNÉES SÉRIES OFFICIELLES ÉTENDUE (Phase 1: Base solide)
+    // BASE DE DONNÉES SÉRIES OFFICIELLES ÉTENDUE (Phase 2: Extension 50+ séries)
     const OFFICIAL_SERIES_DATABASE = {
       romans: {
         'harry_potter': {
@@ -751,7 +751,9 @@ function MainApp() {
           first_published: '1997',
           status: 'completed',
           keywords: ['harry potter', 'poudlard', 'sorcier', 'hermione', 'ron', 'voldemort'],
-          variations: ['harry potter', 'herry potter', 'harry poter', 'harrypotter', 'potter']
+          variations: ['harry potter', 'herry potter', 'harry poter', 'harrypotter', 'potter', 'harry pot'],
+          exclusions: ['tales of beedle', 'quidditch through ages', 'fantastic beasts', 'cursed child'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Harry_Potter'
         },
         'seigneur_anneaux': {
           name: 'Le Seigneur des Anneaux',
@@ -762,7 +764,9 @@ function MainApp() {
           first_published: '1954',
           status: 'completed',
           keywords: ['seigneur des anneaux', 'tolkien', 'frodon', 'gandalf', 'terre du milieu'],
-          variations: ['seigneur des anneaux', 'seigneur anneaux', 'lord of rings', 'lotr']
+          variations: ['seigneur des anneaux', 'seigneur anneaux', 'lord of rings', 'lotr', 'lord rings'],
+          exclusions: ['hobbit', 'silmarillion', 'unfinished tales'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Le_Seigneur_des_anneaux'
         },
         'game_of_thrones': {
           name: 'Le Trône de Fer',
@@ -773,7 +777,74 @@ function MainApp() {
           first_published: '1996',
           status: 'ongoing',
           keywords: ['game of thrones', 'trône de fer', 'westeros', 'stark', 'lannister'],
-          variations: ['game of thrones', 'game of throne', 'trone de fer', 'got']
+          variations: ['game of thrones', 'game of throne', 'trone de fer', 'got', 'throne de fer'],
+          exclusions: ['house of dragon', 'fire and blood', 'world of ice'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Le_Trône_de_fer'
+        },
+        'dune': {
+          name: 'Dune',
+          authors: ['Frank Herbert'],
+          category: 'roman',
+          volumes: 6,
+          description: 'Saga de science-fiction sur la planète désertique Arrakis.',
+          first_published: '1965',
+          status: 'completed',
+          keywords: ['dune', 'arrakis', 'épice', 'paul atreides', 'desert'],
+          variations: ['dune', 'dun', 'duune'],
+          exclusions: ['brian herbert', 'kevin anderson'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Dune_(série)'
+        },
+        'fondation': {
+          name: 'Fondation',
+          authors: ['Isaac Asimov'],
+          category: 'roman',
+          volumes: 7,
+          description: 'Cycle de science-fiction d\'Isaac Asimov sur l\'Empire Galactique.',
+          first_published: '1951',
+          status: 'completed',
+          keywords: ['fondation', 'asimov', 'empire galactique', 'psychohistoire'],
+          variations: ['fondation', 'foundation', 'fondations'],
+          exclusions: ['robot series', 'empire series'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Fondation_(Asimov)'
+        },
+        'sherlock_holmes': {
+          name: 'Sherlock Holmes',
+          authors: ['Arthur Conan Doyle'],
+          category: 'roman',
+          volumes: 56,
+          description: 'Enquêtes du célèbre détective de Baker Street.',
+          first_published: '1887',
+          status: 'completed',
+          keywords: ['sherlock holmes', 'watson', 'baker street', 'détective'],
+          variations: ['sherlock holmes', 'sherlock', 'holmes'],
+          exclusions: ['adaptations', 'pastiche', 'modern'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Sherlock_Holmes'
+        },
+        'agatha_christie_poirot': {
+          name: 'Hercule Poirot',
+          authors: ['Agatha Christie'],
+          category: 'roman',
+          volumes: 33,
+          description: 'Enquêtes du détective belge Hercule Poirot.',
+          first_published: '1920',
+          status: 'completed',
+          keywords: ['hercule poirot', 'agatha christie', 'détective', 'belgique'],
+          variations: ['hercule poirot', 'poirot', 'hercule'],
+          exclusions: ['miss marple', 'tommy tuppence'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Hercule_Poirot'
+        },
+        'witcher': {
+          name: 'The Witcher',
+          authors: ['Andrzej Sapkowski'],
+          category: 'roman',
+          volumes: 8,
+          description: 'Saga fantasy polonaise sur Geralt de Riv.',
+          first_published: '1993',
+          status: 'completed',
+          keywords: ['witcher', 'geralt', 'sorceleur', 'ciri'],
+          variations: ['witcher', 'the witcher', 'sorceleur'],
+          exclusions: ['jeux vidéo', 'adaptation', 'netflix'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/The_Witcher'
         }
       },
       bd: {
@@ -786,7 +857,9 @@ function MainApp() {
           first_published: '1959',
           status: 'ongoing',
           keywords: ['astérix', 'obélix', 'gaulois', 'village', 'potion magique'],
-          variations: ['asterix', 'astérix', 'astérics', 'asterics']
+          variations: ['asterix', 'astérix', 'astérics', 'asterics', 'asté'],
+          exclusions: ['ferri', 'conrad', 'film', 'adaptation'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Astérix'
         },
         'tintin': {
           name: 'Les Aventures de Tintin',
@@ -797,7 +870,9 @@ function MainApp() {
           first_published: '1929',
           status: 'completed',
           keywords: ['tintin', 'milou', 'capitaine haddock', 'reporter'],
-          variations: ['tintin', 'tin tin', 'tentin']
+          variations: ['tintin', 'tin tin', 'tentin', 'aventures de tintin'],
+          exclusions: ['alph-art', 'adaptation', 'film'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Les_Aventures_de_Tintin'
         },
         'lucky_luke': {
           name: 'Lucky Luke',
@@ -808,7 +883,74 @@ function MainApp() {
           first_published: '1946',
           status: 'ongoing',
           keywords: ['lucky luke', 'cowboy', 'far west', 'dalton'],
-          variations: ['lucky luke', 'lucky luc', 'luckyluke']
+          variations: ['lucky luke', 'lucky luc', 'luckyluke', 'lucky'],
+          exclusions: ['autres scénaristes', 'adaptation'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Lucky_Luke'
+        },
+        'gaston_lagaffe': {
+          name: 'Gaston Lagaffe',
+          authors: ['André Franquin'],
+          category: 'bd',
+          volumes: 19,
+          description: 'Gaffes et inventions du garçon de bureau le plus célèbre.',
+          first_published: '1957',
+          status: 'completed',
+          keywords: ['gaston lagaffe', 'franquin', 'gaffes', 'spirou'],
+          variations: ['gaston lagaffe', 'gaston', 'gasthon', 'lagaffe'],
+          exclusions: ['continuation', 'adaptation'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Gaston_Lagaffe'
+        },
+        'spirou': {
+          name: 'Spirou et Fantasio',
+          authors: ['André Franquin', 'Rob-Vel', 'Jijé'],
+          category: 'bd',
+          volumes: 55,
+          description: 'Aventures du groom et de son ami journaliste.',
+          first_published: '1938',
+          status: 'ongoing',
+          keywords: ['spirou', 'fantasio', 'marsupilami', 'champignac'],
+          variations: ['spirou', 'spirou et fantasio', 'spirou fantasio'],
+          exclusions: ['spin-off', 'marsupilami seul'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Spirou_et_Fantasio'
+        },
+        'blake_mortimer': {
+          name: 'Blake et Mortimer',
+          authors: ['Edgar P. Jacobs'],
+          category: 'bd',
+          volumes: 27,
+          description: 'Aventures scientifiques du capitaine Blake et du professeur Mortimer.',
+          first_published: '1946',
+          status: 'ongoing',
+          keywords: ['blake mortimer', 'jacobs', 'scientifique', 'mystère'],
+          variations: ['blake et mortimer', 'blake mortimer', 'blake'],
+          exclusions: ['autres auteurs récents'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Blake_et_Mortimer'
+        },
+        'largo_winch': {
+          name: 'Largo Winch',
+          authors: ['Jean Van Hamme', 'Philippe Francq'],
+          category: 'bd',
+          volumes: 24,
+          description: 'Aventures financières et d\'action de l\'héritier milliardaire.',
+          first_published: '1990',
+          status: 'ongoing',
+          keywords: ['largo winch', 'milliardaire', 'finance', 'action'],
+          variations: ['largo winch', 'largo', 'winch'],
+          exclusions: ['film', 'adaptation'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Largo_Winch'
+        },
+        'xiii': {
+          name: 'XIII',
+          authors: ['Jean Van Hamme', 'William Vance'],
+          category: 'bd',
+          volumes: 27,
+          description: 'Thriller d\'espionnage avec un homme amnésique.',
+          first_published: '1984',
+          status: 'completed',
+          keywords: ['xiii', 'treize', 'amnésie', 'espionnage'],
+          variations: ['xiii', '13', 'treize'],
+          exclusions: ['adaptation', 'tv'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/XIII_(bande_dessinée)'
         }
       },
       mangas: {
@@ -816,12 +958,14 @@ function MainApp() {
           name: 'One Piece',
           authors: ['Eiichiro Oda'],
           category: 'manga',
-          volumes: 100,
+          volumes: 105,
           description: 'Aventures de Luffy et son équipage de pirates.',
           first_published: '1997',
           status: 'ongoing',
           keywords: ['one piece', 'luffy', 'pirates', 'chapeau de paille'],
-          variations: ['one piece', 'one pece', 'onepiece']
+          variations: ['one piece', 'one pece', 'onepiece', 'one piec'],
+          exclusions: ['spin-off', 'databook', 'film'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/One_Piece'
         },
         'naruto': {
           name: 'Naruto',
@@ -832,7 +976,9 @@ function MainApp() {
           first_published: '1999',
           status: 'completed',
           keywords: ['naruto', 'ninja', 'konoha', 'sasuke', 'sakura'],
-          variations: ['naruto', 'narutoo', 'narotto']
+          variations: ['naruto', 'narutoo', 'narotto', 'narouto'],
+          exclusions: ['boruto', 'next generation', 'novel'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Naruto'
         },
         'dragon_ball': {
           name: 'Dragon Ball',
@@ -843,7 +989,100 @@ function MainApp() {
           first_published: '1984',
           status: 'completed',
           keywords: ['dragon ball', 'goku', 'vegeta', 'saiyan'],
-          variations: ['dragon ball', 'dragonball', 'dragon bal']
+          variations: ['dragon ball', 'dragonball', 'dragon bal', 'dragon ball z'],
+          exclusions: ['dragon ball super', 'gt', 'heroes'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Dragon_Ball'
+        },
+        'attack_on_titan': {
+          name: 'L\'Attaque des Titans',
+          authors: ['Hajime Isayama'],
+          category: 'manga',
+          volumes: 34,
+          description: 'Humanité contre les titans géants.',
+          first_published: '2009',
+          status: 'completed',
+          keywords: ['attaque des titans', 'titans', 'eren', 'mikasa'],
+          variations: ['attaque des titans', 'attack on titan', 'shingeki no kyojin', 'attaque titan'],
+          exclusions: ['spin-off', 'before the fall'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/L%27Attaque_des_Titans'
+        },
+        'death_note': {
+          name: 'Death Note',
+          authors: ['Tsugumi Ohba', 'Takeshi Obata'],
+          category: 'manga',
+          volumes: 12,
+          description: 'Thriller psychologique avec un carnet de la mort.',
+          first_published: '2003',
+          status: 'completed',
+          keywords: ['death note', 'light', 'ryuk', 'shinigami'],
+          variations: ['death note', 'deathnote', 'death not'],
+          exclusions: ['film', 'adaptation', 'novel'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Death_Note'
+        },
+        'demon_slayer': {
+          name: 'Demon Slayer',
+          authors: ['Koyoharu Gotouge'],
+          category: 'manga',
+          volumes: 23,
+          description: 'Tanjiro combat les démons pour sauver sa sœur.',
+          first_published: '2016',
+          status: 'completed',
+          keywords: ['demon slayer', 'tanjiro', 'nezuko', 'démons'],
+          variations: ['demon slayer', 'kimetsu no yaiba', 'demon slayers'],
+          exclusions: ['spin-off', 'gaiden'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Demon_Slayer'
+        },
+        'my_hero_academia': {
+          name: 'My Hero Academia',
+          authors: ['Kohei Horikoshi'],
+          category: 'manga',
+          volumes: 38,
+          description: 'Dans un monde de super-héros, Izuku rêve de devenir le plus grand.',
+          first_published: '2014',
+          status: 'ongoing',
+          keywords: ['my hero academia', 'deku', 'quirk', 'super héros'],
+          variations: ['my hero academia', 'boku no hero academia', 'hero academia'],
+          exclusions: ['vigilantes', 'spin-off'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/My_Hero_Academia'
+        },
+        'fullmetal_alchemist': {
+          name: 'Fullmetal Alchemist',
+          authors: ['Hiromu Arakawa'],
+          category: 'manga',
+          volumes: 27,
+          description: 'Deux frères alchimistes recherchent la Pierre Philosophale.',
+          first_published: '2001',
+          status: 'completed',
+          keywords: ['fullmetal alchemist', 'edward elric', 'alchimie', 'pierre philosophale'],
+          variations: ['fullmetal alchemist', 'full metal alchemist', 'fma'],
+          exclusions: ['brotherhood', 'adaptation'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Fullmetal_Alchemist'
+        },
+        'jujutsu_kaisen': {
+          name: 'Jujutsu Kaisen',
+          authors: ['Gege Akutami'],
+          category: 'manga',
+          volumes: 24,
+          description: 'Yuji affronte les fléaux avec l\'aide de sorciers.',
+          first_published: '2018',
+          status: 'ongoing',
+          keywords: ['jujutsu kaisen', 'yuji', 'sukuna', 'sorciers'],
+          variations: ['jujutsu kaisen', 'jujutsu kaizen', 'jjk'],
+          exclusions: ['prequel', 'spin-off'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Jujutsu_Kaisen'
+        },
+        'hunter_x_hunter': {
+          name: 'Hunter × Hunter',
+          authors: ['Yoshihiro Togashi'],
+          category: 'manga',
+          volumes: 37,
+          description: 'Gon recherche son père en devenant chasseur.',
+          first_published: '1998',
+          status: 'ongoing',
+          keywords: ['hunter x hunter', 'gon', 'killua', 'chasseur'],
+          variations: ['hunter x hunter', 'hunter hunter', 'hxh'],
+          exclusions: ['adaptation', 'remake'],
+          wikipedia_url: 'https://fr.wikipedia.org/wiki/Hunter_×_Hunter'
         }
       }
     };
