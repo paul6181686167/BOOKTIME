@@ -2148,24 +2148,22 @@ COUNT: 1
                     className="cursor-pointer bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow"
                   >
                     {item.isSeriesCard ? (
-                      item.isLibrarySeries ? (
-                        <SeriesLibraryCard
-                          series={item}
-                          onUpdateVolume={handleUpdateVolumeStatus}
-                          onUpdateStatus={handleUpdateSeriesStatus}
-                          onDelete={handleDeleteSeriesFromLibrary}
-                        />
-                      ) : (
-                        <SeriesCard
-                          series={item}
-                          isOwned={item.isLibrarySeries}
-                          showProgress={item.isLibrarySeries}
-                          progressInfo={item.isLibrarySeries ? {
-                            completed: item.completedBooks,
-                            total: item.totalBooks
-                          } : null}
-                        />
-                      )
+                      <SeriesCard
+                        series={item}
+                        onClick={() => handleItemClick(item)}
+                        isOwned={item.isLibrarySeries || item.isOwned}
+                        showProgress={item.isLibrarySeries}
+                        progressInfo={item.isLibrarySeries ? {
+                          completed: item.completedBooks,
+                          total: item.totalBooks
+                        } : null}
+                        showAddButton={!item.isLibrarySeries && !item.isOwned}
+                        onAddToLibrary={item.isLibrarySeries ? null : handleAddSeriesToLibrary}
+                        onUpdateVolume={item.isLibrarySeries ? handleUpdateVolumeStatus : null}
+                        onUpdateStatus={item.isLibrarySeries ? handleUpdateSeriesStatus : null}
+                        onDelete={item.isLibrarySeries ? handleDeleteSeriesFromLibrary : null}
+                        context={item.isLibrarySeries ? "library" : "search"}
+                      />
                     ) : (
                       <div className="p-4">
                         {/* Badges de pertinence et catégorie (en mode recherche) */}
