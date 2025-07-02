@@ -71,9 +71,54 @@ const SeriesDetailPage = () => {
 
           if (booksResponse.ok) {
             const books = await booksResponse.json();
-            const seriesBooks = books.filter(book => 
-              book.saga && book.saga.toLowerCase().includes(foundSeries.name.toLowerCase())
-            );
+            
+            // FILTRAGE STRICT par série spécifique (PROMPT 3)
+            const seriesBooks = books.filter(book => {
+              // Vérification de base : le livre doit avoir une saga
+              if (!book.saga) return false;
+              
+              const bookSaga = book.saga.toLowerCase().trim();
+              const bookAuthor = (book.author || '').toLowerCase().trim();
+              const bookTitle = (book.title || '').toLowerCase().trim();
+              
+              const seriesName = foundSeries.name.toLowerCase().trim();
+              const seriesAuthors = foundSeries.authors.map(a => a.toLowerCase().trim());
+              
+              // 1. CORRESPONDANCE EXACTE DU NOM DE SÉRIE
+              // Le nom de la saga doit correspondre exactement au nom de la série
+              const sagaMatches = bookSaga === seriesName || bookSaga.includes(seriesName);
+              
+              // 2. VÉRIFICATION AUTEUR ORIGINAL
+              // L'auteur du livre doit être dans la liste des auteurs originaux de la série
+              const authorMatches = seriesAuthors.some(seriesAuthor => {
+                // Correspondance exacte ou contient l'auteur
+                return bookAuthor === seriesAuthor || 
+                       bookAuthor.includes(seriesAuthor) || 
+                       seriesAuthor.includes(bookAuthor);
+              });
+              
+              // 3. VÉRIFICATION TITRE DE LA SÉRIE
+              // Le titre du livre doit contenir le nom de la série pour être considéré comme faisant partie
+              const titleContainsSeries = bookTitle.includes(seriesName);
+              
+              // 4. EXCLUSION DES SPIN-OFFS ET AUTRES CRÉATEURS
+              // Exclusions automatiques par mots-clés
+              const excludeKeywords = [
+                'spin-off', 'spin off', 'hors-série', 'hors série', 'adaptation', 
+                'suite non-officielle', 'suite non officielle', 'continuation posthume',
+                'par un autre auteur', 'nouvelle version', 'reboot', 'remake'
+              ];
+              
+              const hasExcludeKeywords = excludeKeywords.some(keyword => 
+                bookTitle.includes(keyword) || (book.description || '').toLowerCase().includes(keyword)
+              );
+              
+              // 5. LOGIQUE DE VALIDATION FINALE
+              // Le livre doit :
+              // - Avoir une correspondance de saga ET (auteur OU titre contient série)
+              // - NE PAS avoir de mots-clés d'exclusion
+              return sagaMatches && (authorMatches || titleContainsSeries) && !hasExcludeKeywords;
+            });
 
             // Marquer les volumes possédés
             seriesBooks.forEach(book => {
