@@ -976,12 +976,19 @@ async def auto_complete_series(
     for vol_num in range(1, target_volumes + 1):
         if vol_num not in existing_volumes:
             book_id = str(uuid.uuid4())
+            
+            # Déterminer le titre du tome
+            if series_info and series_info.get("tomes") and vol_num <= len(series_info["tomes"]):
+                tome_title = series_info["tomes"][vol_num - 1]
+            else:
+                tome_title = f"{series_name} - Tome {vol_num}"
+            
             new_book = {
                 "id": book_id,
                 "user_id": current_user["id"],
-                "title": f"{series_name} - Tome {vol_num}",
-                "author": template_book.get("author", ""),
-                "category": template_book.get("category", "roman"),
+                "title": tome_title,
+                "author": base_author,
+                "category": base_category,
                 "saga": series_name,
                 "volume_number": vol_num,
                 "status": "to_read",
@@ -993,9 +1000,9 @@ async def auto_complete_series(
                 "rating": None,
                 "review": "",
                 "cover_url": "",
-                "genre": template_book.get("genre", ""),
+                "genre": base_genre,
                 "publication_year": None,
-                "publisher": template_book.get("publisher", ""),
+                "publisher": base_publisher,
                 "isbn": "",
                 "date_started": None,
                 "date_completed": None
