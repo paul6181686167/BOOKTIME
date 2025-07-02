@@ -202,10 +202,16 @@ export class SearchOptimizer {
       .sort((a, b) => b.confidence - a.confidence);
   }
 
-  // Création d'une carte série
-  static createSeriesCard(detected, sourceType) {
+  // Création d'une carte série avec validation stricte intégrée
+  static createSeriesCard(detected, sourceType, userBooks = []) {
     const series = detected.series;
     const isOfficial = sourceType === 'official';
+    
+    // INTÉGRATION SERIESVALIDATOR - Validation stricte des livres pour cette série
+    let validationResults = null;
+    if (userBooks.length > 0) {
+      validationResults = SeriesValidator.filterBooksForSeries(userBooks, series);
+    }
     
     return {
       // Identifiants
@@ -218,35 +224,107 @@ export class SearchOptimizer {
       title: `📚 ${isOfficial ? 'SÉRIE' : 'MA SÉRIE'} : ${series.name}`,
       author: series.authors.join(', '),
       category: series.category,
-      description: this.formatSeriesDescription(series, detected),
+      description: this.formatSeriesDescription(series, detected, validationResults),
       cover_url: '', // Pas de couverture pour les cartes séries
       
-      // Scoring et matching
+      // Scoring et matching AMÉLIORÉ
       relevanceScore: detected.confidence, // Score 100000+ ou 90000+
       confidence: detected.confidence,
       match_reasons: detected.match_reasons,
       matchType: detected.matchType,
       originalScore: detected.originalScore,
       matchDetails: detected.matchDetails,
+      matchQuality: detected.matchQuality || null,
+      targetMatched: detected.targetMatched || null,
       
-      // Données séries
+      // Données séries avec validation
       seriesData: series,
       volumes: series.volumes,
       status: series.status,
       first_published: series.first_published,
+      validationResults: validationResults,
       
-      // Informations de pertinence pour l'affichage
+      // Informations de pertinence pour l'affichage ENRICHIES
       relevanceInfo: {
         level: 'prioritaire',
         label: this.getRelevanceLabel(detected),
         color: isOfficial ? 'bg-purple-600' : 'bg-blue-600',
-        icon: '📚'
+        icon: '📚',
+        qualityBadge: this.getQualityBadge(detected),
+        validationBadge: validationResults ? this.getValidationBadge(validationResults) : null
       },
       
       // Métadonnées pour navigation
       sourceType: sourceType,
-      wikipedia_url: series.wikipedia_url || null
+      wikipedia_url: series.wikipedia_url || null,
+      translations: series.translations || null
     };
+  }
+
+  // Formatage de la description de série avec validation intégrée
+  static formatSeriesDescription(series, detected, validationResults = null) {
+    const baseDescription = series.description || '';
+    const volumeInfo = `${series.volumes} tome(s)`;
+    const matchInfo = detected.matchDetails || '';
+    const statusInfo = series.status === 'completed' ? '✅ Complète' : '🔄 En cours';
+    
+    let validationInfo = '';
+    if (validationResults) {
+      const { validCount, rejectedCount, validationRate } = validationResults;
+      validationInfo = ` | 📊 ${validCount} tome(s) validé(s) (${validationRate}%)`;
+      if (rejectedCount > 0) {
+        validationInfo += ` - ${rejectedCount} exclu(s)`;
+      }
+    }
+    
+    return `${baseDescription} | ${volumeInfo} | ${statusInfo} | 🎯 ${matchInfo}${validationInfo}`;
+  }
+
+  // Badge de qualité selon la correspondance
+  static getQualityBadge(detected) {
+    if (!detected.matchQuality) return null;
+    
+    const confidence = detected.matchQuality.confidence;
+    switch (confidence) {
+      case 'high':
+        return { text: 'Excellente correspondance', color: 'bg-green-500' };
+      case 'medium':
+        return { text: 'Bonne correspondance', color: 'bg-yellow-500' };
+      case 'low':
+        return { text: 'Correspondance acceptable', color: 'bg-orange-500' };
+      default:
+        return { text: 'Correspondance détectée', color: 'bg-gray-500' };
+    }
+  }
+
+  // Badge de validation stricte
+  static getValidationBadge(validationResults) {
+    const { validationRate, rejectedCount } = validationResults;
+    
+    if (validationRate >= 90) {
+      return { text: 'Série certifiée', color: 'bg-green-600', icon: '✅' };
+    } else if (validationRate >= 70) {
+      return { text: 'Majorité validée', color: 'bg-yellow-600', icon: '⚠️' };
+    } else if (rejectedCount > validationResults.validCount) {
+      return { text: 'Filtrage strict appliqué', color: 'bg-red-600', icon: '🔍' };
+    } else {
+      return { text: 'Validation partielle', color: 'bg-blue-600', icon: 'ℹ️' };
+    }
+  }
+
+  // Validation automatisée complète d'une série
+  static async validateSeriesComplete(seriesName, books) {
+    try {
+      const validation = await SeriesValidator.validateWithWikipedia(seriesName, books);
+      return validation;
+    } catch (error) {
+      console.warn(`Validation Wikipedia échouée pour ${seriesName}:`, error);
+      return {
+        success: false,
+        reason: 'validation_error',
+        details: error.message
+      };
+    }
   }
 
   // Formatage de la description de série
