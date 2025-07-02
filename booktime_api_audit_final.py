@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 
 # Get the backend URL from the frontend .env file
-BACKEND_URL = "https://ae820b4a-4a1e-41df-b6d5-3db127c72ac5.preview.emergentagent.com"
+BACKEND_URL = "https://09834183-6a24-440c-a096-f36f03a63d5c.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 def run_audit():
