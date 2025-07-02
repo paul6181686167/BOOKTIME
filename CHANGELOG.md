@@ -1021,16 +1021,60 @@ Le fichier `test_result.md` constitue la documentation technique la plus complè
 - Bugs ou régressions
 - Points à améliorer
 
+#### Code Samples - Avant/Après
+**AVANT** :
+```javascript
+// Code existant avant modification
+const oldFunction = () => {
+  // ancienne logique
+};
+```
+
+**APRÈS** :
+```javascript
+// Code modifié après intervention
+const newFunction = () => {
+  // nouvelle logique simplifiée
+};
+```
+
 #### Fichiers Modifiés
 - Liste des fichiers avec nature des modifications
+- Lignes ajoutées/supprimées/modifiées
+- Nouvelles dépendances si applicable
 
 #### Tests Effectués
-- Tests de validation
+- Tests de validation automatisés
 - Vérification de non-régression
+- Résultats des tests utilisateur
+
+#### Métriques de Performance
+- **Temps de chargement** : Mesures avant/après
+- **Complexité code** : Lignes ajoutées/supprimées
+- **États React** : Simplification/complexification
+- **Fonctions** : Créées/modifiées/supprimées
+- **UX** : Réduction/augmentation clicks utilisateur
+- **Taille bundle** : Impact sur taille finale (si mesurable)
+
+#### Interface Utilisateur - Description Visuelle
+**Layout après modification** :
+- ✅ **Composant X** : Description de l'apparence et comportement
+- ✅ **Navigation** : Changements dans la structure
+- ✅ **Interactions** : Nouveaux patterns d'interaction
+- ✅ **Responsive** : Adaptation mobile/desktop
+- ✅ **Accessibilité** : Améliorations a11y si applicable
 
 #### Impact sur Architecture
-- Changements architecturaux
+- Changements architecturaux majeurs
 - Compatibilité maintenue/cassée
+- Nouvelles dépendances introduites
+- Patterns de développement modifiés
+
+#### Validation Utilisateur
+- Points de validation métier
+- Acceptance criteria respectés
+- Feedback utilisateur intégré
+- Tests d'usage validés
 
 ---
 
