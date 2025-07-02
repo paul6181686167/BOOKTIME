@@ -1631,23 +1631,6 @@ Le fichier `test_result.md` constitue la documentation technique la plus complè
 **🎯 FUSION AFFICHAGE COMPLÈTEMENT FINALISÉE - Objectif 100% atteint !**
 
 ---
-
-### [FUSION AFFICHAGE] - Suppression Toggle Livre/Série - Affichage Unifié
-**Date** : Mars 2025  
-**Prompt Utilisateur** : `"Retire le toggle livre/série de l'interface BOOKTIME et fais apparaître les fiches séries et livres individuels au même endroit dans la bibliothèque"`
-
-#### Context
-- Demande d'unification de l'interface utilisateur
-- Suppression du système de basculement entre vue livres et vue séries
-- Fusion de l'affichage pour que séries et livres individuels apparaissent ensemble
-- Tri par date d'ajout pour un ordre chronologique naturel
-
-#### Action Effectuée - MODIFICATIONS MAJEURES
-
-##### 1. **SUPPRESSION COMPLÈTE DU TOGGLE LIVRE/SÉRIE**
-- ✅ **État viewMode supprimé** : 
-  - `const [viewMode, setViewMode] = useState('series')` → Commentaire explicatif
-  - Plus de gestion des états 'books' vs 'series'
   
 - ✅ **Fonction toggleViewMode supprimée** :
   - Fonction de basculement complètement retirée
