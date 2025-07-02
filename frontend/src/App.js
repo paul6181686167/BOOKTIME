@@ -2095,6 +2095,7 @@ function MainApp() {
     if (user) {
       loadBooks();
       loadStats();
+      loadUserSeriesLibrary(); // Charger aussi les séries de la bibliothèque
     }
   }, [user]); // SUPPRESSION VIEWMODE des dépendances
 
@@ -2102,6 +2103,7 @@ function MainApp() {
   useEffect(() => {
     if (user) {
       loadBooks();
+      loadUserSeriesLibrary(); // Recharger aussi les séries quand l'onglet change
     }
   }, [activeTab]); // SUPPRESSION VIEWMODE des dépendances
 
