@@ -1023,11 +1023,13 @@ function MainApp() {
 
   const handleUpdateBook = async (bookId, bookData) => {
     try {
-      await bookService.updateBook(bookId, bookData);
+      const updatedBook = await bookService.updateBook(bookId, bookData);
       await loadBooks();
       await loadStats();
-      setSelectedBook(null);
-      setShowBookModal(false);
+      
+      // Mettre à jour le livre sélectionné avec les nouvelles données
+      setSelectedBook(updatedBook);
+      
       toast.success('Livre mis à jour !');
     } catch (error) {
       console.error('Erreur lors de la mise à jour du livre:', error);
