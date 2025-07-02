@@ -797,7 +797,10 @@ function MainApp() {
         const data = await response.json();
         
         // Générer automatiquement les cartes séries basées sur le terme de recherche
-        const seriesCards = generateSeriesCardsForSearch(query, data.books);
+        const seriesCards = generateSeriesCardsForSearch(query, data.books).map(card => ({
+          ...card,
+          onAddToLibrary: handleAddSeriesToLibrary // Ajouter la callback pour le bouton
+        }));
         
         // AJOUT DES BADGES CATÉGORIE : Marquer les livres avec leur catégorie et badge
         const resultsWithOwnership = data.books.map(book => {
