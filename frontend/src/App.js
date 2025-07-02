@@ -18,7 +18,6 @@ import SeriesCard from './components/SeriesCard';
 import SeriesDetailModal from './components/SeriesDetailModal';
 import SeriesDetailPage from './pages/SeriesDetailPage';
 import SeriesLibraryCard from './components/SeriesLibraryCard';
-import SeriesLibraryCard from './components/SeriesLibraryCard';
 import { useAdvancedSearch } from './hooks/useAdvancedSearch';
 import { useGroupedSearch } from './hooks/useGroupedSearch';
 import SearchOptimizer from './utils/searchOptimizer';
