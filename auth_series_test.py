@@ -10,7 +10,7 @@ import uuid
 import sys
 
 # Get the backend URL from the frontend .env file
-BACKEND_URL = "https://85322f0c-cf08-4fa9-8d03-65e5057bcafa.preview.emergentagent.com"
+BACKEND_URL = "https://9247c02f-0169-45c3-966d-1d6c00872cbe.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 class BookTimeAPITester:
