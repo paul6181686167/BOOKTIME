@@ -787,7 +787,7 @@ function MainApp() {
     return allItems;
   };
 
-  // FONCTION BIBLIOTHÈQUE : Regrouper les livres par série dans la bibliothèque (OBSOLÈTE - remplacée par createUnifiedDisplay) (OBSOLÈTE - remplacée par createUnifiedDisplay)
+  // FONCTION BIBLIOTHÈQUE OBSOLÈTE : Remplacée par createUnifiedDisplay pour affichage unifié
   const groupBooksIntoSeries = (booksList) => {
     const seriesGroups = {};
     const standaloneBooks = [];
