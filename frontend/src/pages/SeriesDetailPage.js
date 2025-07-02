@@ -134,7 +134,7 @@ const SeriesDetailPage = () => {
               }
             });
 
-            setIsOwned(seriesBooks.length > 0);
+            setIsOwned(seriesBooks.length >= foundSeries.volumes);
           }
           
           setVolumes(volumeList);
