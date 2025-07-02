@@ -407,7 +407,10 @@ const SeriesDetailPage = () => {
         {!isOwned && (
           <div className="mb-6">
             <button
-              onClick={addSeriesToLibrary}
+              onClick={() => {
+                console.log('[DEBUG] Bouton cliqué !');
+                addSeriesToLibrary();
+              }}
               disabled={addingToLibrary}
               className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-6 py-3 rounded-lg text-lg font-medium flex items-center space-x-2 shadow-lg"
             >
