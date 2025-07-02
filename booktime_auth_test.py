@@ -6,7 +6,7 @@ import time
 from datetime import datetime
 
 # Get the backend URL from the frontend .env file
-BACKEND_URL = "https://bab992b8-90f8-4429-a9c4-6bc66f0b99c0.preview.emergentagent.com"
+BACKEND_URL = "https://176ce24c-0b0e-40df-bd2e-39594d81d3da.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 class BooktimeAuthAPITest(unittest.TestCase):
