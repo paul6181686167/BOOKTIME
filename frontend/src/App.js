@@ -1990,7 +1990,32 @@ function MainApp() {
       // Filtrer les résultats avec un score minimum pour éviter le bruit
       .filter(book => !lastSearchTerm || book.relevanceScore >= 10)
     : // BIBLIOTHÈQUE UNIFIÉE : Séries et livres individuels mélangés par date d'ajout
-        createUnifiedDisplay(filteredBooks.filter(book => book.category === activeTab && !book.isSeriesCard));
+        [
+          // Ajouter les séries de la bibliothèque utilisateur
+          ...userSeriesLibrary
+            .filter(series => series.category === activeTab)
+            .map(series => ({
+              ...series,
+              isSeriesCard: true,
+              isLibrarySeries: true,
+              id: `library-series-${series.id}`,
+              name: series.series_name,
+              title: series.series_name,
+              author: series.authors.join(', '),
+              totalBooks: series.total_volumes,
+              completedBooks: series.volumes.filter(v => v.is_read).length,
+              progressPercent: series.completion_percentage,
+              sortDate: series.date_added
+            })),
+          // Ajouter les livres individuels (sans série) après filtrage
+          ...createUnifiedDisplay(filteredBooks.filter(book => book.category === activeTab && !book.isSeriesCard))
+        ]
+        .sort((a, b) => {
+          // Trier par date d'ajout (plus récent en premier)
+          const dateA = new Date(a.sortDate || a.date_added || a.updated_at || new Date().toISOString());
+          const dateB = new Date(b.sortDate || b.date_added || b.updated_at || new Date().toISOString());
+          return dateB - dateA;
+        });
 
   // Header Component avec barre de recherche unifiée
   const Header = () => (
