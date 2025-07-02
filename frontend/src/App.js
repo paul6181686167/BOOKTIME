@@ -510,8 +510,8 @@ function MainApp() {
   const loadBooks = async () => {
     try {
       setLoading(true);
-      // Charger soit les séries soit les livres selon le mode sélectionné
-      const data = await bookService.getBooks(null, null, viewMode);
+      // AFFICHAGE UNIFIÉ : Charger tous les livres (plus de distinction viewMode)
+      const data = await bookService.getBooks(null, null, 'books');
       setBooks(data);
     } catch (error) {
       console.error('Erreur lors du chargement des livres:', error);
