@@ -1662,6 +1662,24 @@ const displayedBooks = isSearchMode ?
 - ✅ Navigation livres → BookDetailModal.js
 - ✅ Recherche globale maintenue avec badges
 
+#### Métriques de Performance
+- **Temps de chargement** : Interface répond en <2s après restart
+- **Complexité code** : Réduction de ~50 lignes de code viewMode
+- **États React** : Suppression 1 état (viewMode) → simplification
+- **Fonctions supprimées** : 1 fonction complexe (updateBookService)
+- **Rendu unifié** : 1 seule fonction d'affichage vs 2 précédemment
+- **Navigation UX** : Réduction clicks utilisateur (plus de toggle)
+
+#### Interface Utilisateur - Description Visuelle
+**Layout principal après modification** :
+- ✅ **Header** : Logo BookTime + Barre recherche unifiée + Profil utilisateur
+- ✅ **Navigation** : Onglets Roman/BD/Manga (SANS toggle livre/série)
+- ✅ **Grille principale** : Mélange cartes séries + livres individuels
+- ✅ **Cartes séries** : Format large avec progression (X/Y tomes lus)
+- ✅ **Cartes livres** : Format standard avec couverture + métadonnées
+- ✅ **Tri affiché** : Ordre chronologique par date d'ajout (récent → ancien)
+- ✅ **Badges recherche** : Roman/BD/Manga sur résultats Open Library
+
 #### Impact sur Expérience Utilisateur
 - **Simplicité maximale** : Plus de confusion entre modes d'affichage
 - **Découverte naturelle** : Séries et livres visibles simultanément
