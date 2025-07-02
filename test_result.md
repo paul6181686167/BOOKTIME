@@ -1610,6 +1610,12 @@ test_plan:
     - "Saga Information Update"
   test_all: true
   test_priority: "high_first"
+  completed_tests:
+    - "POST /api/series/library - Ajouter une série complète à la bibliothèque"
+    - "GET /api/series/library - Récupérer les séries de la bibliothèque"
+    - "PUT /api/series/library/{series_id}/volume/{volume_number} - Toggle statut tome"
+    - "DELETE /api/series/library/{series_id} - Supprimer une série"
+    - "Tests d'intégration complets - Séries en bibliothèque"
 
 agent_communication:
   - agent: "testing"
