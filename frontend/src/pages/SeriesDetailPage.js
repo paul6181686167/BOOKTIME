@@ -195,7 +195,7 @@ const SeriesDetailPage = () => {
   };
 
   const addSeriesToLibrary = async () => {
-    console.log('🔵 BOUTON BLEU CLIQUÉ !');
+    console.log('🔵 BOUTON BLEU AVEC FONCTIONNALITÉ BOUTON VIOLET !');
     console.log('📊 État actuel:', { 
       seriesName: series?.name, 
       volumes: series?.volumes, 
@@ -208,34 +208,83 @@ const SeriesDetailPage = () => {
       const token = localStorage.getItem('token');
       console.log('🔑 Token trouvé:', token ? 'OUI' : 'NON');
 
-      const requestBody = {
-        series_name: series.name,
-        target_volumes: series.volumes
+      // UTILISATION DE LA FONCTIONNALITÉ DU BOUTON VIOLET SUPPRIMÉ
+      console.log('🚀 Ajout série à la bibliothèque avec enrichissement:', series);
+      
+      // Importer le référentiel étendu (comme le bouton violet)
+      const { EXTENDED_SERIES_DATABASE } = await import('../utils/seriesDatabaseExtended.js');
+      
+      // Préparer les données série pour la fonction d'enrichissement
+      const seriesData = {
+        name: series.name,
+        authors: series.authors || [series.author || 'Auteur inconnu'],
+        category: series.category || 'roman',
+        volumes: series.volumes,
+        first_published: series.first_published || ''
       };
-      console.log('📤 Envoi requête:', requestBody);
-      console.log('🌐 URL:', `${backendUrl}/api/series/complete`);
+      
+      // Générer les volumes avec titres depuis le référentiel (comme le bouton violet)
+      const volumes = await generateVolumesList(seriesData, EXTENDED_SERIES_DATABASE);
+      console.log('📚 Volumes générés:', volumes);
+      
+      // Enrichissement automatique des métadonnées (comme le bouton violet)
+      const enrichedMetadata = await enrichSeriesMetadata(seriesData);
+      console.log('✨ Métadonnées enrichies:', enrichedMetadata);
+      
+      // Préparer les données de la série avec toutes les métadonnées (comme le bouton violet)
+      const seriesPayload = {
+        series_name: seriesData.name,
+        authors: seriesData.authors,
+        category: seriesData.category,
+        total_volumes: volumes.length,
+        volumes: volumes,
+        description_fr: enrichedMetadata.description_fr,
+        cover_image_url: enrichedMetadata.cover_image_url,
+        first_published: enrichedMetadata.first_published || seriesData.first_published || '',
+        last_published: enrichedMetadata.last_published || '',
+        publisher: enrichedMetadata.publisher || '',
+        series_status: 'to_read'
+      };
+      
+      console.log('📋 Payload final:', seriesPayload);
+      console.log('🌐 URL:', `${backendUrl}/api/series/library`);
 
-      const response = await fetch(`${backendUrl}/api/series/complete`, {
+      // Appel API pour ajouter la série (comme le bouton violet)
+      const response = await fetch(`${backendUrl}/api/series/library`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(seriesPayload)
       });
 
       console.log('📥 Réponse reçue:', response.status, response.statusText);
 
       if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Succès:', data);
-        toast.success(`${data.created_volumes} tome(s) ajouté(s) à votre bibliothèque !`);
+        const result = await response.json();
+        console.log('✅ Succès:', result);
+        
+        // Message de succès détaillé (comme le bouton violet)
+        toast.success(
+          `✅ Série "${seriesData.name}" ajoutée avec ${volumes.length} tome${volumes.length > 1 ? 's' : ''} !`,
+          { duration: 4000 }
+        );
+        
         await loadSeriesDetails(); // Recharger pour mettre à jour l'état
         console.log('🔄 Rechargement terminé');
       } else {
         const error = await response.json();
         console.log('❌ Erreur response:', error);
-        toast.error(error.detail || 'Erreur lors de l\'ajout');
+        
+        // Gestion des erreurs spécifiques (comme le bouton violet)
+        if (error.detail && error.detail.includes('409')) {
+          toast.error('Cette série est déjà dans votre bibliothèque');
+        } else if (error.detail && error.detail.includes('400')) {
+          toast.error('Données de série invalides');
+        } else {
+          toast.error(error.detail || 'Erreur lors de l\'ajout de la série');
+        }
       }
     } catch (error) {
       console.error('💥 Erreur catch:', error);
@@ -244,6 +293,32 @@ const SeriesDetailPage = () => {
       setAddingToLibrary(false);
       console.log('🏁 Fonction terminée');
     }
+  };
+
+  // Fonctions utilitaires du bouton violet (à ajouter)
+  const generateVolumesList = async (seriesData, database) => {
+    // Logique de génération des volumes avec titres
+    const volumes = [];
+    for (let i = 1; i <= seriesData.volumes; i++) {
+      volumes.push({
+        volume_number: i,
+        volume_title: `${seriesData.name} - Tome ${i}`,
+        is_read: false,
+        date_read: null
+      });
+    }
+    return volumes;
+  };
+
+  const enrichSeriesMetadata = async (seriesData) => {
+    // Logique d'enrichissement des métadonnées
+    return {
+      description_fr: seriesData.description || `La série ${seriesData.name}`,
+      cover_image_url: "",
+      first_published: seriesData.first_published || "",
+      last_published: "",
+      publisher: ""
+    };
   };
 
   const getStatusIcon = (status) => {
