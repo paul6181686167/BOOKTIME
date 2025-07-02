@@ -132,8 +132,6 @@ const SeriesCard = ({
           </div>
         </div>
 
-        {/* Section des livres supprimée - bouton d'ajout retiré pour éviter le doublon */}
-        )}
       </div>
     </div>
   );
