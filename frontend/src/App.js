@@ -18,6 +18,7 @@ import SeriesDetailModal from './components/SeriesDetailModal';
 import SeriesDetailPage from './pages/SeriesDetailPage';
 import { useAdvancedSearch } from './hooks/useAdvancedSearch';
 import { useGroupedSearch } from './hooks/useGroupedSearch';
+import SearchOptimizer from './utils/searchOptimizer';
 
 import './App.css';
 
