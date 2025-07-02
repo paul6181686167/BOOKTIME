@@ -60,30 +60,13 @@ const SeriesDetailPage = () => {
             });
           }
           
-          // Vérifier quels volumes sont déjà possédés dans books collection ET series_library
+          // Vérifier quels volumes sont déjà possédés
           const booksResponse = await fetch(`${backendUrl}/api/books?category=${foundSeries.category}`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
             }
           });
-
-          // Vérifier si la série existe comme entité dans series_library
-          const seriesLibraryResponse = await fetch(`${backendUrl}/api/series/library?category=${foundSeries.category}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-
-          let seriesExists = false;
-          if (seriesLibraryResponse.ok) {
-            const seriesLibraryData = await seriesLibraryResponse.json();
-            seriesExists = seriesLibraryData.series.some(s => 
-              s.series_name.toLowerCase() === foundSeries.name.toLowerCase()
-            );
-            console.log('📚 Série existe comme entité:', seriesExists);
-          }
 
           if (booksResponse.ok) {
             const books = await booksResponse.json();
