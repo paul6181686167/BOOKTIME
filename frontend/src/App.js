@@ -682,64 +682,125 @@ function MainApp() {
     return [...seriesCards, ...standaloneBooks];
   };
 
-  // FONCTION BIBLIOTHÈQUE : Regrouper les livres par série dans la bibliothèque
-  const groupBooksIntoSeries = (booksList) => {
-    const seriesGroups = {};
-    const standaloneBooks = [];
-
-    booksList.forEach(book => {
-      if (book.saga && book.saga.trim()) {
-        const seriesKey = book.saga.toLowerCase().trim();
-        if (!seriesGroups[seriesKey]) {
-          seriesGroups[seriesKey] = {
-            id: `library-series-${seriesKey}`,
-            isSeriesCard: true,
-            isLibrarySeries: true, // Marqueur pour série de bibliothèque
-            name: book.saga,
-            title: book.saga,
-            author: book.author,
-            category: book.category,
-            books: [],
-            totalBooks: 0,
-            completedBooks: 0,
-            readingBooks: 0,
-            toReadBooks: 0,
-            cover_url: book.cover_url, // Utiliser la couverture du premier livre
-            // Progression
-            progressPercent: 0
+  // Fonction pour générer des cartes de séries basées sur la recherche
+  const generateSeriesCardsForSearch = (query, books) => {
+    // Fonction pour détecter les séries populaires
+    const detectPopularSeries = (searchQuery) => {
+      const query = searchQuery.toLowerCase();
+      
+      // Mapping des séries populaires
+      const popularSeries = {
+        'harry potter': {
+          name: 'Harry Potter',
+          authors: ['J.K. Rowling'],
+          category: 'roman',
+          volumes: 7,
+          description: 'Série de romans fantastiques écrite par J.K. Rowling, qui décrit les aventures d\'un jeune sorcier nommé Harry Potter à l\'école de sorcellerie Poudlard.',
+          first_published: '1997',
+          status: 'completed'
+        },
+        'one piece': {
+          name: 'One Piece',
+          authors: ['Eiichiro Oda'],
+          category: 'manga',
+          volumes: 100,
+          description: 'Manga qui suit les aventures de Monkey D. Luffy et de son équipage de pirates, à la recherche du trésor ultime, le "One Piece".',
+          first_published: '1997',
+          status: 'ongoing'
+        },
+        'astérix': {
+          name: 'Astérix',
+          authors: ['René Goscinny', 'Albert Uderzo'],
+          category: 'bd',
+          volumes: 39,
+          description: 'Série de bandes dessinées françaises créée par René Goscinny et Albert Uderzo, qui raconte les aventures d\'Astérix et de son ami Obélix dans un village gaulois résistant à l\'occupation romaine.',
+          first_published: '1959',
+          status: 'ongoing'
+        },
+        'seigneur des anneaux': {
+          name: 'Le Seigneur des Anneaux',
+          authors: ['J.R.R. Tolkien'],
+          category: 'roman',
+          volumes: 3,
+          description: 'Épopée de fantasy écrite par J.R.R. Tolkien, qui raconte la quête pour détruire l\'Anneau unique, forgé par le Seigneur des Ténèbres Sauron.',
+          first_published: '1954',
+          status: 'completed'
+        },
+        'naruto': {
+          name: 'Naruto',
+          authors: ['Masashi Kishimoto'],
+          category: 'manga',
+          volumes: 72,
+          description: 'Manga qui raconte l\'histoire de Naruto Uzumaki, un jeune ninja qui rêve de devenir Hokage, le chef de son village.',
+          first_published: '1999',
+          status: 'completed'
+        },
+        'tintin': {
+          name: 'Les Aventures de Tintin',
+          authors: ['Hergé'],
+          category: 'bd',
+          volumes: 24,
+          description: 'Série de bandes dessinées créée par Hergé, qui raconte les aventures du jeune reporter Tintin et de son chien Milou.',
+          first_published: '1929',
+          status: 'completed'
+        }
+      };
+      
+      // Vérifier si la requête correspond à une série populaire
+      for (const [key, series] of Object.entries(popularSeries)) {
+        if (query.includes(key)) {
+          return {
+            series: series,
+            confidence: 180,
+            match_reasons: ['exact_match', 'popular_series']
           };
         }
-        
-        seriesGroups[seriesKey].books.push(book);
-        seriesGroups[seriesKey].totalBooks += 1;
-        
-        // Compter les statuts
-        switch (book.status) {
-          case 'completed':
-            seriesGroups[seriesKey].completedBooks += 1;
-            break;
-          case 'reading':
-            seriesGroups[seriesKey].readingBooks += 1;
-            break;
-          case 'to_read':
-            seriesGroups[seriesKey].toReadBooks += 1;
-            break;
+      }
+      
+      return null;
+    };
+    
+    // Détecter si la recherche correspond à une série populaire
+    const detectedSeries = detectPopularSeries(query);
+    if (detectedSeries) {
+      return [detectedSeries];
+    }
+    
+    // Si aucune série populaire n'est détectée, essayer de détecter des séries basées sur les livres
+    const potentialSeries = {};
+    
+    books.forEach(book => {
+      if (book.saga) {
+        const sagaKey = book.saga.toLowerCase();
+        if (!potentialSeries[sagaKey]) {
+          potentialSeries[sagaKey] = {
+            series: {
+              name: book.saga,
+              authors: [book.author],
+              category: book.category,
+              volumes: 1,
+              description: `Série de livres incluant "${book.title}"`,
+              first_published: book.publication_year || 'Inconnue',
+              status: 'ongoing'
+            },
+            confidence: 100,
+            match_reasons: ['saga_match']
+          };
+        } else {
+          potentialSeries[sagaKey].confidence += 20;
+          if (!potentialSeries[sagaKey].series.authors.includes(book.author)) {
+            potentialSeries[sagaKey].series.authors.push(book.author);
+          }
+          potentialSeries[sagaKey].series.volumes += 1;
         }
-        
-        // Calculer le pourcentage de progression
-        seriesGroups[seriesKey].progressPercent = Math.round(
-          (seriesGroups[seriesKey].completedBooks / seriesGroups[seriesKey].totalBooks) * 100
-        );
-      } else {
-        // Livre standalone (sans série)
-        standaloneBooks.push(book);
       }
     });
-
-    // Convertir les groupes en tableau et trier par nombre de livres
-    const seriesCards = Object.values(seriesGroups).sort((a, b) => b.totalBooks - a.totalBooks);
     
-    return [...seriesCards, ...standaloneBooks];
+    // Convertir en tableau et filtrer les séries avec une confiance suffisante
+    return Object.values(potentialSeries)
+      .filter(series => series.confidence >= 100)
+      .sort((a, b) => b.confidence - a.confidence)
+      .slice(0, 3); // Limiter à 3 séries maximum
   };
 
   // Fonction pour rechercher dans Open Library avec RECHERCHE GLOBALE (toutes catégories)
@@ -832,7 +893,6 @@ function MainApp() {
             // S'assurer que la catégorie est bien définie pour le placement intelligent
             category: book.category || categoryBadge.key || 'roman' // Défaut roman si non détecté
           };
-          };
         });
         
         // Stocker les résultats combinés avec les cartes séries en premier
@@ -861,8 +921,6 @@ function MainApp() {
     setLastSearchTerm('');
     clearSearch();
   };
-
-
 
   // AJOUT INTELLIGENT : Placement automatique dans le bon onglet selon la catégorie
   const handleAddFromOpenLibrary = async (openLibraryBook) => {
@@ -948,8 +1006,6 @@ function MainApp() {
       });
     }
   };
-
-
 
   // Gestionnaire de clic sur série pour afficher la fiche dédiée
   const handleSeriesClick = (series) => {
@@ -1702,7 +1758,7 @@ function MainApp() {
                 className={`py-3 px-2 border-b-2 font-medium text-lg ${
                   activeTab === category.key
                     ? 'border-green-500 text-green-600 dark:text-green-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                 }`}
               >
                 {category.label}
@@ -1710,30 +1766,26 @@ function MainApp() {
             ))}
           </nav>
           
-          {/* Toggle Vue Livres/Séries */}
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Affichage :</span>
-            <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+          <div className="flex items-center space-x-4">
+            {/* Toggle Vue Livres/Séries */}
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-500 dark:text-gray-400">Vue :</span>
               <button
-                onClick={() => setViewMode('books')}
-                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
-                  viewMode === 'books'
-                    ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                onClick={toggleViewMode}
+                className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                  viewMode === 'series' ? 'bg-green-600' : 'bg-gray-200 dark:bg-gray-700'
                 }`}
               >
-                📚 Livres
+                <span className="sr-only">Basculer entre vue livres et séries</span>
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    viewMode === 'series' ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
               </button>
-              <button
-                onClick={() => setViewMode('series')}
-                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
-                  viewMode === 'series'
-                    ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                }`}
-              >
-                📖 Séries
-              </button>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {viewMode === 'series' ? 'Séries' : 'Livres'}
+              </span>
             </div>
           </div>
         </div>
@@ -1741,284 +1793,219 @@ function MainApp() {
     </div>
   );
 
-
-
-  // Book Grid Component
-  const BookGrid = () => {
-    if (loading) {
-      return (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-gray-200 dark:bg-gray-700 h-48 rounded-lg animate-pulse"></div>
-          ))}
-        </div>
-      );
+  // Chargement initial des livres et statistiques
+  useEffect(() => {
+    if (user) {
+      loadBooks();
+      loadStats();
     }
+  }, [user, viewMode]);
 
-    if (displayedBooks.length === 0) {
-      return (
-        <div className="text-center py-12">
-          <div className="max-w-md mx-auto">
-            <span className="text-6xl mb-4 block">📚</span>
-            {searchStats.hasActiveFilters ? (
-              <>
-                <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">
-                  Aucun livre trouvé
-                </p>
-                <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">
-                  Essayez d'ajuster vos critères de recherche
-                </p>
-                <button
-                  onClick={clearSearch}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                >
-                  Effacer les filtres
-                </button>
-              </>
-            ) : (
-              <>
-                <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">
-                  Aucun livre dans cette catégorie
-                </p>
-                <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">
-                  Ajoutez votre premier livre pour commencer !
-                </p>
-              </>
-            )}
-          </div>
-        </div>
-      );
+  // Rechargement des livres quand l'onglet change
+  useEffect(() => {
+    if (user) {
+      loadBooks();
     }
+  }, [activeTab, viewMode]);
 
-    return (
-      <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-3">
-        {displayedBooks.map((item) => (
-          item.isSeriesCard ? (
-            /* Carte Série - Affichage distinctif */
-            <div
-              key={item.id}
-              className="col-span-2 cursor-pointer hover:shadow-xl transition-all hover:scale-105 group relative"
-              onClick={() => handleItemClick(item)}
-            >
-              <SeriesCard 
-                series={item}
-                onClick={() => handleItemClick(item)}
-                showProgress={false}
-              />
-            </div>
-          ) : (
-            /* Carte Livre normale */
-            <div
-              key={item.id}
-              className="cursor-pointer hover:shadow-lg transition-all hover:scale-105 group relative"
-              onClick={() => handleItemClick(item)}
-            >
-              {/* Badge de pertinence (uniquement en mode recherche) */}
-              {isSearchMode && item.relevanceInfo && item.relevanceScore > 50 && (
-                <div className="absolute top-1 left-1 z-10">
-                  <div 
-                    className={`${item.relevanceInfo.color} text-white text-xs px-1.5 py-0.5 rounded-full flex items-center opacity-90`}
-                    title={`${item.relevanceInfo.label} (Score: ${item.relevanceScore})`}
-                  >
-                    <span className="mr-0.5">{item.relevanceInfo.icon}</span>
-                    <span className="font-medium">{item.relevanceScore}</span>
-                  </div>
-                </div>
-              )}
-              
-              {/* Badge pour les livres Open Library avec indicateur de catégorie */}
-              {item.isFromOpenLibrary && (
-                <div className="absolute top-1 right-1 z-10 flex flex-col items-end space-y-1">
-                  {addingBooks.has(item.ol_key) ? (
-                    <div className="bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full flex items-center animate-pulse">
-                      ⏳
-                    </div>
-                  ) : item.isOwned ? (
-                    <div className="bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full flex items-center">
-                      ✓
-                    </div>
-                  ) : (
-                    <div className="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full flex items-center cursor-pointer hover:bg-blue-600 transition-colors"
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           handleAddFromOpenLibrary(item);
-                         }}>
-                      +
-                    </div>
-                  )}
-                  
-                  {/* Badge de catégorie */}
-                  {item.category && (
-                    <div className={`text-xs px-1.5 py-0.5 rounded-full text-white font-medium ${
-                      item.category === 'roman' ? 'bg-blue-500' :
-                      item.category === 'bd' ? 'bg-green-500' :
-                      item.category === 'manga' ? 'bg-purple-500' :
-                      'bg-gray-500'
-                    }`}>
-                      {item.category === 'roman' ? 'Roman' :
-                       item.category === 'bd' ? 'BD' :
-                       item.category === 'manga' ? 'Manga' :
-                       item.category}
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {/* Badge de catégorie pour les livres locaux en mode recherche */}
-              {!item.isFromOpenLibrary && isSearchMode && item.category && (
-                <div className="absolute top-1 right-1 z-10">
-                  <div className={`text-xs px-1.5 py-0.5 rounded-full text-white font-medium ${
-                    item.category === 'roman' ? 'bg-blue-500' :
-                    item.category === 'bd' ? 'bg-green-500' :
-                    item.category === 'manga' ? 'bg-purple-500' :
-                    'bg-gray-500'
-                  }`}>
-                    {item.category === 'roman' ? 'Roman' :
-                     item.category === 'bd' ? 'BD' :
-                     item.category === 'manga' ? 'Manga' :
-                     item.category}
-                  </div>
-                </div>
-              )}
-              
-              <div className={`aspect-[2/3] bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden shadow-md ${
-                item.isFromOpenLibrary && !item.isOwned ? 'ring-2 ring-blue-200 dark:ring-blue-800' : ''
-              } ${
-                isSearchMode && item.relevanceInfo?.level === 'excellent' ? 'ring-2 ring-green-300 dark:ring-green-600' : ''
-              } ${
-                isSearchMode && item.relevanceInfo?.level === 'good' ? 'ring-1 ring-blue-300 dark:ring-blue-600' : ''
-              }`}>
-                {item.cover_url ? (
-                  <img
-                    src={item.cover_url}
-                    alt={item.title}
-                    className="w-full h-full object-cover rounded-lg group-hover:scale-110 transition-transform duration-300"
-                  />
-                ) : (
-                  <span className="text-4xl">📖</span>
-                )}
-              </div>
-              <div className="mt-2 text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 truncate" title={item.title}>{item.title}</p>
-                <p className="text-xs text-blue-600 dark:text-blue-400 truncate" title={item.author}>{item.author}</p>
-                {item.isFromOpenLibrary && !item.isOwned && (
-                  <p className="text-xs text-green-600 dark:text-green-400 font-medium">Open Library</p>
-                )}
-                {/* Indicateur de pertinence textuel en mode recherche */}
-                {isSearchMode && item.relevanceInfo && item.relevanceScore > 100 && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {item.relevanceInfo.label}
-                  </p>
-                )}
-              </div>
-            </div>
-          )
-        ))}
-      </div>
-    );
-  };
-
+  // Rendu principal
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          {/* Bouton retour à la bibliothèque */}
+        {/* Contenu principal */}
+        <div className="space-y-8">
+          {/* Navigation par onglets */}
+          {!isSearchMode && <TabNavigation />}
+          
+          {/* Bouton Retour à la bibliothèque (en mode recherche) */}
           {isSearchMode && (
-            <div className="text-center">
+            <div className="mb-6">
               <button
                 onClick={backToLibrary}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40 rounded-lg transition-colors"
+                className="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 ← Retour à ma bibliothèque
               </button>
             </div>
           )}
           
-          {/* Statistiques de recherche */}
-          {(searchStats.hasActiveFilters || isSearchMode) && (
-            <div className="mt-4 text-center space-y-1">
-              {isSearchMode ? (
-                <>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Recherche "{lastSearchTerm}" - {displayedBooks.filter(b => !b.isFromOpenLibrary).length} dans ma bibliothèque, {displayedBooks.filter(b => b.isFromOpenLibrary).length} sur Open Library
-                  </p>
-                  {displayedBooks.length > 0 && (
-                    <p className="text-xs text-gray-500 dark:text-gray-500 flex items-center justify-center">
-                      <span className="mr-1">🎯</span>
-                      Résultats classés par pertinence 
-                      {displayedBooks.some(book => book.relevanceScore >= 800) && (
-                        <span className="ml-1 text-green-600 dark:text-green-400 font-medium">
-                          - Correspondances exactes trouvées
-                        </span>
-                      )}
-                    </p>
+          {/* Statistiques de recherche (en mode recherche) */}
+          {isSearchMode && (
+            <div className="mb-6">
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">
+                  📊 Résultats pour "{lastSearchTerm}"
+                </h3>
+                <div className="flex flex-wrap gap-4 text-sm text-blue-700 dark:text-blue-300">
+                  <span>
+                    {books.filter(book => {
+                      const term = lastSearchTerm.toLowerCase();
+                      return (
+                        (book.title || '').toLowerCase().includes(term) ||
+                        (book.author || '').toLowerCase().includes(term) ||
+                        (book.saga || '').toLowerCase().includes(term)
+                      );
+                    }).length} dans ma bibliothèque
+                  </span>
+                  <span>
+                    {openLibraryResults.filter(book => !book.isSeriesCard).length} sur Open Library
+                  </span>
+                  {openLibraryResults.some(book => book.isSeriesCard) && (
+                    <span>
+                      {openLibraryResults.filter(book => book.isSeriesCard).length} série(s) détectée(s)
+                    </span>
                   )}
-                </>
-              ) : (
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {searchStats.filtered} résultat{searchStats.filtered > 1 ? 's' : ''} trouvé{searchStats.filtered > 1 ? 's' : ''} 
-                  {searchStats.hiddenCount > 0 && (
-                    <span> ({searchStats.hiddenCount} masqué{searchStats.hiddenCount > 1 ? 's' : ''})</span>
-                  )}
-                </p>
-              )}
-            </div>
-          )}
-          
-          {/* Indicateur de chargement */}
-          {searchLoading && (
-            <div className="mt-3 text-center">
-              <div className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                Recherche en cours sur Open Library...
+                </div>
+                <div className="mt-2 text-sm text-blue-700 dark:text-blue-300 font-medium">
+                  Résultats classés par pertinence
+                </div>
+                {displayedBooks.some(book => book.relevanceScore >= 30000) && (
+                  <div className="mt-1 text-xs text-green-600 dark:text-green-400">
+                    Correspondances exactes trouvées
+                  </div>
+                )}
               </div>
             </div>
           )}
+          
+          {/* Grille de livres/séries */}
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 h-64 animate-pulse">
+                  <div className="flex space-x-4">
+                    <div className="w-16 h-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    <div className="flex-1 space-y-3">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {displayedBooks.length > 0 ? (
+                displayedBooks.map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => handleItemClick(item)}
+                    className="cursor-pointer bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow"
+                  >
+                    {item.isSeriesCard ? (
+                      <SeriesCard
+                        series={item}
+                        isOwned={item.isLibrarySeries}
+                        showProgress={item.isLibrarySeries}
+                        progressInfo={item.isLibrarySeries ? {
+                          completed: item.completedBooks,
+                          total: item.totalBooks
+                        } : null}
+                      />
+                    ) : (
+                      <div className="p-4">
+                        {/* Badges de pertinence et catégorie (en mode recherche) */}
+                        {isSearchMode && (
+                          <div className="flex justify-between mb-2">
+                            {item.relevanceInfo && (
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white ${item.relevanceInfo.color}`}>
+                                {item.relevanceInfo.icon} {item.relevanceInfo.label}
+                              </span>
+                            )}
+                            {item.categoryBadge && (
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${item.categoryBadge.class}`}>
+                                {item.categoryBadge.emoji} {item.categoryBadge.text}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        
+                        <div className="flex items-start space-x-4">
+                          <div className="w-16 h-24 bg-gray-100 dark:bg-gray-700 rounded flex-shrink-0 overflow-hidden">
+                            {item.cover_url ? (
+                              <img 
+                                src={item.cover_url} 
+                                alt={item.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <span className="text-gray-400 text-2xl">📖</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1 line-clamp-2">
+                              {item.title}
+                            </h3>
+                            
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                              {item.author}
+                            </p>
+                            
+                            <div className="flex flex-wrap gap-2">
+                              {item.saga && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300">
+                                  📖 {item.saga}
+                                  {item.volume_number && ` - T.${item.volume_number}`}
+                                </span>
+                              )}
+                              
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                item.status === 'completed' 
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' 
+                                  : item.status === 'reading'
+                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300'
+                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                              }`}>
+                                {item.status === 'completed' ? 'Terminé' : 
+                                 item.status === 'reading' ? 'En cours' : 'À lire'}
+                              </span>
+                              
+                              {/* Badge Open Library */}
+                              {item.isFromOpenLibrary && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300">
+                                  {item.isOwned ? '✓ Possédé' : '+ Ajouter'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-12">
+                  <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                    <span className="text-4xl">📚</span>
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    {isSearchMode 
+                      ? `Aucun résultat pour "${lastSearchTerm}"` 
+                      : 'Aucun livre dans cette catégorie'}
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400">
+                    {isSearchMode 
+                      ? 'Essayez avec un autre terme de recherche' 
+                      : 'Ajoutez des livres pour commencer votre collection'}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
-
-        {/* Affichage des résultats groupés ou interface normale */}
-        {isSearchMode && openLibraryResults.length > 0 ? (
-          <GroupedSearchResults
-            results={groupedResults}
-            searchStats={groupedSearchStats}
-            onBookClick={(book) => {
-              setSelectedBook(book);
-              setShowBookModal(true);
-            }}
-          />
-        ) : (
-          <>
-            <TabNavigation />
-            <BookGrid />
-          </>
-        )}
       </main>
-
-
-      <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
       
-      {/* Modal de détail de série */}
-      {selectedSeries && (
-        <SeriesDetailModal 
-          isOpen={showSeriesDetail}
-          onClose={() => {
-            setShowSeriesDetail(false);
-            setSelectedSeries(null);
-          }}
-          series={selectedSeries}
-          onAddSeries={(seriesData) => {
-            // Ajouter la série à la bibliothèque
-            loadBooks();
-            loadStats();
-          }}
-        />
-      )}
-      
-      {selectedBook && (
+      {/* Modals */}
+      {showBookModal && selectedBook && (
         <BookDetailModal
           book={selectedBook}
+          isOpen={showBookModal}
           onClose={() => {
             setSelectedBook(null);
             setShowBookModal(false);
@@ -2028,51 +2015,58 @@ function MainApp() {
           onAddFromOpenLibrary={handleAddFromOpenLibrary}
         />
       )}
+      
+      {showSeriesModal && selectedSeries && (
+        <SeriesDetailModal
+          series={selectedSeries}
+          isOpen={showSeriesModal}
+          onClose={() => {
+            setSelectedSeries(null);
+            setShowSeriesModal(false);
+          }}
+          onUpdate={loadBooks}
+        />
+      )}
+      
+      {showProfileModal && (
+        <ProfileModal
+          isOpen={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+        />
+      )}
+      
+      {/* Toast notifications */}
+      <Toaster position="bottom-right" />
     </div>
   );
-}
-
-// Auth Wrapper Component
-function AuthWrapper() {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Chargement...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return user ? <AppContent /> : <LoginPage />;
 }
 
 // Main App Component
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <Router>
-          <div className="App">
-            <AuthWrapper />
-            <Toaster 
-              position="top-right"
-              toastOptions={{
-                duration: 3000,
-                style: {
-                  background: '#363636',
-                  color: '#fff',
-                },
-              }}
-            />
-          </div>
-        </Router>
-      </AuthProvider>
-    </ThemeProvider>
+    <Router>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppWithAuth />
+        </AuthProvider>
+      </ThemeProvider>
+    </Router>
   );
+}
+
+// App with Auth Wrapper
+function AppWithAuth() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+      </div>
+    );
+  }
+
+  return user ? <AppContent /> : <LoginPage />;
 }
 
 export default App;
