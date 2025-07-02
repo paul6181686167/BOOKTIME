@@ -135,8 +135,58 @@ const SeriesCard = ({
                 </div>
               </div>
             )}
+
+            {/* Actions de bibliothèque - uniquement si en mode bibliothèque */}
+            {context === "library" && onUpdateVolume && (
+              <div className="mt-3 pt-3 border-t border-indigo-200 dark:border-indigo-800">
+                <div className="flex items-center justify-between text-sm mb-2">
+                  <span className="text-gray-600 dark:text-gray-400">Actions</span>
+                  <div className="flex space-x-2">
+                    {onUpdateStatus && (
+                      <select
+                        value={series.series_status || 'to_read'}
+                        onChange={(e) => onUpdateStatus(series.id, e.target.value)}
+                        className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <option value="to_read">À lire</option>
+                        <option value="reading">En cours</option>
+                        <option value="completed">Terminé</option>
+                      </select>
+                    )}
+                    {onDelete && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(series.id);
+                        }}
+                        className="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 px-2 py-1 border border-red-300 dark:border-red-600 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        Supprimer
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Bouton d'ajout à la bibliothèque - uniquement si showAddButton=true */}
+        {showAddButton && !isOwned && onAddToLibrary && (
+          <div className="mt-4 pt-3 border-t border-indigo-200 dark:border-indigo-800">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddToLibrary(series);
+              }}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm flex items-center justify-center space-x-2"
+            >
+              <span>➕</span>
+              <span>Ajouter toute la série à ma bibliothèque</span>
+            </button>
+          </div>
+        )}
 
       </div>
     </div>
