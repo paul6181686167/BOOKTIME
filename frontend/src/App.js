@@ -659,7 +659,9 @@ function MainApp() {
         // Livre standalone (sans série)
         standaloneBooks.push({
           ...book,
-          sortDate: book.date_added || book.updated_at || new Date().toISOString()
+          sortDate: book.date_added || book.updated_at || new Date().toISOString(),
+          // Ajouter badge de catégorie pour cohérence avec fiches de recherche
+          categoryBadge: getCategoryBadgeFromBook(book)
         });
       }
     });
