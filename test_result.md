@@ -1634,6 +1634,7 @@ test_plan:
     - "Gestionnaire de Séries - Modal avec onglets"
     - "Gestionnaire de Séries - Onglet Découvrir des Séries"
     - "Gestionnaire de Séries - Onglet Détecter une Série"
+    - "Uniformisation des fiches livres et séries"
     - "Recherche intelligente - Pertinence pour séries"
     - "Intégration Open Library - Badges de pertinence"
   stuck_tasks:
