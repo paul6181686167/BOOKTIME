@@ -923,7 +923,7 @@ function MainApp() {
       return detectedSeries;
     }
     
-    // Si aucune série populaire n'est détectée, essayer de détecter des séries basées sur les livres
+    // Si aucune série officielle n'est détectée, essayer de détecter des séries basées sur les livres de l'utilisateur
     const potentialSeries = {};
     
     books.forEach(book => {
@@ -940,8 +940,8 @@ function MainApp() {
               first_published: book.publication_year || 'Inconnue',
               status: 'ongoing'
             },
-            confidence: 100,
-            match_reasons: ['saga_match']
+            confidence: 90000 + 100, // Score légèrement inférieur aux séries officielles
+            match_reasons: ['user_library_saga']
           };
         } else {
           potentialSeries[sagaKey].confidence += 20;
@@ -955,7 +955,7 @@ function MainApp() {
     
     // Convertir en tableau et filtrer les séries avec une confiance suffisante
     return Object.values(potentialSeries)
-      .filter(series => series.confidence >= 100)
+      .filter(series => series.confidence >= 90000)
       .sort((a, b) => b.confidence - a.confidence)
       .slice(0, 3); // Limiter à 3 séries maximum
   };
