@@ -153,16 +153,15 @@ const SeriesDetailPage = () => {
             console.log('📊 DEBUG RECHARGEMENT:', {
               'Livres trouvés': seriesBooks.length,
               'Volumes série': foundSeries.volumes,
-              'isOwned calculé': seriesBooks.length >= foundSeries.volumes,
+              'Série existe comme entité': seriesExists,
+              'isOwned calculé (livres)': seriesBooks.length >= foundSeries.volumes,
+              'isOwned calculé (entité)': seriesExists,
+              'isOwned FINAL': seriesExists || seriesBooks.length >= foundSeries.volumes,
               'Livres détails': seriesBooks.map(b => ({ titre: b.title, tome: b.volume_number }))
             });
-            console.log('📊 DEBUG RECHARGEMENT:', {
-              'Livres trouvés': seriesBooks.length,
-              'Volumes série': foundSeries.volumes,
-              'isOwned calculé': seriesBooks.length >= foundSeries.volumes,
-              'Livres détails': seriesBooks.map(b => ({ titre: b.title, tome: b.volume_number }))
-            });
-            setIsOwned(seriesBooks.length >= foundSeries.volumes);
+            
+            // La série est possédée SI elle existe comme entité OU SI tous les livres individuels sont possédés
+            setIsOwned(seriesExists || seriesBooks.length >= foundSeries.volumes);
           }
           
           setVolumes(volumeList);
