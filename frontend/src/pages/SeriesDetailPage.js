@@ -207,7 +207,7 @@ const SeriesDetailPage = () => {
   };
 
   const addSeriesToLibrary = async () => {
-    console.log('🔵 BOUTON BLEU CLIQUÉ !');
+    console.log('🔵 BOUTON BLEU CLIQUÉ - SÉRIE COMME ENTITÉ !');
     console.log('📊 État actuel:', { 
       seriesName: series?.name, 
       volumes: series?.volumes, 
@@ -220,14 +220,34 @@ const SeriesDetailPage = () => {
       const token = localStorage.getItem('token');
       console.log('🔑 Token trouvé:', token ? 'OUI' : 'NON');
 
+      // Créer la liste des volumes avec métadonnées
+      const volumesList = [];
+      for (let i = 1; i <= series.volumes; i++) {
+        volumesList.push({
+          volume_number: i,
+          volume_title: `${series.name} - Tome ${i}`,
+          is_read: false,
+          date_read: null
+        });
+      }
+
       const requestBody = {
         series_name: series.name,
-        target_volumes: series.volumes
+        authors: series.authors || [series.author || "Auteur inconnu"],
+        category: series.category,
+        total_volumes: series.volumes,
+        volumes: volumesList,
+        series_status: "to_read",
+        description_fr: series.description || `La série ${series.name}`,
+        cover_image_url: "",
+        first_published: series.first_published || "",
+        last_published: "",
+        publisher: ""
       };
-      console.log('📤 Envoi requête:', requestBody);
-      console.log('🌐 URL:', `${backendUrl}/api/series/complete`);
+      console.log('📤 Envoi requête SÉRIE:', requestBody);
+      console.log('🌐 NOUVELLE URL:', `${backendUrl}/api/series/library`);
 
-      const response = await fetch(`${backendUrl}/api/series/complete`, {
+      const response = await fetch(`${backendUrl}/api/series/library`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -240,14 +260,14 @@ const SeriesDetailPage = () => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Succès:', data);
-        toast.success(`${data.created_volumes} tome(s) ajouté(s) à votre bibliothèque !`);
+        console.log('✅ Succès SÉRIE:', data);
+        toast.success(`Série "${series.name}" ajoutée à votre bibliothèque comme entité unique !`);
         await loadSeriesDetails(); // Recharger pour mettre à jour l'état
         console.log('🔄 Rechargement terminé');
       } else {
         const error = await response.json();
         console.log('❌ Erreur response:', error);
-        toast.error(error.detail || 'Erreur lors de l\'ajout');
+        toast.error(error.detail || 'Erreur lors de l\'ajout de la série');
       }
     } catch (error) {
       console.error('💥 Erreur catch:', error);
