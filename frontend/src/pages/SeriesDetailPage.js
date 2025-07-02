@@ -139,6 +139,12 @@ const SeriesDetailPage = () => {
               'isOwned calculé': seriesBooks.length >= foundSeries.volumes,
               'Livres détails': seriesBooks.map(b => ({ titre: b.title, tome: b.volume_number }))
             });
+            console.log('📊 DEBUG RECHARGEMENT:', {
+              'Livres trouvés': seriesBooks.length,
+              'Volumes série': foundSeries.volumes,
+              'isOwned calculé': seriesBooks.length >= foundSeries.volumes,
+              'Livres détails': seriesBooks.map(b => ({ titre: b.title, tome: b.volume_number }))
+            });
             setIsOwned(seriesBooks.length >= foundSeries.volumes);
           }
           
