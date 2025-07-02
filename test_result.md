@@ -174,6 +174,21 @@ frontend:
         comment: "FONCTIONNALITÉ SUPPRIMÉE DÉFINITIVEMENT sur demande utilisateur. Le fichier SeriesManager.js et toutes ses fonctionnalités ont été supprimés pour simplifier l'interface. Statut résolu par suppression."
 
 backend:
+  - task: "Uniformisation des fiches livres et séries"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "Les tests confirment que l'uniformisation des fiches livres et séries fonctionne correctement. Création réussie d'un utilisateur test 'UniformTest Test'. L'endpoint GET /api/books retourne correctement les livres de la bibliothèque avec une structure uniforme incluant les champs essentiels (id, title, author, category, status). L'endpoint GET /api/series/search?q=harry retourne correctement les séries avec une structure uniforme incluant les champs essentiels (name/title, category, authors). L'endpoint GET /api/openlibrary/search?q=harry&limit=5 retourne correctement les livres de l'API externe avec une structure uniforme incluant les champs essentiels (title, author, category, cover_url, ol_key). Tous les types de fiches (livres bibliothèque, séries recherche, livres OpenLibrary) partagent les mêmes champs communs (category, title, author) permettant un affichage uniforme dans l'interface. Les catégories sont cohérentes à travers tous les endpoints ('roman', 'bd', 'manga')."
+
   - task: "POST /api/series/library - Ajouter une série complète à la bibliothèque"
     implemented: true
     working: true
