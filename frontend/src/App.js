@@ -9,6 +9,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 // Service imports
 import { bookService } from './services/bookService';
 import * as seriesLibraryService from './services/seriesLibraryService';
+import * as seriesLibraryService from './services/seriesLibraryService';
 
 // Component imports
 import UnifiedSearchBar from './components/UnifiedSearchBar';
