@@ -2169,14 +2169,7 @@ if (fuzzyScore >= 60 && fuzzyScore > maxFuzzyScore) {
 
 **🎯 OPTIMISATION RECHERCHE COMPLÈTEMENT FINALISÉE - LES 3 CONSIGNES IMPLÉMENTÉES !**
 
-### [OPTIMISATION RECHERCHE] - Algorithme de Recherche Optimisé avec Priorisation Séries et Tolérance Orthographique
-**Date** : Mars 2025  
-**Prompt Utilisateur** : 3 prompts détaillés pour optimisation complète de l'algorithme de recherche
 
-#### Context
-- Implémentation des 3 prompts utilisateur pour optimisation algorithme de recherche
-- **PROMPT 1** : Priorisation fiches séries et filtrage strict
-- **PROMPT 2** : Tolérance orthographique et validation Wikipedia  
 - **PROMPT 3** : Extension universelle à 70+ séries populaires
 
 #### État Initial Analysé
