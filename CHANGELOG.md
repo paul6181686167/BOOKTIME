@@ -1106,6 +1106,20 @@ const newFunction = () => {
 4. **Séries** : Détection + Auto-complétion
 5. **Interface** : Responsive + Mode sombre
 
+### Consignes de Documentation Enrichies
+**DOCUMENTATION OBLIGATOIRE pour toute modification** :
+1. **Structure complète** : Context, Action, Résultats, Tests, Impact
+2. **Code Samples** : Extraits avant/après pour modifications importantes
+3. **Métriques** : Performance, complexité, UX (temps chargement, lignes code)
+4. **Interface UX** : Description visuelle détaillée du layout et interactions
+5. **Tests validés** : Automatisés + manuels avec résultats
+6. **Fichiers modifiés** : Liste exhaustive avec nature des changements
+7. **Architecture** : Impact sur structure globale et compatibilité
+8. **Validation métier** : Acceptance criteria et feedback utilisateur
+
+**Format markdown** avec émojis, checkmarks, et sections structurées.
+**Traçabilité** : Chaque modification doit pouvoir être comprise et reproduite.
+
 ---
 
 ## 📊 STATISTIQUES DE MODIFICATIONS
