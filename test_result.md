@@ -1,4 +1,19 @@
 frontend:
+  - task: "Optimisation Algorithme Recherche : Priorisation Fiches Séries"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "Les tests confirment que l'algorithme de priorisation des fiches séries fonctionne correctement. Lors d'une recherche pour 'harry potter', 'astérix' ou 'one piece', les résultats affichent des livres avec le badge 'Très pertinent' en haut de la liste. Les résultats sont correctement triés par pertinence, avec les scores prioritaires (100000+) pour les séries. Les captures d'écran montrent que les livres Harry Potter apparaissent en premier dans les résultats de recherche, avec le badge 'Roman' et l'indication 'Très pertinent'. La tolérance orthographique fonctionne également, car les recherches avec des erreurs comme 'herry potter', 'harry poter', 'astérics' et 'one pece' retournent quand même les résultats corrects. L'interface affiche clairement le nombre de résultats trouvés et permet d'ajouter facilement les livres à la bibliothèque."
+
   - task: "Interface principale - Page d'accueil et authentification"
     implemented: true
     working: true
