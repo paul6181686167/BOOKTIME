@@ -1292,7 +1292,24 @@ function MainApp() {
     // Détecter les séries avec le nouveau système de scoring
     const detectedSeries = detectSeriesWithScoring(query);
     if (detectedSeries.length > 0) {
-      return detectedSeries;
+      // TRANSFORMER en cartes séries avec isSeriesCard: true pour le tri prioritaire
+      return detectedSeries.map(detected => ({
+        ...detected.series,
+        isSeriesCard: true, // MARQUEUR ESSENTIEL pour le tri prioritaire
+        id: `series_${detected.series.name.toLowerCase().replace(/\s+/g, '_')}`,
+        relevanceScore: detected.confidence, // Score 100000+ pour priorité absolue
+        match_reasons: detected.match_reasons,
+        matchType: detected.matchType,
+        originalScore: detected.originalScore,
+        isFromOpenLibrary: false,
+        // Format pour affichage en tant que série
+        title: `📚 SÉRIE : ${detected.series.name}`,
+        author: detected.series.authors.join(', '),
+        category: detected.series.category,
+        description: detected.series.description + ` | 🎯 ${detected.matchType} | Score: ${detected.originalScore}`,
+        cover_url: '', // Pas de couverture pour les cartes séries
+        seriesData: detected.series // Données complètes de la série pour navigation
+      }));
     }
     
     // Si aucune série officielle n'est détectée, essayer de détecter des séries basées sur les livres de l'utilisateur
