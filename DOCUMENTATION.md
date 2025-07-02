@@ -523,6 +523,92 @@ REACT_APP_BACKEND_URL=https://api.domain.com
 
 ---
 
+## 🔧 MÉTHODOLOGIE OBLIGATOIRE DE CORRECTION (RCA)
+
+### 🎯 INSTRUCTIONS PERMANENTES POUR TOUTES LES SESSIONS FUTURES
+
+**⚠️ RÈGLE ABSOLUE ⚠️** : Cette méthodologie DOIT être appliquée pour TOUTE correction, quelle que soit la session ou l'agent.
+
+#### Phase 1 : INVESTIGATION COMPLÈTE (OBLIGATOIRE)
+```
+1. 🔍 UTILISER SYSTÉMATIQUEMENT troubleshoot_agent AVANT toute correction
+2. 📋 ANALYSER TOUTE LA CHAÎNE : Backend → Frontend → UI → UX  
+3. 🎯 IDENTIFIER LA CAUSE RACINE, jamais les symptômes
+4. 🌐 COMPRENDRE L'IMPACT GLOBAL sur l'application
+5. 📝 DOCUMENTER L'INVESTIGATION dans CHANGELOG.md
+```
+
+#### Phase 2 : CORRECTION CIBLÉE (UNE SEULE FOIS)
+```
+1. ✅ CORRIGER LA CAUSE RACINE uniquement, pas les symptômes
+2. 🎯 UNE CORRECTION MASSIVE au lieu de multiples partielles
+3. 🛡️ PRÉSERVER TOUTES LES FONCTIONNALITÉS existantes
+4. 📝 DOCUMENTER CHAQUE MODIFICATION dans CHANGELOG.md
+```
+
+#### Phase 3 : VALIDATION END-TO-END (OBLIGATOIRE)
+```
+1. ✅ TESTS BACKEND : Tous endpoints fonctionnels (curl)
+2. ✅ TESTS FRONTEND : Interface utilisateur complète
+3. ✅ TESTS UTILISATEUR RÉELS : Workflow complet validé
+4. ✅ METTRE À JOUR test_result.md avec statut confirmé
+5. ✅ UTILISER deep_testing_cloud pour validation finale
+6. 📝 DOCUMENTER LA VALIDATION dans CHANGELOG.md
+```
+
+### 🚫 INTERDICTIONS ABSOLUES
+- ❌ **JAMAIS** déclarer un problème "résolu" sans validation end-to-end
+- ❌ **JAMAIS** faire de corrections multiples sur le même problème
+- ❌ **JAMAIS** corriger sans troubleshoot_agent au préalable
+- ❌ **JAMAIS** supprimer des fonctionnalités sans autorisation explicite
+- ❌ **JAMAIS** oublier de documenter dans CHANGELOG.md
+
+### 📋 TEMPLATE OBLIGATOIRE CHANGELOG
+```markdown
+### [CORRECTION RCA] - [Titre du Problème] 
+**Date** : [Date]
+**Prompt Utilisateur** : `"[prompt exact]"`
+
+#### Phase 1 : Investigation RCA Complète
+- ✅ **troubleshoot_agent utilisé** : [résultats]
+- ✅ **Cause racine identifiée** : [description précise]
+- ✅ **Impact global analysé** : [portée du problème]
+
+#### Phase 2 : Correction Ciblée
+- ✅ **Correction appliquée** : [description technique]
+- ✅ **Fonctionnalités préservées** : [liste]
+- ✅ **Fichiers modifiés** : [chemins]
+
+#### Phase 3 : Validation End-to-End
+- ✅ **Tests backend** : [résultats curl]
+- ✅ **Tests frontend** : [validation UI]
+- ✅ **Tests utilisateur** : [workflow validé]
+- ✅ **test_result.md mis à jour** : working: true
+- ✅ **deep_testing_cloud** : [résultats]
+
+#### Résultat Final
+- ✅ **Problème résolu définitivement** en UNE SEULE session
+- ✅ **Aucune régression** : Toutes fonctionnalités préservées
+- ✅ **Validation complète** : Backend + Frontend + UX
+```
+
+### 🎯 RAPPELS POUR NOUVELLES SESSIONS
+1. **TOUJOURS** consulter DOCUMENTATION.md et CHANGELOG.md en premier
+2. **TOUJOURS** appliquer cette méthodologie RCA pour toute correction
+3. **TOUJOURS** utiliser troubleshoot_agent avant de corriger
+4. **TOUJOURS** préserver toutes les fonctionnalités existantes
+5. **TOUJOURS** documenter exhaustivement dans CHANGELOG.md
+6. **JAMAIS** faire de corrections multiples sur le même problème
+
+### 🔒 ENGAGEMENT QUALITÉ
+Cette méthodologie garantit :
+- ✅ **Résolution définitive** en une seule session
+- ✅ **Pas de régression** des fonctionnalités
+- ✅ **Documentation complète** pour la continuité
+- ✅ **Efficacité maximale** pour l'utilisateur
+
+---
+
 ## 📞 SUPPORT ET MAINTENANCE
 
 ### Logs et Debugging
