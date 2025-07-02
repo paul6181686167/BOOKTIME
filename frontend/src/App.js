@@ -854,25 +854,19 @@ function MainApp() {
           };
         });
         
-        // ALGORITHME DE TRI PRIORITAIRE : Garantir fiches séries EN PREMIER avec scores 100000+
+        // ALGORITHME DE TRI PRIORITAIRE OPTIMISÉ : Garantir fiches séries EN PREMIER avec scores 100000+
         const allResults = [...seriesCards, ...resultsWithOwnership];
         
-        // Tri final optimisé : 
+        // TRI FINAL AVEC PRIORITÉ ABSOLUE DES SÉRIES selon les consignes du CHANGELOG
         // 1) Séries officielles (100000+) par pertinence
         // 2) Séries bibliothèque (90000+) par pertinence  
         // 3) Livres Open Library très pertinents (scores variables)
-        const sortedResults = allResults.sort((a, b) => {
-          // Les séries ont toujours la priorité absolue
-          if (a.isSeriesCard && !b.isSeriesCard) return -1;
-          if (!a.isSeriesCard && b.isSeriesCard) return 1;
-          
-          // Si les deux sont des séries, trier par score de confiance
-          if (a.isSeriesCard && b.isSeriesCard) {
-            return (b.relevanceScore || b.confidence || 0) - (a.relevanceScore || a.confidence || 0);
-          }
-          
-          // Si les deux sont des livres, garder l'ordre original (pertinence Open Library)
-          return 0;
+        // 4) Livres bibliothèque utilisateur (scores variables)
+        const sortedResults = SearchOptimizer.applySuperiorSeriesPrioritySort(allResults);
+        
+        console.log('🎯 PRIORITÉ SÉRIES - Tri final appliqué:');
+        sortedResults.slice(0, 5).forEach((item, index) => {
+          console.log(`${index + 1}. ${item.isSeriesCard ? '📚 SÉRIE' : '📖 LIVRE'}: ${item.title || item.name} - Score: ${item.relevanceScore || item.confidence || 0}`);
         });
         
         // Stocker les résultats triés avec priorité absolue aux fiches séries
