@@ -729,82 +729,192 @@ function MainApp() {
     return [...seriesCards, ...standaloneBooks];
   };
 
-  // Fonction pour générer des cartes de séries basées sur la recherche
+  // FONCTION OPTIMISÉE : Génération cartes séries avec scoring prioritaire et tolérance orthographique
   const generateSeriesCardsForSearch = (query, books) => {
-    // Fonction pour détecter les séries populaires
-    const detectPopularSeries = (searchQuery) => {
-      const query = searchQuery.toLowerCase();
-      
-      // Mapping des séries populaires
-      const popularSeries = {
-        'harry potter': {
+    
+    // BASE DE DONNÉES SÉRIES OFFICIELLES ÉTENDUE (Phase 1: Base solide)
+    const OFFICIAL_SERIES_DATABASE = {
+      romans: {
+        'harry_potter': {
           name: 'Harry Potter',
           authors: ['J.K. Rowling'],
           category: 'roman',
           volumes: 7,
-          description: 'Série de romans fantastiques écrite par J.K. Rowling, qui décrit les aventures d\'un jeune sorcier nommé Harry Potter à l\'école de sorcellerie Poudlard.',
+          description: 'Série de romans fantastiques de J.K. Rowling sur un jeune sorcier à Poudlard.',
           first_published: '1997',
-          status: 'completed'
+          status: 'completed',
+          keywords: ['harry potter', 'poudlard', 'sorcier', 'hermione', 'ron', 'voldemort'],
+          variations: ['harry potter', 'herry potter', 'harry poter', 'harrypotter', 'potter']
         },
-        'one piece': {
-          name: 'One Piece',
-          authors: ['Eiichiro Oda'],
-          category: 'manga',
-          volumes: 100,
-          description: 'Manga qui suit les aventures de Monkey D. Luffy et de son équipage de pirates, à la recherche du trésor ultime, le "One Piece".',
-          first_published: '1997',
-          status: 'ongoing'
-        },
-        'astérix': {
-          name: 'Astérix',
-          authors: ['René Goscinny', 'Albert Uderzo'],
-          category: 'bd',
-          volumes: 39,
-          description: 'Série de bandes dessinées françaises créée par René Goscinny et Albert Uderzo, qui raconte les aventures d\'Astérix et de son ami Obélix dans un village gaulois résistant à l\'occupation romaine.',
-          first_published: '1959',
-          status: 'ongoing'
-        },
-        'seigneur des anneaux': {
+        'seigneur_anneaux': {
           name: 'Le Seigneur des Anneaux',
           authors: ['J.R.R. Tolkien'],
           category: 'roman',
           volumes: 3,
-          description: 'Épopée de fantasy écrite par J.R.R. Tolkien, qui raconte la quête pour détruire l\'Anneau unique, forgé par le Seigneur des Ténèbres Sauron.',
+          description: 'Épopée fantasy de Tolkien dans la Terre du Milieu.',
           first_published: '1954',
-          status: 'completed'
+          status: 'completed',
+          keywords: ['seigneur des anneaux', 'tolkien', 'frodon', 'gandalf', 'terre du milieu'],
+          variations: ['seigneur des anneaux', 'seigneur anneaux', 'lord of rings', 'lotr']
         },
-        'naruto': {
-          name: 'Naruto',
-          authors: ['Masashi Kishimoto'],
-          category: 'manga',
-          volumes: 72,
-          description: 'Manga qui raconte l\'histoire de Naruto Uzumaki, un jeune ninja qui rêve de devenir Hokage, le chef de son village.',
-          first_published: '1999',
-          status: 'completed'
+        'game_of_thrones': {
+          name: 'Le Trône de Fer',
+          authors: ['George R.R. Martin'],
+          category: 'roman',
+          volumes: 7,
+          description: 'Saga fantasy épique dans les Sept Couronnes.',
+          first_published: '1996',
+          status: 'ongoing',
+          keywords: ['game of thrones', 'trône de fer', 'westeros', 'stark', 'lannister'],
+          variations: ['game of thrones', 'game of throne', 'trone de fer', 'got']
+        }
+      },
+      bd: {
+        'asterix': {
+          name: 'Astérix',
+          authors: ['René Goscinny', 'Albert Uderzo'],
+          category: 'bd',
+          volumes: 39,
+          description: 'Aventures du petit gaulois et de son ami Obélix.',
+          first_published: '1959',
+          status: 'ongoing',
+          keywords: ['astérix', 'obélix', 'gaulois', 'village', 'potion magique'],
+          variations: ['asterix', 'astérix', 'astérics', 'asterics']
         },
         'tintin': {
           name: 'Les Aventures de Tintin',
           authors: ['Hergé'],
           category: 'bd',
           volumes: 24,
-          description: 'Série de bandes dessinées créée par Hergé, qui raconte les aventures du jeune reporter Tintin et de son chien Milou.',
+          description: 'Aventures du jeune reporter Tintin et de son chien Milou.',
           first_published: '1929',
-          status: 'completed'
+          status: 'completed',
+          keywords: ['tintin', 'milou', 'capitaine haddock', 'reporter'],
+          variations: ['tintin', 'tin tin', 'tentin']
+        },
+        'lucky_luke': {
+          name: 'Lucky Luke',
+          authors: ['Morris', 'René Goscinny'],
+          category: 'bd',
+          volumes: 83,
+          description: 'Le cowboy qui tire plus vite que son ombre.',
+          first_published: '1946',
+          status: 'ongoing',
+          keywords: ['lucky luke', 'cowboy', 'far west', 'dalton'],
+          variations: ['lucky luke', 'lucky luc', 'luckyluke']
         }
-      };
+      },
+      mangas: {
+        'one_piece': {
+          name: 'One Piece',
+          authors: ['Eiichiro Oda'],
+          category: 'manga',
+          volumes: 100,
+          description: 'Aventures de Luffy et son équipage de pirates.',
+          first_published: '1997',
+          status: 'ongoing',
+          keywords: ['one piece', 'luffy', 'pirates', 'chapeau de paille'],
+          variations: ['one piece', 'one pece', 'onepiece']
+        },
+        'naruto': {
+          name: 'Naruto',
+          authors: ['Masashi Kishimoto'],
+          category: 'manga',
+          volumes: 72,
+          description: 'L\'histoire de Naruto Uzumaki, ninja de Konoha.',
+          first_published: '1999',
+          status: 'completed',
+          keywords: ['naruto', 'ninja', 'konoha', 'sasuke', 'sakura'],
+          variations: ['naruto', 'narutoo', 'narotto']
+        },
+        'dragon_ball': {
+          name: 'Dragon Ball',
+          authors: ['Akira Toriyama'],
+          category: 'manga',
+          volumes: 42,
+          description: 'Les aventures de Goku à la recherche des Dragon Balls.',
+          first_published: '1984',
+          status: 'completed',
+          keywords: ['dragon ball', 'goku', 'vegeta', 'saiyan'],
+          variations: ['dragon ball', 'dragonball', 'dragon bal']
+        }
+      }
+    };
+
+    // ALGORITHME DE DÉTECTION AVEC SCORING PRIORITAIRE
+    const detectSeriesWithScoring = (searchQuery) => {
+      const query = searchQuery.toLowerCase().trim();
+      const detectedSeries = [];
       
-      // Vérifier si la requête correspond à une série populaire
-      for (const [key, series] of Object.entries(popularSeries)) {
-        if (query.includes(key)) {
-          return {
-            series: series,
-            confidence: 180,
-            match_reasons: ['exact_match', 'popular_series']
-          };
+      // Parcourir toutes les catégories de séries
+      for (const [categoryKey, seriesCategory] of Object.entries(OFFICIAL_SERIES_DATABASE)) {
+        for (const [seriesKey, series] of Object.entries(seriesCategory)) {
+          
+          let bestScore = 0;
+          let matchType = '';
+          
+          // 1. CORRESPONDANCE EXACTE (Score maximum : 100000 + 180)
+          if (series.variations.some(variation => query === variation)) {
+            bestScore = 180;
+            matchType = 'exact_match';
+          }
+          
+          // 2. CORRESPONDANCE PARTIELLE FORTE (Score : 100000 + 160)
+          else if (series.variations.some(variation => query.includes(variation) || variation.includes(query))) {
+            bestScore = 160;
+            matchType = 'partial_strong_match';
+          }
+          
+          // 3. CORRESPONDANCE PAR MOTS-CLÉS (Score : 100000 + 140)
+          else if (series.keywords.some(keyword => query.includes(keyword.toLowerCase()))) {
+            bestScore = 140;
+            matchType = 'keyword_match';
+          }
+          
+          // 4. CORRESPONDANCE FUZZY BASIQUE (Score : 100000 + 120)
+          else {
+            // Algorithme simple de distance pour tolérance orthographique
+            for (const variation of series.variations) {
+              const distance = calculateSimpleDistance(query, variation);
+              if (distance <= 2 && variation.length > 3) { // Tolérance 1-2 erreurs
+                bestScore = Math.max(bestScore, 120 - (distance * 10));
+                matchType = 'fuzzy_match';
+              }
+            }
+          }
+          
+          // Si une correspondance est trouvée, ajouter avec score prioritaire
+          if (bestScore > 0) {
+            detectedSeries.push({
+              series: series,
+              confidence: 100000 + bestScore, // SCORE PRIORITAIRE 100000+
+              match_reasons: [matchType, 'official_series'],
+              matchType: matchType,
+              originalScore: bestScore
+            });
+          }
         }
       }
       
-      return null;
+      // Retourner les séries triées par score de confiance
+      return detectedSeries.sort((a, b) => b.confidence - a.confidence);
+    };
+
+    // ALGORITHME SIMPLE DE DISTANCE (Phase 1: Basique, Phase 2: Levenshtein complet)
+    const calculateSimpleDistance = (str1, str2) => {
+      if (str1.length === 0) return str2.length;
+      if (str2.length === 0) return str1.length;
+      
+      let distance = 0;
+      const maxLength = Math.max(str1.length, str2.length);
+      
+      for (let i = 0; i < maxLength; i++) {
+        if (str1[i] !== str2[i]) {
+          distance++;
+        }
+      }
+      
+      return distance;
     };
     
     // Détecter si la recherche correspond à une série populaire
