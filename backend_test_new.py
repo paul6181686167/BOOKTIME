@@ -8,7 +8,7 @@ import string
 import sys
 
 # Get the backend URL from the frontend .env file
-BACKEND_URL = "https://8bed1705-3f51-4ada-b806-0723db6a3584.preview.emergentagent.com"
+BACKEND_URL = "https://d1c779da-1c3d-45e3-bd97-66f93ff1d1b3.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 def generate_random_email():
