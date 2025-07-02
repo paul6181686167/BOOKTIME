@@ -464,6 +464,10 @@ function MainApp() {
   const [userSeriesLibrary, setUserSeriesLibrary] = useState([]);
   const [seriesLibraryLoading, setSeriesLibraryLoading] = useState(false);
 
+  // États pour les séries en bibliothèque
+  const [userSeriesLibrary, setUserSeriesLibrary] = useState([]);
+  const [seriesLibraryLoading, setSeriesLibraryLoading] = useState(false);
+
   // Hook de recherche avancée
   const {
     filters,
