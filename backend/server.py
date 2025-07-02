@@ -2644,6 +2644,216 @@ async def import_missing_books(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de l'import en lot: {str(e)}")
 
+# ============================================================================
+# ENDPOINTS SÉRIES EN BIBLIOTHÈQUE
+# ============================================================================
+
+@app.post("/api/series/library")
+async def add_series_to_library(
+    series_data: SeriesLibraryCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Ajouter une série complète à la bibliothèque utilisateur"""
+    try:
+        # 1. Validation données
+        if not series_data.series_name or not series_data.volumes:
+            raise HTTPException(status_code=400, detail="Données série incomplètes")
+        
+        # 2. Vérifier série pas déjà en bibliothèque
+        existing = series_library_collection.find_one({
+            "user_id": current_user["id"],
+            "series_name": {"$regex": re.escape(series_data.series_name), "$options": "i"}
+        })
+        if existing:
+            raise HTTPException(status_code=409, detail="Série déjà dans votre bibliothèque")
+        
+        # 3. Créer fiche série
+        series_id = str(uuid.uuid4())
+        series_entry = {
+            "id": series_id,
+            "type": "series",
+            "user_id": current_user["id"],
+            "series_name": series_data.series_name,
+            "authors": series_data.authors,
+            "category": series_data.category,
+            "total_volumes": len(series_data.volumes),
+            "series_status": series_data.series_status,
+            "completion_percentage": 0,
+            "volumes": [vol.dict() for vol in series_data.volumes],
+            "description_fr": series_data.description_fr,
+            "cover_image_url": series_data.cover_image_url,
+            "first_published": series_data.first_published,
+            "last_published": series_data.last_published,
+            "publisher": series_data.publisher,
+            "date_added": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+            "source": "search_series_card"
+        }
+        
+        # 4. Sauvegarder en base
+        result = series_library_collection.insert_one(series_entry)
+        
+        return {
+            "success": True,
+            "series_id": series_id,
+            "message": f"Série '{series_data.series_name}' ajoutée à votre bibliothèque",
+            "total_volumes": len(series_data.volumes)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'ajout de la série: {str(e)}")
+
+@app.get("/api/series/library")
+async def get_user_series_library(
+    current_user: dict = Depends(get_current_user),
+    category: Optional[str] = None,
+    status: Optional[str] = None
+):
+    """Récupérer toutes les séries de la bibliothèque utilisateur"""
+    try:
+        query = {"user_id": current_user["id"], "type": "series"}
+        
+        if category:
+            query["category"] = category
+        if status:
+            query["series_status"] = status
+        
+        series_list = list(series_library_collection.find(query, {"_id": 0}))
+        
+        return {
+            "series": series_list,
+            "total": len(series_list)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération des séries: {str(e)}")
+
+@app.put("/api/series/library/{series_id}/volume/{volume_number}")
+async def toggle_volume_read_status(
+    series_id: str,
+    volume_number: int,
+    is_read: bool,
+    current_user: dict = Depends(get_current_user)
+):
+    """Toggle statut lu/non lu d'un tome"""
+    try:
+        # 1. Récupérer série
+        series = series_library_collection.find_one({
+            "id": series_id,
+            "user_id": current_user["id"],
+            "type": "series"
+        })
+        if not series:
+            raise HTTPException(status_code=404, detail="Série non trouvée")
+        
+        # 2. Mettre à jour tome
+        volumes = series["volumes"]
+        volume_found = False
+        for volume in volumes:
+            if volume["volume_number"] == volume_number:
+                volume["is_read"] = is_read
+                volume["date_read"] = datetime.utcnow().isoformat() if is_read else None
+                volume_found = True
+                break
+        
+        if not volume_found:
+            raise HTTPException(status_code=404, detail="Tome non trouvé")
+        
+        # 3. Recalculer progression
+        read_count = sum(1 for v in volumes if v["is_read"])
+        completion_percentage = round((read_count / len(volumes)) * 100)
+        
+        # 4. Mettre à jour statut série automatiquement
+        if completion_percentage == 100:
+            series_status = "completed"
+        elif completion_percentage > 0:
+            series_status = "reading"
+        else:
+            series_status = "to_read"
+        
+        # 5. Sauvegarder
+        series_library_collection.update_one(
+            {"id": series_id, "user_id": current_user["id"]},
+            {
+                "$set": {
+                    "volumes": volumes,
+                    "completion_percentage": completion_percentage,
+                    "series_status": series_status,
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        return {
+            "success": True,
+            "completion_percentage": completion_percentage,
+            "series_status": series_status,
+            "read_count": read_count,
+            "total_volumes": len(volumes)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la mise à jour du tome: {str(e)}")
+
+@app.put("/api/series/library/{series_id}")
+async def update_series_status(
+    series_id: str,
+    status_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Mettre à jour le statut global d'une série"""
+    try:
+        new_status = status_data.get("series_status")
+        if new_status not in ["to_read", "reading", "completed"]:
+            raise HTTPException(status_code=400, detail="Statut invalide")
+        
+        result = series_library_collection.update_one(
+            {"id": series_id, "user_id": current_user["id"], "type": "series"},
+            {
+                "$set": {
+                    "series_status": new_status,
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Série non trouvée")
+        
+        return {"success": True, "message": "Statut mis à jour"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la mise à jour: {str(e)}")
+
+@app.delete("/api/series/library/{series_id}")
+async def delete_series_from_library(
+    series_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Supprimer une série de la bibliothèque"""
+    try:
+        result = series_library_collection.delete_one({
+            "id": series_id,
+            "user_id": current_user["id"],
+            "type": "series"
+        })
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Série non trouvée")
+        
+        return {"success": True, "message": "Série supprimée de votre bibliothèque"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la suppression: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
