@@ -1939,14 +1939,14 @@ function MainApp() {
       loadBooks();
       loadStats();
     }
-  }, [user, viewMode]);
+  }, [user]); // SUPPRESSION VIEWMODE des dépendances
 
   // Rechargement des livres quand l'onglet change
   useEffect(() => {
     if (user) {
       loadBooks();
     }
-  }, [activeTab, viewMode]);
+  }, [activeTab]); // SUPPRESSION VIEWMODE des dépendances
 
   // Rendu principal
   return (
