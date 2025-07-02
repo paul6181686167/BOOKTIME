@@ -460,6 +460,10 @@ function MainApp() {
   const [showSeriesDetail, setShowSeriesDetail] = useState(false);
   const [showSeriesModal, setShowSeriesModal] = useState(false);
 
+  // États pour les séries en bibliothèque
+  const [userSeriesLibrary, setUserSeriesLibrary] = useState([]);
+  const [seriesLibraryLoading, setSeriesLibraryLoading] = useState(false);
+
   // Hook de recherche avancée
   const {
     filters,
