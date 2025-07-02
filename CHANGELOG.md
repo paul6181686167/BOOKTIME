@@ -1600,6 +1600,54 @@ Le fichier `test_result.md` constitue la documentation technique la plus complè
 - **Fonction optimisée** : `createUnifiedDisplay()` pour mélange par date
 - **État supprimé** : Plus de variable `viewMode` dans le composant principal
 
+#### Code Samples - Avant/Après
+
+**AVANT - Système avec toggle** :
+```javascript
+// États multiples pour gestion viewMode
+const [viewMode, setViewMode] = useState('series');
+
+// Fonction complexe avec paramètres viewMode
+const updateBookService = () => {
+  bookService.getBooks = async (category = null, status = null, viewMode = 'books') => {
+    const params = {};
+    if (viewMode) params.view_mode = viewMode;
+    // ... logique conditionnelle complexe
+  };
+};
+
+// Chargement conditionnel
+const loadBooks = async () => {
+  const data = await bookService.getBooks(null, null, 'books');
+  // Distinction entre modes
+};
+```
+
+**APRÈS - Affichage unifié** :
+```javascript
+// SUPPRESSION VIEWMODE : Plus de toggle livre/série - affichage unifié
+const [addingBooks, setAddingBooks] = useState(new Set());
+
+// AFFICHAGE UNIFIÉ : Plus besoin de paramètre viewMode - simplifié
+const loadBooks = async () => {
+  try {
+    setLoading(true);
+    // Charger tous les livres sans distinction de mode d'affichage
+    const data = await bookService.getBooks();
+    setBooks(data);
+  } catch (error) {
+    // ... gestion erreur
+  }
+};
+
+// Utilisation fonction unifiée
+const displayedBooks = isSearchMode ? 
+  // Mode recherche avec tri par pertinence
+  [...detectedSeries, ...resultsWithOwnership].sort((a, b) => /*tri*/) :
+  // BIBLIOTHÈQUE UNIFIÉE : Séries et livres individuels mélangés par date
+  createUnifiedDisplay(filteredBooks.filter(book => book.category === activeTab));
+```
+
 #### Fichiers Modifiés
 - `/app/frontend/src/App.js` : Suppression définitive toggle et simplification chargement
   - Suppression `updateBookService()` et paramètres viewMode
