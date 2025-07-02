@@ -13,6 +13,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "La page d'accueil s'affiche correctement avec le formulaire de connexion/inscription. L'authentification fonctionne avec prénom/nom uniquement (pas d'email ni mot de passe). L'inscription d'un nouvel utilisateur 'Audit Test' a réussi et redirige correctement vers l'interface principale."
+      - working: true
+        agent: "testing"
+        comment: "Vérification de l'interface unifiée après suppression du toggle livre/série. La page d'accueil s'affiche correctement sans bouton toggle. L'authentification fonctionne toujours avec prénom/nom uniquement."
 
   - task: "Interface principale - Navigation et onglets"
     implemented: true
