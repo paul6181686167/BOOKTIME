@@ -2141,15 +2141,24 @@ COUNT: 1
                     className="cursor-pointer bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow"
                   >
                     {item.isSeriesCard ? (
-                      <SeriesCard
-                        series={item}
-                        isOwned={item.isLibrarySeries}
-                        showProgress={item.isLibrarySeries}
-                        progressInfo={item.isLibrarySeries ? {
-                          completed: item.completedBooks,
-                          total: item.totalBooks
-                        } : null}
-                      />
+                      item.isLibrarySeries ? (
+                        <SeriesLibraryCard
+                          series={item}
+                          onUpdateVolume={handleUpdateVolumeStatus}
+                          onUpdateStatus={handleUpdateSeriesStatus}
+                          onDelete={handleDeleteSeriesFromLibrary}
+                        />
+                      ) : (
+                        <SeriesCard
+                          series={item}
+                          isOwned={item.isLibrarySeries}
+                          showProgress={item.isLibrarySeries}
+                          progressInfo={item.isLibrarySeries ? {
+                            completed: item.completedBooks,
+                            total: item.totalBooks
+                          } : null}
+                        />
+                      )
                     ) : (
                       <div className="p-4">
                         {/* Badges de pertinence et catégorie (en mode recherche) */}
