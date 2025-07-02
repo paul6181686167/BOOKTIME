@@ -1361,6 +1361,21 @@ function MainApp() {
         description: detected.series.description + ` | 🏠 Bibliothèque | ${detected.series.volumes} tome(s)`,
         cover_url: '', // Pas de couverture pour les cartes séries
         seriesData: detected.series // Données complètes de la série pour navigation
+      }))
+      .map(detected => ({
+        ...detected.series,
+        isSeriesCard: true, // MARQUEUR ESSENTIEL pour le tri prioritaire
+        id: `user_series_${detected.series.name.toLowerCase().replace(/\s+/g, '_')}`,
+        relevanceScore: detected.confidence, // Score 90000+ pour priorité élevée
+        match_reasons: detected.match_reasons,
+        isFromOpenLibrary: false,
+        // Format pour affichage en tant que série utilisateur
+        title: `📚 MA SÉRIE : ${detected.series.name}`,
+        author: detected.series.authors.join(', '),
+        category: detected.series.category,
+        description: detected.series.description + ` | 🏠 Bibliothèque | ${detected.series.volumes} tome(s)`,
+        cover_url: '', // Pas de couverture pour les cartes séries
+        seriesData: detected.series // Données complètes de la série pour navigation
       }));
   };
 
