@@ -136,10 +136,18 @@ const SeriesCard = ({
         {!isOwned && (
           <div className="mt-4 pt-3 border-t border-indigo-200 dark:border-indigo-800">
             <div className="text-center">
-              <div className="inline-flex items-center text-sm text-indigo-600 dark:text-indigo-400 font-medium">
-                Cliquer pour découvrir cette série
-                <span className="ml-1 group-hover:translate-x-1 transition-transform">→</span>
-              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (series.onAddToLibrary) {
+                    series.onAddToLibrary(series);
+                  }
+                }}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm flex items-center justify-center space-x-2"
+              >
+                <span>📚</span>
+                <span>Ajouter toute la série à ma bibliothèque</span>
+              </button>
             </div>
           </div>
         )}
