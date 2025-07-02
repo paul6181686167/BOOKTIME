@@ -197,8 +197,18 @@ const SeriesDetailPage = () => {
 
   const addSeriesToLibrary = async () => {
     try {
+      console.log('[DEBUG] addSeriesToLibrary - Début de la fonction');
       setAddingToLibrary(true);
       const token = localStorage.getItem('token');
+      console.log('[DEBUG] Token récupéré:', token ? 'Présent' : 'Absent');
+      console.log('[DEBUG] Série:', series);
+      console.log('[DEBUG] Backend URL:', backendUrl);
+
+      const requestBody = {
+        series_name: series.name,
+        target_volumes: series.volumes
+      };
+      console.log('[DEBUG] Corps de la requête:', requestBody);
 
       const response = await fetch(`${backendUrl}/api/series/complete`, {
         method: 'POST',
@@ -206,24 +216,27 @@ const SeriesDetailPage = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          series_name: series.name,
-          target_volumes: series.volumes
-        })
+        body: JSON.stringify(requestBody)
       });
+
+      console.log('[DEBUG] Réponse statut:', response.status);
+      console.log('[DEBUG] Réponse headers:', response.headers);
 
       if (response.ok) {
         const data = await response.json();
+        console.log('[DEBUG] Données reçues:', data);
         toast.success(`${data.created_volumes} tome(s) ajouté(s) à votre bibliothèque !`);
         await loadSeriesDetails(); // Recharger pour mettre à jour l'état
       } else {
         const error = await response.json();
+        console.log('[DEBUG] Erreur réponse:', error);
         toast.error(error.detail || 'Erreur lors de l\'ajout');
       }
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('[DEBUG] Exception capturée:', error);
       toast.error('Erreur lors de l\'ajout de la série');
     } finally {
+      console.log('[DEBUG] Fin de addSeriesToLibrary');
       setAddingToLibrary(false);
     }
   };
