@@ -2645,6 +2645,33 @@ async def import_missing_books(
         raise HTTPException(status_code=500, detail=f"Erreur lors de l'import en lot: {str(e)}")
 
 # ============================================================================
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Obtenir l'utilisateur actuel depuis le token JWT"""
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token invalide"
+            )
+        
+        # Récupérer l'utilisateur depuis la base
+        user = users_collection.find_one({"id": user_id}, {"_id": 0})
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Utilisateur non trouvé"
+            )
+        
+        return user
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token invalide"
+        )
+
 # ENDPOINTS SÉRIES EN BIBLIOTHÈQUE
 # ============================================================================
 
