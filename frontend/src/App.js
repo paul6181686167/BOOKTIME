@@ -619,7 +619,91 @@ function MainApp() {
     return { key: 'roman', text: 'Roman', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300', emoji: '📚' };
   };
 
-  // FONCTION BIBLIOTHÈQUE : Regrouper les livres par série dans la bibliothèque
+  // FONCTION AFFICHAGE UNIFIÉ : Mélange séries et livres individuels par date d'ajout
+  const createUnifiedDisplay = (booksList) => {
+    const seriesGroups = {};
+    const standaloneBooks = [];
+    const unifiedItems = [];
+
+    // 1. Identifier les séries et livres standalone
+    booksList.forEach(book => {
+      if (book.saga && book.saga.trim()) {
+        const seriesKey = book.saga.toLowerCase().trim();
+        if (!seriesGroups[seriesKey]) {
+          seriesGroups[seriesKey] = {
+            id: `unified-series-${seriesKey}`,
+            isSeriesCard: true,
+            isUnifiedSeries: true, // Marqueur pour série unifiée
+            name: book.saga,
+            title: book.saga,
+            author: book.author,
+            category: book.category,
+            books: [],
+            totalBooks: 0,
+            completedBooks: 0,
+            readingBooks: 0,
+            toReadBooks: 0,
+            cover_url: book.cover_url,
+            progressPercent: 0,
+            earliestDate: book.date_added || book.updated_at || new Date().toISOString() // Pour tri par date
+          };
+        }
+        
+        seriesGroups[seriesKey].books.push(book);
+        seriesGroups[seriesKey].totalBooks += 1;
+        
+        // Mettre à jour la date la plus ancienne de la série
+        const bookDate = book.date_added || book.updated_at || new Date().toISOString();
+        if (bookDate < seriesGroups[seriesKey].earliestDate) {
+          seriesGroups[seriesKey].earliestDate = bookDate;
+        }
+        
+        // Compter les statuts
+        switch (book.status) {
+          case 'completed':
+            seriesGroups[seriesKey].completedBooks += 1;
+            break;
+          case 'reading':
+            seriesGroups[seriesKey].readingBooks += 1;
+            break;
+          case 'to_read':
+            seriesGroups[seriesKey].toReadBooks += 1;
+            break;
+        }
+        
+        // Calculer le pourcentage de progression
+        seriesGroups[seriesKey].progressPercent = Math.round(
+          (seriesGroups[seriesKey].completedBooks / seriesGroups[seriesKey].totalBooks) * 100
+        );
+      } else {
+        // Livre standalone (sans série)
+        standaloneBooks.push({
+          ...book,
+          sortDate: book.date_added || book.updated_at || new Date().toISOString()
+        });
+      }
+    });
+
+    // 2. Convertir les séries en items avec date de tri
+    const seriesItems = Object.values(seriesGroups).map(series => ({
+      ...series,
+      sortDate: series.earliestDate
+    }));
+
+    // 3. Combiner séries et livres standalone
+    const allItems = [...seriesItems, ...standaloneBooks];
+
+    // 4. Trier par date d'ajout (plus récent en premier)
+    allItems.sort((a, b) => {
+      const dateA = new Date(a.sortDate);
+      const dateB = new Date(b.sortDate);
+      return dateB - dateA; // Ordre décroissant (plus récent en premier)
+    });
+
+    return allItems;
+  };
+
+  // FONCTION BIBLIOTHÈQUE : Regrouper les livres par série dans la bibliothèque (OBSOLÈTE - remplacée par createUnifiedDisplay)
   const groupBooksIntoSeries = (booksList) => {
     const seriesGroups = {};
     const standaloneBooks = [];
