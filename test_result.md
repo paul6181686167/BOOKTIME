@@ -272,7 +272,7 @@ backend:
   - task: "GET /health - Health check"
     implemented: true
     working: true
-    file: "/app/backend/server.py"
+    file: "/app/backend/app/main.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -286,6 +286,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Post-modularization testing confirms that the health check endpoint is still working correctly. Successfully tested GET /health and received a 200 status code with the expected response structure including status: 'ok', database: 'connected', and a timestamp."
+      - working: true
+        agent: "testing"
+        comment: "Latest testing confirms that the health check endpoint is still working correctly in the modularized backend. Successfully tested GET /health and received a 200 status code with the expected response structure including status: 'ok', database: 'connected', and a timestamp."
 
   - task: "GET /api/series/popular - Popular series"
     implemented: true
