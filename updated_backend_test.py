@@ -265,13 +265,13 @@ def run_tests():
     
     # Get specific book test
     if roman_book:
-        book_details = tester.get_book_by_id(roman_book["_id"])
+        book_details = tester.get_book_by_id(roman_book["id"])
         if not book_details:
             print("❌ Failed to get book details")
     
     # Update book test
     if roman_book:
-        updated_book = tester.update_book(roman_book["_id"], {
+        updated_book = tester.update_book(roman_book["id"], {
             "status": "reading",
             "current_page": 50
         })
@@ -291,7 +291,7 @@ def run_tests():
     
     # Delete book test
     if manga_book:
-        if not tester.delete_book(manga_book["_id"]):
+        if not tester.delete_book(manga_book["id"]):
             print("❌ Book deletion failed")
     
     # Final stats
