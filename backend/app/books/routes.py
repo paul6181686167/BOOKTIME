@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from datetime import datetime
 from typing import Optional
 import uuid
@@ -7,42 +7,90 @@ from ..models.book import BookCreate, BookUpdate
 from ..database.connection import books_collection
 from ..security.jwt import get_current_user
 from ..utils.validation import validate_category
+from ..services.pagination import PaginatedResponse, PaginationService
 
 router = APIRouter(prefix="/api/books", tags=["books"])
 
-@router.get("")
+# Instance du service de pagination
+pagination_service = PaginationService()
+
+@router.get("", response_model=PaginatedResponse)
 async def get_books(
     category: Optional[str] = None,
     status: Optional[str] = None,
     view_mode: Optional[str] = "books",  # "books" ou "series"
+    limit: int = Query(10, ge=1, le=100, description="Nombre d'éléments par page"),
+    offset: int = Query(0, ge=0, description="Décalage pour la pagination"),
+    sort_by: str = Query("date_added", description="Champ de tri"),
+    sort_order: str = Query("desc", regex="^(asc|desc)$", description="Ordre de tri"),
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Route mise à jour pour supporter l'affichage par séries ou par livres individuels.
+    Route mise à jour avec pagination optimisée par les indexes MongoDB.
+    Utilise les indexes stratégiques créés en Phase 2.1.
     """
-    # Si le mode série est demandé, retourner les séries comme entités uniques
+    # Si le mode série est demandé, déléguer aux séries avec pagination
     if view_mode == "series":
-        from ..series.routes import get_library_series
-        return await get_library_series(category, current_user)
+        from ..series.routes import get_library_series_paginated
+        return await get_library_series_paginated(
+            category=category,
+            limit=limit,
+            offset=offset,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            current_user=current_user
+        )
     
-    # Mode livres classique : retourner tous les livres individuels SAUF ceux qui font partie d'une série
-    filter_dict = {"user_id": current_user["id"]}
-    
-    if category:
-        filter_dict["category"] = category
-    if status:
-        filter_dict["status"] = status
-    
-    # Exclure les livres qui font partie d'une série (pour éviter la duplication)
-    # En mode livres, on ne montre que les livres isolés
-    filter_dict["$or"] = [
-        {"saga": {"$exists": False}},
-        {"saga": ""},
-        {"saga": None}
-    ]
-    
-    books = list(books_collection.find(filter_dict, {"_id": 0}))
-    return books
+    # Mode livres avec pagination optimisée
+    try:
+        result = pagination_service.get_paginated_books(
+            user_id=current_user["id"],
+            category=category,
+            status=status,
+            limit=limit,
+            offset=offset,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            exclude_series=True  # Exclure livres faisant partie d'une série
+        )
+        return result
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur récupération livres: {str(e)}")
+
+@router.get("/all", response_model=PaginatedResponse)
+async def get_all_books(
+    category: Optional[str] = None,
+    status: Optional[str] = None,
+    author: Optional[str] = None,
+    saga: Optional[str] = None,
+    limit: int = Query(20, ge=1, le=100, description="Nombre d'éléments par page"),
+    offset: int = Query(0, ge=0, description="Décalage pour la pagination"),
+    sort_by: str = Query("date_added", description="Champ de tri"),
+    sort_order: str = Query("desc", regex="^(asc|desc)$", description="Ordre de tri"),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Nouveau endpoint pour récupérer TOUS les livres (incluant ceux des séries) 
+    avec pagination et filtres avancés optimisés par indexes.
+    """
+    try:
+        result = pagination_service.get_paginated_books(
+            user_id=current_user["id"],
+            category=category,
+            status=status,
+            author=author,
+            saga=saga,
+            limit=limit,
+            offset=offset,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            exclude_series=False  # Inclure tous les livres
+        )
+        return result
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur récupération livres: {str(e)}")
 
 @router.get("/search-grouped")
 async def search_books_grouped(
