@@ -251,8 +251,16 @@ function MainApp() {
               />
             </div>
             
-            {/* Profil */}
-            <div className="flex-shrink-0">
+            {/* Profil et navigation */}
+            <div className="flex-shrink-0 flex items-center space-x-4">
+              <button
+                onClick={() => window.location.href = '/recommendations'}
+                className="flex items-center space-x-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
+              >
+                <span>🔮</span>
+                <span className="hidden sm:inline">Recommandations</span>
+              </button>
+              
               <button
                 onClick={() => setShowProfileModal(true)}
                 className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full transition-colors duration-200"
