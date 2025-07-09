@@ -229,7 +229,7 @@ class BooktimeAPITester:
         )
         
         if success:
-            print(f"Found {response['total']} books matching '{query}'")
+            print(f"Found OpenLibrary search results for '{query}'")
             return response
         return None
 
