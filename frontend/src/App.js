@@ -72,6 +72,22 @@ function MainApp() {
   const [activeTab, setActiveTab] = useState('roman');
   const [showProfileModal, setShowProfileModal] = useState(false);
 
+  // PHASE 2.4 - Monitoring et Analytics
+  const performanceMonitoring = usePerformanceMonitoring();
+  const userAnalytics = useUserAnalytics();
+  const alertSystem = AlertSystem({ isActive: true });
+
+  // Démarrage automatique du monitoring
+  useEffect(() => {
+    performanceMonitoring.startMonitoring();
+    userAnalytics.startTracking();
+    
+    return () => {
+      performanceMonitoring.stopMonitoring();
+      userAnalytics.stopTracking();
+    };
+  }, []);
+
   // Hooks personnalisés pour gérer les états (Phase 1.1 - Step 6)
   const booksHook = useBooks();
   const seriesHook = useSeries();
