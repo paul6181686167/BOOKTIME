@@ -33,6 +33,10 @@ import useSeries from './hooks/useSeries';
 import useSearch from './hooks/useSearch';
 import SearchOptimizer from './utils/searchOptimizer';
 
+// PHASE 2.4 - Monitoring et Analytics hooks
+import usePerformanceMonitoring from './hooks/usePerformanceMonitoring';
+import useUserAnalytics from './hooks/useUserAnalytics';
+
 // Utils imports
 import { getCategoryBadge } from './utils/helpers';
 import { TAB_CONFIG } from './utils/constants';
