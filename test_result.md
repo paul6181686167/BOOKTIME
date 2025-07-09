@@ -449,7 +449,7 @@ backend:
   - task: "GET /api/books with filters - Filter books by category and status"
     implemented: true
     working: true
-    file: "/app/backend/server.py"
+    file: "/app/backend/app/books/routes.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -463,6 +463,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Filtering books by category and status works correctly with the extended dataset. Found 7 roman, 4 bd, and 7 manga books. Status filters also work correctly with 4 to_read, 4 reading, and 10 completed books."
+      - working: true
+        agent: "testing"
+        comment: "Post-modularization testing confirms that the GET /api/books with filters endpoint is still working correctly. Successfully tested with category and status filters. The endpoint correctly returns filtered books based on the specified criteria."
 
   - task: "GET /api/books/{book_id} - Get specific book"
     implemented: true
