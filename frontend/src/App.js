@@ -19,6 +19,9 @@ import ExportImportPage from './components/exportimport/ExportImportPage';
 import ProfileModal from './components/common/ProfileModal';
 import ExportImportModal from './components/export-import/ExportImportModal';
 
+// PHASE 3.3 - Composants Social
+import SocialModal from './components/social/SocialModal';
+
 // PHASE 2.4 - Monitoring et Analytics
 import ErrorBoundary from './components/monitoring/ErrorBoundary';
 import PerformanceWidget from './components/monitoring/PerformanceWidget';
