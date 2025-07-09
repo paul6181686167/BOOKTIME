@@ -42,7 +42,7 @@ async def export_user_data(
         Fichier d'export dans le format demandé
     """
     try:
-        user_id = current_user.get("user_id")
+        user_id = current_user.get("id")
         
         # Valider le format
         if format_type not in export_import_service.supported_formats:
