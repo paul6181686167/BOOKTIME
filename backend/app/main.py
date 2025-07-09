@@ -54,6 +54,8 @@ app.include_router(authors_router)
 
 # Enregistrement du router optimisé
 app.include_router(optimized_books_router)
+# Enregistrement du router pagination (Phase 2.2)
+app.include_router(pagination_router, prefix="/api")
 
 if __name__ == "__main__":
     import uvicorn
