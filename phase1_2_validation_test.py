@@ -307,7 +307,12 @@ class BooktimeModularizationTest(unittest.TestCase):
         # Test with limit
         response = requests.get(f"{API_URL}/series/popular?limit=3", headers=self.headers)
         self.assertEqual(response.status_code, 200)
-        series_list = response.json()
+        data = response.json()
+        if isinstance(data, list):
+            series_list = data
+        else:
+            self.assertIn("series", data)
+            series_list = data["series"]
         self.assertLessEqual(len(series_list), 3)
         print("✅ GET /api/series/popular?limit=3 - Popular series with limit working")
         
