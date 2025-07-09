@@ -7,12 +7,9 @@ from ..models.book import BookCreate, BookUpdate
 from ..database.connection import books_collection
 from ..security.jwt import get_current_user
 from ..utils.validation import validate_category
-from ..services.pagination import PaginatedResponse, PaginationService
+from ..services.pagination import PaginatedResponse, pagination_service
 
 router = APIRouter(prefix="/api/books", tags=["books"])
-
-# Instance du service de pagination
-pagination_service = PaginationService()
 
 @router.get("", response_model=PaginatedResponse)
 async def get_books(
