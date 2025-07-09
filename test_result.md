@@ -422,7 +422,7 @@ backend:
   - task: "GET /api/books - Get all books"
     implemented: true
     working: true
-    file: "/app/backend/server.py"
+    file: "/app/backend/app/books/routes.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -442,6 +442,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Additional testing confirms the GET /api/books endpoint is working correctly with different view_mode values. Successfully tested with view_mode=series and view_mode=books parameters. For a new user with no books, both modes correctly return empty arrays. The endpoint structure and behavior are as expected."
+      - working: true
+        agent: "testing"
+        comment: "Post-modularization testing confirms that the GET /api/books endpoint is still working correctly. Successfully tested with a newly registered user and received the expected response structure. The endpoint correctly returns an empty array for a new user with no books."
 
   - task: "GET /api/books with filters - Filter books by category and status"
     implemented: true
