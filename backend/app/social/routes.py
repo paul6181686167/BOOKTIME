@@ -365,7 +365,7 @@ async def social_health_check():
     """Vérification de santé du module social"""
     try:
         # Test de connexion à la base
-        await social_service._ensure_indexes()
+        social_service._ensure_indexes()
         
         return {
             "status": "ok",
