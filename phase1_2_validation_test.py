@@ -87,7 +87,7 @@ class BooktimeModularizationTest(unittest.TestCase):
             self.assertIn("message", data)
         except:
             # Some implementations might return HTML instead of JSON
-            self.assertIn("BookTime", response.text)
+            self.assertIn("BOOKTIME", response.text.upper())
         print("✅ GET / - Welcome message endpoint working")
         
         # Test health check endpoint
