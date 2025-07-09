@@ -125,7 +125,8 @@ class PaginationService:
         author: Optional[str] = None,
         saga: Optional[str] = None,
         sort_by: str = "date_added",
-        sort_order: str = "desc"
+        sort_order: str = "desc",
+        exclude_series: bool = False
     ) -> PaginatedResponse:
         """
         Récupère les livres avec pagination et cache
