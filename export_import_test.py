@@ -68,7 +68,7 @@ class ExportImportAPITest(unittest.TestCase):
             response = requests.post(f"{API_URL}/books", json=book, headers=self.auth_headers)
             self.assertEqual(response.status_code, 200)
             book_data = response.json()
-            self.book_ids.append(book_data["_id"])
+            self.book_ids.append(book_data["id"])
         
         # Wait a moment for the database to update
         time.sleep(1)
