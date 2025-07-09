@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from typing import Optional
 from ..database.connection import books_collection, series_library_collection
 from ..security.jwt import get_current_user
