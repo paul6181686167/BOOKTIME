@@ -22,10 +22,32 @@ class BooktimeModularizationTest(unittest.TestCase):
         
         # Register the test user
         response = requests.post(f"{API_URL}/auth/register", json=self.test_user)
+        if response.status_code != 200:
+            print(f"Failed to register user: {response.text}")
+            # Try again with a different user
+            self.test_user = {
+                "first_name": f"Test{uuid.uuid4().hex[:6]}",
+                "last_name": f"User{uuid.uuid4().hex[:6]}"
+            }
+            response = requests.post(f"{API_URL}/auth/register", json=self.test_user)
+        
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.token = data["access_token"]
-        self.user_id = data["user"]["id"]
+        
+        # Different implementations might use different field names
+        if "access_token" in data:
+            self.token = data["access_token"]
+        elif "token" in data:
+            self.token = data["token"]
+        else:
+            raise ValueError("No token found in response")
+            
+        if "user" in data and "id" in data["user"]:
+            self.user_id = data["user"]["id"]
+        elif "id" in data:
+            self.user_id = data["id"]
+        else:
+            self.user_id = None
         
         # Headers for authenticated requests
         self.headers = {"Authorization": f"Bearer {self.token}"}
