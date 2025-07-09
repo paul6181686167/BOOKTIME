@@ -470,7 +470,7 @@ backend:
   - task: "GET /api/books/{book_id} - Get specific book"
     implemented: true
     working: true
-    file: "/app/backend/server.py"
+    file: "/app/backend/app/books/routes.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -481,6 +481,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Get specific book endpoint works correctly, returns the correct book by ID and 404 for non-existent books"
+      - working: true
+        agent: "testing"
+        comment: "Post-modularization testing confirms that the GET /api/books/{book_id} endpoint is still working correctly. Successfully tested with a newly created book and received the expected book data. The endpoint also correctly returns 404 for non-existent books."
 
   - task: "POST /api/books - Create new book"
     implemented: true
