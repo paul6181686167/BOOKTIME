@@ -324,7 +324,7 @@ class ExportImportAPITest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         import_token = data["access_token"]
-        import_user_id = data["user"]["_id"]
+        import_user_id = data["user"]["id"]
         
         # Headers for import user
         import_headers = {
