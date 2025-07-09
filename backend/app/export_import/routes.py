@@ -101,7 +101,7 @@ async def import_user_data(
         Résultat de l'import avec détails
     """
     try:
-        user_id = current_user.get("user_id")
+        user_id = current_user.get("id")
         
         # Lire le contenu du fichier
         file_content = await file.read()
