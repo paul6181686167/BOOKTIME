@@ -1223,6 +1223,75 @@ setIsOwned(seriesBooks.length >= foundSeries.volumes);
 
 ---
 
+### [PHASE 1.1 - ÉTAPE 3] - Extraction Logique de Recherche RÉUSSIE
+**Date** : Mars 2025  
+**Prompt Utilisateur** : `"vois ou ça en est et continue"` (plan 5 phases)
+
+#### Action Effectuée
+- ✅ **Extraction RelevanceEngine.js** : Moteur de pertinence complet (546 lignes)
+  - Fonction `calculateRelevanceScore` avec 50+ séries populaires
+  - Fonction `getRelevanceLevel` avec badges de pertinence
+  - Mapping intelligent Romans/Mangas/BD avec détection automatique
+  - Algorithme de scoring avancé multi-critères
+
+- ✅ **Extraction SearchLogic.js** : Logique de recherche complète (220 lignes)
+  - Fonction `searchOpenLibrary` avec gestion badges automatiques
+  - Fonction `handleAddFromOpenLibrary` avec placement intelligent
+  - Gestionnaires de clics (série/livre) avec navigation
+  - Fonction `backToLibrary` et utilitaires de navigation
+
+- ✅ **Refactorisation App.js** : Utilisation modules de recherche
+  - Import des nouveaux modules RelevanceEngine et SearchLogic
+  - Remplacement des fonctions extraites par appels modulaires
+  - Suppression de **752 lignes** de code complexe
+  - Maintien de toutes les fonctionnalités existantes
+
+#### Résultats
+- ✅ **App.js massivement réduit** : 1937 lignes → 1185 lignes (-752 lignes !)
+- ✅ **2 nouveaux modules créés** : RelevanceEngine.js + SearchLogic.js
+- ✅ **Compilation réussie** : Frontend redémarré sans erreurs
+- ✅ **Fonctionnalités préservées** : Recherche et pertinence 100% opérationnelles
+- ✅ **Architecture modulaire** : Séparation claire des responsabilités
+
+#### Composants Créés
+**RelevanceEngine.js** : `/app/frontend/src/components/search/RelevanceEngine.js`
+- Moteur de calcul de pertinence avancé
+- Base de données de 50+ séries populaires
+- Algorithme de détection intelligente de séries
+- Scoring multi-critères avec bonifications
+
+**SearchLogic.js** : `/app/frontend/src/components/search/SearchLogic.js`
+- Logique de recherche Open Library complète
+- Gestion badges catégorie automatiques
+- Placement intelligent des livres par catégorie
+- Gestionnaires de navigation et clics
+
+#### Architecture Modulaire Avancée
+```
+✅ /app/frontend/src/components/common/ProfileModal.js (CRÉÉ)
+✅ /app/frontend/src/components/search/RelevanceEngine.js (CRÉÉ)
+✅ /app/frontend/src/components/search/SearchLogic.js (CRÉÉ)
+📁 /app/frontend/src/components/books/ (PROCHAINE ÉTAPE)
+📁 /app/frontend/src/components/series/ (PROCHAINE ÉTAPE)
+📁 /app/frontend/src/hooks/ (PROCHAINE ÉTAPE)
+```
+
+#### Prochaine Étape Phase 1.1
+**Étape 4** : Extraction gestion des séries (SeriesActions + SeriesGrid)
+- Target : Fonctions `handleAddSeriesToLibrary`, `loadUserSeriesLibrary`, `enrichSeriesMetadata`
+- Target : Logique gestion des séries en bibliothèque (lignes 665-750)
+- Création : `/app/frontend/src/components/series/SeriesActions.js`
+- Création : `/app/frontend/src/components/series/SeriesGrid.js`
+
+#### Métriques de Progression
+- **Avancement Phase 1.1** : 3/7 étapes (43% complété)
+- **Réduction App.js** : 889/1574 lignes cibles supprimées (56% réduction)
+- **Composants créés** : 3/10 composants cibles
+
+**🎯 EXTRACTION LOGIQUE RECHERCHE RÉUSSIE - RÉDUCTION MASSIVE 752 LIGNES !**
+
+---
+
 ### [MÉMOIRE COMPLÈTE 8] - Analyse Application et Documentation Session Active (Mars 2025)
 **Date** : Mars 2025  
 **Prompt Utilisateur** : `"analyse l'appli en consultant d'abord DOCUMENTATION.md et CHANGELOG.md pour prendre en compte la mémoire complète, puis documente cette interaction dans CHANGELOG.md"`
