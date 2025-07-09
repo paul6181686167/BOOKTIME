@@ -277,7 +277,12 @@ class BooktimeModularizationTest(unittest.TestCase):
         # Test popular series
         response = requests.get(f"{API_URL}/series/popular", headers=self.headers)
         self.assertEqual(response.status_code, 200)
-        series_list = response.json()
+        data = response.json()
+        if isinstance(data, list):
+            series_list = data
+        else:
+            self.assertIn("series", data)
+            series_list = data["series"]
         self.assertIsInstance(series_list, list)
         print(f"✅ GET /api/series/popular - Popular series endpoint working, found {len(series_list)} series")
         
