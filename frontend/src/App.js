@@ -389,7 +389,11 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <ErrorBoundary>
-            <AppWithAuth />
+            <Routes>
+              <Route path="/" element={<AppWithAuth />} />
+              <Route path="/recommendations" element={<RecommendationPage />} />
+              <Route path="/series/:seriesId" element={<SeriesDetailPage />} />
+            </Routes>
           </ErrorBoundary>
         </AuthProvider>
       </ThemeProvider>
