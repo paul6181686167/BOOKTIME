@@ -75,7 +75,7 @@ function MainApp() {
     filteredBooks,
     searchStats,
     clearSearch
-  } = useAdvancedSearch(books);
+  } = useAdvancedSearch(booksHook.books);
 
   // Hook de recherche groupée
   const {
