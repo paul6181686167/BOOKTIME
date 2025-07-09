@@ -35,6 +35,7 @@ import SeriesGrid, { mergeSeriesAndBooks } from './components/series/SeriesGrid'
 
 // Books components imports (Phase 1.1 - Step 5)
 import BookActions from './components/books/BookActions';
+import BookGrid from './components/books/BookGrid';
 
 import './App.css';
 
