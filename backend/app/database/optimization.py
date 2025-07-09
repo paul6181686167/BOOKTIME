@@ -1,14 +1,17 @@
-# Optimisation MongoDB pour BOOKTIME
+# Optimisation MongoDB pour BOOKTIME - Phase 2.1 COMPLÈTE
 """
 Ce module contient les optimisations de performance pour MongoDB :
 - Création d'indexes stratégiques
 - Optimisation des requêtes
 - Monitoring des performances
+- Audit complet des performances
 """
 
 from pymongo import MongoClient, ASCENDING, DESCENDING, TEXT
 import time
 import os
+from datetime import datetime
+from typing import Dict, List, Any, Optional
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -24,8 +27,11 @@ class MongoOptimizer:
         self.books_collection = self.db.books
         self.authors_collection = self.db.authors
         self.series_library_collection = self.db.series_library
+        
+        # Métriques de performance
+        self.performance_metrics = {}
     
-    def analyze_current_indexes(self):
+    def analyze_current_indexes(self) -> Dict[str, List[Dict]]:
         """Analyser les index actuels"""
         print("📊 ANALYSE DES INDEX ACTUELS")
         print("=" * 50)
@@ -37,16 +43,146 @@ class MongoOptimizer:
             ("series_library", self.series_library_collection)
         ]
         
+        indexes_analysis = {}
+        
         for collection_name, collection in collections:
             print(f"\n🔍 Collection: {collection_name}")
-            indexes = collection.list_indexes()
+            indexes = list(collection.list_indexes())
+            indexes_analysis[collection_name] = indexes
+            
             for index in indexes:
                 print(f"  - {index['name']}: {index.get('key', {})}")
+                
+        return indexes_analysis
     
-    def create_strategic_indexes(self):
+    def create_strategic_indexes(self) -> Dict[str, List[str]]:
         """Créer des index stratégiques basés sur les requêtes fréquentes"""
         print("\n🚀 CRÉATION D'INDEX STRATÉGIQUES")
         print("=" * 50)
+        
+        indexes_created = {}
+        
+        # === INDEXES USERS COLLECTION ===
+        print("\n📝 Users Collection:")
+        users_indexes = []
+        try:
+            # Index unique pour authentification rapide
+            self.users_collection.create_index([
+                ("first_name", ASCENDING),
+                ("last_name", ASCENDING)
+            ], unique=True, name="auth_unique_idx")
+            users_indexes.append("auth_unique_idx")
+            print("  ✅ auth_unique_idx créé")
+            
+            # Index pour recherche utilisateur par ID
+            self.users_collection.create_index([
+                ("id", ASCENDING)
+            ], unique=True, name="user_id_idx")
+            users_indexes.append("user_id_idx")
+            print("  ✅ user_id_idx créé")
+            
+        except Exception as e:
+            print(f"  ⚠️  Erreur users indexes: {e}")
+        
+        # === INDEXES BOOKS COLLECTION (Les plus critiques) ===
+        print("\n📚 Books Collection:")
+        books_indexes = []
+        try:
+            # Index composé pour filtrage par utilisateur + catégorie + statut
+            self.books_collection.create_index([
+                ("user_id", ASCENDING),
+                ("category", ASCENDING),
+                ("status", ASCENDING)
+            ], name="user_category_status_idx")
+            books_indexes.append("user_category_status_idx")
+            print("  ✅ user_category_status_idx créé")
+            
+            # Index pour recherche par utilisateur (requête la plus fréquente)
+            self.books_collection.create_index([
+                ("user_id", ASCENDING),
+                ("date_added", DESCENDING)
+            ], name="user_date_idx")
+            books_indexes.append("user_date_idx")
+            print("  ✅ user_date_idx créé")
+            
+            # Index pour recherche par auteur
+            self.books_collection.create_index([
+                ("user_id", ASCENDING),
+                ("author", ASCENDING)
+            ], name="user_author_idx")
+            books_indexes.append("user_author_idx")
+            print("  ✅ user_author_idx créé")
+            
+            # Index pour recherche par saga
+            self.books_collection.create_index([
+                ("user_id", ASCENDING),
+                ("saga", ASCENDING),
+                ("volume", ASCENDING)
+            ], name="user_saga_volume_idx")
+            books_indexes.append("user_saga_volume_idx")
+            print("  ✅ user_saga_volume_idx créé")
+            
+            # Index textuel pour recherche full-text
+            self.books_collection.create_index([
+                ("title", TEXT),
+                ("author", TEXT),
+                ("description", TEXT),
+                ("saga", TEXT)
+            ], name="books_fulltext_idx")
+            books_indexes.append("books_fulltext_idx")
+            print("  ✅ books_fulltext_idx créé")
+            
+            # Index pour statistiques (performance critiques)
+            self.books_collection.create_index([
+                ("user_id", ASCENDING),
+                ("category", ASCENDING),
+                ("status", ASCENDING),
+                ("author", ASCENDING)
+            ], name="stats_performance_idx")
+            books_indexes.append("stats_performance_idx")
+            print("  ✅ stats_performance_idx créé")
+            
+        except Exception as e:
+            print(f"  ⚠️  Erreur books indexes: {e}")
+        
+        # === INDEXES AUTHORS COLLECTION ===
+        print("\n👨‍💼 Authors Collection:")
+        authors_indexes = []
+        try:
+            # Index pour recherche par utilisateur
+            self.authors_collection.create_index([
+                ("user_id", ASCENDING),
+                ("name", ASCENDING)
+            ], name="user_author_name_idx")
+            authors_indexes.append("user_author_name_idx")
+            print("  ✅ user_author_name_idx créé")
+            
+        except Exception as e:
+            print(f"  ⚠️  Erreur authors indexes: {e}")
+        
+        # === INDEXES SERIES_LIBRARY COLLECTION ===
+        print("\n📖 Series Library Collection:")
+        series_indexes = []
+        try:
+            # Index pour recherche par utilisateur
+            self.series_library_collection.create_index([
+                ("user_id", ASCENDING),
+                ("category", ASCENDING)
+            ], name="user_series_category_idx")
+            series_indexes.append("user_series_category_idx")
+            print("  ✅ user_series_category_idx créé")
+            
+        except Exception as e:
+            print(f"  ⚠️  Erreur series_library indexes: {e}")
+        
+        indexes_created = {
+            'users': users_indexes,
+            'books': books_indexes,
+            'authors': authors_indexes,
+            'series_library': series_indexes
+        }
+        
+        return indexes_created
         
         # Index pour la collection users
         print("\n👤 Index utilisateurs...")
