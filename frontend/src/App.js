@@ -99,56 +99,16 @@ function MainApp() {
 
   // AFFICHAGE UNIFIÉ : Plus besoin de paramètre viewMode - simplifié
   const loadBooks = async () => {
-    try {
-      setLoading(true);
-      // Charger tous les livres sans distinction de mode d'affichage
-      const data = await bookService.getBooks();
-      setBooks(data);
-    } catch (error) {
-      console.error('Erreur lors du chargement des livres:', error);
-      toast.error('Erreur lors du chargement des livres');
-    } finally {
-      setLoading(false);
-    }
+    await BookActions.loadBooks(setLoading, setBooks);
   };
 
   const loadStats = async () => {
-    try {
-      const data = await bookService.getStats();
-      setStats(data);
-    } catch (error) {
-      console.error('Erreur lors du chargement des statistiques:', error);
-    }
+    await BookActions.loadStats(setStats);
   };
 
   // Fonction pour rechercher des séries
   const searchSeries = async (query) => {
-    if (!query || query.trim().length < 2) return [];
-    
-    try {
-      const token = localStorage.getItem('token');
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
-      
-      const response = await fetch(`${backendUrl}/api/series/search?q=${encodeURIComponent(query)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        return data.series.map(series => ({
-          ...series,
-          isSeriesCard: true,
-          isFromSearch: true
-        }));
-      }
-      return [];
-    } catch (error) {
-      console.error('Erreur recherche séries:', error);
-      return [];
-    }
+    return await BookActions.searchSeries(query);
   };
 
   // Fonction modifiée pour la recherche Open Library incluant les séries
