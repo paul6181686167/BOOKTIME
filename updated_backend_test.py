@@ -130,13 +130,13 @@ class BooktimeAPITester:
             f"Create {category.capitalize()} Book",
             "POST",
             "books",
-            201,
+            200,
             data=book_data
         )
         
-        if success and '_id' in response:
+        if success and 'id' in response:
             self.created_books.append(response)
-            print(f"Created book: {response['title']} (ID: {response['_id']})")
+            print(f"Created book: {response['title']} (ID: {response['id']})")
             return response
         return None
 
