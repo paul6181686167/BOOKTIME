@@ -2058,6 +2058,27 @@ setIsOwned(seriesBooks.length >= foundSeries.volumes);
 **PHASE 3.1 SYSTÈME DE RECOMMANDATIONS : SUCCÈS TOTAL - NOUVELLE FONCTIONNALITÉ MAJEURE IMPLÉMENTÉE !**
 
 ---
+
+### [PHASE 3.2] - Export/Import de Données DÉMARRÉ 🚀
+**Date** : Mars 2025  
+**Prompt Utilisateur** : `"nickel documente et continue"`
+
+#### Context
+- Suite de la Phase 3.1 (Système de Recommandations) terminée avec succès
+- Phase 3.2 : Export/Import de Données - Fonctionnalité de portabilité et sauvegarde
+- Formats multiples (JSON, CSV, Excel) pour différents usages
+- Import de données depuis d'autres services (Goodreads, CSV personnalisé)
+- Workflows complets avec validation robuste
+
+#### Objectifs Phase 3.2
+🎯 **Système Export/Import Complet** :
+- **Export multi-formats** : JSON, CSV, Excel avec métadonnées complètes
+- **Import intelligent** : Validation, déduplication, mapping automatique
+- **Intégration tiers** : Support Goodreads, Babelio, fichiers personnalisés
+- **Sauvegarde complète** : Bibliothèque + préférences + statistiques
+- **Interface intuitive** : Drag & drop, progression, aperçu
+
+### [PHASE 3.1] - Système de Recommandations TERMINÉ ✅
 **Date** : Mars 2025  
 **Prompt Utilisateur** : `"ok continue"`
 
