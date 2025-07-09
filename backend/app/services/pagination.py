@@ -161,6 +161,14 @@ class PaginationService:
         if saga:
             query["saga"] = {"$regex": saga, "$options": "i"}
         
+        # Exclusion des livres de séries si demandé
+        if exclude_series:
+            query["$or"] = [
+                {"saga": {"$exists": False}},
+                {"saga": ""},
+                {"saga": None}
+            ]
+        
         # Génération de la clé de cache
         cache_key = self.cache._generate_cache_key(
             "books",
