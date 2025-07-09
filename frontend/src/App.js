@@ -16,6 +16,11 @@ import SeriesDetailModal from './components/SeriesDetailModal';
 import SeriesDetailPage from './pages/SeriesDetailPage';
 import ProfileModal from './components/common/ProfileModal';
 
+// PHASE 2.4 - Monitoring et Analytics
+import ErrorBoundary from './components/monitoring/ErrorBoundary';
+import PerformanceWidget from './components/monitoring/PerformanceWidget';
+import AlertSystem from './components/monitoring/AlertSystem';
+
 // Service imports
 import { bookService } from './services/bookService';
 import * as seriesLibraryService from './services/seriesLibraryService';
