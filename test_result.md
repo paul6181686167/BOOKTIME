@@ -488,7 +488,7 @@ backend:
   - task: "POST /api/books - Create new book"
     implemented: true
     working: true
-    file: "/app/backend/server.py"
+    file: "/app/backend/app/books/routes.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -499,6 +499,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Create book endpoint works correctly, creates a new book with the provided data and sets default values for status, current_page, and date_added"
+      - working: true
+        agent: "testing"
+        comment: "Post-modularization testing confirms that the POST /api/books endpoint is still working correctly. Successfully created a new book with the provided data. The endpoint correctly sets default values for status, current_page, and date_added."
 
   - task: "PUT /api/books/{book_id} - Update book"
     implemented: true
