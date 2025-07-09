@@ -111,8 +111,8 @@ class BooktimeAPITester:
             "auth/me",
             200
         )
-        if success and '_id' in response:
-            print(f"Authenticated as user: {response['email']}")
+        if success and 'id' in response:
+            print(f"Authenticated as user: {response['first_name']} {response['last_name']}")
             return True
         return False
 
