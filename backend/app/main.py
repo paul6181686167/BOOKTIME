@@ -1,37 +1,44 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .config import CORS_ORIGINS
-from .routers import auth, books
+from datetime import datetime
+from .database.connection import client
 
-# Créer l'application FastAPI
+# Import des routers
+from .auth.routes import router as auth_router
+from .books.routes import router as books_router
+from .stats.routes import router as stats_router
+from .authors.routes import router as authors_router
+
 app = FastAPI(title="BookTime API", description="Votre bibliothèque personnelle")
 
 # Configuration CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Inclure les routers
-app.include_router(auth.router)
-app.include_router(books.router)
-
-# Endpoint de santé
-@app.get("/health")
-async def health_check():
-    """Vérifier l'état de l'API"""
-    from datetime import datetime
-    return {
-        "status": "ok",
-        "database": "connected",
-        "timestamp": datetime.utcnow().isoformat()
-    }
-
-# Root endpoint
+# Routes de base
 @app.get("/")
-async def root():
-    """Endpoint racine"""
-    return {"message": "BookTime API - Votre bibliothèque personnelle"}
+async def read_root():
+    return {"message": "BookTime API - Version modulaire avec authentification"}
+
+@app.get("/health")
+async def health():
+    try:
+        client.admin.command('ping')
+        return {"status": "ok", "database": "connected", "timestamp": datetime.utcnow().isoformat()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database connection error: {str(e)}")
+
+# Enregistrement des routers
+app.include_router(auth_router)
+app.include_router(books_router)
+app.include_router(stats_router)
+app.include_router(authors_router)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8001)
