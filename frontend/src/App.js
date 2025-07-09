@@ -428,6 +428,14 @@ function MainApp() {
         />
       )}
       
+      {showSocialModal && (
+        <SocialModal
+          isOpen={showSocialModal}
+          onClose={() => setShowSocialModal(false)}
+          currentUser={user}
+        />
+      )}
+      
       {/* Toast notifications */}
       <Toaster position="bottom-right" />
       
