@@ -142,13 +142,39 @@ function MainApp() {
 
   // Fonction pour ajouter un livre depuis Open Library
   const handleAddFromOpenLibrary = async (openLibraryBook) => {
-    await searchHook.handleAddFromOpenLibrary(openLibraryBook, {
-      books: booksHook.books,
-      activeTab,
-      getCategoryBadgeFromBook,
-      loadBooks: booksHook.loadBooks,
-      loadStats: booksHook.loadStats
-    });
+    // PHASE 2.4 - Monitoring API
+    const apiStartTime = Date.now();
+    
+    try {
+      await searchHook.handleAddFromOpenLibrary(openLibraryBook, {
+        books: booksHook.books,
+        activeTab,
+        getCategoryBadgeFromBook,
+        loadBooks: booksHook.loadBooks,
+        loadStats: booksHook.loadStats
+      });
+
+      // Mesure performance API
+      const apiTime = Date.now() - apiStartTime;
+      performanceMonitoring.measureApiResponse('add_from_openlibrary', apiStartTime, true);
+      alertSystem.checkResponseTime('add_from_openlibrary', apiTime);
+      
+      // Analytics
+      userAnalytics.trackBookInteraction('add_from_openlibrary', {
+        id: openLibraryBook.ol_key,
+        title: openLibraryBook.title,
+        author: openLibraryBook.author,
+        category: openLibraryBook.category
+      });
+
+    } catch (error) {
+      // Erreur API
+      const apiTime = Date.now() - apiStartTime;
+      performanceMonitoring.measureApiResponse('add_from_openlibrary', apiStartTime, false);
+      alertSystem.checkResponseTime('add_from_openlibrary', apiTime);
+      
+      console.error('Error adding book from OpenLibrary:', error);
+    }
   };
 
   // Gestionnaires de clic
