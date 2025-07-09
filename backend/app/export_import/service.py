@@ -657,8 +657,8 @@ class ExportImportService:
             # Stats de lecture
             if status == 'completed':
                 completed_books += 1
-                pages = book.get('total_pages', 0)
-                if pages > 0:
+                pages = book.get('total_pages', 0) or 0
+                if pages and pages > 0:
                     total_pages += pages
         
         # Calculer les moyennes
