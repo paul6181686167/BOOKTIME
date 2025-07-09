@@ -398,7 +398,7 @@ backend:
   - task: "GET /api/stats - Statistics"
     implemented: true
     working: true
-    file: "/app/backend/server.py"
+    file: "/app/backend/app/stats/routes.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -418,6 +418,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Post-modularization testing confirms that the stats endpoint is still working correctly. Successfully tested GET /api/stats with a newly registered user. The endpoint returns all required fields including total_books, completed_books, reading_books, to_read_books, categories, authors_count, sagas_count, and auto_added_count. The stats are correctly updated after creating a new book."
+      - working: true
+        agent: "testing"
+        comment: "Latest testing confirms that the GET /api/stats endpoint is still working correctly in the modularized backend. Successfully tested with a newly registered user and received all required fields with the correct values."
 
   - task: "GET /api/books - Get all books"
     implemented: true
