@@ -63,17 +63,21 @@ class BooktimeAPITester:
 
     def register_user(self):
         """Register a new test user"""
-        self.user_data = self.generate_random_user()
+        user_data = {
+            "first_name": "Test",
+            "last_name": f"User{random.randint(1000, 9999)}"
+        }
         success, response = self.run_test(
             "Register User",
             "POST",
             "auth/register",
             200,
-            data=self.user_data
+            data=user_data
         )
         if success and 'access_token' in response:
             self.token = response['access_token']
-            print(f"Created test user: {self.user_data['email']}")
+            self.user_data = user_data
+            print(f"Created test user: {user_data['first_name']} {user_data['last_name']}")
             return True
         return False
 
