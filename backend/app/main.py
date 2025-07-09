@@ -60,7 +60,8 @@ app.include_router(authors_router)
 app.include_router(optimized_books_router)
 app.include_router(pagination_router)
 app.include_router(monitoring_router)
-app.include_router(recommendations_router)  # Phase 2.4
+app.include_router(recommendations_router)  # Phase 3.1
+app.include_router(export_import_router)  # Phase 3.2
 
 if __name__ == "__main__":
     import uvicorn
