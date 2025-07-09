@@ -1,22 +1,25 @@
 // Imports
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { toast, Toaster } from 'react-hot-toast';
 
 // Context imports
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { AuthProvider, useAuth } from './hooks/useAuth';
+
+// Component imports
+import LoginPage from './components/user/LoginPage';
+import UnifiedSearchBar from './components/UnifiedSearchBar';
+import BookDetailModal from './components/BookDetailModal';
+import SeriesCard from './components/SeriesCard';
+import SeriesDetailModal from './components/SeriesDetailModal';
+import SeriesDetailPage from './pages/SeriesDetailPage';
 
 // Service imports
 import { bookService } from './services/bookService';
 import * as seriesLibraryService from './services/seriesLibraryService';
 
-// Component imports
-import UnifiedSearchBar from './components/UnifiedSearchBar';
-import BookDetailModal from './components/BookDetailModal';
-import GroupedSearchResults from './components/GroupedSearchResults';
-import SeriesCard from './components/SeriesCard';
-import SeriesDetailModal from './components/SeriesDetailModal';
-import SeriesDetailPage from './pages/SeriesDetailPage';
+// Hook imports
 import { useAdvancedSearch } from './hooks/useAdvancedSearch';
 import { useGroupedSearch } from './hooks/useGroupedSearch';
 import SearchOptimizer from './utils/searchOptimizer';
