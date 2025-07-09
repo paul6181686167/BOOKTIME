@@ -6,6 +6,10 @@ from .database.connection import client
 # Import des routers
 from .auth.routes import router as auth_router
 from .books.routes import router as books_router
+from .series.routes import router as series_router
+from .sagas.routes import router as sagas_router
+from .openlibrary.routes import router as openlibrary_router
+from .library.routes import router as library_router
 from .stats.routes import router as stats_router
 from .authors.routes import router as authors_router
 
