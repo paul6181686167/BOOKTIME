@@ -19,6 +19,8 @@ from .routers.optimized_books import router as optimized_books_router
 from .routers.pagination import router as pagination_router
 # Import du router monitoring (Phase 2.4)
 from .monitoring.routes import router as monitoring_router
+# Import du router recommendations (Phase 3.1)
+from .recommendations.routes import router as recommendations_router
 
 app = FastAPI(title="BookTime API", description="Votre bibliothèque personnelle")
 
