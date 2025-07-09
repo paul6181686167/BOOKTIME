@@ -649,8 +649,8 @@ class ExportImportService:
             stats['by_status'][status] = stats['by_status'].get(status, 0) + 1
             
             # Par note
-            rating = book.get('rating', 0)
-            if rating > 0:
+            rating = book.get('rating', 0) or 0
+            if rating and rating > 0:
                 ratings.append(rating)
                 stats['by_rating'][str(rating)] = stats['by_rating'].get(str(rating), 0) + 1
             
