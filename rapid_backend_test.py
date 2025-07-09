@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 
 # Get the backend URL from the frontend .env file
-BACKEND_URL = "https://8063c975-82b7-4130-880b-48ffa3ce128f.preview.emergentagent.com"
+BACKEND_URL = "https://4ce8510e-3522-41b1-8edb-54d2323d42a4.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 class RapidBooktimeAPITest(unittest.TestCase):
