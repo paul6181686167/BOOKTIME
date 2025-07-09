@@ -177,7 +177,7 @@ backend:
   - task: "Uniformisation des fiches livres et séries"
     implemented: true
     working: true
-    file: "/app/backend/server.py"
+    file: "/app/backend/app/main.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -188,6 +188,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Les tests confirment que l'uniformisation des fiches livres et séries fonctionne correctement. Création réussie d'un utilisateur test 'UniformTest Test'. L'endpoint GET /api/books retourne correctement les livres de la bibliothèque avec une structure uniforme incluant les champs essentiels (id, title, author, category, status). L'endpoint GET /api/series/search?q=harry retourne correctement les séries avec une structure uniforme incluant les champs essentiels (name/title, category, authors). L'endpoint GET /api/openlibrary/search?q=harry&limit=5 retourne correctement les livres de l'API externe avec une structure uniforme incluant les champs essentiels (title, author, category, cover_url, ol_key). Tous les types de fiches (livres bibliothèque, séries recherche, livres OpenLibrary) partagent les mêmes champs communs (category, title, author) permettant un affichage uniforme dans l'interface. Les catégories sont cohérentes à travers tous les endpoints ('roman', 'bd', 'manga')."
+      - working: true
+        agent: "testing"
+        comment: "Post-modularization testing confirms that the uniformisation of book and series records is still working correctly. All endpoints return data with a consistent structure including the essential fields (title, author, category). The categories are consistent across all endpoints ('roman', 'bd', 'manga')."
 
   - task: "POST /api/series/library - Ajouter une série complète à la bibliothèque"
     implemented: true
