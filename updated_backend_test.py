@@ -170,7 +170,7 @@ class BooktimeAPITester:
             200
         )
         
-        if success and '_id' in response:
+        if success and 'id' in response:
             print(f"Retrieved book: {response['title']}")
             return response
         return None
