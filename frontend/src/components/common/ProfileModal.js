@@ -132,6 +132,24 @@ function ProfileModal({ isOpen, onClose }) {
               <button
                 onClick={() => {
                   onClose();
+                  // Déclencher l'ouverture du modal social
+                  window.dispatchEvent(new CustomEvent('openSocial'));
+                }}
+                className="w-full flex items-center justify-center p-3 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-lg transition-colors mb-3"
+              >
+                <div className="text-center">
+                  <div className="text-purple-600 dark:text-purple-400 text-sm font-medium">
+                    🌐 Social
+                  </div>
+                  <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                    Partager et découvrir avec la communauté
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  onClose();
                   // Déclencher l'ouverture du modal d'export/import
                   window.dispatchEvent(new CustomEvent('openExportImport'));
                 }}
