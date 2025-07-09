@@ -80,6 +80,7 @@ function MainApp() {
   const [activeTab, setActiveTab] = useState('roman');
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showExportImportModal, setShowExportImportModal] = useState(false);
+  const [showSocialModal, setShowSocialModal] = useState(false);
 
   // PHASE 2.4 - Monitoring et Analytics
   const performanceMonitoring = usePerformanceMonitoring();
