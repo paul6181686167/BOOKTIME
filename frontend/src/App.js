@@ -99,6 +99,18 @@ function MainApp() {
     };
   }, []);
 
+  // Gestionnaire d'événements pour le social
+  useEffect(() => {
+    const handleOpenSocial = () => {
+      setShowSocialModal(true);
+    };
+
+    window.addEventListener('openSocial', handleOpenSocial);
+    return () => {
+      window.removeEventListener('openSocial', handleOpenSocial);
+    };
+  }, []);
+
   // Démarrage automatique du monitoring
   useEffect(() => {
     performanceMonitoring.startMonitoring();
