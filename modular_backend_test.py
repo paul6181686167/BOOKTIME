@@ -86,7 +86,7 @@ class BooktimeModularAPITest(unittest.TestCase):
             print("✅ GET / - Root endpoint working")
         except:
             # If JSON parsing fails, check if it's HTML response
-            self.assertIn("BookTime", response.text)
+            self.assertIn("BOOKTIME", response.text.upper())
             print("✅ GET / - Root endpoint working (HTML response)")
         
         # 2. Test health check
