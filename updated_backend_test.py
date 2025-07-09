@@ -88,8 +88,8 @@ class BooktimeAPITester:
             return False
             
         login_data = {
-            "email": self.user_data["email"],
-            "password": self.user_data["password"]
+            "first_name": self.user_data["first_name"],
+            "last_name": self.user_data["last_name"]
         }
         success, response = self.run_test(
             "Login User",
