@@ -472,7 +472,11 @@ class BooktimeModularizationTest(unittest.TestCase):
             )
             self.assertEqual(response.status_code, 200)
             book = response.json()
-            self.book_ids_to_delete.append(book["id"])
+            # Check if the response uses "id" or "_id"
+            if "id" in book:
+                self.book_ids_to_delete.append(book["id"])
+            elif "_id" in book:
+                self.book_ids_to_delete.append(book["_id"])
             print("✅ POST /api/openlibrary/import - OpenLibrary import endpoint working")
         
         # Test advanced search
