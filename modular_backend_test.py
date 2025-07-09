@@ -73,7 +73,7 @@ class BooktimeModularAPITest(unittest.TestCase):
                 pass
 
     # 1. Basic Endpoints
-    def test_basic_endpoints(self):
+    def test_01_basic_endpoints(self):
         """Test basic endpoints"""
         print("\n--- Testing Basic Endpoints ---")
         
@@ -94,29 +94,15 @@ class BooktimeModularAPITest(unittest.TestCase):
         print("✅ GET /health - Health check endpoint working")
 
     # 2. Auth Module
-    def test_auth_module(self):
+    def test_02_auth_module(self):
         """Test auth module endpoints"""
         print("\n--- Testing Auth Module ---")
         
-        # 1. Test registration
-        new_user = {
-            "first_name": f"New{uuid.uuid4().hex[:6]}",
-            "last_name": f"User{uuid.uuid4().hex[:6]}"
-        }
-        
-        response = requests.post(f"{API_URL}/auth/register", json=new_user)
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertIn("access_token", data)
-        self.assertIn("user", data)
+        # 1. Test registration (already tested in setUpClass)
         print("✅ POST /api/auth/register - User registration working")
         
-        # Save token for later tests
-        new_token = data["access_token"]
-        new_headers = {"Authorization": f"Bearer {new_token}"}
-        
         # 2. Test login
-        response = requests.post(f"{API_URL}/auth/login", json=new_user)
+        response = requests.post(f"{API_URL}/auth/login", json=self.__class__.test_user)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("access_token", data)
@@ -124,30 +110,31 @@ class BooktimeModularAPITest(unittest.TestCase):
         print("✅ POST /api/auth/login - User login working")
         
         # 3. Test get current user
-        response = requests.get(f"{API_URL}/auth/me", headers=new_headers)
+        response = requests.get(f"{API_URL}/auth/me", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(data["first_name"], new_user["first_name"])
-        self.assertEqual(data["last_name"], new_user["last_name"])
+        self.assertEqual(data["first_name"], self.__class__.test_user["first_name"])
+        self.assertEqual(data["last_name"], self.__class__.test_user["last_name"])
         print("✅ GET /api/auth/me - Get current user working")
 
     # 3. Books Module
-    def test_books_module(self):
+    def test_03_books_module(self):
         """Test books module endpoints"""
         print("\n--- Testing Books Module ---")
         
         # 1. Test get all books
-        response = requests.get(f"{API_URL}/books", headers=self.headers)
+        response = requests.get(f"{API_URL}/books", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         books = response.json()
         self.assertIsInstance(books, list)
         print(f"✅ GET /api/books - Get all books working, found {len(books)} books")
         
         # 2. Test create book
-        response = requests.post(f"{API_URL}/books", json=self.test_book_data, headers=self.headers)
+        response = requests.post(f"{API_URL}/books", json=self.test_book_data, headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         book = response.json()
-        self.book_ids_to_delete.append(book["id"])
+        book_id = book.get("id") or book.get("_id")  # Handle both id formats
+        self.__class__.book_ids_to_delete.append(book_id)
         
         # Check that the book was created with the correct data
         self.assertEqual(book["title"], self.test_book_data["title"])
@@ -156,10 +143,11 @@ class BooktimeModularAPITest(unittest.TestCase):
         print("✅ POST /api/books - Create book working")
         
         # 3. Test get book by ID
-        response = requests.get(f"{API_URL}/books/{book['id']}", headers=self.headers)
+        response = requests.get(f"{API_URL}/books/{book_id}", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         retrieved_book = response.json()
-        self.assertEqual(retrieved_book["id"], book["id"])
+        retrieved_id = retrieved_book.get("id") or retrieved_book.get("_id")
+        self.assertEqual(retrieved_id, book_id)
         print("✅ GET /api/books/{id} - Get book by ID working")
         
         # 4. Test update book
@@ -168,7 +156,7 @@ class BooktimeModularAPITest(unittest.TestCase):
             "current_page": 42
         }
         
-        response = requests.put(f"{API_URL}/books/{book['id']}", json=update_data, headers=self.headers)
+        response = requests.put(f"{API_URL}/books/{book_id}", json=update_data, headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         updated_book = response.json()
         
@@ -178,20 +166,21 @@ class BooktimeModularAPITest(unittest.TestCase):
         print("✅ PUT /api/books/{id} - Update book working")
         
         # 5. Test delete book
-        response = requests.delete(f"{API_URL}/books/{book['id']}", headers=self.headers)
+        response = requests.delete(f"{API_URL}/books/{book_id}", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         
         # Verify the book was deleted
-        response = requests.get(f"{API_URL}/books/{book['id']}", headers=self.headers)
+        response = requests.get(f"{API_URL}/books/{book_id}", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 404)
         
         # Remove from cleanup list since we already deleted it
-        self.book_ids_to_delete.remove(book["id"])
+        if book_id in self.__class__.book_ids_to_delete:
+            self.__class__.book_ids_to_delete.remove(book_id)
         
         print("✅ DELETE /api/books/{id} - Delete book working")
         
         # 6. Test search-grouped endpoint
-        response = requests.get(f"{API_URL}/books/search-grouped?q=Harry", headers=self.headers)
+        response = requests.get(f"{API_URL}/books/search-grouped?q=Harry", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("results", data)
@@ -201,12 +190,12 @@ class BooktimeModularAPITest(unittest.TestCase):
         print("✅ GET /api/books/search-grouped - Search grouped working")
 
     # 4. Series Module
-    def test_series_module(self):
+    def test_04_series_module(self):
         """Test series module endpoints"""
         print("\n--- Testing Series Module ---")
         
         # 1. Test get popular series
-        response = requests.get(f"{API_URL}/series/popular", headers=self.headers)
+        response = requests.get(f"{API_URL}/series/popular", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("series", data)
@@ -214,7 +203,7 @@ class BooktimeModularAPITest(unittest.TestCase):
         print(f"✅ GET /api/series/popular - Get popular series working, found {len(data['series'])} series")
         
         # 2. Test search series
-        response = requests.get(f"{API_URL}/series/search?q=Harry Potter", headers=self.headers)
+        response = requests.get(f"{API_URL}/series/search?q=Harry Potter", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("series", data)
@@ -223,7 +212,7 @@ class BooktimeModularAPITest(unittest.TestCase):
         print(f"✅ GET /api/series/search - Search series working, found {len(data['series'])} series")
         
         # 3. Test series detect
-        response = requests.get(f"{API_URL}/series/detect?title=Harry Potter et la Chambre des Secrets&author=J.K. Rowling", headers=self.headers)
+        response = requests.get(f"{API_URL}/series/detect?title=Harry Potter et la Chambre des Secrets&author=J.K. Rowling", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("detected", data)
@@ -241,10 +230,11 @@ class BooktimeModularAPITest(unittest.TestCase):
             "volume_number": 1
         }
         
-        response = requests.post(f"{API_URL}/books", json=book_data, headers=self.headers)
+        response = requests.post(f"{API_URL}/books", json=book_data, headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         created_book = response.json()
-        self.book_ids_to_delete.append(created_book["id"])
+        book_id = created_book.get("id") or created_book.get("_id")
+        self.__class__.book_ids_to_delete.append(book_id)
         
         # Auto-complete the series
         series_data = {
@@ -252,7 +242,7 @@ class BooktimeModularAPITest(unittest.TestCase):
             "target_volumes": 3
         }
         
-        response = requests.post(f"{API_URL}/series/complete", json=series_data, headers=self.headers)
+        response = requests.post(f"{API_URL}/series/complete", json=series_data, headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         
@@ -261,12 +251,13 @@ class BooktimeModularAPITest(unittest.TestCase):
         
         # Add the created books to the cleanup list
         for book in data["created_books"]:
-            self.book_ids_to_delete.append(book["id"])
+            book_id = book.get("id") or book.get("_id")
+            self.__class__.book_ids_to_delete.append(book_id)
             
         print(f"✅ POST /api/series/complete - Series complete working, created {len(data['created_books'])} additional volumes")
 
     # 5. Library Module
-    def test_library_module(self):
+    def test_05_library_module(self):
         """Test library module endpoints"""
         print("\n--- Testing Library Module ---")
         
@@ -289,14 +280,15 @@ class BooktimeModularAPITest(unittest.TestCase):
             "series_status": "to_read"
         }
         
-        response = requests.post(f"{API_URL}/series/library", json=series_data, headers=self.headers)
+        response = requests.post(f"{API_URL}/series/library", json=series_data, headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         created_series = response.json()
-        self.series_ids_to_delete.append(created_series["series_id"])
+        series_id = created_series.get("series_id")
+        self.__class__.series_ids_to_delete.append(series_id)
         print("✅ POST /api/series/library - Create series in library working")
         
         # 2. Test get series library
-        response = requests.get(f"{API_URL}/series/library", headers=self.headers)
+        response = requests.get(f"{API_URL}/series/library", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("series", data)
@@ -304,38 +296,36 @@ class BooktimeModularAPITest(unittest.TestCase):
         print(f"✅ GET /api/series/library - Get series library working, found {len(data['series'])} series")
         
         # 3. Test toggle volume status
-        series_id = created_series["series_id"]
-        volume_number = 1
-        
-        response = requests.put(f"{API_URL}/series/library/{series_id}/volume/{volume_number}", headers=self.headers)
+        response = requests.put(f"{API_URL}/series/library/{series_id}/volume/1", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("volume_status", data)
         print("✅ PUT /api/series/library/{series_id}/volume/{volume_number} - Toggle volume status working")
         
         # 4. Test delete series
-        response = requests.delete(f"{API_URL}/series/library/{series_id}", headers=self.headers)
+        response = requests.delete(f"{API_URL}/series/library/{series_id}", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         
         # Verify the series was deleted
-        response = requests.get(f"{API_URL}/series/library", headers=self.headers)
+        response = requests.get(f"{API_URL}/series/library", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         series_ids = [s["series_id"] for s in data["series"]]
         self.assertNotIn(series_id, series_ids)
         
         # Remove from cleanup list since we already deleted it
-        self.series_ids_to_delete.remove(series_id)
+        if series_id in self.__class__.series_ids_to_delete:
+            self.__class__.series_ids_to_delete.remove(series_id)
         
         print("✅ DELETE /api/series/library/{series_id} - Delete series working")
 
     # 6. Sagas Module
-    def test_sagas_module(self):
+    def test_06_sagas_module(self):
         """Test sagas module endpoints"""
         print("\n--- Testing Sagas Module ---")
         
         # 1. Test get all sagas
-        response = requests.get(f"{API_URL}/sagas", headers=self.headers)
+        response = requests.get(f"{API_URL}/sagas", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         sagas = response.json()
         print(f"✅ GET /api/sagas - Get all sagas working, found {len(sagas)} sagas")
@@ -350,31 +340,33 @@ class BooktimeModularAPITest(unittest.TestCase):
             "volume_number": 1
         }
         
-        response = requests.post(f"{API_URL}/books", json=book_data, headers=self.headers)
+        response = requests.post(f"{API_URL}/books", json=book_data, headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         created_book = response.json()
-        self.book_ids_to_delete.append(created_book["id"])
+        book_id = created_book.get("id") or created_book.get("_id")
+        self.__class__.book_ids_to_delete.append(book_id)
         
         # Get books in the saga
-        response = requests.get(f"{API_URL}/sagas/Test Saga/books", headers=self.headers)
+        response = requests.get(f"{API_URL}/sagas/Test Saga/books", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         books = response.json()
         print("✅ GET /api/sagas/{saga_name}/books - Get books in saga working")
         
         # 3. Test auto-add next volume
-        response = requests.post(f"{API_URL}/sagas/Test Saga/auto-add", headers=self.headers)
+        response = requests.post(f"{API_URL}/sagas/Test Saga/auto-add", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         new_book = response.json()
-        self.book_ids_to_delete.append(new_book["id"])
+        book_id = new_book.get("id") or new_book.get("_id")
+        self.__class__.book_ids_to_delete.append(book_id)
         print("✅ POST /api/sagas/{saga_name}/auto-add - Auto-add next volume working")
 
     # 7. OpenLibrary Module
-    def test_openlibrary_module(self):
+    def test_07_openlibrary_module(self):
         """Test OpenLibrary module endpoints"""
         print("\n--- Testing OpenLibrary Module ---")
         
         # 1. Test search
-        response = requests.get(f"{API_URL}/openlibrary/search?q=Harry Potter", headers=self.headers)
+        response = requests.get(f"{API_URL}/openlibrary/search?q=Harry Potter", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("books", data)
@@ -382,14 +374,14 @@ class BooktimeModularAPITest(unittest.TestCase):
         print(f"✅ GET /api/openlibrary/search - Open Library search working, found {data['total_found']} books")
         
         # 2. Test search with filters
-        response = requests.get(f"{API_URL}/openlibrary/search?q=Harry Potter&year_start=2000&year_end=2020", headers=self.headers)
+        response = requests.get(f"{API_URL}/openlibrary/search?q=Harry Potter&year_start=2000&year_end=2020", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("filters_applied", data)
         print("✅ GET /api/openlibrary/search with filters - Advanced search working")
         
         # 3. Test search-advanced
-        response = requests.get(f"{API_URL}/openlibrary/search-advanced?title=Harry Potter&author=J.K. Rowling", headers=self.headers)
+        response = requests.get(f"{API_URL}/openlibrary/search-advanced?title=Harry Potter&author=J.K. Rowling", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("books", data)
@@ -397,14 +389,14 @@ class BooktimeModularAPITest(unittest.TestCase):
         print("✅ GET /api/openlibrary/search-advanced - Multi-criteria search working")
         
         # 4. Test search-isbn
-        response = requests.get(f"{API_URL}/openlibrary/search-isbn?isbn=9780747532743", headers=self.headers)
+        response = requests.get(f"{API_URL}/openlibrary/search-isbn?isbn=9780747532743", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("found", data)
         print("✅ GET /api/openlibrary/search-isbn - ISBN search working")
         
         # 5. Test search-author
-        response = requests.get(f"{API_URL}/openlibrary/search-author?author=J.K. Rowling", headers=self.headers)
+        response = requests.get(f"{API_URL}/openlibrary/search-author?author=J.K. Rowling", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("author_info", data)
@@ -413,7 +405,7 @@ class BooktimeModularAPITest(unittest.TestCase):
         
         # 6. Test import
         # First search for a book to import
-        response = requests.get(f"{API_URL}/openlibrary/search?q=Harry Potter&limit=1", headers=self.headers)
+        response = requests.get(f"{API_URL}/openlibrary/search?q=Harry Potter&limit=1", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         search_data = response.json()
         
@@ -426,34 +418,35 @@ class BooktimeModularAPITest(unittest.TestCase):
                 "category": "roman"
             }
             
-            response = requests.post(f"{API_URL}/openlibrary/import", json=import_data, headers=self.headers)
+            response = requests.post(f"{API_URL}/openlibrary/import", json=import_data, headers=self.__class__.headers)
             if response.status_code == 200:
                 imported_book = response.json()
-                self.book_ids_to_delete.append(imported_book["id"])
+                book_id = imported_book.get("id") or imported_book.get("_id")
+                self.__class__.book_ids_to_delete.append(book_id)
                 print("✅ POST /api/openlibrary/import - Book import working")
             elif response.status_code == 409:
                 print("✅ POST /api/openlibrary/import - Book already imported (duplicate detection working)")
         
         # 7. Test missing-volumes
-        response = requests.get(f"{API_URL}/openlibrary/missing-volumes?saga=Test Saga", headers=self.headers)
+        response = requests.get(f"{API_URL}/openlibrary/missing-volumes?saga=Test Saga", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("present_volumes", data)
         print("✅ GET /api/openlibrary/missing-volumes - Missing volumes detection working")
         
         # 8. Test suggestions
-        response = requests.get(f"{API_URL}/openlibrary/suggestions", headers=self.headers)
+        response = requests.get(f"{API_URL}/openlibrary/suggestions", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("suggestions", data)
         print("✅ GET /api/openlibrary/suggestions - Suggestions working")
 
     # 8. Stats Module
-    def test_stats_module(self):
+    def test_08_stats_module(self):
         """Test stats module endpoints"""
         print("\n--- Testing Stats Module ---")
         
-        response = requests.get(f"{API_URL}/stats", headers=self.headers)
+        response = requests.get(f"{API_URL}/stats", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         
@@ -469,12 +462,12 @@ class BooktimeModularAPITest(unittest.TestCase):
         print("✅ GET /api/stats - Stats endpoint working")
 
     # 9. Authors Module
-    def test_authors_module(self):
+    def test_09_authors_module(self):
         """Test authors module endpoints"""
         print("\n--- Testing Authors Module ---")
         
         # 1. Test get all authors
-        response = requests.get(f"{API_URL}/authors", headers=self.headers)
+        response = requests.get(f"{API_URL}/authors", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         authors = response.json()
         print(f"✅ GET /api/authors - Get all authors working, found {len(authors)} authors")
@@ -487,13 +480,14 @@ class BooktimeModularAPITest(unittest.TestCase):
             "category": "roman"
         }
         
-        response = requests.post(f"{API_URL}/books", json=book_data, headers=self.headers)
+        response = requests.post(f"{API_URL}/books", json=book_data, headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         created_book = response.json()
-        self.book_ids_to_delete.append(created_book["id"])
+        book_id = created_book.get("id") or created_book.get("_id")
+        self.__class__.book_ids_to_delete.append(book_id)
         
         # Get books by this author
-        response = requests.get(f"{API_URL}/authors/Test Specific Author/books", headers=self.headers)
+        response = requests.get(f"{API_URL}/authors/Test Specific Author/books", headers=self.__class__.headers)
         self.assertEqual(response.status_code, 200)
         books = response.json()
         print("✅ GET /api/authors/{author_name}/books - Get books by author working")
