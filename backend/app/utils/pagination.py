@@ -16,7 +16,7 @@ class PaginationParams(BaseModel):
     page: int = Field(default=1, ge=1, description="Numéro de page (commence à 1)")
     limit: int = Field(default=20, ge=1, le=100, description="Nombre d'éléments par page (max 100)")
     sort_by: Optional[str] = Field(default="date_added", description="Champ de tri")
-    sort_order: Optional[str] = Field(default="desc", regex="^(asc|desc)$", description="Ordre de tri")
+    sort_order: Optional[str] = Field(default="desc", pattern="^(asc|desc)$", description="Ordre de tri")
 
 class PaginationMeta(BaseModel):
     """Métadonnées de pagination"""
