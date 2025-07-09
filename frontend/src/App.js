@@ -371,6 +371,12 @@ function MainApp() {
       
       {/* Toast notifications */}
       <Toaster position="bottom-right" />
+      
+      {/* PHASE 2.4 - Performance Widget */}
+      <PerformanceWidget 
+        position="bottom-right" 
+        isVisible={process.env.NODE_ENV === 'development'} 
+      />
     </div>
   );
 }
