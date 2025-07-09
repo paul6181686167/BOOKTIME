@@ -524,7 +524,7 @@ backend:
   - task: "DELETE /api/books/{book_id} - Delete book"
     implemented: true
     working: true
-    file: "/app/backend/server.py"
+    file: "/app/backend/app/books/routes.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -535,6 +535,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Delete book endpoint works correctly, deletes the specified book and returns 404 for non-existent books"
+      - working: true
+        agent: "testing"
+        comment: "Post-modularization testing confirms that the DELETE /api/books/{book_id} endpoint is still working correctly. Successfully deleted a book and verified that it was removed from the database. The endpoint also correctly returns 404 for non-existent books."
 
   - task: "Validation - Create book without title"
     implemented: true
