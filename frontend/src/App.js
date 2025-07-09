@@ -120,11 +120,24 @@ function MainApp() {
 
   // Fonction pour rechercher dans Open Library avec RECHERCHE GLOBALE (toutes catégories)
   const searchOpenLibrary = async (query) => {
+    // PHASE 2.4 - Monitoring recherche
+    const searchStartTime = Date.now();
+    userAnalytics.trackSearch(query, 0, activeTab, 'openlibrary');
+    
     await searchHook.searchOpenLibrary(query, {
       books: booksHook.books,
       handleAddSeriesToLibrary: seriesHook.handleAddSeriesToLibrary,
       getCategoryBadgeFromBook
     });
+
+    // Mesure des performances de recherche
+    const searchTime = Date.now() - searchStartTime;
+    const resultCount = searchHook.openLibraryResults?.length || 0;
+    performanceMonitoring.measureSearchPerformance(query, resultCount, searchTime);
+    alertSystem.checkSearchPerformance(searchTime, resultCount);
+    
+    // Mise à jour analytics
+    userAnalytics.trackSearch(query, resultCount, activeTab, 'openlibrary');
   };
 
   // Fonction pour ajouter un livre depuis Open Library
