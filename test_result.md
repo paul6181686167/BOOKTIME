@@ -980,7 +980,7 @@ backend:
   - task: "POST /api/auth/register - User Registration"
     implemented: true
     working: true
-    file: "/app/backend/server.py"
+    file: "/app/backend/app/auth/routes.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -991,6 +991,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "User registration endpoint works correctly. Successfully tested with valid user data (email, password, first_name, last_name). The endpoint returns a JWT token and user information. Email validation works correctly, rejecting invalid email formats. Required field validation works correctly, rejecting requests with missing fields. Duplicate email validation works correctly, preventing users with the same email from registering."
+      - working: true
+        agent: "testing"
+        comment: "Post-modularization testing confirms that the user registration endpoint is still working correctly. Successfully registered a new user with just first_name and last_name, and received a valid JWT token. The endpoint returns the expected response structure with access_token and user fields."
 
   - task: "POST /api/auth/login - User Login"
     implemented: true
