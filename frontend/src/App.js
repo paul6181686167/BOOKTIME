@@ -312,41 +312,33 @@ function MainApp() {
   };
 
   const handleBookClick = (book) => {
-    SearchLogic.handleBookClick(book, setSelectedBook, setShowBookModal);
+    BookActions.handleBookClick(book, setSelectedBook, setShowBookModal);
   };
 
   const handleItemClick = (item) => {
-    SearchLogic.handleItemClick(item, setSelectedSeries, setShowSeriesModal, setSelectedBook, setShowBookModal);
+    BookActions.handleItemClick(item, {
+      setSelectedSeries,
+      setShowSeriesModal,
+      setSelectedBook,
+      setShowBookModal
+    });
   };
 
   const handleUpdateBook = async (bookId, bookData) => {
-    try {
-      const updatedBook = await bookService.updateBook(bookId, bookData);
-      await loadBooks();
-      await loadStats();
-      
-      // Mettre à jour le livre sélectionné avec les nouvelles données
-      setSelectedBook(updatedBook);
-      
-      toast.success('Livre mis à jour !');
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour du livre:', error);
-      toast.error('Erreur lors de la mise à jour du statut');
-    }
+    await BookActions.handleUpdateBook(bookId, bookData, {
+      setSelectedBook,
+      loadBooks,
+      loadStats
+    });
   };
 
   const handleDeleteBook = async (bookId) => {
-    try {
-      await bookService.deleteBook(bookId);
-      await loadBooks();
-      await loadStats();
-      setSelectedBook(null);
-      setShowBookModal(false);
-      toast.success('Livre supprimé !');
-    } catch (error) {
-      console.error('Erreur lors de la suppression du livre:', error);
-      toast.error('Erreur lors de la suppression du livre');
-    }
+    await BookActions.handleDeleteBook(bookId, {
+      setSelectedBook,
+      setShowBookModal,
+      loadBooks,
+      loadStats
+    });
   };
 
   // ============================================================================
