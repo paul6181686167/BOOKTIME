@@ -177,7 +177,7 @@ class ExportImportService:
         # Métadonnées optionnelles
         if options.include_metadata:
             # Informations utilisateur
-            user_info = self.db.users.find_one({"_id": user_id})
+            user_info = self.db.users.find_one({"id": user_id})
             if user_info:
                 user_info['_id'] = str(user_info['_id'])
                 data['user_info'] = user_info
