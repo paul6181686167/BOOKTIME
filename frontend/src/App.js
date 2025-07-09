@@ -31,6 +31,7 @@ import SearchLogic from './components/search/SearchLogic';
 
 // Series components imports (Phase 1.1 - Step 4)
 import SeriesActions from './components/series/SeriesActions';
+import SeriesGrid, { mergeSeriesAndBooks } from './components/series/SeriesGrid';
 
 import './App.css';
 
