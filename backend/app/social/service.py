@@ -66,8 +66,10 @@ class SocialService:
             self.notifications_collection.create_index([("user_id", 1), ("is_read", 1)])
             
             logger.info("Index sociaux créés avec succès")
+            return True
         except Exception as e:
             logger.warning(f"Erreur lors de la création des index: {str(e)}")
+            return False
     
     # === GESTION DES PROFILS ===
     
