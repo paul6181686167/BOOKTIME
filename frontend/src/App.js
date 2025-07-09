@@ -295,7 +295,7 @@ function MainApp() {
                 {TAB_CONFIG.map((tab) => (
                   <button
                     key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
+                    onClick={() => handleTabChange(tab.key)}
                     className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
                       activeTab === tab.key
                         ? 'bg-green-600 text-white'
