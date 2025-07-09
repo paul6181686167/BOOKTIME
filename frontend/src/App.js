@@ -29,6 +29,9 @@ import SearchOptimizer from './utils/searchOptimizer';
 import { calculateRelevanceScore, getRelevanceLevel } from './components/search/RelevanceEngine';
 import SearchLogic from './components/search/SearchLogic';
 
+// Series components imports (Phase 1.1 - Step 4)
+import SeriesActions from './components/series/SeriesActions';
+
 import './App.css';
 
 // LoginModal Component (removed - now using LoginPage component)
