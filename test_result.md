@@ -192,6 +192,111 @@ backend:
         agent: "testing"
         comment: "Post-modularization testing confirms that the uniformisation of book and series records is still working correctly. All endpoints return data with a consistent structure including the essential fields (title, author, category). The categories are consistent across all endpoints ('roman', 'bd', 'manga')."
 
+  - task: "GET /api/export-import/export/formats - Formats d'export supportés"
+    implemented: true
+    working: true
+    file: "/app/backend/app/export_import/routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "L'endpoint GET /api/export-import/export/formats fonctionne correctement. Il retourne la liste des formats d'export supportés (json, csv, excel, full_backup) avec leurs détails (nom, description, extension, etc.) et des recommandations d'utilisation. La structure de la réponse est conforme aux attentes avec les champs supported_formats, formats_details et recommendations."
+
+  - task: "GET /api/export-import/import/formats - Formats d'import supportés"
+    implemented: true
+    working: true
+    file: "/app/backend/app/export_import/routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "L'endpoint GET /api/export-import/import/formats fonctionne correctement. Il retourne la liste des formats d'import supportés (json, csv, goodreads, excel) avec leurs détails (nom, description, extensions, compatibilité, etc.), des conseils d'utilisation et la taille maximale de fichier autorisée. La structure de la réponse est conforme aux attentes avec les champs supported_formats, tips et max_file_size_mb."
+
+  - task: "GET /api/export-import/export - Export dans différents formats"
+    implemented: true
+    working: true
+    file: "/app/backend/app/export_import/routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "L'endpoint GET /api/export-import/export fonctionne correctement pour tous les formats supportés. L'export JSON retourne les données au format JSON avec le Content-Type approprié. L'export CSV retourne les données au format CSV avec le Content-Type approprié. L'export Excel retourne un fichier Excel valide avec le Content-Type approprié. L'export full_backup retourne une archive ZIP contenant tous les formats avec le Content-Type approprié. Les options d'export (include_metadata, include_stats, etc.) sont correctement prises en compte."
+
+  - task: "POST /api/export-import/import/preview - Prévisualisation d'import"
+    implemented: true
+    working: true
+    file: "/app/backend/app/export_import/routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "L'endpoint POST /api/export-import/import/preview fonctionne correctement. Il permet de prévisualiser l'import de données sans les importer réellement. La détection du format de fichier fonctionne correctement pour les formats CSV et JSON. La réponse inclut les informations attendues : nombre de livres trouvés, nombre de livres qui seraient importés, nombre de livres qui seraient ignorés, échantillon de livres, informations sur le fichier, etc. La détection des doublons fonctionne correctement."
+
+  - task: "POST /api/export-import/import - Import réel de données"
+    implemented: true
+    working: true
+    file: "/app/backend/app/export_import/routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "L'endpoint POST /api/export-import/import fonctionne correctement. Il permet d'importer des données à partir de fichiers CSV et JSON. Les options d'import (skip_duplicates, update_existing, dry_run) sont correctement prises en compte. La réponse inclut un résumé de l'opération avec le nombre de livres traités, importés, ignorés et en erreur. La gestion des doublons fonctionne correctement, permettant soit de les ignorer, soit de mettre à jour les livres existants."
+
+  - task: "POST /api/export-import/templates/generate - Génération de template CSV"
+    implemented: true
+    working: true
+    file: "/app/backend/app/export_import/routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "L'endpoint POST /api/export-import/templates/generate fonctionne correctement. Il génère un template CSV avec les en-têtes appropriés (title, author, category, status, etc.) et des exemples de données. Le fichier généré est correctement formaté et peut être utilisé comme modèle pour l'import de données."
+
+  - task: "GET /api/export-import/user/export-history - Historique des exports"
+    implemented: true
+    working: true
+    file: "/app/backend/app/export_import/routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup, needs testing"
+      - working: true
+        agent: "testing"
+        comment: "L'endpoint GET /api/export-import/user/export-history fonctionne correctement. Il retourne l'historique des exports de l'utilisateur. Actuellement, l'implémentation retourne une liste vide avec un message indiquant que la fonctionnalité est à venir, ce qui est conforme au code examiné."
+
   - task: "POST /api/series/library - Ajouter une série complète à la bibliothèque"
     implemented: true
     working: true
