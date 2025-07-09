@@ -293,7 +293,7 @@ backend:
   - task: "GET /api/series/popular - Popular series"
     implemented: true
     working: true
-    file: "/app/backend/server.py"
+    file: "/app/backend/app/series/routes.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -316,6 +316,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Post-modularization testing confirms that the popular series endpoint is still working correctly. Successfully tested GET /api/series/popular with a newly registered user and received 8 series without filters. All responses include the correct metadata and structure with all required fields."
+      - working: true
+        agent: "testing"
+        comment: "Latest testing confirms that the GET /api/series/popular endpoint is still working correctly in the modularized backend. Successfully tested with various filters and received the expected results with the correct structure."
 
   - task: "GET /api/series/detect - Series detection"
     implemented: true
