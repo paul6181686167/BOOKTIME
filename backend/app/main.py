@@ -23,6 +23,8 @@ from .monitoring.routes import router as monitoring_router
 from .recommendations.routes import router as recommendations_router
 # Import du router export/import (Phase 3.2)
 from .export_import.routes import router as export_import_router
+# Import du router social (Phase 3.3)
+from .social.routes import router as social_router
 
 app = FastAPI(title="BookTime API", description="Votre bibliothèque personnelle")
 
