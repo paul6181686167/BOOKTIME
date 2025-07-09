@@ -14,6 +14,7 @@ import BookDetailModal from './components/BookDetailModal';
 import SeriesCard from './components/SeriesCard';
 import SeriesDetailModal from './components/SeriesDetailModal';
 import SeriesDetailPage from './pages/SeriesDetailPage';
+import ProfileModal from './components/common/ProfileModal';
 
 // Service imports
 import { bookService } from './services/bookService';
