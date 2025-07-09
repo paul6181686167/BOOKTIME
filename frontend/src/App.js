@@ -58,32 +58,15 @@ function AppContent() {
 // Composant principal de l'application
 function MainApp() {
   const { user } = useAuth();
-  const [books, setBooks] = useState([]);
-  const [stats, setStats] = useState({});
-  const [loading, setLoading] = useState(true);
+  
+  // États locaux pour l'UI
   const [activeTab, setActiveTab] = useState('roman');
   const [showProfileModal, setShowProfileModal] = useState(false);
 
-  const [selectedBook, setSelectedBook] = useState(null);
-  const [showBookModal, setShowBookModal] = useState(false);
-
-  // États pour la recherche Open Library
-  const [openLibraryResults, setOpenLibraryResults] = useState([]);
-  const [detectedSeries, setDetectedSeries] = useState([]);
-  const [isSearchMode, setIsSearchMode] = useState(false);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [lastSearchTerm, setLastSearchTerm] = useState('');
-  // SUPPRESSION VIEWMODE : Plus de toggle livre/série - affichage unifié
-  const [addingBooks, setAddingBooks] = useState(new Set()); // Suivi des livres en cours d'ajout
-
-  // État pour les séries simplifiées
-  const [selectedSeries, setSelectedSeries] = useState(null);
-  const [showSeriesDetail, setShowSeriesDetail] = useState(false);
-  const [showSeriesModal, setShowSeriesModal] = useState(false);
-
-  // États pour les séries en bibliothèque
-  const [userSeriesLibrary, setUserSeriesLibrary] = useState([]);
-  const [seriesLibraryLoading, setSeriesLibraryLoading] = useState(false);
+  // Hooks personnalisés pour gérer les états
+  const booksHook = useBooks();
+  const seriesHook = useSeries();
+  const searchHook = useSearch();
 
   // Hook de recherche avancée
   const {
