@@ -170,7 +170,7 @@ async def preview_import(
         Aperçu des données qui seraient importées
     """
     try:
-        user_id = current_user.get("user_id")
+        user_id = current_user.get("id")
         
         # Lire le contenu du fichier
         file_content = await file.read()
