@@ -23,6 +23,9 @@ import * as seriesLibraryService from './services/seriesLibraryService';
 // Hook imports
 import { useAdvancedSearch } from './hooks/useAdvancedSearch';
 import { useGroupedSearch } from './hooks/useGroupedSearch';
+import useBooks from './hooks/useBooks';
+import useSeries from './hooks/useSeries';
+import useSearch from './hooks/useSearch';
 import SearchOptimizer from './utils/searchOptimizer';
 
 // Search components imports (Phase 1.1 - Step 3)
