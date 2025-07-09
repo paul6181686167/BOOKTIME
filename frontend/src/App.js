@@ -83,6 +83,18 @@ function MainApp() {
   const userAnalytics = useUserAnalytics();
   const alertSystem = AlertSystem({ isActive: true });
 
+  // Gestionnaire d'événements pour l'export/import
+  useEffect(() => {
+    const handleOpenExportImport = () => {
+      setShowExportImportModal(true);
+    };
+
+    window.addEventListener('openExportImport', handleOpenExportImport);
+    return () => {
+      window.removeEventListener('openExportImport', handleOpenExportImport);
+    };
+  }, []);
+
   // Démarrage automatique du monitoring
   useEffect(() => {
     performanceMonitoring.startMonitoring();
