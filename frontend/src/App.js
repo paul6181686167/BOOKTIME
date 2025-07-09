@@ -17,6 +17,7 @@ import SeriesDetailPage from './pages/SeriesDetailPage';
 import RecommendationPage from './components/recommendations/RecommendationPage';
 import ExportImportPage from './components/exportimport/ExportImportPage';
 import ProfileModal from './components/common/ProfileModal';
+import ExportImportModal from './components/export-import/ExportImportModal';
 
 // PHASE 2.4 - Monitoring et Analytics
 import ErrorBoundary from './components/monitoring/ErrorBoundary';
