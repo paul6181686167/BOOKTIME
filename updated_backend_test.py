@@ -185,7 +185,7 @@ class BooktimeAPITester:
             data=updates
         )
         
-        if success and '_id' in response:
+        if success and 'id' in response:
             print(f"Updated book: {response['title']} - New status: {response['status']}")
             return response
         return None
