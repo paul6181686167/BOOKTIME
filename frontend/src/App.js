@@ -401,12 +401,9 @@ function MainApp() {
     setLastSearchTerm(term);
   }, []);
 
-  // Fonction pour revenir à la bibliothèque locale
+  // Fonction backToLibrary déplacée vers SearchLogic.js (Phase 1.1 - Step 3)
   const backToLibrary = () => {
-    setIsSearchMode(false);
-    setOpenLibraryResults([]);
-    setLastSearchTerm('');
-    clearSearch();
+    SearchLogic.backToLibrary(setIsSearchMode, setOpenLibraryResults, setLastSearchTerm, clearSearch);
   };
 
   // Fonction handleAddFromOpenLibrary déplacée vers SearchLogic.js (Phase 1.1 - Step 3)
