@@ -506,7 +506,7 @@ backend:
   - task: "PUT /api/books/{book_id} - Update book"
     implemented: true
     working: true
-    file: "/app/backend/server.py"
+    file: "/app/backend/app/books/routes.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -517,6 +517,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Update book endpoint works correctly, updates book status, progress, rating, and review. Also automatically sets date_started and date_completed based on status changes."
+      - working: true
+        agent: "testing"
+        comment: "Post-modularization testing confirms that the PUT /api/books/{book_id} endpoint is still working correctly. Successfully updated a book's status, current_page, and other fields. The endpoint correctly sets date_started and date_completed based on status changes."
 
   - task: "DELETE /api/books/{book_id} - Delete book"
     implemented: true
