@@ -33,6 +33,9 @@ import SearchLogic from './components/search/SearchLogic';
 import SeriesActions from './components/series/SeriesActions';
 import SeriesGrid, { mergeSeriesAndBooks } from './components/series/SeriesGrid';
 
+// Books components imports (Phase 1.1 - Step 5)
+import BookActions from './components/books/BookActions';
+
 import './App.css';
 
 // LoginModal Component (removed - now using LoginPage component)
