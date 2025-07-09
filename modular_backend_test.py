@@ -18,25 +18,32 @@ API_URL = f"{BACKEND_URL}/api"
 class BooktimeModularAPITest(unittest.TestCase):
     """Test suite for the Booktime API after modularization"""
 
-    def setUp(self):
-        """Setup for each test"""
-        # Register a test user
-        self.test_user = {
-            "first_name": f"Test{uuid.uuid4().hex[:6]}",
-            "last_name": f"User{uuid.uuid4().hex[:6]}"
+    @classmethod
+    def setUpClass(cls):
+        """Setup once for all tests"""
+        # Register a test user for all tests
+        cls.test_user = {
+            "first_name": f"TestUser{uuid.uuid4().hex[:6]}",
+            "last_name": f"ModularTest{uuid.uuid4().hex[:6]}"
         }
         
         # Register the user and get the token
-        response = requests.post(f"{API_URL}/auth/register", json=self.test_user)
+        response = requests.post(f"{API_URL}/auth/register", json=cls.test_user)
         if response.status_code == 200:
             data = response.json()
-            self.token = data["access_token"]
-            self.headers = {"Authorization": f"Bearer {self.token}"}
-            self.user_id = data["user"]["id"]
-            print(f"Created test user: {self.test_user['first_name']} {self.test_user['last_name']}")
+            cls.token = data["access_token"]
+            cls.headers = {"Authorization": f"Bearer {cls.token}"}
+            cls.user_id = data["user"]["id"]
+            print(f"Created test user: {cls.test_user['first_name']} {cls.test_user['last_name']}")
         else:
-            self.fail(f"Failed to register test user: {response.text}")
+            raise Exception(f"Failed to register test user: {response.text}")
         
+        # Book IDs to be used/cleaned up during testing
+        cls.book_ids_to_delete = []
+        cls.series_ids_to_delete = []
+
+    def setUp(self):
+        """Setup for each test"""
         # Test book data
         self.test_book_data = {
             "title": "Le Petit Prince",
@@ -47,24 +54,21 @@ class BooktimeModularAPITest(unittest.TestCase):
             "total_pages": 96,
             "isbn": "978-2-07-040850-4"
         }
-        
-        # Book IDs to be used/cleaned up during testing
-        self.book_ids_to_delete = []
-        self.series_ids_to_delete = []
 
-    def tearDown(self):
-        """Clean up after each test"""
+    @classmethod
+    def tearDownClass(cls):
+        """Clean up after all tests"""
         # Delete any books created during testing
-        for book_id in self.book_ids_to_delete:
+        for book_id in cls.book_ids_to_delete:
             try:
-                requests.delete(f"{API_URL}/books/{book_id}", headers=self.headers)
+                requests.delete(f"{API_URL}/books/{book_id}", headers=cls.headers)
             except:
                 pass
         
         # Delete any series created during testing
-        for series_id in self.series_ids_to_delete:
+        for series_id in cls.series_ids_to_delete:
             try:
-                requests.delete(f"{API_URL}/series/library/{series_id}", headers=self.headers)
+                requests.delete(f"{API_URL}/series/library/{series_id}", headers=cls.headers)
             except:
                 pass
 
