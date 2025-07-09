@@ -204,19 +204,17 @@ function MainApp() {
             <div className="py-6">
               {/* Onglets de navigation */}
               <div className="flex space-x-1 mb-6">
-                {['roman', 'bd', 'manga'].map((category) => (
+                {TAB_CONFIG.map((tab) => (
                   <button
-                    key={category}
-                    onClick={() => setActiveTab(category)}
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
                     className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
-                      activeTab === category
+                      activeTab === tab.key
                         ? 'bg-green-600 text-white'
                         : 'bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300'
                     }`}
                   >
-                    {category === 'roman' ? '📚 Romans' : 
-                     category === 'bd' ? '🎨 BD' : 
-                     '🇯🇵 Mangas'}
+                    {tab.label}
                   </button>
                 ))}
               </div>
