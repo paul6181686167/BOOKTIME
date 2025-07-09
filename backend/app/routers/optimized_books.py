@@ -29,7 +29,7 @@ async def get_books_optimized(
     page: int = Query(1, ge=1, description="Numéro de page"),
     limit: int = Query(20, ge=1, le=100, description="Éléments par page"),
     sort_by: str = Query("date_added", description="Champ de tri"),
-    sort_order: str = Query("desc", regex="^(asc|desc)$", description="Ordre de tri"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$", description="Ordre de tri"),
     
     # Paramètres de filtrage
     category: Optional[str] = Query(None, description="Filtrer par catégorie"),
