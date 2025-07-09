@@ -107,24 +107,44 @@ function ProfileModal({ isOpen, onClose }) {
               ⚙️ Paramètres
             </h3>
             
-            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-              <div>
-                <span className="font-medium text-gray-900 dark:text-white text-sm">Mode sombre</span>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Basculer entre thème clair et sombre
-                </p>
-              </div>
-              <button
-                onClick={toggleTheme}
-                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                  isDark ? 'bg-blue-600' : 'bg-gray-200'
-                }`}
-              >
-                <span
-                  className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                    isDark ? 'translate-x-5' : 'translate-x-1'
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <div>
+                  <span className="font-medium text-gray-900 dark:text-white text-sm">Mode sombre</span>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    Basculer entre thème clair et sombre
+                  </p>
+                </div>
+                <button
+                  onClick={toggleTheme}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                    isDark ? 'bg-blue-600' : 'bg-gray-200'
                   }`}
-                />
+                >
+                  <span
+                    className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                      isDark ? 'translate-x-5' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+              
+              <button
+                onClick={() => {
+                  onClose();
+                  // Déclencher l'ouverture du modal d'export/import
+                  window.dispatchEvent(new CustomEvent('openExportImport'));
+                }}
+                className="w-full flex items-center justify-center p-3 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors"
+              >
+                <div className="text-center">
+                  <div className="text-green-600 dark:text-green-400 text-sm font-medium">
+                    📤 Export/Import
+                  </div>
+                  <div className="text-xs text-green-600 dark:text-green-400 mt-1">
+                    Sauvegarder et restaurer vos données
+                  </div>
+                </div>
               </button>
             </div>
           </div>
