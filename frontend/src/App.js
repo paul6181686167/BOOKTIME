@@ -409,89 +409,18 @@ function MainApp() {
     clearSearch();
   };
 
-  // AJOUT INTELLIGENT : Placement automatique dans le bon onglet selon la catégorie
+  // Fonction handleAddFromOpenLibrary déplacée vers SearchLogic.js (Phase 1.1 - Step 3)
   const handleAddFromOpenLibrary = async (openLibraryBook) => {
-    // Empêcher les clics multiples sur le même livre
-    if (addingBooks.has(openLibraryBook.ol_key)) {
-      return; // Si le livre est déjà en cours d'ajout, ne rien faire
-    }
-
-    try {
-      // Marquer le livre comme en cours d'ajout
-      setAddingBooks(prev => new Set([...prev, openLibraryBook.ol_key]));
-      
-      const token = localStorage.getItem('token');
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
-      
-      // PLACEMENT INTELLIGENT : Déterminer la catégorie automatiquement via le badge
-      const categoryBadge = openLibraryBook.categoryBadge || getCategoryBadgeFromBook(openLibraryBook);
-      let targetCategory = categoryBadge.key; // Utiliser la catégorie détectée par le badge
-      
-      // Validation : s'assurer que la catégorie est valide
-      if (!targetCategory || !['roman', 'bd', 'manga'].includes(targetCategory)) {
-        // Si pas de catégorie ou catégorie invalide, utiliser l'onglet actuel par défaut
-        targetCategory = activeTab;
-      }
-      
-      const response = await fetch(`${backendUrl}/api/openlibrary/import`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          ol_key: openLibraryBook.ol_key,
-          category: targetCategory
-        })
-      });
-
-      if (response.ok) {
-        await loadBooks();
-        await loadStats();
-        
-        // Message de succès avec indication de l'onglet
-        const categoryLabels = {
-          'roman': 'Roman',
-          'bd': 'BD',
-          'manga': 'Manga'
-        };
-        toast.success(`"${openLibraryBook.title}" ajouté à l'onglet ${categoryLabels[targetCategory]} !`);
-        
-        // Mettre à jour le statut de possession dans les résultats
-        setOpenLibraryResults(prev => 
-          prev.map(book => 
-            book.ol_key === openLibraryBook.ol_key 
-              ? { ...book, isOwned: true }
-              : book
-          )
-        );
-      } else {
-        const error = await response.json();
-        if (response.status === 409) {
-          toast.error('Ce livre est déjà dans votre collection');
-          // Marquer le livre comme possédé même si l'ajout a échoué pour cause de doublon
-          setOpenLibraryResults(prev => 
-            prev.map(book => 
-              book.ol_key === openLibraryBook.ol_key 
-                ? { ...book, isOwned: true }
-                : book
-            )
-          );
-        } else {
-          toast.error(error.detail || 'Erreur lors de l\'ajout du livre');
-        }
-      }
-    } catch (error) {
-      console.error('Erreur ajout livre:', error);
-      toast.error('Erreur lors de l\'ajout du livre');
-    } finally {
-      // Retirer le livre de la liste des livres en cours d'ajout
-      setAddingBooks(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(openLibraryBook.ol_key);
-        return newSet;
-      });
-    }
+    await SearchLogic.handleAddFromOpenLibrary(openLibraryBook, {
+      books,
+      addingBooks,
+      setAddingBooks,
+      activeTab,
+      getCategoryBadgeFromBook,
+      loadBooks,
+      loadStats,
+      setOpenLibraryResults
+    });
   };
 
   // Gestionnaire de clic sur série pour afficher la fiche dédiée
