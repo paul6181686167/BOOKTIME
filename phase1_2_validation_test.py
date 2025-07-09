@@ -290,7 +290,12 @@ class BooktimeModularizationTest(unittest.TestCase):
         for category in ["roman", "bd", "manga"]:
             response = requests.get(f"{API_URL}/series/popular?category={category}", headers=self.headers)
             self.assertEqual(response.status_code, 200)
-            series_list = response.json()
+            data = response.json()
+            if isinstance(data, list):
+                series_list = data
+            else:
+                self.assertIn("series", data)
+                series_list = data["series"]
             self.assertIsInstance(series_list, list)
             
             # Check that all returned series have the correct category
