@@ -218,6 +218,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "The GET /api/series/library endpoint works correctly. Successfully tested retrieving all series from the library. The endpoint correctly returns the series with all metadata including volumes, completion percentage, and status. Filtering by category and status works correctly, returning only the series that match the specified criteria."
+      - working: true
+        agent: "testing"
+        comment: "Post-modularization testing confirms that the series library endpoint is still working correctly. Successfully created a test series and retrieved it using GET /api/series/library. The endpoint returns the expected response structure with series and total_count fields. Each series includes all required metadata including volumes, completion percentage, and status."
 
   - task: "PUT /api/series/library/{series_id}/volume/{volume_number} - Toggle statut tome"
     implemented: true
