@@ -420,35 +420,17 @@ function MainApp() {
     });
   };
 
-  // Gestionnaire de clic sur série pour afficher la fiche dédiée
+  // Gestionnaires de clic déplacés vers SearchLogic.js (Phase 1.1 - Step 3)
   const handleSeriesClick = (series) => {
-    if (series.isLibrarySeries) {
-      // Série de bibliothèque : créer une fiche dédiée locale
-      // Pour l'instant, on peut montrer une modal avec les livres de la série
-      setSelectedSeries(series);
-      setShowSeriesModal(true);
-    } else {
-      // Série Open Library : naviguer vers la page dédiée
-      const navigate = window.location.pathname !== '/' ? 
-        (path) => window.location.href = path : 
-        (path) => window.history.pushState({}, '', path);
-      navigate(`/series/${encodeURIComponent(series.name)}`);
-    }
+    SearchLogic.handleSeriesClick(series, setSelectedSeries, setShowSeriesModal);
   };
 
-  // Gestionnaire de clic sur livre
   const handleBookClick = (book) => {
-    setSelectedBook(book);
-    setShowBookModal(true);
+    SearchLogic.handleBookClick(book, setSelectedBook, setShowBookModal);
   };
 
-  // Gestionnaire de clic conditionnel (livre ou série)
   const handleItemClick = (item) => {
-    if (item.isSeriesCard) {
-      handleSeriesClick(item);
-    } else {
-      handleBookClick(item);
-    }
+    SearchLogic.handleItemClick(item, setSelectedSeries, setShowSeriesModal, setSelectedBook, setShowBookModal);
   };
 
   const handleUpdateBook = async (bookId, bookData) => {
