@@ -1,6 +1,7 @@
 """
-Server modulaire pour BOOKTIME
+BOOKTIME - Server Principal
 Point d'entrée principal pour l'API modulaire
+Architecture : FastAPI + MongoDB + JWT + Modularisation complète
 """
 from app.main import app
 
