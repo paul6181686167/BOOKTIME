@@ -64,6 +64,7 @@ app.include_router(pagination_router)
 app.include_router(monitoring_router)
 app.include_router(recommendations_router)  # Phase 3.1
 app.include_router(export_import_router)  # Phase 3.2
+app.include_router(social_router)  # Phase 3.3
 
 if __name__ == "__main__":
     import uvicorn
