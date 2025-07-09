@@ -21,6 +21,8 @@ from .routers.pagination import router as pagination_router
 from .monitoring.routes import router as monitoring_router
 # Import du router recommendations (Phase 3.1)
 from .recommendations.routes import router as recommendations_router
+# Import du router export/import (Phase 3.2)
+from .export_import.routes import router as export_import_router
 
 app = FastAPI(title="BookTime API", description="Votre bibliothèque personnelle")
 
