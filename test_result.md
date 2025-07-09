@@ -1016,7 +1016,7 @@ backend:
   - task: "GET /api/auth/me - Get Current User"
     implemented: true
     working: true
-    file: "/app/backend/server.py"
+    file: "/app/backend/app/auth/routes.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -1027,6 +1027,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Get current user endpoint works correctly. Successfully tested with valid JWT token. The endpoint returns the user information. Invalid token validation works correctly, rejecting requests with invalid tokens. Missing token validation works correctly, rejecting requests without tokens."
+      - working: true
+        agent: "testing"
+        comment: "Post-modularization testing confirms that the get current user endpoint is still working correctly. Successfully retrieved user information with a valid JWT token. The endpoint returns the expected user data including first_name and last_name."
 
   - task: "Authentication Protection - Protected Routes"
     implemented: true
