@@ -50,6 +50,9 @@ app.include_router(library_router)
 app.include_router(stats_router)
 app.include_router(authors_router)
 
+# Enregistrement du router optimisé
+app.include_router(optimized_books_router)
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
