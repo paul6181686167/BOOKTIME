@@ -355,7 +355,7 @@ async def get_export_history(
         Historique des exports
     """
     try:
-        user_id = current_user.get("user_id")
+        user_id = current_user.get("id")
         
         # Récupérer l'historique depuis la base (si implémenté)
         # Pour l'instant, retourner une structure vide
