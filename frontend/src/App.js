@@ -28,6 +28,10 @@ import useSeries from './hooks/useSeries';
 import useSearch from './hooks/useSearch';
 import SearchOptimizer from './utils/searchOptimizer';
 
+// Utils imports
+import { getCategoryBadge } from './utils/helpers';
+import { TAB_CONFIG } from './utils/constants';
+
 // Search components imports (Phase 1.1 - Step 3)
 import { calculateRelevanceScore, getRelevanceLevel } from './components/search/RelevanceEngine';
 import SearchLogic from './components/search/SearchLogic';
