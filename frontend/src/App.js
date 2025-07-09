@@ -403,6 +403,15 @@ function MainApp() {
         />
       )}
       
+      {showExportImportModal && (
+        <ExportImportModal
+          isOpen={showExportImportModal}
+          onClose={() => setShowExportImportModal(false)}
+          backendUrl={process.env.REACT_APP_BACKEND_URL}
+          token={localStorage.getItem('token')}
+        />
+      )}
+      
       {/* Toast notifications */}
       <Toaster position="bottom-right" />
       
