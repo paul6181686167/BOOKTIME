@@ -13,6 +13,9 @@ from .library.routes import router as library_router
 from .stats.routes import router as stats_router
 from .authors.routes import router as authors_router
 
+# Import du router optimisé
+from .routers.optimized_books import router as optimized_books_router
+
 app = FastAPI(title="BookTime API", description="Votre bibliothèque personnelle")
 
 # Configuration CORS
