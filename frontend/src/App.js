@@ -179,16 +179,40 @@ function MainApp() {
 
   // Gestionnaires de clic
   const handleSeriesClick = (series) => {
+    // PHASE 2.4 - Analytics séries
+    userAnalytics.trackSeriesInteraction('view', series);
+    userAnalytics.trackInteraction('series_click', 'series_card', { seriesName: series.name });
+    
     searchHook.handleSeriesClick(series, seriesHook);
   };
 
   const handleItemClick = (item) => {
+    // PHASE 2.4 - Analytics éléments
+    if (item.type === 'book') {
+      userAnalytics.trackBookInteraction('view', item);
+      userAnalytics.trackInteraction('book_click', 'book_card', { bookTitle: item.title });
+    } else if (item.type === 'series') {
+      userAnalytics.trackSeriesInteraction('view', item);
+      userAnalytics.trackInteraction('series_click', 'series_card', { seriesName: item.name });
+    }
+    
     booksHook.handleItemClick(item, seriesHook);
   };
 
   // Fonction pour retourner à la bibliothèque
   const backToLibrary = () => {
+    // PHASE 2.4 - Analytics navigation
+    userAnalytics.trackInteraction('back_to_library', 'button');
+    
     searchHook.backToLibrary(clearSearch);
+  };
+
+  // Gestion changement d'onglet avec analytics
+  const handleTabChange = (newTab) => {
+    // PHASE 2.4 - Analytics catégories
+    userAnalytics.trackCategorySwitch(newTab);
+    
+    setActiveTab(newTab);
   };
 
   // Chargement initial au montage du composant
