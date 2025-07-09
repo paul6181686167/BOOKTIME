@@ -25,6 +25,10 @@ import { useAdvancedSearch } from './hooks/useAdvancedSearch';
 import { useGroupedSearch } from './hooks/useGroupedSearch';
 import SearchOptimizer from './utils/searchOptimizer';
 
+// Search components imports (Phase 1.1 - Step 3)
+import { calculateRelevanceScore, getRelevanceLevel } from './components/search/RelevanceEngine';
+import SearchLogic from './components/search/SearchLogic';
+
 import './App.css';
 
 // LoginModal Component (removed - now using LoginPage component)
