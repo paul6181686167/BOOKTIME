@@ -182,66 +182,6 @@ function MainApp() {
     return BookActions.createUnifiedDisplay(booksList, getCategoryBadgeFromBook);
   };
 
-  // FONCTION BIBLIOTHÈQUE OBSOLÈTE : Remplacée par createUnifiedDisplay pour affichage unifié
-  const groupBooksIntoSeries = (booksList) => {
-    const seriesGroups = {};
-    const standaloneBooks = [];
-
-    booksList.forEach(book => {
-      if (book.saga && book.saga.trim()) {
-        const seriesKey = book.saga.toLowerCase().trim();
-        if (!seriesGroups[seriesKey]) {
-          seriesGroups[seriesKey] = {
-            id: `library-series-${seriesKey}`,
-            isSeriesCard: true,
-            isLibrarySeries: true, // Marqueur pour série de bibliothèque
-            name: book.saga,
-            title: book.saga,
-            author: book.author,
-            category: book.category,
-            books: [],
-            totalBooks: 0,
-            completedBooks: 0,
-            readingBooks: 0,
-            toReadBooks: 0,
-            cover_url: book.cover_url, // Utiliser la couverture du premier livre
-            // Progression
-            progressPercent: 0
-          };
-        }
-        
-        seriesGroups[seriesKey].books.push(book);
-        seriesGroups[seriesKey].totalBooks += 1;
-        
-        // Compter les statuts
-        switch (book.status) {
-          case 'completed':
-            seriesGroups[seriesKey].completedBooks += 1;
-            break;
-          case 'reading':
-            seriesGroups[seriesKey].readingBooks += 1;
-            break;
-          case 'to_read':
-            seriesGroups[seriesKey].toReadBooks += 1;
-            break;
-        }
-        
-        // Calculer le pourcentage de progression
-        seriesGroups[seriesKey].progressPercent = Math.round(
-          (seriesGroups[seriesKey].completedBooks / seriesGroups[seriesKey].totalBooks) * 100
-        );
-      } else {
-        // Livre standalone (sans série)
-        standaloneBooks.push(book);
-      }
-    });
-
-    // Convertir les groupes en tableau et trier par nombre de livres
-    const seriesCards = Object.values(seriesGroups).sort((a, b) => b.totalBooks - a.totalBooks);
-    
-    return [...seriesCards, ...standaloneBooks];
-  };
-
   // FONCTION OPTIMISÉE : Génération cartes séries avec algorithme avancé et scoring prioritaire
   const generateSeriesCardsForSearch = (query, books) => {
     console.log('🚀 OPTIMISATION RECHERCHE - Génération cartes séries avec algorithme avancé');
