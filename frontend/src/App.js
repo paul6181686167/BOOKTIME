@@ -62,6 +62,8 @@ function AppContent() {
     <Routes>
       <Route path="/" element={<MainApp />} />
       <Route path="/series/:seriesName" element={<SeriesDetailPage />} />
+      <Route path="/recommendations" element={<RecommendationPage />} />
+      <Route path="/export-import" element={<ExportImportPage />} />
     </Routes>
   );
 }
