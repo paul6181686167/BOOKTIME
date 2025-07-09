@@ -495,7 +495,10 @@ class BooktimeModularAPITest(unittest.TestCase):
 def run_tests():
     """Run all tests and print a summary"""
     # Create a test suite with all tests
-    suite = unittest.TestLoader().loadTestsFromTestCase(BooktimeModularAPITest)
+    loader = unittest.TestLoader()
+    # Sort tests by name to ensure they run in order
+    loader.sortTestMethodsUsing = lambda x, y: 1 if x > y else -1 if x < y else 0
+    suite = loader.loadTestsFromTestCase(BooktimeModularAPITest)
     
     # Run the tests
     result = unittest.TextTestRunner(verbosity=2).run(suite)
@@ -506,6 +509,19 @@ def run_tests():
     print(f"Passed: {result.testsRun - len(result.failures) - len(result.errors)}")
     print(f"Failed: {len(result.failures)}")
     print(f"Errors: {len(result.errors)}")
+    
+    # Print failures and errors
+    if result.failures:
+        print("\n=== FAILURES ===")
+        for i, (test, traceback) in enumerate(result.failures):
+            print(f"Failure {i+1}: {test}")
+            print(traceback)
+    
+    if result.errors:
+        print("\n=== ERRORS ===")
+        for i, (test, traceback) in enumerate(result.errors):
+            print(f"Error {i+1}: {test}")
+            print(traceback)
     
     # Return exit code based on test results
     return 0 if result.wasSuccessful() else 1
