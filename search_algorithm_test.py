@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 class SearchAlgorithmTester:
-    def __init__(self, base_url="https://ab5e2856-7a9d-4e5d-8bd0-27a6fad01103.preview.emergentagent.com"):
+    def __init__(self, base_url="https://b1416b06-72ca-4700-aa1f-330b52e48ca1.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
         self.user_id = None
