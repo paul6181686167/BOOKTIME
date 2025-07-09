@@ -40,6 +40,10 @@ async def health():
 # Enregistrement des routers
 app.include_router(auth_router)
 app.include_router(books_router)
+app.include_router(series_router)
+app.include_router(sagas_router)
+app.include_router(openlibrary_router)
+app.include_router(library_router)
 app.include_router(stats_router)
 app.include_router(authors_router)
 
