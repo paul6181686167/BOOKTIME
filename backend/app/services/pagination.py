@@ -11,7 +11,7 @@ import json
 import hashlib
 from datetime import datetime, timedelta
 import os
-from ..database import database
+from ..database import db
 from ..config import DEFAULT_LIMIT, MAX_LIMIT, DEFAULT_OFFSET
 
 # Configuration Redis (optionnel)
@@ -99,7 +99,7 @@ class PaginationService:
     
     def __init__(self):
         self.cache = CacheManager()
-        self.db = database.db
+        self.db = db
     
     def validate_pagination_params(self, limit: int, offset: int) -> PaginationParams:
         """Valide et normalise les paramètres de pagination"""
