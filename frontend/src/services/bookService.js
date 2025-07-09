@@ -230,6 +230,17 @@ export const bookService = {
       console.error('Erreur lors de l\'analyse des tomes manquants:', error);
       throw new Error('Erreur lors de l\'analyse des tomes manquants');
     }
+  },
+
+  // Rechercher des séries
+  async searchSeries(query) {
+    try {
+      const response = await api.get('/api/series/search', { params: { q: query } });
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la recherche de séries:', error);
+      throw new Error('Erreur lors de la recherche de séries');
+    }
   }
 };
 
