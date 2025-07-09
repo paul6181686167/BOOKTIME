@@ -387,7 +387,9 @@ function App() {
     <Router>
       <ThemeProvider>
         <AuthProvider>
-          <AppWithAuth />
+          <ErrorBoundary>
+            <AppWithAuth />
+          </ErrorBoundary>
         </AuthProvider>
       </ThemeProvider>
     </Router>
