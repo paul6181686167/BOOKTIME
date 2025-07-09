@@ -545,14 +545,11 @@ function MainApp() {
           )}
           
           {/* Grille de livres/séries */}
-          <SeriesGrid
-            displayedBooks={displayedBooks}
+          <BookGrid
+            books={displayedBooks}
             loading={loading}
-            handleItemClick={handleItemClick}
-            handleAddSeriesToLibrary={handleAddSeriesToLibrary}
-            handleUpdateVolumeStatus={handleUpdateVolumeStatus}
-            handleUpdateSeriesStatus={handleUpdateSeriesStatus}
-            handleDeleteSeriesFromLibrary={handleDeleteSeriesFromLibrary}
+            onItemClick={handleItemClick}
+            showEmptyState={true}
           />
         </div>
       </main>
