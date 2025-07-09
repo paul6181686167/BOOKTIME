@@ -15,6 +15,7 @@ import SeriesCard from './components/SeriesCard';
 import SeriesDetailModal from './components/SeriesDetailModal';
 import SeriesDetailPage from './pages/SeriesDetailPage';
 import RecommendationPage from './components/recommendations/RecommendationPage';
+import ExportImportPage from './components/exportimport/ExportImportPage';
 import ProfileModal from './components/common/ProfileModal';
 
 // PHASE 2.4 - Monitoring et Analytics
