@@ -998,7 +998,7 @@ backend:
   - task: "POST /api/auth/login - User Login"
     implemented: true
     working: true
-    file: "/app/backend/server.py"
+    file: "/app/backend/app/auth/routes.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -1009,6 +1009,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "User login endpoint works correctly. Successfully tested with valid credentials. The endpoint returns a JWT token and user information. Invalid email validation works correctly, rejecting login attempts with non-existent emails. Invalid password validation works correctly, rejecting login attempts with incorrect passwords."
+      - working: true
+        agent: "testing"
+        comment: "Post-modularization testing confirms that the user login endpoint is still working correctly. Successfully logged in with just first_name and last_name, and received a valid JWT token. The endpoint returns the expected response structure with access_token and user fields."
 
   - task: "GET /api/auth/me - Get Current User"
     implemented: true
