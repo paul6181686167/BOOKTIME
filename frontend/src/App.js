@@ -85,31 +85,7 @@ function MainApp() {
 
   // FONCTION UTILITAIRE : Déterminer le badge de catégorie depuis un livre Open Library
   const getCategoryBadgeFromBook = (book) => {
-    if (book.category) {
-      switch (book.category.toLowerCase()) {
-        case 'roman':
-          return { key: 'roman', text: 'Roman', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300', emoji: '📚' };
-        case 'bd':
-          return { key: 'bd', text: 'BD', class: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300', emoji: '🎨' };
-        case 'manga':
-          return { key: 'manga', text: 'Manga', class: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300', emoji: '🇯🇵' };
-      }
-    }
-    
-    const title = (book.title || '').toLowerCase();
-    const description = (book.description || '').toLowerCase();
-    const subjects = (book.subjects || []).join(' ').toLowerCase();
-    const allText = `${title} ${description} ${subjects}`;
-    
-    if (allText.includes('manga') || allText.includes('japonais') || allText.includes('japan')) {
-      return { key: 'manga', text: 'Manga', class: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300', emoji: '🇯🇵' };
-    }
-    
-    if (allText.includes('bande dessinée') || allText.includes('comic') || allText.includes('bd')) {
-      return { key: 'bd', text: 'BD', class: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300', emoji: '🎨' };
-    }
-    
-    return { key: 'roman', text: 'Roman', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300', emoji: '📚' };
+    return getCategoryBadge(book);
   };
 
   // FONCTION AFFICHAGE UNIFIÉ : Mélange séries et livres individuels par date d'ajout
