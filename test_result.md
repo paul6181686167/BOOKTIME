@@ -806,7 +806,7 @@ backend:
   - task: "GET /api/books/search-grouped - Search with saga grouping"
     implemented: true
     working: true
-    file: "/app/backend/server.py"
+    file: "/app/backend/app/books/routes.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -823,6 +823,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Additional testing confirms the GET /api/books/search-grouped endpoint is working correctly. Successfully tested with a different test user and the search term 'Harry'. The endpoint correctly returns the expected response structure with results, total_books, total_sagas, and search_term fields. For a new user with no books, the endpoint correctly returns empty results with the appropriate structure."
+      - working: true
+        agent: "testing"
+        comment: "Post-modularization testing confirms that the GET /api/books/search-grouped endpoint is still working correctly. Successfully tested with a search term and received the expected response structure with results, total_books, total_sagas, search_term, and grouped_by_saga fields."
 
   - task: "ISBN validation - Handling and validation"
     implemented: true
