@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, status, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pymongo import MongoClient
@@ -38,6 +38,7 @@ db = client.booktime
 users_collection = db.users
 books_collection = db.books
 authors_collection = db.authors
+series_library_collection = db.series_library
 
 # Security
 security = HTTPBearer()
@@ -73,6 +74,25 @@ class BookUpdate(BaseModel):
     review: Optional[str] = None
     description: Optional[str] = None
     total_pages: Optional[int] = None
+
+# Modèles pour les séries en bibliothèque
+class VolumeData(BaseModel):
+    volume_number: int
+    volume_title: str
+    is_read: bool = False
+    date_read: Optional[str] = None
+
+class SeriesLibraryCreate(BaseModel):
+    series_name: str
+    authors: List[str]
+    category: str
+    volumes: List[VolumeData]
+    description_fr: str = ""
+    cover_image_url: str = ""
+    first_published: str = ""
+    last_published: str = ""
+    publisher: str = ""
+    series_status: str = "to_read"
 
 # Functions
 def create_access_token(data: dict, expires_delta: timedelta = None):
@@ -202,18 +222,126 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     return current_user
 
 # Routes pour les livres (protégées)
+@app.get("/api/library/series")
+async def get_library_series(
+    category: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Récupérer les séries de la bibliothèque comme entités uniques.
+    Chaque série est représentée comme UNE carte avec indicateur de progression.
+    """
+    filter_dict = {"user_id": current_user["id"]}
+    
+    if category:
+        filter_dict["category"] = category
+    
+    # Grouper les livres par saga avec informations de progression
+    pipeline = [
+        {"$match": {**filter_dict, "saga": {"$ne": "", "$exists": True}}},
+        {"$group": {
+            "_id": {
+                "saga": "$saga",
+                "author": "$author",
+                "category": "$category"
+            },
+            "books_count": {"$sum": 1},
+            "completed_books": {"$sum": {"$cond": [{"$eq": ["$status", "completed"]}, 1, 0]}},
+            "reading_books": {"$sum": {"$cond": [{"$eq": ["$status", "reading"]}, 1, 0]}},
+            "to_read_books": {"$sum": {"$cond": [{"$eq": ["$status", "to_read"]}, 1, 0]}},
+            "first_added": {"$min": "$date_added"},
+            "last_updated": {"$max": "$updated_at"},
+            "cover_url": {"$first": "$cover_url"},  # Prendre la première couverture disponible
+            "max_volume": {"$max": "$volume_number"},
+            "books": {"$push": {
+                "id": "$id",
+                "title": "$title", 
+                "volume_number": "$volume_number",
+                "status": "$status",
+                "cover_url": "$cover_url"
+            }}
+        }},
+        {"$sort": {"last_updated": -1, "first_added": -1}}
+    ]
+    
+    series_data = list(books_collection.aggregate(pipeline))
+    
+    # Formater les données pour l'affichage en cartes séries
+    formatted_series = []
+    for series in series_data:
+        # Calculer le pourcentage de progression
+        completion_percentage = 0
+        if series["books_count"] > 0:
+            completion_percentage = round((series["completed_books"] / series["books_count"]) * 100)
+        
+        # Déterminer le statut global de la série
+        global_status = "to_read"
+        if series["reading_books"] > 0:
+            global_status = "reading"
+        elif series["completed_books"] == series["books_count"]:
+            global_status = "completed"
+        
+        # Trouver la meilleure couverture (priorité aux derniers tomes)
+        best_cover = ""
+        if series["books"]:
+            sorted_books = sorted(series["books"], key=lambda x: x.get("volume_number", 0), reverse=True)
+            for book in sorted_books:
+                if book.get("cover_url"):
+                    best_cover = book["cover_url"]
+                    break
+        
+        formatted_series.append({
+            "id": f"series_{series['_id']['saga'].lower().replace(' ', '_')}",
+            "name": series["_id"]["saga"],
+            "author": series["_id"]["author"],
+            "category": series["_id"]["category"],
+            "isSeriesCard": True,
+            "isOwnedSeries": True,  # Marquer comme série possédée
+            "total_books": series["books_count"],
+            "completed_books": series["completed_books"],
+            "reading_books": series["reading_books"],
+            "to_read_books": series["to_read_books"],
+            "completion_percentage": completion_percentage,
+            "status": global_status,
+            "cover_url": best_cover,
+            "max_volume": series["max_volume"] or 0,
+            "first_added": series["first_added"],
+            "last_updated": series["last_updated"],
+            "progress_text": f"{series['completed_books']}/{series['books_count']} tomes lus",
+            "books": series["books"]  # Liste des tomes pour la fiche détaillée
+        })
+    
+    return formatted_series
+
 @app.get("/api/books")
 async def get_books(
     category: Optional[str] = None,
     status: Optional[str] = None,
+    view_mode: Optional[str] = "books",  # "books" ou "series"
     current_user: dict = Depends(get_current_user)
 ):
+    """
+    Route mise à jour pour supporter l'affichage par séries ou par livres individuels.
+    """
+    # Si le mode série est demandé, retourner les séries comme entités uniques
+    if view_mode == "series":
+        return await get_library_series(category, current_user)
+    
+    # Mode livres classique : retourner tous les livres individuels SAUF ceux qui font partie d'une série
     filter_dict = {"user_id": current_user["id"]}
     
     if category:
         filter_dict["category"] = category
     if status:
         filter_dict["status"] = status
+    
+    # Exclure les livres qui font partie d'une série (pour éviter la duplication)
+    # En mode livres, on ne montre que les livres isolés
+    filter_dict["$or"] = [
+        {"saga": {"$exists": False}},
+        {"saga": ""},
+        {"saga": None}
+    ]
     
     books = list(books_collection.find(filter_dict, {"_id": 0}))
     return books
@@ -377,7 +505,7 @@ async def create_book(book_data: BookCreate, current_user: dict = Depends(get_cu
     book = {
         "id": book_id,
         "user_id": current_user["id"],
-        **book_data.dict(),
+        **book_data.model_dump(),
         "category": validated_category,
         "date_added": datetime.utcnow(),
         "date_started": None,
@@ -409,7 +537,7 @@ async def update_book(
     if not book:
         raise HTTPException(status_code=404, detail="Livre non trouvé")
     
-    update_data = book_update.dict(exclude_unset=True)
+    update_data = book_update.model_dump(exclude_unset=True)
     update_data["updated_at"] = datetime.utcnow()
     
     # Gérer les changements de statut
@@ -448,7 +576,450 @@ async def delete_book(book_id: str, current_user: dict = Depends(get_current_use
     
     return {"message": "Livre supprimé avec succès"}
 
-# Routes pour les statistiques
+# Routes pour les séries étendues
+@app.get("/api/series/popular")
+async def get_popular_series(
+    category: Optional[str] = None,
+    language: Optional[str] = "fr",
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Récupérer la liste des séries populaires avec métadonnées complètes
+    """
+    # Mapping complet des séries populaires (côté backend)
+    series_data = {
+        # ROMANS FANTASY/SF
+        "harry_potter": {
+            "name": "Harry Potter",
+            "category": "roman",
+            "score": 18000,
+            "keywords": ["harry", "potter", "hogwarts", "sorcier", "wizard", "poudlard", "voldemort"],
+            "authors": ["J.K. Rowling"],
+            "variations": ["Harry Potter", "École des Sorciers", "Chambre des Secrets"],
+            "volumes": 7,
+            "languages": ["fr", "en"],
+            "description": "La saga emblématique du jeune sorcier Harry Potter",
+            "first_published": 1997,
+            "status": "completed"
+        },
+        "seigneur_des_anneaux": {
+            "name": "Le Seigneur des Anneaux",
+            "category": "roman",
+            "score": 18000,
+            "keywords": ["anneau", "terre du milieu", "hobbit", "frodo", "gandalf"],
+            "authors": ["J.R.R. Tolkien"],
+            "variations": ["Seigneur des Anneaux", "Lord of the Rings"],
+            "volumes": 3,
+            "languages": ["fr", "en"],
+            "description": "L'épopée fantasy légendaire de Tolkien",
+            "first_published": 1954,
+            "status": "completed"
+        },
+        "game_of_thrones": {
+            "name": "Game of Thrones",
+            "category": "roman",
+            "score": 16000,
+            "keywords": ["trône de fer", "westeros", "stark", "lannister"],
+            "authors": ["George R.R. Martin"],
+            "variations": ["Game of Thrones", "Trône de Fer"],
+            "volumes": 5,
+            "languages": ["fr", "en"],
+            "description": "La saga politique et fantastique de Westeros",
+            "first_published": 1996,
+            "status": "ongoing"
+        },
+        # MANGAS
+        "one_piece": {
+            "name": "One Piece",
+            "category": "manga",
+            "score": 18000,
+            "keywords": ["luffy", "pirates", "chapeau de paille", "grand line"],
+            "authors": ["Eiichiro Oda"],
+            "variations": ["One Piece"],
+            "volumes": 108,
+            "languages": ["fr", "en", "jp"],
+            "description": "L'aventure du pirate Luffy à la recherche du One Piece",
+            "first_published": 1997,
+            "status": "ongoing"
+        },
+        "naruto": {
+            "name": "Naruto",
+            "category": "manga",
+            "score": 17000,
+            "keywords": ["naruto", "ninja", "konoha", "sasuke", "hokage"],
+            "authors": ["Masashi Kishimoto"],
+            "variations": ["Naruto", "Boruto"],
+            "volumes": 72,
+            "languages": ["fr", "en", "jp"],
+            "description": "L'histoire du ninja Naruto Uzumaki",
+            "first_published": 1999,
+            "status": "completed"
+        },
+        "dragon_ball": {
+            "name": "Dragon Ball",
+            "category": "manga",
+            "score": 17000,
+            "keywords": ["goku", "saiyan", "kamehameha", "vegeta"],
+            "authors": ["Akira Toriyama"],
+            "variations": ["Dragon Ball", "Dragon Ball Z", "Dragon Ball Super"],
+            "volumes": 42,
+            "languages": ["fr", "en", "jp"],
+            "description": "Les aventures de Son Goku et des Dragon Balls",
+            "first_published": 1984,
+            "status": "completed"
+        },
+        # BANDES DESSINÉES
+        "asterix": {
+            "name": "Astérix",
+            "category": "bd",
+            "score": 18000,
+            "keywords": ["astérix", "obélix", "gaulois", "potion magique"],
+            "authors": ["René Goscinny", "Albert Uderzo"],
+            "variations": ["Astérix", "Asterix"],
+            "volumes": 39,
+            "languages": ["fr", "en"],
+            "description": "Les aventures du petit gaulois Astérix",
+            "first_published": 1959,
+            "status": "ongoing"
+        },
+        "tintin": {
+            "name": "Tintin",
+            "category": "bd",
+            "score": 18000,
+            "keywords": ["tintin", "milou", "capitaine haddock", "tournesol"],
+            "authors": ["Hergé"],
+            "variations": ["Tintin", "Aventures de Tintin"],
+            "volumes": 24,
+            "languages": ["fr", "en"],
+            "description": "Les aventures du jeune reporter Tintin",
+            "first_published": 1929,
+            "status": "completed"
+        }
+    }
+    
+    # Filtrer par catégorie si spécifiée
+    filtered_series = {}
+    for key, series in series_data.items():
+        if category and series["category"] != category:
+            continue
+        if language and language not in series["languages"]:
+            continue
+        filtered_series[key] = series
+    
+    # Trier par score et limiter
+    sorted_series = sorted(
+        filtered_series.items(), 
+        key=lambda x: x[1]["score"], 
+        reverse=True
+    )[:limit]
+    
+    return {
+        "series": [series[1] for series in sorted_series],
+        "total": len(sorted_series),
+        "category": category,
+        "language": language
+    }
+
+@app.get("/api/series/search")
+async def search_series(
+    q: str,
+    category: Optional[str] = None,
+    limit: int = 20,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Recherche de séries par nom avec scoring de pertinence
+    """
+    if not q or len(q.strip()) < 2:
+        return {"series": [], "total": 0, "search_term": q}
+    
+    search_term = q.strip().lower()
+    
+    # Récupérer les séries populaires
+    series_response = await get_popular_series(category=category, limit=1000, current_user=current_user)
+    all_series = series_response["series"]
+    
+    matching_series = []
+    
+    for series in all_series:
+        score = 0
+        match_reasons = []
+        
+        # Correspondance exacte du nom
+        if series["name"].lower() == search_term:
+            score += 10000
+            match_reasons.append("exact_name")
+        # Correspondance partielle du nom
+        elif search_term in series["name"].lower():
+            if series["name"].lower().startswith(search_term):
+                score += 8000
+                match_reasons.append("name_starts_with")
+            else:
+                score += 5000
+                match_reasons.append("name_contains")
+        
+        # Correspondance variations
+        for variation in series["variations"]:
+            if variation.lower() == search_term:
+                score += 9000
+                match_reasons.append("exact_variation")
+                break
+            elif search_term in variation.lower():
+                score += 4000
+                match_reasons.append("variation_contains")
+        
+        # Correspondance auteur
+        for author in series["authors"]:
+            if search_term in author.lower():
+                score += 3000
+                match_reasons.append("author_match")
+                break
+        
+        # Correspondance mots-clés
+        keyword_matches = 0
+        for keyword in series["keywords"]:
+            if keyword in search_term or search_term in keyword:
+                keyword_matches += 1
+        
+        if keyword_matches > 0:
+            score += keyword_matches * 1000
+            match_reasons.append(f"keywords_{keyword_matches}")
+        
+        # Bonus pour séries populaires
+        score += series.get("score", 0) // 10
+        
+        if score > 500:  # Seuil de pertinence
+            matching_series.append({
+                **series,
+                "isSeriesCard": True,
+                "search_score": score,
+                "match_reasons": match_reasons
+            })
+    
+    # Trier par score de pertinence
+    matching_series.sort(key=lambda x: x["search_score"], reverse=True)
+    
+    return {
+        "series": matching_series[:limit],
+        "total": len(matching_series),
+        "search_term": q
+    }
+
+@app.get("/api/series/detect")
+async def detect_series_from_book(
+    title: str,
+    author: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Détecter automatiquement à quelle série appartient un livre
+    """
+    # Récupérer les séries populaires
+    series_response = await get_popular_series(limit=100, current_user=current_user)
+    series_list = series_response["series"]
+    
+    detected_series = []
+    title_lower = title.lower()
+    author_lower = author.lower() if author else ""
+    
+    for series in series_list:
+        confidence = 0
+        match_reasons = []
+        
+        # Vérification auteur
+        if author and any(a.lower() in author_lower for a in series["authors"]):
+            confidence += 80
+            match_reasons.append("author_match")
+        
+        # Vérification variations dans le titre
+        for variation in series["variations"]:
+            if variation.lower() in title_lower:
+                confidence += 60
+                match_reasons.append("title_variation")
+                break
+        
+        # Vérification mots-clés
+        keyword_matches = 0
+        for keyword in series["keywords"]:
+            if keyword in title_lower:
+                keyword_matches += 1
+        
+        if keyword_matches > 0:
+            confidence += keyword_matches * 20
+            match_reasons.append(f"keywords_match_{keyword_matches}")
+        
+        # Seuil de confiance
+        if confidence >= 60:
+            detected_series.append({
+                "series": series,
+                "confidence": confidence,
+                "match_reasons": match_reasons
+            })
+    
+    # Trier par confiance
+    detected_series.sort(key=lambda x: x["confidence"], reverse=True)
+    
+    return {
+        "detected_series": detected_series[:5],  # Top 5
+        "book_info": {
+            "title": title,
+            "author": author
+        }
+    }
+
+@app.post("/api/series/complete")
+async def auto_complete_series(
+    series_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Auto-compléter une série en ajoutant tous les volumes manquants
+    """
+    series_name = series_data.get("series_name")
+    target_volumes = series_data.get("target_volumes", 10)
+    template_book_id = series_data.get("template_book_id")
+    
+    if not series_name:
+        raise HTTPException(status_code=400, detail="Nom de série requis")
+    
+    # Base de données des séries pour obtenir les informations par défaut
+    SERIES_INFO = {
+        "Le Seigneur des Anneaux": {
+            "author": "J.R.R. Tolkien",
+            "category": "roman",
+            "volumes": 3,
+            "tomes": ["La Communauté de l'Anneau", "Les Deux Tours", "Le Retour du Roi"]
+        },
+        "Harry Potter": {
+            "author": "J.K. Rowling", 
+            "category": "roman",
+            "volumes": 7,
+            "tomes": [
+                "Harry Potter à l'école des sorciers",
+                "Harry Potter et la Chambre des secrets", 
+                "Harry Potter et le Prisonnier d'Azkaban",
+                "Harry Potter et la Coupe de feu",
+                "Harry Potter et l'Ordre du phénix",
+                "Harry Potter et le Prince de sang-mêlé",
+                "Harry Potter et les Reliques de la Mort"
+            ]
+        },
+        "One Piece": {
+            "author": "Eiichiro Oda",
+            "category": "manga", 
+            "volumes": 100,
+            "tomes": []
+        },
+        "Naruto": {
+            "author": "Masashi Kishimoto",
+            "category": "manga",
+            "volumes": 72,
+            "tomes": []
+        },
+        "Astérix": {
+            "author": "René Goscinny et Albert Uderzo",
+            "category": "bd",
+            "volumes": 39,
+            "tomes": []
+        }
+    }
+    
+    # Récupérer le livre modèle si existe
+    template_book = None
+    if template_book_id:
+        template_book = books_collection.find_one({
+            "id": template_book_id,
+            "user_id": current_user["id"]
+        })
+    
+    # Sinon, chercher un livre de cette série
+    if not template_book:
+        template_book = books_collection.find_one({
+            "user_id": current_user["id"],
+            "saga": {"$regex": re.escape(series_name), "$options": "i"}
+        })
+    
+    # Si pas de livre modèle, utiliser les informations de la base de données
+    series_info = SERIES_INFO.get(series_name)
+    if not template_book and not series_info:
+        raise HTTPException(status_code=404, detail="Série non reconnue et aucun livre modèle trouvé")
+    
+    # Déterminer les informations de base
+    if template_book:
+        base_author = template_book.get("author", "")
+        base_category = template_book.get("category", "roman")
+        base_genre = template_book.get("genre", "")
+        base_publisher = template_book.get("publisher", "")
+    elif series_info:
+        base_author = series_info["author"]
+        base_category = series_info["category"]
+        base_genre = ""
+        base_publisher = ""
+        if series_info["volumes"] < target_volumes:
+            target_volumes = series_info["volumes"]
+    
+    # Récupérer les volumes existants
+    existing_books = list(books_collection.find({
+        "user_id": current_user["id"],
+        "saga": {"$regex": re.escape(series_name), "$options": "i"}
+    }))
+    
+    existing_volumes = set()
+    for book in existing_books:
+        vol_num = book.get("volume_number", 0)
+        if vol_num > 0:
+            existing_volumes.add(vol_num)
+    
+    # Créer les volumes manquants
+    created_books = []
+    for vol_num in range(1, target_volumes + 1):
+        if vol_num not in existing_volumes:
+            book_id = str(uuid.uuid4())
+            
+            # Déterminer le titre du tome
+            if series_info and series_info.get("tomes") and vol_num <= len(series_info["tomes"]):
+                tome_title = series_info["tomes"][vol_num - 1]
+            else:
+                tome_title = f"{series_name} - Tome {vol_num}"
+            
+            new_book = {
+                "id": book_id,
+                "user_id": current_user["id"],
+                "title": tome_title,
+                "author": base_author,
+                "category": base_category,
+                "saga": series_name,
+                "volume_number": vol_num,
+                "status": "to_read",
+                "auto_added": True,
+                "date_added": datetime.utcnow(),
+                "description": f"Tome {vol_num} de la série {series_name}",
+                "total_pages": None,
+                "current_page": None,
+                "rating": None,
+                "review": "",
+                "cover_url": "",
+                "genre": base_genre,
+                "publication_year": None,
+                "publisher": base_publisher,
+                "isbn": "",
+                "date_started": None,
+                "date_completed": None
+            }
+            
+            books_collection.insert_one(new_book)
+            new_book.pop("_id", None)
+            created_books.append(new_book)
+    
+    return {
+        "message": f"{len(created_books)} tome(s) ajouté(s) à la série {series_name}",
+        "created_books": created_books,
+        "series_name": series_name,
+        "total_volumes": target_volumes,
+        "existing_volumes": len(existing_volumes),
+        "created_volumes": len(created_books)
+    }
 @app.get("/api/stats")
 async def get_stats(current_user: dict = Depends(get_current_user)):
     user_filter = {"user_id": current_user["id"]}
@@ -573,12 +1144,73 @@ async def get_sagas(current_user: dict = Depends(get_current_user)):
 
 @app.get("/api/sagas/{saga_name}/books")
 async def get_saga_books(saga_name: str, current_user: dict = Depends(get_current_user)):
+    """
+    Récupérer les livres d'une série spécifique avec filtrage strict.
+    Ne retourne QUE les livres appartenant exactement à cette série.
+    """
+    # Filtrage strict par série ET auteur spécifique
     books = list(books_collection.find({
         "user_id": current_user["id"],
         "saga": saga_name
     }, {"_id": 0}).sort("volume_number", 1))
     
-    return books
+    if not books:
+        return books
+    
+    # Obtenir l'auteur principal de la série (du premier livre trouvé)
+    main_author = books[0].get("author", "").lower().strip()
+    
+    # Filtrer strictement par série ET auteur principal pour exclure :
+    # - Les spin-offs par d'autres auteurs
+    # - Les suites non-officielles  
+    # - Les adaptations par d'autres créateurs
+    # - Les continuations posthumes non autorisées
+    filtered_books = []
+    for book in books:
+        book_author = book.get("author", "").lower().strip()
+        book_title = book.get("title", "").lower()
+        
+        # Vérifications pour inclusion stricte
+        include_book = True
+        
+        # 1. Vérifier que l'auteur correspond (avec tolérance pour co-auteurs)
+        if main_author and book_author:
+            # Accepter si l'auteur principal est mentionné dans l'auteur du livre
+            # ou si le livre est du même auteur principal
+            author_match = (
+                main_author in book_author or 
+                book_author in main_author or
+                any(word in book_author for word in main_author.split() if len(word) > 2)
+            )
+            if not author_match:
+                include_book = False
+        
+        # 2. Vérifier que le titre contient bien le nom de la série
+        if saga_name.lower() not in book_title and not any(
+            variant.lower() in book_title for variant in [
+                saga_name.replace(" ", ""),  # Sans espaces
+                saga_name.replace("-", " "),  # Tirets remplacés par espaces
+            ]
+        ):
+            # Tolérance pour les titres de tomes qui peuvent être différents
+            # mais seulement si c'est le même auteur principal
+            if not author_match:
+                include_book = False
+        
+        # 3. Exclure explicitement certains mots-clés suspects
+        suspicious_keywords = [
+            "spin-off", "spinoff", "hors-série", "guide", "artbook", 
+            "companion", "compagnon", "making of", "adaptation", 
+            "suite", "continuation", "legacy", "next generation",
+            "prequel", "sequel", "side story"
+        ]
+        if any(keyword in book_title for keyword in suspicious_keywords):
+            include_book = False
+        
+        if include_book:
+            filtered_books.append(book)
+    
+    return filtered_books
 
 @app.post("/api/sagas/{saga_name}/auto-add")
 async def auto_add_next_volume(saga_name: str, current_user: dict = Depends(get_current_user)):
@@ -835,6 +1467,266 @@ async def analyze_missing_volumes(
             "fill_gaps": len(missing_volumes) > 0,
             "estimated_total": max(existing_volumes) + 5 if existing_volumes else 10
         }
+    }
+
+# ==========================================
+# NOUVELLES ROUTES POUR FICHES SÉRIES BIBLIOTHÈQUE
+# ==========================================
+
+# Modèle Pydantic pour les fiches séries
+class SeriesLibraryCreate(BaseModel):
+    series_name: str
+    authors: List[str]
+    category: str
+    total_volumes: int
+    volumes: List[dict]  # Liste des tomes avec titres
+    series_status: str = "to_read"
+    description_fr: str = ""
+    cover_image_url: str = ""
+    first_published: str = ""
+    last_published: str = ""
+    publisher: str = ""
+
+class SeriesLibraryUpdate(BaseModel):
+    series_status: Optional[str] = None
+    description_fr: Optional[str] = None
+
+# Collection MongoDB pour les fiches séries
+try:
+    series_library_collection = db.series_library
+except:
+    series_library_collection = None
+
+@app.post("/api/series/library")
+async def add_series_to_library(
+    series_data: SeriesLibraryCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Ajouter une série complète à la bibliothèque utilisateur
+    """
+    
+    # Validation données
+    if not series_data.series_name or not series_data.volumes:
+        raise HTTPException(status_code=400, detail="Données série incomplètes")
+    
+    # Vérifier que la série n'est pas déjà en bibliothèque
+    existing = series_library_collection.find_one({
+        "user_id": current_user["id"],
+        "series_name": series_data.series_name
+    })
+    
+    if existing:
+        raise HTTPException(status_code=409, detail="Série déjà dans votre bibliothèque")
+    
+    # Créer la fiche série
+    series_id = str(uuid.uuid4())
+    series_entry = {
+        "id": series_id,
+        "type": "series",
+        "user_id": current_user["id"],
+        "series_name": series_data.series_name,
+        "authors": series_data.authors,
+        "category": series_data.category,
+        "total_volumes": series_data.total_volumes,
+        "series_status": series_data.series_status,
+        "completion_percentage": 0,
+        "volumes": series_data.volumes,
+        "description_fr": series_data.description_fr,
+        "cover_image_url": series_data.cover_image_url,
+        "first_published": series_data.first_published,
+        "last_published": series_data.last_published,
+        "publisher": series_data.publisher,
+        "date_added": datetime.utcnow(),
+        "updated_at": datetime.utcnow(),
+        "source": "search_series_card"
+    }
+    
+    # Sauvegarder en base
+    series_library_collection.insert_one(series_entry)
+    series_entry.pop("_id", None)
+    
+    return {
+        "success": True,
+        "series_id": series_id,
+        "message": f"Série '{series_data.series_name}' ajoutée à votre bibliothèque",
+        "series": series_entry
+    }
+
+@app.get("/api/series/library")
+async def get_user_series_library(
+    category: Optional[str] = None,
+    status: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Récupérer toutes les séries de la bibliothèque utilisateur
+    """
+    # Construire le filtre
+    filter_query = {"user_id": current_user["id"]}
+    
+    if category:
+        filter_query["category"] = category
+    
+    if status:
+        filter_query["series_status"] = status
+    
+    # Récupérer les séries
+    series_list = list(series_library_collection.find(filter_query, {"_id": 0}))
+    
+    # Calculer les statistiques pour chaque série
+    for series in series_list:
+        read_volumes = len([v for v in series.get("volumes", []) if v.get("is_read", False)])
+        total_volumes = len(series.get("volumes", []))
+        series["completion_percentage"] = round((read_volumes / total_volumes) * 100) if total_volumes > 0 else 0
+    
+    return {
+        "series": series_list,
+        "total_count": len(series_list)
+    }
+
+@app.put("/api/series/library/{series_id}/volume/{volume_number}")
+async def toggle_volume_read_status(
+    series_id: str,
+    volume_number: int,
+    is_read: bool = Query(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Toggle statut lu/non lu d'un tome spécifique
+    """
+    
+    # Récupérer la série
+    series = series_library_collection.find_one({
+        "id": series_id,
+        "user_id": current_user["id"]
+    })
+    
+    if not series:
+        raise HTTPException(status_code=404, detail="Série non trouvée")
+    
+    # Mettre à jour le tome spécifique
+    volumes = series.get("volumes", [])
+    volume_found = False
+    
+    for volume in volumes:
+        if volume.get("volume_number") == volume_number:
+            volume["is_read"] = is_read
+            volume["date_read"] = datetime.utcnow().isoformat() if is_read else None
+            volume_found = True
+            break
+    
+    if not volume_found:
+        raise HTTPException(status_code=404, detail="Tome non trouvé")
+    
+    # Recalculer la progression
+    read_count = sum(1 for v in volumes if v.get("is_read", False))
+    completion_percentage = round((read_count / len(volumes)) * 100) if volumes else 0
+    
+    # Mettre à jour le statut de série automatiquement
+    if completion_percentage == 100:
+        series_status = "completed"
+    elif completion_percentage > 0:
+        series_status = "reading"
+    else:
+        series_status = "to_read"
+    
+    # Sauvegarder les modifications
+    series_library_collection.update_one(
+        {"id": series_id, "user_id": current_user["id"]},
+        {
+            "$set": {
+                "volumes": volumes,
+                "completion_percentage": completion_percentage,
+                "series_status": series_status,
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+    
+    return {
+        "success": True,
+        "completion_percentage": completion_percentage,
+        "series_status": series_status,
+        "message": f"Tome {volume_number} marqué comme {'lu' if is_read else 'non lu'}"
+    }
+
+@app.put("/api/series/library/{series_id}")
+async def update_series_library(
+    series_id: str,
+    update_data: SeriesLibraryUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Mettre à jour les métadonnées d'une série en bibliothèque
+    """
+    
+    # Vérifier que la série existe
+    series = series_library_collection.find_one({
+        "id": series_id,
+        "user_id": current_user["id"]
+    })
+    
+    if not series:
+        raise HTTPException(status_code=404, detail="Série non trouvée")
+    
+    # Préparer les mises à jour
+    updates = {"updated_at": datetime.utcnow()}
+    
+    if update_data.series_status is not None:
+        updates["series_status"] = update_data.series_status
+    
+    if update_data.description_fr is not None:
+        updates["description_fr"] = update_data.description_fr
+    
+    # Appliquer les mises à jour
+    series_library_collection.update_one(
+        {"id": series_id, "user_id": current_user["id"]},
+        {"$set": updates}
+    )
+    
+    # Récupérer la série mise à jour
+    updated_series = series_library_collection.find_one(
+        {"id": series_id, "user_id": current_user["id"]},
+        {"_id": 0}
+    )
+    
+    return {
+        "success": True,
+        "message": "Série mise à jour avec succès",
+        "series": updated_series
+    }
+
+@app.delete("/api/series/library/{series_id}")
+async def delete_series_from_library(
+    series_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Supprimer une série de la bibliothèque utilisateur
+    """
+    
+    # Vérifier que la série existe
+    series = series_library_collection.find_one({
+        "id": series_id,
+        "user_id": current_user["id"]
+    })
+    
+    if not series:
+        raise HTTPException(status_code=404, detail="Série non trouvée")
+    
+    # Supprimer la série
+    result = series_library_collection.delete_one({
+        "id": series_id,
+        "user_id": current_user["id"]
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=500, detail="Erreur lors de la suppression")
+    
+    return {
+        "success": True,
+        "message": f"Série '{series['series_name']}' supprimée de votre bibliothèque"
     }
 
 @app.post("/api/sagas/{saga_name}/toggle-tome-status")
@@ -1726,6 +2618,593 @@ async def get_import_suggestions(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la génération des suggestions: {str(e)}")
+
+# === FONCTIONNALITÉ DE DÉCOUVERTE COMPLÈTE DE SÉRIE ===
+
+@app.get("/api/series/discover")
+async def discover_complete_series(
+    series_name: str,
+    author: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Découverte complète d'une série - Identifier tous les tomes et œuvres connexes
+    """
+    try:
+        # Normaliser le nom de série pour la recherche
+        normalized_series = series_name.strip().lower()
+        
+        # Mapping des séries populaires avec leurs variantes
+        series_variants = {
+            "harry potter": [
+                "harry potter", "harry potter and", "harry potter et",
+                "école des sorciers", "chamber of secrets", "chambre des secrets",
+                "prisoner of azkaban", "prisonnier d'azkaban", "goblet of fire", "coupe de feu",
+                "order of the phoenix", "ordre du phénix", "half-blood prince", "prince de sang-mêlé",
+                "deathly hallows", "reliques de la mort", "cursed child", "l'enfant maudit",
+                "fantastic beasts", "animaux fantastiques", "quidditch through the ages",
+                "le quidditch à travers les âges", "tales of beedle the bard", "contes de beedle le barde"
+            ],
+            "seigneur des anneaux": [
+                "lord of the rings", "seigneur des anneaux", "fellowship of the ring",
+                "communauté de l'anneau", "two towers", "deux tours", "return of the king",
+                "retour du roi", "hobbit", "silmarillion"
+            ],
+            "one piece": [
+                "one piece", "wan pīsu"
+            ],
+            "naruto": [
+                "naruto", "boruto"
+            ],
+            "astérix": [
+                "astérix", "asterix", "obelix"
+            ]
+        }
+        
+        # Détecter les variantes de recherche pour la série
+        search_terms = []
+        for series_key, variants in series_variants.items():
+            if any(variant in normalized_series for variant in variants[:3]):  # Check first 3 main variants
+                search_terms = variants
+                break
+        
+        if not search_terms:
+            search_terms = [series_name]
+        
+        # Récupérer les livres existants de l'utilisateur pour cette série
+        user_filter = {"user_id": current_user["id"]}
+        existing_books = list(books_collection.find({
+            **user_filter,
+            "$or": [
+                {"saga": {"$regex": re.escape(series_name), "$options": "i"}},
+                {"title": {"$regex": re.escape(series_name), "$options": "i"}},
+                {"author": {"$regex": re.escape(author), "$options": "i"}} if author else {}
+            ]
+        }, {"_id": 0}))
+        
+        # Recherche complète sur Open Library
+        all_discovered_books = []
+        unique_books = set()  # Pour éviter les doublons
+        
+        # 1. Recherche par termes de série
+        for search_term in search_terms[:5]:  # Limiter à 5 termes pour éviter trop de requêtes
+            try:
+                # Recherche principale
+                params = {
+                    "q": search_term,
+                    "limit": 50,
+                    "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,number_of_pages_median,publisher,language,edition_count"
+                }
+                
+                if author:
+                    params["q"] += f" AND author:{author}"
+                
+                response = requests.get("https://openlibrary.org/search.json", params=params, timeout=15)
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    for doc in data.get("docs", []):
+                        title = doc.get("title", "").lower()
+                        book_key = doc.get("key", "")
+                        
+                        # Éviter les doublons
+                        if book_key in unique_books:
+                            continue
+                        unique_books.add(book_key)
+                        
+                        # Filtrage intelligent pour la série
+                        is_relevant = False
+                        relevance_score = 0
+                        book_type = "unknown"
+                        
+                        # Détecter le type de livre
+                        if any(term in title for term in ["tome", "volume", "book", "part", "partie"]):
+                            book_type = "main_series"
+                            relevance_score += 10
+                        elif any(term in title for term in ["guide", "companion", "encyclopedia", "encyclopédie"]):
+                            book_type = "companion"
+                            relevance_score += 5
+                        elif any(term in title for term in ["spin-off", "prequel", "sequel", "side story"]):
+                            book_type = "spin_off"
+                            relevance_score += 7
+                        else:
+                            book_type = "related"
+                            relevance_score += 3
+                        
+                        # Calcul de pertinence
+                        for variant in search_terms[:3]:  # Check main variants
+                            if variant.lower() in title:
+                                is_relevant = True
+                                if title.startswith(variant.lower()):
+                                    relevance_score += 20
+                                else:
+                                    relevance_score += 10
+                                break
+                        
+                        # Vérification de l'auteur
+                        authors = doc.get("author_name", [])
+                        author_match = False
+                        if author and authors:
+                            for auth in authors:
+                                if author.lower() in auth.lower():
+                                    author_match = True
+                                    relevance_score += 15
+                                    break
+                        
+                        if is_relevant or author_match:
+                            # Extraire le numéro de tome si possible
+                            volume_number = None
+                            volume_patterns = [
+                                r'tome\s*(\d+)', r'volume\s*(\d+)', r'book\s*(\d+)',
+                                r'part\s*(\d+)', r'partie\s*(\d+)', r'#(\d+)',
+                                r'\b(\d+)\b'  # Numéro isolé
+                            ]
+                            
+                            for pattern in volume_patterns:
+                                match = re.search(pattern, title, re.IGNORECASE)
+                                if match:
+                                    volume_number = int(match.group(1))
+                                    break
+                            
+                            # Vérifier si déjà possédé
+                            is_owned = any(
+                                existing_book.get("title", "").lower() == doc.get("title", "").lower() or
+                                existing_book.get("isbn", "") == (doc.get("isbn", [""])[0] if doc.get("isbn") else "")
+                                for existing_book in existing_books
+                            )
+                            
+                            discovered_book = {
+                                "ol_key": book_key,
+                                "title": doc.get("title", ""),
+                                "author": ", ".join(authors) if authors else "",
+                                "first_publish_year": doc.get("first_publish_year"),
+                                "isbn": doc.get("isbn", [""])[0] if doc.get("isbn") else "",
+                                "cover_url": extract_cover_url(doc.get("cover_i")),
+                                "number_of_pages": doc.get("number_of_pages_median"),
+                                "publisher": ", ".join(doc.get("publisher", [])) if doc.get("publisher") else "",
+                                "category": detect_category_from_subjects(doc.get("subject", [])),
+                                "volume_number": volume_number,
+                                "book_type": book_type,
+                                "relevance_score": relevance_score,
+                                "is_owned": is_owned,
+                                "edition_count": doc.get("edition_count", 1)
+                            }
+                            
+                            all_discovered_books.append(discovered_book)
+                            
+            except Exception as e:
+                print(f"Erreur lors de la recherche pour '{search_term}': {e}")
+                continue
+        
+        # Trier par pertinence et organiser
+        all_discovered_books.sort(key=lambda x: (-x["relevance_score"], x.get("volume_number", 999) or 999, x["title"]))
+        
+        # Grouper par type
+        main_series = [b for b in all_discovered_books if b["book_type"] == "main_series"]
+        spin_offs = [b for b in all_discovered_books if b["book_type"] == "spin_off"]
+        companions = [b for b in all_discovered_books if b["book_type"] == "companion"]
+        related = [b for b in all_discovered_books if b["book_type"] == "related"]
+        
+        # Statistiques
+        total_discovered = len(all_discovered_books)
+        owned_count = len([b for b in all_discovered_books if b["is_owned"]])
+        main_series_count = len(main_series)
+        owned_main_series = len([b for b in main_series if b["is_owned"]])
+        
+        # Détecter les tomes manquants dans la série principale
+        if main_series:
+            # Filter out None values and ensure we only have integers
+            volume_numbers = [b["volume_number"] for b in main_series if b["volume_number"] is not None]
+            if volume_numbers:
+                max_volume = max(volume_numbers)
+                missing_volumes = []
+                for i in range(1, max_volume + 1):
+                    if i not in volume_numbers:
+                        missing_volumes.append(i)
+            else:
+                missing_volumes = []
+        else:
+            missing_volumes = []
+        
+        return {
+            "series_name": series_name,
+            "author": author,
+            "search_terms_used": search_terms[:5],
+            "statistics": {
+                "total_discovered": total_discovered,
+                "owned_count": owned_count,
+                "completion_percentage": round((owned_count / total_discovered * 100)) if total_discovered > 0 else 0,
+                "main_series_count": main_series_count,
+                "main_series_owned": owned_main_series,
+                "main_series_completion": round((owned_main_series / main_series_count * 100)) if main_series_count > 0 else 0,
+                "missing_volumes": missing_volumes
+            },
+            "books": {
+                "main_series": main_series[:20],  # Limiter pour éviter une réponse trop lourde
+                "spin_offs": spin_offs[:10],
+                "companions": companions[:10],
+                "related": related[:10]
+            },
+            "recommendations": {
+                "next_to_buy": [b for b in main_series if not b["is_owned"]][:5],
+                "missing_volumes": missing_volumes,
+                "highly_rated": [b for b in all_discovered_books if b["relevance_score"] >= 15 and not b["is_owned"]][:5]
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la découverte de série: {str(e)}")
+
+@app.post("/api/series/import-missing")
+async def import_missing_books(
+    import_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Importer en lot les livres manquants d'une série
+    """
+    try:
+        ol_keys = import_data.get("ol_keys", [])
+        series_name = import_data.get("series_name", "")
+        
+        if not ol_keys:
+            raise HTTPException(status_code=400, detail="Aucun livre à importer")
+        
+        imported_books = []
+        errors = []
+        
+        for ol_key in ol_keys:
+            try:
+                # Récupérer les détails du livre depuis Open Library
+                if not ol_key.startswith('/works/'):
+                    ol_key = f"/works/{ol_key}"
+                
+                # Rechercher le livre sur Open Library pour obtenir ses détails
+                search_params = {
+                    "q": f"key:{ol_key}",
+                    "limit": 1,
+                    "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,number_of_pages_median,publisher"
+                }
+                
+                response = requests.get("https://openlibrary.org/search.json", params=search_params, timeout=10)
+                if response.status_code == 200:
+                    data = response.json()
+                    docs = data.get("docs", [])
+                    
+                    if docs:
+                        doc = docs[0]
+                        
+                        # Vérifier si le livre n'existe pas déjà
+                        existing_book = books_collection.find_one({
+                            "user_id": current_user["id"],
+                            "$or": [
+                                {"title": doc.get("title", "")},
+                                {"isbn": doc.get("isbn", [""])[0] if doc.get("isbn") else ""}
+                            ]
+                        })
+                        
+                        if existing_book:
+                            errors.append(f"'{doc.get('title', '')}' est déjà dans votre collection")
+                            continue
+                        
+                        # Extraire le numéro de tome
+                        title = doc.get("title", "")
+                        volume_number = None
+                        volume_patterns = [
+                            r'tome\s*(\d+)', r'volume\s*(\d+)', r'book\s*(\d+)',
+                            r'part\s*(\d+)', r'#(\d+)', r'\b(\d+)\b'
+                        ]
+                        
+                        for pattern in volume_patterns:
+                            match = re.search(pattern, title, re.IGNORECASE)
+                            if match:
+                                volume_number = int(match.group(1))
+                                break
+                        
+                        # Créer le livre
+                        book_id = str(uuid.uuid4())
+                        new_book = {
+                            "id": book_id,
+                            "user_id": current_user["id"],
+                            "title": doc.get("title", ""),
+                            "author": ", ".join(doc.get("author_name", [])) if doc.get("author_name") else "",
+                            "category": detect_category_from_subjects(doc.get("subject", [])),
+                            "description": f"Importé depuis Open Library - Série: {series_name}",
+                            "total_pages": doc.get("number_of_pages_median"),
+                            "status": "to_read",
+                            "current_page": None,
+                            "rating": None,
+                            "review": "",
+                            "cover_url": extract_cover_url(doc.get("cover_i")),
+                            "saga": series_name,
+                            "volume_number": volume_number,
+                            "genre": "",
+                            "publication_year": doc.get("first_publish_year"),
+                            "publisher": ", ".join(doc.get("publisher", [])) if doc.get("publisher") else "",
+                            "isbn": doc.get("isbn", [""])[0] if doc.get("isbn") else "",
+                            "auto_added": False,
+                            "date_added": datetime.utcnow(),
+                            "date_started": None,
+                            "date_completed": None
+                        }
+                        
+                        books_collection.insert_one(new_book)
+                        new_book.pop("_id", None)
+                        imported_books.append(new_book)
+                        
+            except Exception as e:
+                errors.append(f"Erreur lors de l'import de {ol_key}: {str(e)}")
+        
+        return {
+            "message": f"{len(imported_books)} livre(s) importé(s) avec succès",
+            "imported_books": imported_books,
+            "errors": errors,
+            "statistics": {
+                "total_requested": len(ol_keys),
+                "imported": len(imported_books),
+                "errors": len(errors)
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'import en lot: {str(e)}")
+
+# ============================================================================
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Obtenir l'utilisateur actuel depuis le token JWT"""
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token invalide"
+            )
+        
+        # Récupérer l'utilisateur depuis la base
+        user = users_collection.find_one({"id": user_id}, {"_id": 0})
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Utilisateur non trouvé"
+            )
+        
+        return user
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token invalide"
+        )
+
+# ENDPOINTS SÉRIES EN BIBLIOTHÈQUE
+# ============================================================================
+
+@app.post("/api/series/library")
+async def add_series_to_library(
+    series_data: SeriesLibraryCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Ajouter une série complète à la bibliothèque utilisateur"""
+    try:
+        # 1. Validation données
+        if not series_data.series_name or not series_data.volumes:
+            raise HTTPException(status_code=400, detail="Données série incomplètes")
+        
+        # 2. Vérifier série pas déjà en bibliothèque
+        existing = series_library_collection.find_one({
+            "user_id": current_user["id"],
+            "series_name": {"$regex": re.escape(series_data.series_name), "$options": "i"}
+        })
+        if existing:
+            raise HTTPException(status_code=409, detail="Série déjà dans votre bibliothèque")
+        
+        # 3. Créer fiche série
+        series_id = str(uuid.uuid4())
+        series_entry = {
+            "id": series_id,
+            "type": "series",
+            "user_id": current_user["id"],
+            "series_name": series_data.series_name,
+            "authors": series_data.authors,
+            "category": series_data.category,
+            "total_volumes": len(series_data.volumes),
+            "series_status": series_data.series_status,
+            "completion_percentage": 0,
+            "volumes": [vol.dict() for vol in series_data.volumes],
+            "description_fr": series_data.description_fr,
+            "cover_image_url": series_data.cover_image_url,
+            "first_published": series_data.first_published,
+            "last_published": series_data.last_published,
+            "publisher": series_data.publisher,
+            "date_added": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+            "source": "search_series_card"
+        }
+        
+        # 4. Sauvegarder en base
+        result = series_library_collection.insert_one(series_entry)
+        
+        return {
+            "success": True,
+            "series_id": series_id,
+            "message": f"Série '{series_data.series_name}' ajoutée à votre bibliothèque",
+            "total_volumes": len(series_data.volumes)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'ajout de la série: {str(e)}")
+
+@app.get("/api/series/library")
+async def get_user_series_library(
+    current_user: dict = Depends(get_current_user),
+    category: Optional[str] = None,
+    status: Optional[str] = None
+):
+    """Récupérer toutes les séries de la bibliothèque utilisateur"""
+    try:
+        query = {"user_id": current_user["id"], "type": "series"}
+        
+        if category:
+            query["category"] = category
+        if status:
+            query["series_status"] = status
+        
+        series_list = list(series_library_collection.find(query, {"_id": 0}))
+        
+        return {
+            "series": series_list,
+            "total": len(series_list)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération des séries: {str(e)}")
+
+@app.put("/api/series/library/{series_id}/volume/{volume_number}")
+async def toggle_volume_read_status(
+    series_id: str,
+    volume_number: int,
+    is_read: bool,
+    current_user: dict = Depends(get_current_user)
+):
+    """Toggle statut lu/non lu d'un tome"""
+    try:
+        # 1. Récupérer série
+        series = series_library_collection.find_one({
+            "id": series_id,
+            "user_id": current_user["id"],
+            "type": "series"
+        })
+        if not series:
+            raise HTTPException(status_code=404, detail="Série non trouvée")
+        
+        # 2. Mettre à jour tome
+        volumes = series["volumes"]
+        volume_found = False
+        for volume in volumes:
+            if volume["volume_number"] == volume_number:
+                volume["is_read"] = is_read
+                volume["date_read"] = datetime.utcnow().isoformat() if is_read else None
+                volume_found = True
+                break
+        
+        if not volume_found:
+            raise HTTPException(status_code=404, detail="Tome non trouvé")
+        
+        # 3. Recalculer progression
+        read_count = sum(1 for v in volumes if v["is_read"])
+        completion_percentage = round((read_count / len(volumes)) * 100)
+        
+        # 4. Mettre à jour statut série automatiquement
+        if completion_percentage == 100:
+            series_status = "completed"
+        elif completion_percentage > 0:
+            series_status = "reading"
+        else:
+            series_status = "to_read"
+        
+        # 5. Sauvegarder
+        series_library_collection.update_one(
+            {"id": series_id, "user_id": current_user["id"]},
+            {
+                "$set": {
+                    "volumes": volumes,
+                    "completion_percentage": completion_percentage,
+                    "series_status": series_status,
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        return {
+            "success": True,
+            "completion_percentage": completion_percentage,
+            "series_status": series_status,
+            "read_count": read_count,
+            "total_volumes": len(volumes)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la mise à jour du tome: {str(e)}")
+
+@app.put("/api/series/library/{series_id}")
+async def update_series_status(
+    series_id: str,
+    status_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Mettre à jour le statut global d'une série"""
+    try:
+        new_status = status_data.get("series_status")
+        if new_status not in ["to_read", "reading", "completed"]:
+            raise HTTPException(status_code=400, detail="Statut invalide")
+        
+        result = series_library_collection.update_one(
+            {"id": series_id, "user_id": current_user["id"], "type": "series"},
+            {
+                "$set": {
+                    "series_status": new_status,
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Série non trouvée")
+        
+        return {"success": True, "message": "Statut mis à jour"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la mise à jour: {str(e)}")
+
+@app.delete("/api/series/library/{series_id}")
+async def delete_series_from_library(
+    series_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Supprimer une série de la bibliothèque"""
+    try:
+        result = series_library_collection.delete_one({
+            "id": series_id,
+            "user_id": current_user["id"],
+            "type": "series"
+        })
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Série non trouvée")
+        
+        return {"success": True, "message": "Série supprimée de votre bibliothèque"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la suppression: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
