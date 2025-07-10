@@ -12,7 +12,7 @@ import uuid
 from datetime import datetime
 
 # Configuration
-BACKEND_URL = "https://eb6d8796-4140-48cc-ae5a-ffd6c9e0d24c.preview.emergentagent.com"
+BACKEND_URL = "https://5281545e-c9bb-4ca0-9dbd-74c876674cbd.preview.emergentagent.com"
 API_BASE = f"{BACKEND_URL}/api"
 
 def log_test(test_name, status, details=""):
