@@ -197,7 +197,15 @@ const SeriesDetailModal = ({
               {/* Bouton Ajouter fonctionnel (même style que BookDetailModal) */}
               {!isSeriesOwned && onAddSeries && (
                 <button
-                  onClick={handleAddSeries}
+                  onClick={async () => {
+                    try {
+                      console.log('🟢 Clic sur ajouter série:', series);
+                      await onAddSeries(series);
+                      setIsSeriesOwned(true); // Marquer comme possédée après ajout
+                    } catch (error) {
+                      console.error('❌ Erreur lors de l\'ajout de la série:', error);
+                    }
+                  }}
                   className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors flex items-center space-x-2"
                 >
                   <span>+</span>
