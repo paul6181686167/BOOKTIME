@@ -164,6 +164,44 @@ function ProfileModal({ isOpen, onClose }) {
                   </div>
                 </div>
               </button>
+
+              {/* PHASE 3.4 - Recommandations IA */}
+              <button
+                onClick={() => {
+                  onClose();
+                  // Déclencher l'ouverture du modal de recommandations avancées
+                  window.dispatchEvent(new CustomEvent('openAdvancedRecommendations'));
+                }}
+                className="w-full flex items-center justify-center p-3 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
+              >
+                <div className="text-center">
+                  <div className="text-purple-600 dark:text-purple-400 text-sm font-medium">
+                    🤖 Recommandations IA
+                  </div>
+                  <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                    Intelligence artificielle et ML
+                  </div>
+                </div>
+              </button>
+
+              {/* PHASE 3.5 - Intégrations Externes */}
+              <button
+                onClick={() => {
+                  onClose();
+                  // Déclencher l'ouverture du modal d'intégrations
+                  window.dispatchEvent(new CustomEvent('openIntegrations'));
+                }}
+                className="w-full flex items-center justify-center p-3 bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
+              >
+                <div className="text-center">
+                  <div className="text-orange-600 dark:text-orange-400 text-sm font-medium">
+                    🔗 Intégrations
+                  </div>
+                  <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                    Goodreads, Google Books, etc.
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
         </div>
