@@ -22,8 +22,8 @@ def event_loop():
 @pytest.fixture
 async def test_client():
     """Client HTTP pour les tests"""
-    async with AsyncClient(app=app, base_url="http://test") as client:
-        yield client
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        yield ac
 
 @pytest.fixture
 async def test_user_data():
