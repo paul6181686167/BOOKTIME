@@ -118,15 +118,76 @@ async def import_from_open_library(
     import_data: dict,
     current_user: dict = Depends(get_current_user)
 ):
-    """Importer un livre depuis Open Library"""
+    """Importer un livre ou une série depuis Open Library"""
     ol_key = import_data.get("ol_key")
     category = import_data.get("category", "roman")
-    
-    if not ol_key:
-        raise HTTPException(status_code=400, detail="Clé Open Library requise")
+    series_data = import_data.get("series_data")  # NOUVEAU : Support séries
     
     # Valider la catégorie
     validated_category = validate_category(category)
+    
+    # 🆕 FONCTIONNALITÉ SÉRIES : Ajouter série comme entité unique
+    if series_data:
+        try:
+            # Vérifier si la série existe déjà
+            existing_series = books_collection.find_one({
+                "user_id": current_user["id"],
+                "saga": series_data.get("series_name"),
+                "is_series_entity": True
+            })
+            
+            if existing_series:
+                raise HTTPException(status_code=409, detail="Cette série est déjà dans votre bibliothèque")
+            
+            # Créer la série comme entité unique
+            series_id = str(uuid.uuid4())
+            series_book = {
+                "id": series_id,
+                "user_id": current_user["id"],
+                "title": series_data.get("series_name"),
+                "author": series_data.get("author", ""),
+                "category": validated_category,
+                "description": series_data.get("description", ""),
+                "genre": "",
+                "total_pages": None,
+                "publication_year": None,
+                "publisher": "",
+                "isbn": "",
+                "cover_url": series_data.get("cover_url", ""),
+                "status": "to_read",
+                "current_page": None,
+                "rating": None,
+                "review": "",
+                "saga": series_data.get("series_name"),
+                "volume_number": None,
+                "auto_added": False,
+                "is_series_entity": True,  # Marqueur pour identifier une série
+                "total_volumes": series_data.get("total_volumes", 0),
+                "source": "openlibrary_series",
+                "date_added": datetime.utcnow(),
+                "date_started": None,
+                "date_completed": None,
+                "updated_at": datetime.utcnow()
+            }
+            
+            books_collection.insert_one(series_book)
+            series_book.pop("_id", None)
+            
+            return {
+                "success": True,
+                "message": f"Série '{series_data.get('series_name')}' ajoutée avec succès",
+                "book": series_book,
+                "type": "series"
+            }
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Erreur lors de l'ajout de la série: {str(e)}")
+    
+    # FONCTIONNALITÉ LIVRE EXISTANTE (inchangée)
+    if not ol_key:
+        raise HTTPException(status_code=400, detail="Clé Open Library ou données série requises")
     
     try:
         # Récupérer les détails du livre
@@ -202,7 +263,8 @@ async def import_from_open_library(
         return {
             "success": True,
             "message": "Livre importé avec succès",
-            "book": book
+            "book": book,
+            "type": "book"
         }
         
     except requests.RequestException as e:
