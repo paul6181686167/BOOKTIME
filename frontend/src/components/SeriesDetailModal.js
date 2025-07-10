@@ -220,12 +220,12 @@ const SeriesDetailModal = ({
             </div>
             
             <div className="flex items-center space-x-2">
-              {/* 🆕 BOUTON AJOUTER SÉRIE - Position identique aux modales livres */}
+              {/* 🆕 BOUTON AJOUTER SÉRIE - Position exacte identique aux modales livres */}
               {series?.isFromOpenLibrary && !isSeriesInLibrary() && onAddFromOpenLibrary && (
                 <button
                   onClick={handleAddSeries}
                   disabled={addingToLibrary}
-                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-md transition-colors flex items-center space-x-2"
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors flex items-center space-x-2"
                 >
                   {addingToLibrary ? (
                     <>
@@ -241,7 +241,7 @@ const SeriesDetailModal = ({
                 </button>
               )}
               
-              {/* Afficher "Déjà dans votre bibliothèque" si possédée */}
+              {/* Texte alternatif : "Déjà dans votre bibliothèque" si possédée */}
               {series?.isFromOpenLibrary && isSeriesInLibrary() && (
                 <span className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md">
                   Déjà dans votre bibliothèque
