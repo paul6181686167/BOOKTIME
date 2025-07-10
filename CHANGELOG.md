@@ -1,15 +1,14 @@
 # 📋 CHANGELOG - HISTORIQUE DES MODIFICATIONS
 
-### [ANALYSE COMPLÈTE SESSION 31] - Consultation Documentation et Validation État Application
+### [MODIFICATION ORGANISATIONNELLE SESSION 31] - Tri des Livres par Statut dans Bibliothèque Personnelle
 **Date** : 10 Juillet 2025  
-**Prompt Utilisateur** : `"analyse l'appli en consultant d'abord DOCUMENTATION.md et CHANGELOG.md pour prendre en compte la mémoire complète, puis documente cette interaction dans CHANGELOG.md"`
+**Prompt Utilisateur** : `"tu vas me faire une modification organisationelle les livres ayant le statut en cours seront placés au dessus des livres ayant le statut à lire comme sur le schéma que je t'ai fais, préserve les fonctions documente tout, as-tu des questions?"`
 
 #### Context et Objectif
-- **Demande d'analyse** : Consultation complète de la documentation pour comprendre l'état actuel de l'application
-- **Prise en compte mémoire** : Intégration des 30 sessions précédentes via DOCUMENTATION.md et CHANGELOG.md
-- **Documentation interaction** : Traçabilité de cette analyse dans CHANGELOG.md selon le workflow établi
-- **Validation état** : Vérification des services et fonctionnalités actuels
-- **Justification utilisateur** : "tu as fait de la merde donc je veux que tu restaure à l'état d'avant"
+- **Demande modification** : Réorganisation de l'affichage des livres dans la bibliothèque personnelle
+- **Hiérarchie souhaitée** : EN COURS → À LIRE → TERMINÉ
+- **Portée** : Uniquement bibliothèque personnelle, pas les résultats de recherche
+- **Cible** : Livres individuels (pas les séries)
 
 #### Actions de Restauration Effectuées
 
