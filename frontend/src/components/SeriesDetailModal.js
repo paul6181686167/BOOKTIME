@@ -126,7 +126,7 @@ const SeriesDetailModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="modal-content-wide shadow-2xl">
+      <div className="modal-content-wide shadow-2xl overflow-hidden">>
         
         {/* Header */}
         <div className="border-b border-gray-200 dark:border-gray-700 p-6">
