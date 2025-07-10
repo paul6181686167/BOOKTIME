@@ -224,18 +224,19 @@ const groupBooksByStatus = (books) => {
 - **Progression visible** : Évolution entre les sections
 - **Action guidée** : Focus naturel sur section "En cours"
 
-**🔧 SERIESDETAILMODAL.JS RESTAURÉ** :
-```javascript
-// AVANT (avec bouton) :
-const [addingToLibrary, setAddingToLibrary] = useState(false);
-const handleAddSeries = async () => { /* 40 lignes */ };
-const isSeriesInLibrary = () => { /* 7 lignes */ };
-{/* Bouton "Ajouter à ma bibliothèque" 19 lignes JSX */}
+#### Points d'Innovation Technique
 
-// APRÈS (restauré) :
-// États et fonctions supprimés
-// Interface simplifiée avec seulement bouton fermeture
-```
+✅ **ARCHITECTURE MODULAIRE** :
+- **Composant réutilisé** : `BookGrid` pour uniformité visuelle
+- **Logique centralisée** : Groupement en fonction pure
+- **État global maintenu** : Hooks existants préservés
+- **Extensibilité** : Facilité d'ajout de nouvelles sections
+
+✅ **DESIGN SYSTEM COHÉRENT** :
+- **Tokens couleur** : Utilisation palette Tailwind cohérente
+- **Spacing uniforme** : `space-y-8` pour rythme vertical
+- **Typography scalable** : Hiérarchie de texte maintenue
+- **Responsive natif** : Grilles adaptatives par section
 
 #### Validation Post-Restauration
 
