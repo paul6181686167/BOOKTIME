@@ -15,16 +15,7 @@ const SeriesDetailModal = ({
   series, 
   isOpen, 
   onClose, 
-  onUpdate,
-  // 🆕 NOUVELLES PROPS POUR AJOUT SÉRIE
-  onAddFromOpenLibrary,
-  addingBooks,
-  setAddingBooks,
-  books: userBooks,
-  loadBooks,
-  loadStats,
-  setOpenLibraryResults,
-  getCategoryBadgeFromSeries
+  onUpdate
 }) => {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
