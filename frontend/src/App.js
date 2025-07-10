@@ -660,6 +660,7 @@ function MainApp() {
           isOpen={seriesHook.showSeriesModal}
           onClose={seriesHook.closeSeriesModal}
           onUpdate={booksHook.loadBooks}
+          onAddSeries={handleAddSeries}
         />
       )}
       
