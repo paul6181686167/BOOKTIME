@@ -58,10 +58,24 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   }, [book]);  // Se déclenche quand book change après handleUpdateBook
 
   const statusOptions = [
-    { value: 'to_read', label: 'À lire', color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300' },
-    { value: 'reading', label: 'En cours', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300' },
-    { value: 'completed', label: 'Terminé', color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300' },
+    { value: 'to_read', label: 'À lire', color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300', emoji: '📚' },
+    { value: 'reading', label: 'En cours', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300', emoji: '🟡' },
+    { value: 'completed', label: 'Terminé', color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300', emoji: '🟢' },
   ];
+
+  // Fonction pour changer rapidement le statut
+  const handleQuickStatusChange = async (newStatus) => {
+    try {
+      const updates = { ...editData, status: newStatus };
+      await onUpdate(book.id, updates);
+      toast.success(`Statut mis à jour : ${
+        newStatus === 'to_read' ? 'À lire' :
+        newStatus === 'reading' ? 'En cours' : 'Terminé'
+      }`);
+    } catch (error) {
+      toast.error('Erreur lors de la mise à jour du statut');
+    }
+  };
 
   const handleSave = async () => {
     setIsLoading(true);
