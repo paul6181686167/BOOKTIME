@@ -8,10 +8,22 @@ const BookActions = {
     try {
       setLoading(true);
       const booksData = await bookService.getBooks();
-      setBooks(booksData);
+      // Vérification que booksData est un array
+      if (Array.isArray(booksData)) {
+        setBooks(booksData);
+      } else if (booksData && Array.isArray(booksData.books)) {
+        // Si l'API retourne un objet avec une propriété 'books'
+        setBooks(booksData.books);
+      } else {
+        // Si les données ne sont pas dans le format attendu
+        console.warn('Format de données inattendu pour les livres:', booksData);
+        setBooks([]);
+      }
     } catch (error) {
       console.error('Erreur lors du chargement des livres:', error);
       toast.error('Erreur lors du chargement des livres');
+      // IMPORTANT : Définir books comme array vide en cas d'erreur
+      setBooks([]);
     } finally {
       setLoading(false);
     }
