@@ -271,9 +271,10 @@ cd /app/frontend && yarn add lucide-react
 - ✅ Documentation du prompt actuel dans le CHANGELOG
 - ✅ **PROMPT 2 TERMINÉ** : `"fais les points 1 et 2"` - Système documentation + continuité implémentés
 - ✅ **PROMPT 3 TERMINÉ** : `"bien si tu avais fais ça depuis le début tu aurais compris que tu étais en train de redémarrer la frontend"` - Erreur reconnue
-- ✅ **PROMPT 4 TERMINÉ** : `"lorsque je tape dans la barre de recherche un livre puis que je clique sur la vignette de ce livre dans les résultats, je clique sur le bouton pour l'ajouter à ma bibliothèque je ne retrouve pas cette vignette dans ma bibliothèque pourtant il y a marqué 1 dans à lire"`
-- ✅ **PROBLÈME RÉSOLU** : Optimisation du délai de retour automatique (1,5s → 500ms)
-- ✅ **SOLUTION APPLIQUÉE** : Mécanisme de retour automatique vers bibliothèque après ajout
+- ✅ **PROMPT 4 TERMINÉ** : Problème synchronisation ajout/affichage - Délai optimisé à 500ms
+- ✅ **NOUVEAU PROMPT REÇU** : `"bon bah préserve tout ce qui a été fait et règle ça:Uncaught runtime errors: Cannot access 'backToLibrary' before initialization"`
+- ⚠️ **NOUVELLE ERREUR** : Ordre d'initialisation React hooks - backToLibrary utilisé avant définition
+- ⏳ Correction erreur d'initialisation en préservant toutes les fonctionnalités
 
 #### Diagnostic et Résolution RCA
 
