@@ -496,7 +496,7 @@ function MainApp() {
               for (const bookData of booksArray) {
                 await addBook(bookData);
               }
-              await refetchBooks();
+              await booksHook.loadBooks();
             } catch (error) {
               console.error('Erreur lors de l\'ajout des livres:', error);
             }
