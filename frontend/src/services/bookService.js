@@ -43,14 +43,15 @@ api.interceptors.response.use(
 );
 
 export const bookService = {
-  // Récupérer tous les livres
+  // Récupérer tous les livres (incluant les séries)
   async getBooks(category = null, status = null) {
     try {
       const params = {};
       if (category) params.category = category;
       if (status) params.status = status;
       
-      const response = await api.get('/api/books', { params });
+      // MODIFICATION VIGNETTES SÉRIES : Utiliser /api/books/all pour inclure les livres séries
+      const response = await api.get('/api/books/all', { params });
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la récupération des livres:', error);
