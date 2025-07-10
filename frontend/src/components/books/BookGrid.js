@@ -57,20 +57,20 @@ const BookGrid = ({
     );
   }
 
-  // Affichage de la grille - MODIFICATION: Cartes livres aussi larges que cartes séries
+  // Affichage de la grille
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 p-6">
       {displayedBooks.map((item) => (
         <div
           key={item.id}
           className={`
-            col-span-1 sm:col-span-2
+            ${item.isSeriesCard ? 'col-span-1 sm:col-span-2' : 'col-span-1'} 
             group cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-lg
           `}
           onClick={() => onItemClick ? onItemClick(item) : onBookClick(item)}
         >
           {item.isSeriesCard ? (
-            // Carte série (inchangée)
+            // Carte série
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700">
               <div className="aspect-[2/1] bg-gray-100 dark:bg-gray-700 flex items-center justify-center relative overflow-hidden">
                 {item.cover_url ? (
@@ -119,68 +119,42 @@ const BookGrid = ({
               </div>
             </div>
           ) : (
-            // Carte livre - MODIFICATION: Même largeur que cartes séries avec format paysage
+            // Carte livre
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700">
-              <div className="aspect-[2/1] bg-gray-100 dark:bg-gray-700 flex items-center justify-center relative overflow-hidden">
+              <div className="aspect-[3/4] bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
                 {item.cover_url ? (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700">
-                    <img 
-                      src={item.cover_url} 
-                      alt={item.title}
-                      className="max-w-full max-h-full object-contain"
-                    />
-                  </div>
+                  <img 
+                    src={item.cover_url} 
+                    alt={item.title}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
-                  <div className="text-gray-400 text-6xl">📖</div>
+                  <div className="text-gray-400 text-4xl">📖</div>
                 )}
-                
-                {/* Badge de statut visible sur l'image */}
-                <div className="absolute top-2 right-2">
+              </div>
+              <div className="p-3">
+                <h3 className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-2 mb-1">
+                  {item.title}
+                </h3>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                  {item.author}
+                </p>
+                <div className="flex items-center justify-between">
                   <span className={`
-                    px-2 py-1 rounded-full text-xs font-medium shadow-sm
+                    px-2 py-1 rounded-full text-xs font-medium
                     ${item.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' : ''}
                     ${item.status === 'reading' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300' : ''}
                     ${item.status === 'to_read' ? 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300' : ''}
                   `}>
-                    {item.status === 'completed' ? '✅ Terminé' : 
-                     item.status === 'reading' ? '📖 En cours' : '📚 À lire'}
+                    {item.status === 'completed' ? 'Terminé' : 
+                     item.status === 'reading' ? 'En cours' : 'À lire'}
                   </span>
-                </div>
-              </div>
-              <div className="p-4">
-                <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2 mb-2">
-                  {item.title}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  {item.author}
-                </p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    {item.category && (
-                      <span className="text-sm">
-                        {item.category === 'roman' ? '📚' : 
-                         item.category === 'bd' ? '🎨' : 
-                         item.category === 'manga' ? '🇯🇵' : '📚'}
-                      </span>
-                    )}
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {item.category === 'roman' ? 'Roman' : 
-                       item.category === 'bd' ? 'BD' : 
-                       item.category === 'manga' ? 'Manga' : 'Roman'}
+                  {item.category && (
+                    <span className="text-xs">
+                      {item.category === 'roman' ? '📚' : 
+                       item.category === 'bd' ? '🎨' : 
+                       item.category === 'manga' ? '🇯🇵' : '📚'}
                     </span>
-                  </div>
-                  
-                  {/* Progression si livre en cours */}
-                  {item.status === 'reading' && item.current_page && item.total_pages && (
-                    <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-                      <span>{item.current_page}/{item.total_pages}</span>
-                      <div className="w-12 bg-gray-200 dark:bg-gray-700 rounded-full h-1">
-                        <div 
-                          className="bg-blue-500 h-1 rounded-full transition-all duration-300"
-                          style={{ width: `${Math.min(100, (item.current_page / item.total_pages) * 100)}%` }}
-                        />
-                      </div>
-                    </div>
                   )}
                 </div>
               </div>
