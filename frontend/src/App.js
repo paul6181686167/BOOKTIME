@@ -268,30 +268,6 @@ function MainApp() {
     }
   };
 
-  // 🆕 FONCTION POUR AJOUTER UNE SÉRIE DEPUIS OPEN LIBRARY
-  const handleAddSeriesFromOpenLibrary = async (seriesData, dependencies) => {
-    const apiStartTime = Date.now();
-    
-    try {
-      await SearchLogic.handleAddSeriesFromOpenLibrary(seriesData, dependencies);
-
-      // Mesure performance API
-      const apiTime = Date.now() - apiStartTime;
-      performanceMonitoring.measureApiResponse('add_series_from_openlibrary', apiStartTime, true);
-      alertSystem.checkResponseTime('add_series_from_openlibrary', apiTime);
-      
-      // Analytics
-      userAnalytics.trackBookInteraction('add_series_from_openlibrary', {
-        seriesName: seriesData.series_name,
-        category: seriesData.category || 'unknown'
-      });
-      
-    } catch (error) {
-      console.error('Error adding series:', error);
-      performanceMonitoring.measureApiResponse('add_series_from_openlibrary', apiStartTime, false);
-    }
-  };
-
   // Gestionnaires de clic
   const handleSeriesClick = (series) => {
     // PHASE 2.4 - Analytics séries
