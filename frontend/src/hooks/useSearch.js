@@ -68,7 +68,6 @@ export const useSearch = () => {
       setLastSearchTerm,
       setOpenLibraryResults,
       generateSeriesCardsForSearch,
-      handleAddSeriesToLibrary: dependencies.handleAddSeriesToLibrary,
       getCategoryBadgeFromBook: dependencies.getCategoryBadgeFromBook
     });
   };
