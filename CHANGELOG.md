@@ -12,12 +12,40 @@
 - **Cible** : Livres individuels avec sections pour séries également
 - **Exigence** : Sections "au dessus" = sections séparées avec titres, pas tri horizontal
 
-#### Actions de Restauration Effectuées
+#### Modifications Techniques Implémentées
 
-✅ **SUPPRESSION CHANGELOG** :
-- **Entrée supprimée** : `[IMPLÉMENTATION BOUTON SÉRIE] - Ajout Bouton "Ajouter à ma bibliothèque" dans Modales Séries`
-- **Contenu retiré** : 230+ lignes de documentation de l'implémentation
-- **Statut** : Entrée complètement supprimée du CHANGELOG.md
+✅ **PHASE 1 : FONCTION DE GROUPEMENT** :
+```javascript
+// MODIFICATION ORGANISATIONNELLE : Grouper les livres par statut pour affichage en sections
+const groupBooksByStatus = (books) => {
+  if (searchHook.isSearchMode) {
+    // En mode recherche, pas de groupement par statut
+    return { all: books };
+  }
+
+  const groups = {
+    reading: [],    // EN COURS
+    to_read: [],    // À LIRE  
+    completed: [],  // TERMINÉ
+    series: []      // SÉRIES (toujours au début)
+  };
+
+  books.forEach(book => {
+    if (book.isSeriesCard) {
+      groups.series.push(book);
+    } else {
+      const status = book.status || 'to_read';
+      if (groups[status]) {
+        groups[status].push(book);
+      } else {
+        groups.to_read.push(book); // Statut inconnu → À lire par défaut
+      }
+    }
+  });
+
+  return groups;
+};
+```
 
 ✅ **RESTAURATION BACKEND** - `/app/backend/app/openlibrary/routes.py` :
 - **Lignes 124-180 supprimées** : Support complet des séries dans l'endpoint import
