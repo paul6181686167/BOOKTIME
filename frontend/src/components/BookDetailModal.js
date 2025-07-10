@@ -180,6 +180,32 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               </span>
             </div>
 
+            {/* Boutons rapides de changement de statut */}
+            {(!book.isFromOpenLibrary || book.isOwned) && !isEditing && (
+              <div className="mb-4">
+                <div className="flex items-center mb-2">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Changer le statut rapidement :</h3>
+                </div>
+                <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 w-fit">
+                  {statusOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => handleQuickStatusChange(option.value)}
+                      className={`px-4 py-2 text-sm font-medium transition-all flex items-center space-x-2 ${
+                        book.status === option.value
+                          ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
+                          : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                      }`}
+                      title={`Marquer comme ${option.label}`}
+                    >
+                      <span className="text-base">{option.emoji}</span>
+                      <span>{option.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Informations linguistiques */}
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-4">
               <div className="flex items-center gap-2 mb-3">
