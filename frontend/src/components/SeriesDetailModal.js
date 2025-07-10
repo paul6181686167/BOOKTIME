@@ -34,6 +34,8 @@ const SeriesDetailModal = ({
       const token = localStorage.getItem('token');
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
       
+      console.log('🔍 Vérification série possédée:', series.name);
+      
       // Rechercher les livres de cette saga
       const response = await fetch(`${backendUrl}/api/books?saga=${encodeURIComponent(series.name)}`, {
         headers: {
@@ -43,14 +45,17 @@ const SeriesDetailModal = ({
       
       if (response.ok) {
         const data = await response.json();
+        console.log('📚 Livres trouvés pour saga:', data);
+        
         // Vérifier s'il y a déjà un livre série (volume_number: null)
         const hasSeriesBook = data.items && data.items.some(book => 
           book.saga === series.name && book.volume_number === null
         );
+        console.log('✅ Série déjà possédée:', hasSeriesBook);
         setIsSeriesOwned(hasSeriesBook);
       }
     } catch (error) {
-      console.error('Erreur lors de la vérification de la série:', error);
+      console.error('❌ Erreur lors de la vérification de la série:', error);
     }
   };
 
