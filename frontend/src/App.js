@@ -143,6 +143,14 @@ function MainApp() {
     };
   }, []);
 
+  // CORRECTION ERREUR - Fonction backToLibrary définie avant les useEffect qui l'utilisent
+  const backToLibrary = () => {
+    // PHASE 2.4 - Analytics navigation
+    userAnalytics.trackInteraction('back_to_library', 'button');
+    
+    searchHook.backToLibrary(clearSearch);
+  };
+
   // CORRECTION RCA - Gestionnaire d'événements pour retour automatique vers bibliothèque
   useEffect(() => {
     const handleBackToLibrary = (event) => {
