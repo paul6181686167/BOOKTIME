@@ -2511,6 +2511,19 @@ Les boutons pour ajouter des livres depuis Open Library sont toujours présents 
 - **Préservation** : Logique existante maintenue pour compatibilité
 - **Optimisation** : URL fiable utilisée quand disponible
 
+#### Phase 2 : Correction Ciblée Frontend
+
+✅ **CORRECTION FRONTEND APPLIQUÉE** :
+- **Fichier modifié** : `/app/frontend/src/components/search/SearchLogic.js` ligne 281-284
+- **Ajout** : `cover_url: openLibraryBook.cover_url || ""` dans body JSON
+- **Logique** : Transmettre cover_url depuis résultats recherche vers endpoint import
+- **Compatibilité** : Fallback chaîne vide si cover_url non disponible
+
+✅ **SERVICES REDÉMARRÉS** :
+- **Frontend** : Redémarré avec succès
+- **Backend** : Redémarré avec succès
+- **Communication** : Frontend → Backend avec cover_url préservée
+
 ---
 
 ### [DOCUMENTATION COMPLÈTE SESSION 33] - Analyse + Correction Bouton Manquant
