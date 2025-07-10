@@ -563,6 +563,39 @@ cd /app/frontend && yarn add lucide-react
 3. **Feedback Visuel** : Pas de notification claire du succès
 4. **Vue Active** : Utilisateur ne voit pas bibliothèque mise à jour
 
+#### Phase 2 : Diagnostic Technique Complet
+
+##### ✅ **Fichiers Analysés** :
+- `/app/backend/app/openlibrary/routes.py` : ✅ Import fonctionnel
+- `/app/frontend/src/App.js` : ✅ Hooks intégrés correctement
+- `/app/frontend/src/hooks/useSearch.js` : ⚠️ Logique état présente mais UX incomplète
+- `/app/frontend/src/components/search/SearchLogic.js` : 🎯 **CAUSE RACINE CONFIRMÉE**
+- MongoDB collections : ✅ Données persistées correctement
+
+##### ✅ **Points Critiques Identifiés** :
+1. **Synchronisation État** : `loadBooks()` appelé mais utilisateur en mode recherche
+2. **Navigation UX** : Pas de retour automatique vers bibliothèque
+3. **Feedback Visuel** : Pas de notification claire du succès
+4. **Vue Active** : Utilisateur ne voit pas bibliothèque mise à jour
+
+##### ✅ **Analyse Code Détaillée** :
+1. **Backend API** `/api/openlibrary/import` (lignes 116-210) : ✅ **FONCTIONNE PARFAITEMENT**
+   - Reçoit ol_key et catégorie
+   - Récupère données Open Library
+   - Insert en MongoDB : `books_collection.insert_one(book)` ligne 199
+   - Retourne succès avec livre créé
+
+2. **Frontend App.js** `handleAddFromOpenLibrary` (lignes 210-244) : ✅ **INTÉGRATION CORRECTE**
+   - Appelle `searchHook.handleAddFromOpenLibrary`
+   - Passe `loadBooks: booksHook.loadBooks` et `loadStats: booksHook.loadStats`
+
+3. **SearchLogic.js** `handleAddFromOpenLibrary` (lignes 156-247) : 🎯 **PROBLÈME UX IDENTIFIÉ**
+   - API appelée correctement
+   - En cas de succès : `await loadBooks()` ligne 201 + `await loadStats()` ligne 202
+   - Toast affiché : "Livre ajouté à l'onglet X !"
+   - ❌ **MAIS utilisateur reste en mode recherche (`isSearchMode = true`)**
+   - ❌ **Utilisateur ne voit jamais sa bibliothèque mise à jour**
+
 #### Phase 3 : Stratégie de Correction
 
 ##### ✅ **Solution Recommandée troubleshoot_agent** :
@@ -571,12 +604,20 @@ cd /app/frontend && yarn add lucide-react
 3. **Ajouter** action explicite "Voir dans Bibliothèque" dans notifications succès
 4. **Assurer** attente correcte de `loadBooks()` après ajouts réussis
 
-##### ✅ **Approche Correction** :
-- 🎯 **UNE correction ciblée** sur synchronisation état frontend
+##### ✅ **Approche Correction Choisie** :
+- 🎯 **Solution 1** : Retour automatique vers bibliothèque après ajout réussi
+- 🎯 **UNE correction ciblée** dans SearchLogic.js ligne 201-202
 - 🛡️ **Préservation totale** des 89 endpoints + Phases 3+4
 - 📝 **Documentation** complète de chaque modification
 
----
+##### ✅ **Modification Technique Précise** :
+**Fichier** : `/app/frontend/src/components/search/SearchLogic.js`
+**Ligne** : Après ligne 202 (après `await loadStats()`)
+**Action** : Ajouter retour automatique vers bibliothèque avec délai UX
+
+#### Phase 4 : Correction Ciblée (UNE SEULE FOIS)
+
+##### ✅ **Correction appliquée** :
 
 ### [MÉMOIRE COMPLÈTE 25] - Analyse Application État Complet Mars 2025 + Détection Erreur Critique
 **Date** : Mars 2025  
