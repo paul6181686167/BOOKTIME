@@ -47,16 +47,65 @@ const groupBooksByStatus = (books) => {
 };
 ```
 
-✅ **RESTAURATION BACKEND** - `/app/backend/app/openlibrary/routes.py` :
-- **Lignes 124-180 supprimées** : Support complet des séries dans l'endpoint import
-- **Modifications annulées** :
-  - Paramètre `series_data` supprimé
-  - Logique complète d'ajout de série supprimée
-  - Vérification doublons série supprimée
-  - Champ `is_series_entity` supprimé
-  - Structure de données série supprimée
-- **Docstring restaurée** : "Importer un livre depuis Open Library" (au lieu de "livre ou série")
-- **Fonctionnalité** : Retour à l'import de livres individuels uniquement
+✅ **PHASE 2 : AFFICHAGE EN SECTIONS DISTINCTES** :
+```javascript
+{/* Affichage par sections de statut - MODIFICATION ORGANISATIONNELLE */}
+{!searchHook.isSearchMode && (
+  <div className="space-y-8">
+    {/* Section Séries */}
+    {groupedBooks.series && groupedBooks.series.length > 0 && (
+      <div>
+        <div className="flex items-center mb-4">
+          <span className="text-2xl mr-3">📚</span>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            Séries ({groupedBooks.series.length})
+          </h2>
+        </div>
+        <BookGrid books={groupedBooks.series} loading={false} onItemClick={handleItemClick} showEmptyState={false} />
+      </div>
+    )}
+
+    {/* Section EN COURS */}
+    {groupedBooks.reading && groupedBooks.reading.length > 0 && (
+      <div>
+        <div className="flex items-center mb-4">
+          <span className="text-2xl mr-3">🟡</span>
+          <h2 className="text-xl font-semibold text-yellow-600 dark:text-yellow-400">
+            En cours ({groupedBooks.reading.length})
+          </h2>
+        </div>
+        <BookGrid books={groupedBooks.reading} loading={false} onItemClick={handleItemClick} showEmptyState={false} />
+      </div>
+    )}
+
+    {/* Section À LIRE */}
+    {groupedBooks.to_read && groupedBooks.to_read.length > 0 && (
+      <div>
+        <div className="flex items-center mb-4">
+          <span className="text-2xl mr-3">🔵</span>
+          <h2 className="text-xl font-semibold text-blue-600 dark:text-blue-400">
+            À lire ({groupedBooks.to_read.length})
+          </h2>
+        </div>
+        <BookGrid books={groupedBooks.to_read} loading={false} onItemClick={handleItemClick} showEmptyState={false} />
+      </div>
+    )}
+
+    {/* Section TERMINÉ */}
+    {groupedBooks.completed && groupedBooks.completed.length > 0 && (
+      <div>
+        <div className="flex items-center mb-4">
+          <span className="text-2xl mr-3">🟢</span>
+          <h2 className="text-xl font-semibold text-green-600 dark:text-green-400">
+            Terminé ({groupedBooks.completed.length})
+          </h2>
+        </div>
+        <BookGrid books={groupedBooks.completed} loading={false} onItemClick={handleItemClick} showEmptyState={false} />
+      </div>
+    )}
+  </div>
+)}
+```
 
 ✅ **RESTAURATION FRONTEND** - `/app/frontend/src/App.js` :
 - **Fonction supprimée** : `handleAddSeriesFromOpenLibrary` (lignes 272-293)
