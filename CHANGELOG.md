@@ -5,11 +5,12 @@
 **Prompt Utilisateur** : `"tu vas me faire une modification organisationelle les livres ayant le statut en cours seront placés au dessus des livres ayant le statut à lire comme sur le schéma que je t'ai fais, préserve les fonctions documente tout, as-tu des questions?"`
 **Clarification Utilisateur** : `"je veux vraiment que les livres ayant le statut en cours soit au dessus et non pas à coté"` + `"oui voilà"` + `"et documente tout"`
 
-#### Context et Objectif
-- **Demande modification** : Réorganisation de l'affichage des livres dans la bibliothèque personnelle
-- **Hiérarchie souhaitée** : EN COURS → À LIRE → TERMINÉ
-- **Portée** : Uniquement bibliothèque personnelle, pas les résultats de recherche
-- **Cible** : Livres individuels (pas les séries)
+#### Context et Objectif Final
+- **Demande modification** : Créer des sections visuellement distinctes par statut de lecture
+- **Structure souhaitée** : Sections séparées avec titres EN COURS → À LIRE → TERMINÉ
+- **Portée** : Uniquement bibliothèque personnelle (pas mode recherche)
+- **Cible** : Livres individuels avec sections pour séries également
+- **Exigence** : Sections "au dessus" = sections séparées avec titres, pas tri horizontal
 
 #### Actions de Restauration Effectuées
 
