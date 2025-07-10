@@ -49,9 +49,10 @@ Documenter CHAQUE prompt utilisateur immédiatement après réception pour maint
    - Statut : ✅ Documenté et traité
    - Résultat : Identification du dernier message et continuation
 
-2. **Prompt 2** : `"fais les points 1 et 2"`
+3. **Prompt 3** : `"bien si tu avais fais ça depuis le début tu aurais compris que tu étais en train de redémarrer la frontend"`
    - Statut : ⏳ En cours de traitement
-   - Action : Implémentation système documentation + continuité
+   - Action : Reconnaissance erreur et compréhension du vrai problème
+   - Réalisation : J'ai redémarré le frontend inutilement sans comprendre le contexte réel
 
 ### Session Précédente (Référence)
 - **Dernier prompt** : `"analyse l'appli en consultant d'abord DOCUMENTATION.md et CHANGELOG.md pour prendre en compte la mémoire complète, puis documente cette interaction dans CHANGELOG.md"`
