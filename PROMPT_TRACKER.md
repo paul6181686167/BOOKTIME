@@ -49,10 +49,10 @@ Documenter CHAQUE prompt utilisateur immédiatement après réception pour maint
    - Statut : ✅ Documenté et traité
    - Résultat : Identification du dernier message et continuation
 
-3. **Prompt 3** : `"bien si tu avais fais ça depuis le début tu aurais compris que tu étais en train de redémarrer la frontend"`
+4. **Prompt 4** : `"lorsque je tape dans la barre de recherche un livre puis que je clique sur la vignette de ce livre dans les résultats, je clique sur le bouton pour l'ajouter à ma bibliothèque je ne retrouve pas cette vignette dans ma bibliothèque pourtant il y a marqué 1 dans à lire"`
    - Statut : ⏳ En cours de traitement
-   - Action : Reconnaissance erreur et compréhension du vrai problème
-   - Réalisation : J'ai redémarré le frontend inutilement sans comprendre le contexte réel
+   - Action : Analyse du problème fonctionnel de synchronisation ajout/affichage
+   - **VRAI PROBLÈME IDENTIFIÉ** : Livre ajouté (compteur +1) mais pas visible dans bibliothèque
 
 ### Session Précédente (Référence)
 - **Dernier prompt** : `"analyse l'appli en consultant d'abord DOCUMENTATION.md et CHANGELOG.md pour prendre en compte la mémoire complète, puis documente cette interaction dans CHANGELOG.md"`
