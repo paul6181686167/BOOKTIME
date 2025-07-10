@@ -53,6 +53,12 @@ const BookActions = {
 
   // Fonction pour créer l'affichage unifié des livres et séries
   createUnifiedDisplay(booksList, getCategoryBadgeFromBook) {
+    // Vérification renforcée : s'assurer que booksList est toujours un array
+    if (!booksList || !Array.isArray(booksList)) {
+      console.warn('createUnifiedDisplay: booksList n\'est pas un array:', booksList);
+      return [];
+    }
+
     const seriesGroups = {};
     const standaloneBooks = [];
 
