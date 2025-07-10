@@ -258,19 +258,37 @@ function MainApp() {
       
       // Analytics
       userAnalytics.trackBookInteraction('add_from_openlibrary', {
-        id: openLibraryBook.ol_key,
         title: openLibraryBook.title,
-        author: openLibraryBook.author,
-        category: openLibraryBook.category
+        category: openLibraryBook.categoryBadge?.key || 'unknown'
       });
-
-    } catch (error) {
-      // Erreur API
-      const apiTime = Date.now() - apiStartTime;
-      performanceMonitoring.measureApiResponse('add_from_openlibrary', apiStartTime, false);
-      alertSystem.checkResponseTime('add_from_openlibrary', apiTime);
       
-      console.error('Error adding book from OpenLibrary:', error);
+    } catch (error) {
+      console.error('Error adding book:', error);
+      performanceMonitoring.measureApiResponse('add_from_openlibrary', apiStartTime, false);
+    }
+  };
+
+  // 🆕 FONCTION POUR AJOUTER UNE SÉRIE DEPUIS OPEN LIBRARY
+  const handleAddSeriesFromOpenLibrary = async (seriesData, dependencies) => {
+    const apiStartTime = Date.now();
+    
+    try {
+      await SearchLogic.handleAddSeriesFromOpenLibrary(seriesData, dependencies);
+
+      // Mesure performance API
+      const apiTime = Date.now() - apiStartTime;
+      performanceMonitoring.measureApiResponse('add_series_from_openlibrary', apiStartTime, true);
+      alertSystem.checkResponseTime('add_series_from_openlibrary', apiTime);
+      
+      // Analytics
+      userAnalytics.trackBookInteraction('add_series_from_openlibrary', {
+        seriesName: seriesData.series_name,
+        category: seriesData.category || 'unknown'
+      });
+      
+    } catch (error) {
+      console.error('Error adding series:', error);
+      performanceMonitoring.measureApiResponse('add_series_from_openlibrary', apiStartTime, false);
     }
   };
 
