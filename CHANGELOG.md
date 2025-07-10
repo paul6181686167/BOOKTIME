@@ -190,26 +190,19 @@ const groupBooksByStatus = (books) => {
 - **Mode recherche** : Grille unique maintenue sans régression
 - **Responsive design** : Adaptation écrans maintenue
 
-**🔧 FRONTEND APP.JS RESTAURÉ** :
-```javascript
-// AVANT (avec séries) :
-const handleAddSeriesFromOpenLibrary = async (seriesData, dependencies) => {
-  // 22 lignes de logique série...
-};
-<SeriesDetailModal
-  onAddFromOpenLibrary={handleAddSeriesFromOpenLibrary}
-  addingBooks={searchHook.addingBooks}
-  // 6 autres props série...
-/>
+#### Métriques de Modification
 
-// APRÈS (restauré) :
-// Fonction supprimée
-<SeriesDetailModal
-  series={seriesHook.selectedSeries}
-  onClose={seriesHook.closeSeriesModal}
-  onUpdate={booksHook.loadBooks}
-/>
-```
+**📊 LIGNES DE CODE MODIFIÉES** :
+- **Fichier principal** : `/app/frontend/src/App.js`
+- **Fonction ajoutée** : `groupBooksByStatus()` (~25 lignes)
+- **Section affichage** : Remplacement grille unique par sections (~80 lignes)
+- **Total ajouté** : ~105 lignes (logique + interface + commentaires)
+
+**📊 IMPACT PERFORMANCE** :
+- **Complexité** : O(n) pour groupement + O(n) pour affichage = O(n) total
+- **Mémoire** : Légère augmentation pour groupement (négligeable)
+- **Rendu** : Optimisé avec rendu conditionnel des sections
+- **Requêtes** : Aucune requête supplémentaire (traitement frontend)
 
 **🔧 SEARCHLOGIC.JS RESTAURÉ** :
 ```javascript
