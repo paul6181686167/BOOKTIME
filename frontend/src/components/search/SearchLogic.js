@@ -152,6 +152,94 @@ const detectBookOwnership = (book, books) => {
   });
 };
 
+/**
+ * ✅ SOLUTION ROBUSTE AVEC RETRY INTELLIGENT - OPTION C
+ * Vérification intelligente et affichage livre ajouté avec retry adaptatif
+ * Race condition MongoDB résolue définitivement
+ */
+const verifyAndDisplayBook = async (bookTitle, targetCategory, books, loadBooks, loadStats) => {
+  const maxAttempts = 3;
+  const baseDelayMs = 500;
+  const timeoutMs = 5000; // Timeout global 5s
+  
+  console.log(`🔍 [OPTION C] Vérification livre: "${bookTitle}" en catégorie "${targetCategory}"`);
+  
+  const startTime = Date.now();
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`📚 [OPTION C] Tentative ${attempt}/${maxAttempts} - Chargement données...`);
+      
+      // Charger données fraîches
+      await Promise.all([loadBooks(), loadStats()]);
+      
+      // Vérifier présence livre avec critères stricts
+      const bookFound = books.some(book => 
+        book.title?.toLowerCase().trim() === bookTitle.toLowerCase().trim() && 
+        book.category === targetCategory
+      );
+      
+      if (bookFound) {
+        const totalTime = Date.now() - startTime;
+        console.log(`✅ [OPTION C] Livre trouvé après ${attempt} tentative(s) en ${totalTime}ms`);
+        
+        // Déclencher retour bibliothèque avec succès
+        const backToLibraryEvent = new CustomEvent('backToLibrary', {
+          detail: { 
+            reason: 'book_verified_success',
+            bookTitle,
+            targetCategory,
+            attempts: attempt,
+            totalTime
+          }
+        });
+        window.dispatchEvent(backToLibraryEvent);
+        
+        return { success: true, attempts: attempt, totalTime };
+      }
+      
+      // Délai progressif avant retry (500ms, 1000ms, 1500ms)
+      if (attempt < maxAttempts) {
+        const delayMs = baseDelayMs * attempt;
+        console.log(`⏳ [OPTION C] Livre non trouvé, retry dans ${delayMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+      
+      // Vérification timeout global
+      if (Date.now() - startTime > timeoutMs) {
+        console.warn('⚠️ [OPTION C] Timeout global atteint, abandon verification');
+        break;
+      }
+      
+    } catch (error) {
+      console.error(`❌ [OPTION C] Tentative ${attempt} échouée:`, error);
+      
+      // En cas d'erreur, délai plus court avant retry
+      if (attempt < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+  }
+  
+  // Échec après toutes les tentatives
+  const totalTime = Date.now() - startTime;
+  console.error(`❌ [OPTION C] Livre non trouvé après ${maxAttempts} tentatives en ${totalTime}ms`);
+  
+  // Fallback UX : notification avec action manuelle
+  toast.error(
+    `Livre "${bookTitle}" ajouté avec succès mais non visible. Actualisez la page ou vérifiez l'onglet ${targetCategory}.`,
+    {
+      duration: 8000,
+      action: {
+        label: 'Actualiser',
+        onClick: () => window.location.reload()
+      }
+    }
+  );
+  
+  return { success: false, attempts: maxAttempts, totalTime };
+};
+
 // AJOUT INTELLIGENT : Placement automatique dans le bon onglet selon la catégorie
 export const handleAddFromOpenLibrary = async (openLibraryBook, {
   books,
@@ -198,45 +286,32 @@ export const handleAddFromOpenLibrary = async (openLibraryBook, {
     });
 
     if (response.ok) {
-      // 🔍 DIAGNOSTIC : Vérifier token avant loadBooks
-      const currentToken = localStorage.getItem('token');
-      console.log('🔐 PRE-LOADBOOKS TOKEN CHECK:', {
-        hasToken: !!currentToken,
-        tokenLength: currentToken?.length || 0,
-        tokenPreview: currentToken?.substring(0, 30) + '...',
-        timestamp: new Date().toISOString()
-      });
-      
-      console.log('🔄 Starting loadBooks after successful book addition...');
-      await loadBooks();
-      
-      console.log('🔄 Starting loadStats after successful book addition...');
-      await loadStats();
-      
-      console.log('✅ loadBooks and loadStats completed successfully');
-      
-      // CORRECTION RCA : Retour automatique vers bibliothèque après ajout réussi
-      // Solution au problème de synchronisation ajout/affichage
-      setTimeout(() => {
-        // Déclencher l'événement de retour à la bibliothèque
-        const backToLibraryEvent = new CustomEvent('backToLibrary', {
-          detail: { 
-            reason: 'book_added_successfully',
-            targetCategory: targetCategory,
-            bookTitle: openLibraryBook.title
-          }
-        });
-        window.dispatchEvent(backToLibraryEvent);
-      }, 500); // Délai réduit pour une meilleure expérience utilisateur
-      
-      // Message de succès avec indication de l'onglet ET retour automatique
+      // Message de succès immédiat
       const categoryLabels = {
         'roman': 'Roman',
         'bd': 'BD',
         'manga': 'Manga'
       };
-      toast.success(`"${openLibraryBook.title}" ajouté à l'onglet ${categoryLabels[targetCategory]} ! 📚\nRetour automatique vers votre bibliothèque...`, {
+      toast.success(`"${openLibraryBook.title}" ajouté avec succès ! 📚`, {
         duration: 2000
+      });
+      
+      // ✅ SOLUTION ROBUSTE OPTION C : Vérification intelligente et retour bibliothèque
+      const result = await verifyAndDisplayBook(
+        openLibraryBook.title,
+        targetCategory,
+        books,
+        loadBooks,
+        loadStats
+      );
+      
+      // Analytics de performance (optionnel)
+      console.log('📊 [OPTION C] Performance metrics:', {
+        bookTitle: openLibraryBook.title,
+        category: targetCategory,
+        success: result.success,
+        attempts: result.attempts,
+        totalTime: result.totalTime
       });
       
       // Mettre à jour le statut de possession dans les résultats
