@@ -560,6 +560,8 @@ export const handleAddSeriesFromOpenLibrary = async (seriesData, {
 export default {
   searchOpenLibrary,
   handleAddFromOpenLibrary,
+  handleAddSeriesFromOpenLibrary,
+  verifyAndDisplaySeries,
   backToLibrary,
   handleSeriesClick,
   handleBookClick,
