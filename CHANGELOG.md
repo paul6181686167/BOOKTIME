@@ -450,6 +450,86 @@ cd /app/frontend && yarn add lucide-react
 
 ---
 
+### [PROBLÈME UX DÉTECTÉ] - Livre Non Visible Après Ajout Depuis Recherche
+**Date** : Mars 2025  
+**Prompt Utilisateur** : `"ok enregistre bien ce prompt avec les images et n'hésite à me poser des questions, lorsque je recherche un livre que je clique sur sa vignette dans les résultats entourée en bleu que je clique sur le bouton pour ajouter à ma bibliothèque entouré en rouge puis que je retourne à ma bibliothèque je ne retrouve pas cette vignette , fais moi une analyse de ce que je dis"`
+
+#### Context et Problème Identifié
+- **Problème UX Critique** : Livre ajouté mais non visible dans la bibliothèque
+- **Workflow Problématique** : Recherche → Sélection → Ajout → Bibliothèque (livre introuvable)
+- **Impact Utilisateur** : Expérience frustrante, doute sur le fonctionnement de l'application
+- **Images Fournies** : 3 screenshots illustrant le problème étape par étape
+
+#### Analyse des Images Fournies
+
+**📸 IMAGE 1** - Résultats de Recherche :
+- **Recherche** : "harry potter" dans la barre de recherche
+- **Résultats** : Multiples livres Harry Potter affichés
+- **Sélection** : "Harry Potter and the Philosopher's Stone" entouré en bleu
+- **Interface** : Grille de livres avec couvertures et métadonnées
+- **Statut** : Mode recherche actif avec résultats Open Library
+
+**📸 IMAGE 2** - Modal d'Ajout :
+- **Livre** : "Harry Potter and the Philosopher's Stone" par J.K. Rowling
+- **Catégorie** : Détectée comme "Roman" (badge rose)
+- **Statut** : "À lire" par défaut
+- **Action** : Bouton "Ajouter à ma bibliothèque" entouré en rouge
+- **Informations** : Métadonnées complètes (langue, traductions, etc.)
+
+**📸 IMAGE 3** - Vue Bibliothèque :
+- **Onglet Actif** : "Mangas" (sélectionné)
+- **Contenu** : "Aucun livre dans votre bibliothèque"
+- **Statistiques** : 2 Total livres, 0 Terminés, 0 En cours, 2 À lire
+- **Problème** : Livre Harry Potter invisible malgré ajout
+
+#### Diagnostic du Problème
+
+**🎯 CAUSE RACINE IDENTIFIÉE** :
+- **Erreur de Navigation** : L'utilisateur a ajouté un livre "Roman" mais consulte l'onglet "Mangas"
+- **Problème UX** : Pas de redirection automatique vers la bonne catégorie après ajout
+- **Confusion Interface** : L'utilisateur ne sait pas où chercher le livre ajouté
+
+**🔍 CAUSES TECHNIQUES POSSIBLES** :
+1. **Navigation Inappropriée** : Livre ajouté en catégorie "Roman" mais utilisateur dans "Mangas"
+2. **Absence de Feedback** : Pas de notification confirmant l'ajout et la catégorie
+3. **Retour Automatique** : Pas de redirection vers la catégorie appropriée
+4. **Synchronisation UI** : Interface non actualisée après ajout
+
+#### Questions d'Investigation
+
+**📋 QUESTIONS POUR CLARIFICATION** :
+1. **Après avoir cliqué "Ajouter à ma bibliothèque", avez-vous vérifié l'onglet "Romans" ?**
+2. **Avez-vous vu une notification confirmant l'ajout du livre ?**
+3. **Les statistiques en haut (2 Total livres, 2 À lire) correspondent-elles à vos attentes ?**
+4. **L'application vous a-t-elle ramené automatiquement à la bibliothèque ou êtes-vous resté en mode recherche ?**
+
+#### Plan d'Investigation et Résolution
+
+**🔍 ÉTAPES D'INVESTIGATION** :
+1. **Vérifier l'onglet "Romans"** : Confirmer si le livre est dans la bonne catégorie
+2. **Tester le workflow complet** : Reproduire le problème étape par étape
+3. **Analyser les logs** : Vérifier si l'ajout s'est correctement effectué
+4. **Valider l'UX** : Améliorer le feedback utilisateur et la navigation
+
+**🛠️ SOLUTIONS POSSIBLES** :
+1. **Redirection Automatique** : Après ajout, rediriger vers la catégorie du livre
+2. **Notification d'Ajout** : Confirmer l'ajout avec la catégorie de destination
+3. **Amélioration Navigation** : Highlight de la catégorie contenant le nouveau livre
+4. **Feedback Visuel** : Indication claire de où trouver le livre ajouté
+
+#### Prochaines Actions
+
+**⏳ ACTIONS IMMÉDIATES** :
+1. **Poser les questions de clarification** à l'utilisateur
+2. **Reproduire le problème** en mode test
+3. **Vérifier les logs** d'ajout de livre
+4. **Analyser l'UX** du workflow complet
+
+**🎯 OBJECTIF** :
+Résoudre définitivement ce problème UX pour garantir une expérience utilisateur fluide et intuitive lors de l'ajout de livres depuis la recherche.
+
+---
+
 #### Correction Erreur d'Initialisation
 
 **🔍 PROBLÈME TECHNIQUE** :
