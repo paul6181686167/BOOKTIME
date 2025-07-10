@@ -468,13 +468,108 @@ function MainApp() {
             </div>
           )}
           
-          {/* Grille de livres/séries */}
-          <BookGrid
-            books={displayedBooks}
-            loading={booksHook.loading}
-            onItemClick={handleItemClick}
-            showEmptyState={true}
-          />
+          {/* Affichage par sections de statut - MODIFICATION ORGANISATIONNELLE */}
+          {!searchHook.isSearchMode && (
+            <div className="space-y-8">
+              {/* Section Séries */}
+              {groupedBooks.series && groupedBooks.series.length > 0 && (
+                <div>
+                  <div className="flex items-center mb-4">
+                    <span className="text-2xl mr-3">📚</span>
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      Séries ({groupedBooks.series.length})
+                    </h2>
+                  </div>
+                  <BookGrid
+                    books={groupedBooks.series}
+                    loading={false}
+                    onItemClick={handleItemClick}
+                    showEmptyState={false}
+                  />
+                </div>
+              )}
+
+              {/* Section EN COURS */}
+              {groupedBooks.reading && groupedBooks.reading.length > 0 && (
+                <div>
+                  <div className="flex items-center mb-4">
+                    <span className="text-2xl mr-3">🟡</span>
+                    <h2 className="text-xl font-semibold text-yellow-600 dark:text-yellow-400">
+                      En cours ({groupedBooks.reading.length})
+                    </h2>
+                  </div>
+                  <BookGrid
+                    books={groupedBooks.reading}
+                    loading={false}
+                    onItemClick={handleItemClick}
+                    showEmptyState={false}
+                  />
+                </div>
+              )}
+
+              {/* Section À LIRE */}
+              {groupedBooks.to_read && groupedBooks.to_read.length > 0 && (
+                <div>
+                  <div className="flex items-center mb-4">
+                    <span className="text-2xl mr-3">🔵</span>
+                    <h2 className="text-xl font-semibold text-blue-600 dark:text-blue-400">
+                      À lire ({groupedBooks.to_read.length})
+                    </h2>
+                  </div>
+                  <BookGrid
+                    books={groupedBooks.to_read}
+                    loading={false}
+                    onItemClick={handleItemClick}
+                    showEmptyState={false}
+                  />
+                </div>
+              )}
+
+              {/* Section TERMINÉ */}
+              {groupedBooks.completed && groupedBooks.completed.length > 0 && (
+                <div>
+                  <div className="flex items-center mb-4">
+                    <span className="text-2xl mr-3">🟢</span>
+                    <h2 className="text-xl font-semibold text-green-600 dark:text-green-400">
+                      Terminé ({groupedBooks.completed.length})
+                    </h2>
+                  </div>
+                  <BookGrid
+                    books={groupedBooks.completed}
+                    loading={false}
+                    onItemClick={handleItemClick}
+                    showEmptyState={false}
+                  />
+                </div>
+              )}
+
+              {/* État vide si aucun livre */}
+              {(!groupedBooks.series || groupedBooks.series.length === 0) &&
+               (!groupedBooks.reading || groupedBooks.reading.length === 0) &&
+               (!groupedBooks.to_read || groupedBooks.to_read.length === 0) &&
+               (!groupedBooks.completed || groupedBooks.completed.length === 0) && (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">📚</div>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    Aucun livre dans votre bibliothèque
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400">
+                    Commencez par ajouter quelques livres à votre collection !
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Mode recherche - Grille unique */}
+          {searchHook.isSearchMode && (
+            <BookGrid
+              books={displayedBooks}
+              loading={booksHook.loading}
+              onItemClick={handleItemClick}
+              showEmptyState={true}
+            />
+          )}
         </div>
       </main>
       
