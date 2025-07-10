@@ -1529,7 +1529,7 @@ cd /app/frontend && yarn add lucide-react
 
 ---
 
-### [ANALYSE COMPLÈTE SESSION 31] - Consultation Documentation et Validation État Application
+### [MODIFICATION ORGANISATIONNELLE SESSION 31] - Tri des Livres par Statut dans Bibliothèque Personnelle
 **Date** : 10 Juillet 2025  
 **Prompt Utilisateur** : `"analyse l'appli en consultant d'abord DOCUMENTATION.md et CHANGELOG.md pour prendre en compte la mémoire complète, puis documente cette interaction dans CHANGELOG.md"`
 
