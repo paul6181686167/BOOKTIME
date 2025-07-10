@@ -22,7 +22,6 @@ export const searchOpenLibrary = async (query, {
   setLastSearchTerm, 
   setOpenLibraryResults,
   generateSeriesCardsForSearch,
-  handleAddSeriesToLibrary,
   getCategoryBadgeFromBook
 }) => {
   console.log('🚀 searchOpenLibrary GLOBALE appelée avec:', query);
