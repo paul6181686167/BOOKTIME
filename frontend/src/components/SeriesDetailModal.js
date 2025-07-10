@@ -196,14 +196,16 @@ const SeriesDetailModal = ({
             </div>
             
             <div className="flex items-center space-x-2">
-              {/* Bouton Ajouter visuel (même style que BookDetailModal) */}
-              <button
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors flex items-center space-x-2"
-                title="Bouton décoratif (non fonctionnel)"
-              >
-                <span>+</span>
-                <span>Ajouter à ma bibliothèque</span>
-              </button>
+              {/* Bouton Ajouter fonctionnel (même style que BookDetailModal) */}
+              {!isSeriesOwned && onAddSeries && (
+                <button
+                  onClick={handleAddSeries}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors flex items-center space-x-2"
+                >
+                  <span>+</span>
+                  <span>Ajouter à ma bibliothèque</span>
+                </button>
+              )}
               
               <button
                 onClick={onClose}
