@@ -17,7 +17,7 @@ import string
 import sys
 
 # Get the backend URL from the frontend .env file
-BACKEND_URL = "https://839c596c-00ff-45a4-84ad-e6a46bd3a2d2.preview.emergentagent.com"
+BACKEND_URL = "https://ce60cde4-0958-4720-9786-613598f3ff88.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 def generate_random_name():
