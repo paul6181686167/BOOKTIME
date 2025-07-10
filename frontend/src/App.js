@@ -22,6 +22,12 @@ import ExportImportModal from './components/export-import/ExportImportModal';
 // PHASE 3.3 - Composants Social
 import SocialModal from './components/social/SocialModal';
 
+// PHASE 3.4 - Recommandations Avancées IA
+import AdvancedRecommendationsModal from './components/advanced-recommendations/AdvancedRecommendationsModal';
+
+// PHASE 3.5 - Intégrations Externes
+import IntegrationsModal from './components/integrations/IntegrationsModal';
+
 // PHASE 2.4 - Monitoring et Analytics
 import ErrorBoundary from './components/monitoring/ErrorBoundary';
 import PerformanceWidget from './components/monitoring/PerformanceWidget';
