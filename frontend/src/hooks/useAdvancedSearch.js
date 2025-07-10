@@ -161,11 +161,15 @@ export const useAdvancedSearch = (books = []) => {
   // Suggestions pour l'autocomplétion
   const getSearchSuggestions = (term) => {
     if (!term || term.length < 2) return [];
+    
+    // Vérification renforcée pour books
+    const booksArray = Array.isArray(books) ? books : [];
+    if (booksArray.length === 0) return [];
 
     const suggestions = new Set();
     const lowerTerm = term.toLowerCase();
 
-    books.forEach(book => {
+    booksArray.forEach(book => {
       // Suggestions de titres
       if (book.title?.toLowerCase().includes(lowerTerm)) {
         suggestions.add({
