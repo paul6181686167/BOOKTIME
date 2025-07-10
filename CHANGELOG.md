@@ -2497,6 +2497,20 @@ Les boutons pour ajouter des livres depuis Open Library sont toujours présents 
 
 **🎯 INVESTIGATION DOCUMENTÉE** - Prêt pour correction ciblée avec solution technique précise
 
+#### Phase 2 : Correction Ciblée Backend
+
+✅ **CORRECTION BACKEND APPLIQUÉE** :
+- **Fichier modifié** : `/app/backend/app/openlibrary/routes.py` ligne 184
+- **Ancien code** : `"cover_url": extract_cover_url(first_edition.get("covers", [None])[0])`
+- **Nouveau code** : `"cover_url": import_data.get("cover_url", "") or extract_cover_url(first_edition.get("covers", [None])[0])`
+- **Logique** : Prioriser `cover_url` fournie depuis frontend, fallback vers logique existante
+
+✅ **PRINCIPE CORRECTION** :
+- **Priorité 1** : `import_data.get("cover_url", "")` - URL depuis résultats recherche
+- **Priorité 2** : `extract_cover_url(...)` - Reconstruction depuis éditions (fallback)
+- **Préservation** : Logique existante maintenue pour compatibilité
+- **Optimisation** : URL fiable utilisée quand disponible
+
 ---
 
 ### [DOCUMENTATION COMPLÈTE SESSION 33] - Analyse + Correction Bouton Manquant
