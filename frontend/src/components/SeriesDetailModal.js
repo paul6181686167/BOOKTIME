@@ -15,7 +15,8 @@ const SeriesDetailModal = ({
   series, 
   isOpen, 
   onClose, 
-  onUpdate
+  onUpdate,
+  onAddSeries
 }) => {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -23,6 +24,42 @@ const SeriesDetailModal = ({
   const [autoCompleting, setAutoCompleting] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [missingAnalysis, setMissingAnalysis] = useState(null);
+  const [isSeriesOwned, setIsSeriesOwned] = useState(false);
+
+  // Fonction pour vérifier si la série est déjà dans la bibliothèque
+  const checkIfSeriesOwned = async () => {
+    if (!series?.name) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+      
+      const response = await fetch(`${backendUrl}/api/books?saga=${encodeURIComponent(series.name)}&is_series=true`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setIsSeriesOwned(data.books && data.books.length > 0);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la vérification de la série:', error);
+    }
+  };
+
+  // Fonction pour ajouter la série à la bibliothèque
+  const handleAddSeries = async () => {
+    if (onAddSeries && series) {
+      try {
+        await onAddSeries(series);
+        setIsSeriesOwned(true); // Marquer comme possédée après ajout
+      } catch (error) {
+        console.error('Erreur lors de l\'ajout de la série:', error);
+      }
+    }
+  };
 
   useEffect(() => {
     if (isOpen && series) {
