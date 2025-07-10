@@ -142,8 +142,12 @@ export const useAdvancedSearch = (books = []) => {
 
   // Statistiques de recherche
   const searchStats = useMemo(() => {
-    const total = books.length;
-    const filtered = filteredBooks.length;
+    // Vérification renforcée pour books
+    const booksArray = Array.isArray(books) ? books : [];
+    const filteredBooksArray = Array.isArray(filteredBooks) ? filteredBooks : [];
+    
+    const total = booksArray.length;
+    const filtered = filteredBooksArray.length;
     const hasActiveFilters = searchTerm !== '' || Object.values(filters).some(value => value !== '' && value !== false);
     
     return {
@@ -152,7 +156,7 @@ export const useAdvancedSearch = (books = []) => {
       hasActiveFilters,
       hiddenCount: hasActiveFilters ? total - filtered : 0
     };
-  }, [books.length, filteredBooks.length, searchTerm, filters]);
+  }, [books, filteredBooks, searchTerm, filters]);
 
   // Suggestions pour l'autocomplétion
   const getSearchSuggestions = (term) => {
