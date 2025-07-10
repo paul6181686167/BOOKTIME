@@ -118,7 +118,34 @@ const BookActions = {
     // Convertir les groupes en tableau et trier par nombre de livres
     const seriesCards = Object.values(seriesGroups).sort((a, b) => b.totalBooks - a.totalBooks);
     
-    return [...seriesCards, ...standaloneBooks];
+    // MODIFICATION ORGANISATIONNELLE : Tri des livres standalone par statut
+    // Ordre prioritaire : EN COURS → À LIRE → TERMINÉ
+    const getStatusPriority = (status) => {
+      switch (status) {
+        case 'reading':    return 1; // EN COURS - Priorité maximale
+        case 'to_read':    return 2; // À LIRE - Priorité moyenne
+        case 'completed':  return 3; // TERMINÉ - Priorité minimale
+        default:           return 4; // Statut inconnu - En dernier
+      }
+    };
+    
+    // Tri des livres standalone par statut puis par date d'ajout
+    const sortedStandaloneBooks = standaloneBooks.sort((a, b) => {
+      const statusPriorityA = getStatusPriority(a.status);
+      const statusPriorityB = getStatusPriority(b.status);
+      
+      // Si les statuts sont différents, trier par priorité de statut
+      if (statusPriorityA !== statusPriorityB) {
+        return statusPriorityA - statusPriorityB;
+      }
+      
+      // Si même statut, trier par date d'ajout (plus récent d'abord)
+      const dateA = new Date(a.date_added || a.updated_at || 0);
+      const dateB = new Date(b.date_added || b.updated_at || 0);
+      return dateB - dateA;
+    });
+    
+    return [...seriesCards, ...sortedStandaloneBooks];
   },
 
   // Fonction pour gérer le clic sur un livre
