@@ -59,8 +59,8 @@ export const STATUS_CONFIG = {
 export const TAB_CONFIG = [
   {
     key: BOOK_CATEGORIES.ROMAN,
-    label: '📚 Romans',
-    emoji: '📚'
+    label: 'Romans',
+    emoji: ''
   },
   {
     key: BOOK_CATEGORIES.BD,
