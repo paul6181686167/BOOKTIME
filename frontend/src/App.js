@@ -468,6 +468,42 @@ function MainApp() {
         />
       )}
       
+      {/* PHASE 3.4 - Modal Recommandations Avancées */}
+      {showAdvancedRecommendationsModal && (
+        <AdvancedRecommendationsModal
+          isOpen={showAdvancedRecommendationsModal}
+          onClose={() => setShowAdvancedRecommendationsModal(false)}
+          onAddBook={async (bookData) => {
+            try {
+              await addBook(bookData);
+              setActiveTab(bookData.category || 'roman');
+              setViewMode('books');
+              await refetchBooks();
+            } catch (error) {
+              console.error('Erreur lors de l\'ajout du livre:', error);
+            }
+          }}
+        />
+      )}
+      
+      {/* PHASE 3.5 - Modal Intégrations Externes */}
+      {showIntegrationsModal && (
+        <IntegrationsModal
+          isOpen={showIntegrationsModal}
+          onClose={() => setShowIntegrationsModal(false)}
+          onAddBooks={async (booksArray) => {
+            try {
+              for (const bookData of booksArray) {
+                await addBook(bookData);
+              }
+              await refetchBooks();
+            } catch (error) {
+              console.error('Erreur lors de l\'ajout des livres:', error);
+            }
+          }}
+        />
+      )}
+      
       {/* Toast notifications */}
       <Toaster position="bottom-right" />
       
