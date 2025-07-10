@@ -307,7 +307,7 @@ function MainApp() {
   // CORRECTION RCA - Synchronisation activeTab avec filters.category
   useEffect(() => {
     setFilters(prev => ({ ...prev, category: activeTab }));
-  }, [activeTab, setFilters]);
+  }, [activeTab]);
 
   // Chargement initial au montage du composant
   useEffect(() => {
