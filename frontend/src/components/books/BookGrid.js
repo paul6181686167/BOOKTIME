@@ -100,58 +100,7 @@ const BookGrid = ({
             </div>
           ) : (
             // Carte livre
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700 relative">
-              {/* Boutons rapides de statut - apparaissent au survol */}
-              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-                <div className="flex rounded-lg overflow-hidden shadow-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
-                  {/* À lire */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleQuickStatusChange(item, 'to_read');
-                    }}
-                    className={`px-2 py-1 text-xs font-medium transition-colors ${
-                      item.status === 'to_read' 
-                        ? 'bg-gray-600 text-white dark:bg-gray-300 dark:text-gray-900' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500'
-                    }`}
-                    title="Marquer comme À lire"
-                  >
-                    📚
-                  </button>
-                  {/* En cours */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleQuickStatusChange(item, 'reading');
-                    }}
-                    className={`px-2 py-1 text-xs font-medium transition-colors ${
-                      item.status === 'reading' 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-800'
-                    }`}
-                    title="Marquer comme En cours"
-                  >
-                    🟡
-                  </button>
-                  {/* Terminé */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleQuickStatusChange(item, 'completed');
-                    }}
-                    className={`px-2 py-1 text-xs font-medium transition-colors ${
-                      item.status === 'completed' 
-                        ? 'bg-green-600 text-white' 
-                        : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-800'
-                    }`}
-                    title="Marquer comme Terminé"
-                  >
-                    🟢
-                  </button>
-                </div>
-              </div>
-              
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700">
               <div className="aspect-[3/4] bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
                 {item.cover_url ? (
                   <img 
