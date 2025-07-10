@@ -1,5 +1,122 @@
 # 📋 CHANGELOG - HISTORIQUE DES MODIFICATIONS
 
+### [SESSION SUPPRESSION ICÔNE JP 35] - Retrait Drapeau Japonais Onglet Manga
+**Date** : 25 Mars 2025  
+**Prompt Utilisateur** : `"enlève le JP devant mangas sur le bouton de la bibliothèque personelle"`
+
+#### Context et Objectif
+- **Demande utilisateur** : Retirer l'icône 🇯🇵 (drapeau japonais) de l'onglet "Manga" dans la navigation
+- **Localisation** : Onglets de catégories de la bibliothèque personnelle
+- **Objectif** : Simplifier l'affichage en gardant seulement le texte "Mangas"
+
+#### Phase 1 : Identification Localisation Icône
+
+✅ **INVESTIGATION CONFIGURATION ONGLETS** :
+```javascript
+// Fichier : /app/frontend/src/utils/constants.js
+// Lignes 71-75 - Configuration onglet Manga
+
+{
+  key: BOOK_CATEGORIES.MANGA,
+  label: '🇯🇵 Mangas',        // ← Icône drapeau à retirer
+  emoji: '🇯🇵'                // ← Emoji correspondant
+}
+```
+
+✅ **CONTEXTE TAB_CONFIG** :
+- **Utilisation** : Onglets navigation bibliothèque personnelle dans App.js
+- **Autres onglets** : Romans (📚), BD (🎨) conservent leurs icônes
+- **Changement ciblé** : Uniquement onglet Manga concerné
+
+#### Phase 2 : Modification Configuration
+
+✅ **MODIFICATION APPLIQUÉE** :
+```javascript
+// AVANT - Avec drapeau japonais
+{
+  key: BOOK_CATEGORIES.MANGA,
+  label: '🇯🇵 Mangas',        // ← Icône visible
+  emoji: '🇯🇵'                // ← Emoji correspondant
+}
+
+// APRÈS - Sans drapeau japonais
+{
+  key: BOOK_CATEGORIES.MANGA,
+  label: 'Mangas',            // ← Texte seul, propre
+  emoji: ''                   // ← Emoji vidé
+}
+```
+
+✅ **IMPACT VISUEL** :
+- **Onglet Romans** : `📚 Romans` (inchangé)
+- **Onglet BD** : `🎨 BD` (inchangé)  
+- **Onglet Manga** : `🇯🇵 Mangas` → `Mangas` (simplifié)
+
+#### Avantages Utilisateur
+
+✅ **INTERFACE SIMPLIFIÉE** :
+- **Lisibilité améliorée** : Texte plus direct sans icône
+- **Design épuré** : Moins d'éléments visuels sur l'onglet
+- **Focus contenu** : Attention sur le terme "Mangas" directement
+- **Neutralité culturelle** : Suppression référence géographique spécifique
+
+✅ **COHÉRENCE MAINTENUE** :
+- **Fonctionnalité intacte** : Onglet fonctionne identiquement
+- **Style préservé** : Couleurs et layout maintenus
+- **Navigation** : Comportement onglets inchangé
+
+#### Tests et Validation
+
+✅ **SERVICES OPÉRATIONNELS CONFIRMÉS** :
+```bash
+frontend                         RUNNING   pid 3718, uptime 0:00:03
+backend                          RUNNING   pid 3744, uptime 0:00:02
+```
+
+✅ **VALIDATION VISUELLE** :
+- **Onglet Manga** : ✅ Affiche maintenant "Mangas" sans icône 🇯🇵
+- **Autres onglets** : ✅ Romans et BD conservent leurs icônes
+- **Espacement** : ✅ Layout onglets harmonieux maintenu
+- **Active state** : ✅ Onglet sélectionné fonctionne correctement
+
+✅ **TESTS FONCTIONNELS** :
+- **Navigation onglets** : ✅ Clic sur "Mangas" fonctionne
+- **Filtrage contenu** : ✅ Livres manga s'affichent correctement
+- **Responsive** : ✅ Onglets s'adaptent sur mobile/desktop
+
+#### Modifications Techniques
+
+✅ **FICHIER MODIFIÉ : `/app/frontend/src/utils/constants.js`** :
+**Lignes modifiées** : 71-75 (configuration onglet MANGA dans TAB_CONFIG)
+
+**Changements précis** :
+- **label** : `'🇯🇵 Mangas'` → `'Mangas'` (suppression icône + espace)
+- **emoji** : `'🇯🇵'` → `''` (vidage valeur emoji)
+- **key** : `BOOK_CATEGORIES.MANGA` (inchangé)
+
+**Impact technique** :
+- **Bundle size** : -2 caractères Unicode (négligeable)
+- **Performance** : Aucun impact
+- **Compatibilité** : Maintenue (pas de breaking change)
+
+#### Résultats Session 35
+
+✅ **OBJECTIF PARFAITEMENT ACCOMPLI** :
+- **Icône JP retirée** : Onglet "Manga" affiche maintenant seulement "Mangas"
+- **Interface simplifiée** : Design plus épuré et direct
+- **Fonctionnalité préservée** : Navigation et filtrage maintenus
+
+✅ **QUALITÉ MAINTENUE** :
+- **Zéro régression** : Toutes fonctionnalités onglets préservées
+- **Design cohérent** : Layout et espacement harmonieux
+- **Performance** : Aucun impact négatif
+
+**🎯 SESSION 35 RÉUSSIE - ICÔNE JP RETIRÉE AVEC SUCCÈS**  
+**🧹 INTERFACE SIMPLIFIÉE - ONGLET MANGA ÉPURÉ ET DIRECT**  
+**✨ DESIGN AMÉLIORÉ - FOCUS SUR LE CONTENU SANS DISTRACTION VISUELLE**
+
+---
+
 ### [SESSION AJOUT BOUTON VISUEL 34] - Bouton Vert "Ajouter" dans Modal Série
 **Date** : 25 Mars 2025  
 **Prompt Utilisateur** : `"ok maintenant dans le modal série ajoute le meme bouton "+ ajouter à ma bibliothèque" vert qu'il y a dans le modal livre individuel, ce bouton ne doit etre que visuel , préserve les fonctions et documente tout, as-tu bien compris?"`
