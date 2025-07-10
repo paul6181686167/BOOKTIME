@@ -13,6 +13,7 @@
 
 import { toast } from 'react-hot-toast';
 import SearchOptimizer from '../../utils/searchOptimizer';
+import { calculateRelevanceScore, getRelevanceLevel } from './RelevanceEngine';
 
 // FONCTION PRINCIPALE DE RECHERCHE OPEN LIBRARY
 export const searchOpenLibrary = async (query, {
