@@ -567,7 +567,6 @@ function MainApp() {
               books={displayedBooks}
               loading={booksHook.loading}
               onItemClick={handleItemClick}
-              onUpdateBook={booksHook.handleUpdateBook}
               showEmptyState={true}
             />
           )}
