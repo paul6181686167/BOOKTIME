@@ -270,9 +270,10 @@ cd /app/frontend && yarn add lucide-react
 - ✅ Identification du vrai dernier message de la session précédente
 - ✅ Documentation du prompt actuel dans le CHANGELOG
 - ✅ **PROMPT 2 TERMINÉ** : `"fais les points 1 et 2"` - Système documentation + continuité implémentés
-- ✅ **NOUVEAU PROMPT REÇU** : `"bien si tu avais fais ça depuis le début tu aurais compris que tu étais en train de redémarrer la frontend"`
-- ⚠️ **ERREUR IDENTIFIÉE** : J'ai redémarré le frontend inutilement sans comprendre le contexte réel
-- ⏳ Analyse et correction de l'erreur de compréhension
+- ✅ **PROMPT 3 TERMINÉ** : `"bien si tu avais fais ça depuis le début tu aurais compris que tu étais en train de redémarrer la frontend"` - Erreur reconnue
+- ✅ **NOUVEAU PROMPT REÇU** : `"lorsque je tape dans la barre de recherche un livre puis que je clique sur la vignette de ce livre dans les résultats, je clique sur le bouton pour l'ajouter à ma bibliothèque je ne retrouve pas cette vignette dans ma bibliothèque pourtant il y a marqué 1 dans à lire"`
+- 🎯 **VRAI PROBLÈME IDENTIFIÉ** : Problème de synchronisation ajout/affichage des livres
+- ⏳ Analyse et correction du problème fonctionnel
 
 #### Détail des Points à Implémenter
 
