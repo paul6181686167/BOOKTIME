@@ -64,8 +64,8 @@ export const TAB_CONFIG = [
   },
   {
     key: BOOK_CATEGORIES.BD,
-    label: '🎨 BD',
-    emoji: '🎨'
+    label: 'Bandes dessinées',
+    emoji: ''
   },
   {
     key: BOOK_CATEGORIES.MANGA,
