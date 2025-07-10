@@ -502,7 +502,6 @@ function MainApp() {
                     books={groupedBooks.reading}
                     loading={false}
                     onItemClick={handleItemClick}
-                    onUpdateBook={booksHook.handleUpdateBook}
                     showEmptyState={false}
                   />
                 </div>
