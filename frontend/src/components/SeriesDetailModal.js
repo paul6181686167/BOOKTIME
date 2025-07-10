@@ -166,34 +166,6 @@ const SeriesDetailModal = ({
             </div>
             
             <div className="flex items-center space-x-2">
-              {/* 🆕 BOUTON AJOUTER SÉRIE - Position exacte identique aux modales livres */}
-              {series?.isFromOpenLibrary && !isSeriesInLibrary() && onAddFromOpenLibrary && (
-                <button
-                  onClick={handleAddSeries}
-                  disabled={addingToLibrary}
-                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors flex items-center space-x-2"
-                >
-                  {addingToLibrary ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Ajout...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>+</span>
-                      <span>Ajouter à ma bibliothèque</span>
-                    </>
-                  )}
-                </button>
-              )}
-              
-              {/* Texte alternatif : "Déjà dans votre bibliothèque" si possédée */}
-              {series?.isFromOpenLibrary && isSeriesInLibrary() && (
-                <span className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md">
-                  Déjà dans votre bibliothèque
-                </span>
-              )}
-              
               <button
                 onClick={onClose}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl"
