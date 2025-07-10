@@ -22,6 +22,7 @@ const SeriesDetailModal = ({
   const [selectedTomes, setSelectedTomes] = useState(new Set());
   const [autoCompleting, setAutoCompleting] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [missingAnalysis, setMissingAnalysis] = useState(null);
 
   useEffect(() => {
     if (isOpen && series) {
