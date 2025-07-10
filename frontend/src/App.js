@@ -296,14 +296,6 @@ function MainApp() {
     booksHook.handleItemClick(item, seriesHook);
   };
 
-  // Fonction pour retourner à la bibliothèque
-  const backToLibrary = () => {
-    // PHASE 2.4 - Analytics navigation
-    userAnalytics.trackInteraction('back_to_library', 'button');
-    
-    searchHook.backToLibrary(clearSearch);
-  };
-
   // Gestion changement d'onglet avec analytics
   const handleTabChange = (newTab) => {
     // PHASE 2.4 - Analytics catégories
