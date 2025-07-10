@@ -528,6 +528,116 @@ cd /app/frontend && yarn add lucide-react
 **🎯 OBJECTIF** :
 Résoudre définitivement ce problème UX pour garantir une expérience utilisateur fluide et intuitive lors de l'ajout de livres depuis la recherche.
 
+#### Investigation Technique Approfondie
+
+**🔍 REPRODUCTION DU PROBLÈME** :
+✅ **Test Backend API** :
+- Créé utilisateur test : `Test User`
+- Recherche Open Library : `harry potter` → ✅ Livre trouvé `/works/OL82563W`
+- Import livre : `{"ol_key": "/works/OL82563W", "category": "roman"}` → ✅ Succès
+- Vérification GET /api/books : ✅ **LIVRE PRÉSENT** dans la base de données
+- Vérification GET /api/books?category=roman : ✅ **LIVRE VISIBLE** pour catégorie roman
+
+**🎯 CONCLUSION TECHNIQUE** :
+- ✅ **Backend 100% Fonctionnel** : Livre correctement ajouté et stocké
+- ✅ **API Import Opérationnelle** : Aucun problème côté serveur
+- ✅ **Filtrage Catégorie** : Fonctionne correctement
+- ❌ **Problème Frontend** : Synchronisation interface après ajout
+
+#### Analyse du Code Frontend
+
+**🔍 MÉCANISME RETOUR AUTOMATIQUE** :
+- **SearchLogic.js lignes 204-216** : ✅ Code présent pour retour automatique
+- **App.js lignes 154-175** : ✅ Gestionnaire d'événement `backToLibrary` implémenté
+- **Délai** : 500ms pour retour automatique après ajout réussi
+- **Analytics** : Tracking des actions de retour automatique
+
+**🔍 FONCTIONNEMENT THÉORIQUE** :
+1. Ajout livre via Open Library → ✅ Fonctionne (prouvé par test API)
+2. `loadBooks()` et `loadStats()` appelés → ✅ Devrait actualiser les données
+3. Événement `backToLibrary` déclenché → ✅ Code présent
+4. Retour automatique vers bibliothèque → ✅ Implémenté
+5. Synchronisation onglets via `useEffect` → ✅ Code présent (lignes 308-310)
+
+#### Hypothèses de Dysfonctionnement
+
+**🚨 HYPOTHÈSE 1 : Problème de Synchronisation React**
+- `loadBooks()` n'actualise pas correctement l'état React
+- L'interface reste sur des données obsolètes
+- Le retour automatique fonctionne mais affiche des données non actualisées
+
+**🚨 HYPOTHÈSE 2 : Problème de Timing**
+- Retour automatique trop rapide (500ms) avant que `loadBooks()` soit terminé
+- Race condition entre actualisation données et navigation
+
+**🚨 HYPOTHÈSE 3 : Problème de Filtrage Frontend**
+- Livre ajouté mais filtres frontend ne l'affichent pas
+- Désynchronisation entre `activeTab` et `filters.category`
+- Données en cache côté frontend
+
+**🚨 HYPOTHÈSE 4 : Problème de Token/Session**
+- Token expiré pendant l'ajout
+- `loadBooks()` échoue silencieusement
+- Données non actualisées
+
+#### Plan d'Investigation Étape par Étape
+
+**🔍 ÉTAPE 1 : Vérifier la Synchronisation React**
+- Analyser les hooks `useBooks` et `useAdvancedSearch`
+- Vérifier si `loadBooks()` met à jour correctement l'état React
+- Tester manuellement l'actualisation des données
+
+**🔍 ÉTAPE 2 : Analyser le Timing**
+- Vérifier l'ordre d'exécution : `loadBooks()` → `loadStats()` → `backToLibrary`
+- Tester avec des délais plus longs
+- Ajouter des logs pour tracer le workflow
+
+**🔍 ÉTAPE 3 : Examiner les Filtres Frontend**
+- Analyser `useAdvancedSearch` et la synchronisation avec `activeTab`
+- Vérifier si les filtres appliqués excluent le livre ajouté
+- Tester l'affichage sans filtres
+
+**🔍 ÉTAPE 4 : Tester la Gestion des Tokens**
+- Vérifier la validité du token pendant l'ajout
+- Analyser les logs d'erreur côté frontend
+- Tester avec un token fraîchement généré
+
+#### Actions Proposées
+
+**🚀 ÉTAPE 1 : Diagnostic Immédiat**
+1. Ajouter des logs détaillés dans `SearchLogic.js` pour tracer l'exécution
+2. Vérifier l'état React après `loadBooks()` et `loadStats()`
+3. Analyser la console navigateur pour erreurs JavaScript
+
+**🚀 ÉTAPE 2 : Correction Ciblée**
+1. Modifier le délai de retour automatique (500ms → 1500ms)
+2. Forcer l'actualisation de l'onglet actif après ajout
+3. Ajouter notification explicite avec catégorie de destination
+
+**🚀 ÉTAPE 3 : Amélioration UX**
+1. Redirection automatique vers l'onglet contenant le livre
+2. Highlight du livre nouvellement ajouté
+3. Toast persistant jusqu'à confirmation de visibilité
+
+**🚀 ÉTAPE 4 : Test de Validation**
+1. Reproduire le workflow exact décrit par l'utilisateur
+2. Tester avec différents navigateurs et sessions
+3. Valider avec l'agent de test frontend
+
+#### Prochaines Actions Immédiates
+
+**❓ QUESTIONS POUR L'UTILISATEUR** :
+1. **Avez-vous vérifié la console du navigateur pour des erreurs JavaScript ?**
+2. **Le retour automatique vers la bibliothèque fonctionne-t-il (quittez-vous le mode recherche) ?**
+3. **Voyez-vous une notification de succès après l'ajout ?**
+4. **Utilisez-vous toujours le même navigateur et la même session ?**
+
+**🛠️ ACTIONS TECHNIQUES** :
+1. Analyser les hooks `useBooks` et `useAdvancedSearch` pour détecter les problèmes de synchronisation
+2. Ajouter des logs temporaires pour tracer le workflow complet
+3. Tester la reproduction du problème avec des utilisateurs de test
+4. Implémenter les corrections ciblées identifiées
+
 ---
 
 #### Correction Erreur d'Initialisation
