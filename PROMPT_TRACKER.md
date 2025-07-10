@@ -49,10 +49,11 @@ Documenter CHAQUE prompt utilisateur immédiatement après réception pour maint
    - Statut : ✅ Documenté et traité
    - Résultat : Identification du dernier message et continuation
 
-6. **Prompt 6** : `"bon documente absolument tout et prépare toi à bien enregister mon prochain message"`
-   - Statut : ✅ TERMINÉ
-   - Action : Documentation exhaustive + préparation capture prochain message
-   - **RÉSULTAT** : RÉCAPITULATIF_SESSION_26.md créé + système optimisé pour capture parfaite
+7. **Prompt 7** : `"ok enregistre bien ce prompt avec les images et n'hésite à me poser des questions, lorsque je recherche un livre que je clique sur sa vignette dans les résultats entourée en bleu que je clique sur le bouton pour ajouter à ma bibliothèque entouré en rouge puis que je retourne à ma bibliothèque je ne retrouve pas cette vignette"`
+   - Statut : ⏳ En cours de traitement
+   - Action : Analyse images + diagnostic problème persistant ajout/affichage
+   - **IMAGES FOURNIES** : 3 captures écran montrant le workflow complet problématique
+   - **PROBLÈME CONFIRMÉ** : Même problème UX persiste malgré correction précédente
 
 ### Métriques Session CONTINUITÉ_26 FINALES
 
