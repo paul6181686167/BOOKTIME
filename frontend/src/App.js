@@ -143,6 +143,29 @@ function MainApp() {
     };
   }, []);
 
+  // CORRECTION RCA - Gestionnaire d'événements pour retour automatique vers bibliothèque
+  useEffect(() => {
+    const handleBackToLibrary = (event) => {
+      console.log('🎯 CORRECTION RCA: Retour automatique vers bibliothèque déclenché', event.detail);
+      // Appeler la fonction de retour à la bibliothèque
+      backToLibrary();
+      
+      // Analytics pour tracking de la correction
+      if (userAnalytics && event.detail) {
+        userAnalytics.trackInteraction('auto_back_to_library', 'correction_rca', {
+          reason: event.detail.reason,
+          targetCategory: event.detail.targetCategory,
+          bookTitle: event.detail.bookTitle
+        });
+      }
+    };
+
+    window.addEventListener('backToLibrary', handleBackToLibrary);
+    return () => {
+      window.removeEventListener('backToLibrary', handleBackToLibrary);
+    };
+  }, []);
+
   // Démarrage automatique du monitoring
   useEffect(() => {
     performanceMonitoring.startMonitoring();
