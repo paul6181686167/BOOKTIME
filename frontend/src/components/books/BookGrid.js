@@ -1,6 +1,5 @@
 import React from 'react';
 import BookActions from './BookActions';
-import toast from 'react-hot-toast';
 
 // Composant pour afficher la grille des livres
 const BookGrid = ({ 
@@ -8,24 +7,8 @@ const BookGrid = ({
   loading, 
   onBookClick, 
   onItemClick,
-  onUpdateBook, // Nouvelle prop pour la mise à jour rapide du statut
   showEmptyState = true 
 }) => {
-  // Fonction pour changer rapidement le statut d'un livre
-  const handleQuickStatusChange = async (book, newStatus) => {
-    if (!onUpdateBook) return;
-    
-    try {
-      await onUpdateBook(book.id, { status: newStatus });
-      toast.success(`Statut mis à jour : ${
-        newStatus === 'to_read' ? 'À lire' :
-        newStatus === 'reading' ? 'En cours' :
-        newStatus === 'completed' ? 'Terminé' : newStatus
-      }`);
-    } catch (error) {
-      toast.error('Erreur lors de la mise à jour du statut');
-    }
-  };
   // Créer l'affichage unifié des livres et séries
   const displayedBooks = BookActions.createUnifiedDisplay(books, (book) => {
     // Fonction pour déterminer le badge de catégorie
