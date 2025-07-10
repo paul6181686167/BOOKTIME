@@ -475,9 +475,8 @@ function MainApp() {
           onClose={() => setShowAdvancedRecommendationsModal(false)}
           onAddBook={async (bookData) => {
             try {
-              await addBook(bookData);
+              await BookActions.addBook(bookData);
               setActiveTab(bookData.category || 'roman');
-              setViewMode('books');
               await booksHook.loadBooks();
             } catch (error) {
               console.error('Erreur lors de l\'ajout du livre:', error);
@@ -494,7 +493,7 @@ function MainApp() {
           onAddBooks={async (booksArray) => {
             try {
               for (const bookData of booksArray) {
-                await addBook(bookData);
+                await BookActions.addBook(bookData);
               }
               await booksHook.loadBooks();
             } catch (error) {
