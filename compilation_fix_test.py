@@ -40,11 +40,13 @@ def test_health_check():
 def test_authentication():
     """Test 2: Authentication (inscription et connexion)"""
     try:
-        # Test d'inscription
+        # Test d'inscription avec un nom plus unique
+        import uuid
+        unique_id = str(uuid.uuid4())[:8]
         test_user = {
-            "first_name": "TestRapide",
+            "first_name": f"TestRapide{unique_id}",
             "last_name": "CompilationFix",
-            "email": f"test_compilation_{datetime.now().strftime('%Y%m%d_%H%M%S')}@test.com"
+            "email": f"test_compilation_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{unique_id}@test.com"
         }
         
         register_response = requests.post(f"{API_BASE}/auth/register", json=test_user, timeout=10)
