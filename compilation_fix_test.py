@@ -84,8 +84,12 @@ def test_main_api_endpoint(token):
         
         if response.status_code == 200:
             data = response.json()
-            if isinstance(data, list):
-                return log_test("Main API Endpoint (GET /api/books)", True, f"Retourne {len(data)} livres")
+            # Check for new paginated format
+            if isinstance(data, dict) and "items" in data and "total" in data:
+                return log_test("Main API Endpoint (GET /api/books)", True, f"Format paginé: {data['total']} livres total, {len(data['items'])} dans cette page")
+            # Check for old list format (backward compatibility)
+            elif isinstance(data, list):
+                return log_test("Main API Endpoint (GET /api/books)", True, f"Format liste: {len(data)} livres")
             else:
                 return log_test("Main API Endpoint (GET /api/books)", False, f"Format de réponse inattendu: {type(data)}")
         else:
