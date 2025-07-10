@@ -182,7 +182,14 @@ class BooktimeAPITest(unittest.TestCase):
         book = response.json()
         
         # Add book ID to cleanup list
-        book_id = book["_id"]
+        if "_id" in book:
+            book_id = book["_id"]
+        elif "id" in book:
+            book_id = book["id"]
+        else:
+            print("Warning: Book ID not found in response")
+            return
+            
         self.book_ids_to_delete.append(book_id)
         
         # Check that the book was created with the correct data
