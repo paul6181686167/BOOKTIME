@@ -1,8 +1,9 @@
 # 📋 CHANGELOG - HISTORIQUE DES MODIFICATIONS
 
-### [MODIFICATION ORGANISATIONNELLE SESSION 31] - Tri des Livres par Statut dans Bibliothèque Personnelle
+### [MODIFICATION ORGANISATIONNELLE SESSION 31] - Affichage en Sections Distinctes par Statut de Lecture
 **Date** : 10 Juillet 2025  
 **Prompt Utilisateur** : `"tu vas me faire une modification organisationelle les livres ayant le statut en cours seront placés au dessus des livres ayant le statut à lire comme sur le schéma que je t'ai fais, préserve les fonctions documente tout, as-tu des questions?"`
+**Clarification Utilisateur** : `"je veux vraiment que les livres ayant le statut en cours soit au dessus et non pas à coté"` + `"oui voilà"` + `"et documente tout"`
 
 #### Context et Objectif
 - **Demande modification** : Réorganisation de l'affichage des livres dans la bibliothèque personnelle
