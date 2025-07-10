@@ -198,8 +198,22 @@ export const handleAddFromOpenLibrary = async (openLibraryBook, {
     });
 
     if (response.ok) {
+      // 🔍 DIAGNOSTIC : Vérifier token avant loadBooks
+      const currentToken = localStorage.getItem('token');
+      console.log('🔐 PRE-LOADBOOKS TOKEN CHECK:', {
+        hasToken: !!currentToken,
+        tokenLength: currentToken?.length || 0,
+        tokenPreview: currentToken?.substring(0, 30) + '...',
+        timestamp: new Date().toISOString()
+      });
+      
+      console.log('🔄 Starting loadBooks after successful book addition...');
       await loadBooks();
+      
+      console.log('🔄 Starting loadStats after successful book addition...');
       await loadStats();
+      
+      console.log('✅ loadBooks and loadStats completed successfully');
       
       // CORRECTION RCA : Retour automatique vers bibliothèque après ajout réussi
       // Solution au problème de synchronisation ajout/affichage
