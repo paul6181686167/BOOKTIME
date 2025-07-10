@@ -420,3 +420,58 @@ async def get_series_library_endpoint(
     
     # Déléguer l'appel à la fonction existante
     return await get_series_library(category, current_user)
+
+@router.post("/library")
+async def add_series_to_library_endpoint(
+    series_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Endpoint de délégation pour ajouter une série à la bibliothèque"""
+    # Importer la fonction depuis library.routes
+    from app.library.routes import add_series_to_library
+    from app.models.series import SeriesLibraryCreate
+    
+    # Convertir les données en modèle Pydantic
+    series_create = SeriesLibraryCreate(**series_data)
+    
+    # Déléguer l'appel à la fonction existante
+    return await add_series_to_library(series_create, current_user)
+
+@router.put("/library/{series_id}/volume/{volume_number}")
+async def update_volume_status_endpoint(
+    series_id: str,
+    volume_number: int,
+    volume_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Endpoint de délégation pour mettre à jour le statut d'un volume"""
+    # Importer la fonction depuis library.routes
+    from app.library.routes import update_volume_status
+    
+    # Déléguer l'appel à la fonction existante
+    return await update_volume_status(series_id, volume_number, volume_data, current_user)
+
+@router.put("/library/{series_id}")
+async def update_series_status_endpoint(
+    series_id: str,
+    series_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Endpoint de délégation pour mettre à jour le statut global d'une série"""
+    # Importer la fonction depuis library.routes
+    from app.library.routes import update_series_status
+    
+    # Déléguer l'appel à la fonction existante
+    return await update_series_status(series_id, series_data, current_user)
+
+@router.delete("/library/{series_id}")
+async def delete_series_from_library_endpoint(
+    series_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Endpoint de délégation pour supprimer une série de la bibliothèque"""
+    # Importer la fonction depuis library.routes
+    from app.library.routes import delete_series_from_library
+    
+    # Déléguer l'appel à la fonction existante
+    return await delete_series_from_library(series_id, current_user)
