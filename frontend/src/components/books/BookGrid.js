@@ -7,6 +7,7 @@ const BookGrid = ({
   loading, 
   onBookClick, 
   onItemClick,
+  onUpdateBook, // Nouvelle prop pour la mise à jour rapide du statut
   showEmptyState = true 
 }) => {
   // Créer l'affichage unifié des livres et séries
