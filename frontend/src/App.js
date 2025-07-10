@@ -455,7 +455,6 @@ function MainApp() {
           onClose={booksHook.closeBookModal}
           onUpdate={booksHook.handleUpdateBook}
           onDelete={booksHook.handleDeleteBook}
-          onAddFromOpenLibrary={handleAddSeriesFromOpenLibrary}
         />
       )}
       
@@ -465,22 +464,6 @@ function MainApp() {
           isOpen={seriesHook.showSeriesModal}
           onClose={seriesHook.closeSeriesModal}
           onUpdate={booksHook.loadBooks}
-          onAddFromOpenLibrary={handleAddSeriesFromOpenLibrary}
-          addingBooks={searchHook.addingBooks}
-          setAddingBooks={searchHook.setAddingBooks}
-          books={booksHook.books}
-          loadBooks={booksHook.loadBooks}
-          loadStats={booksHook.loadStats}
-          setOpenLibraryResults={searchHook.setOpenLibraryResults}
-          getCategoryBadgeFromSeries={(series) => {
-            return {
-              color: series.category === 'roman' ? 'pink' : 
-                     series.category === 'bd' ? 'blue' : 'purple',
-              label: series.category === 'roman' ? 'Roman' : 
-                     series.category === 'bd' ? 'BD' : 'Manga',
-              key: series.category
-            };
-          }}
         />
       )}
       
