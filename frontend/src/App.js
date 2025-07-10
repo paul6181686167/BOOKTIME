@@ -489,7 +489,7 @@ function MainApp() {
           isOpen={seriesHook.showSeriesModal}
           onClose={seriesHook.closeSeriesModal}
           onUpdate={booksHook.loadBooks}
-          onAddFromOpenLibrary={handleAddFromOpenLibrary}
+          onAddFromOpenLibrary={handleAddSeriesFromOpenLibrary}
           addingBooks={searchHook.addingBooks}
           setAddingBooks={searchHook.setAddingBooks}
           books={booksHook.books}
