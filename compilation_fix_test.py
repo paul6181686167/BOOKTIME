@@ -8,6 +8,7 @@ import requests
 import json
 import sys
 import os
+import uuid
 from datetime import datetime
 
 # Configuration
