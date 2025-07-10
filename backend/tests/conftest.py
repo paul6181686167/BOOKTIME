@@ -8,8 +8,8 @@ import os
 from httpx import AsyncClient
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.main import app
-from app.core.database import get_database
-from app.core.auth import create_access_token
+from app.database import get_database
+from app.security.auth import create_access_token
 
 # Configuration base de données de test
 TEST_DATABASE_URL = "mongodb://localhost:27017/booktime_test"
