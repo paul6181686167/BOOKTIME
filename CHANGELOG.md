@@ -2422,6 +2422,83 @@ Les boutons pour ajouter des livres depuis Open Library sont toujours présents 
 
 ---
 
+### [INVESTIGATION RCA EN COURS] - Couvertures de Livres Manquantes dans Bibliothèque
+**Date** : 10 Juillet 2025  
+**Prompt Utilisateur** : `"explique moi pourquoi les livres n'ont pas de couverture dans la bibliothèque"`
+
+#### Context et Investigation Initiale
+
+✅ **PROBLÈME IDENTIFIÉ** :
+- **Symptôme** : Livres affichent emoji 📖 au lieu des couvertures dans la bibliothèque
+- **Impact utilisateur** : Expérience UX dégradée, identification visuelle difficile
+- **Composant affecté** : BookGrid.js (frontend) + API Open Library import (backend)
+
+#### Phase 1 : Investigation RCA Approfondie
+
+✅ **ANALYSE FRONTEND** :
+- **Code BookGrid.js** : Logique conditionnelle `{item.cover_url ? <img src={item.cover_url} /> : <div>📖</div>}` (lignes 105-113)
+- **Condition échoue** : `item.cover_url` est vide ou undefined pour livres bibliothèque
+- **Affichage fonctionnel** : Code frontend correct, problème en amont
+
+✅ **ANALYSE BACKEND - API SEARCH** :
+- **Test recherche** : `curl /api/openlibrary/search?q=harry%20potter`
+- **Résultat positif** : `"cover_url": "https://covers.openlibrary.org/b/id/10521270-M.jpg"` ✅
+- **API Open Library** : Retourne couvertures valides dans résultats recherche
+
+✅ **ANALYSE BACKEND - API IMPORT** :
+- **Test import** : `curl -X POST /api/openlibrary/import -d '{"ol_key": "/works/OL82563W"}'`
+- **Résultat problématique** : `"cover_url": ""` (chaîne vide) ❌
+- **Perte de données** : URL couverture disparaît entre recherche et import
+
+✅ **troubleshoot_agent utilisé** : Investigation approfondie effectuée
+- **Cause racine identifiée** : Mismatch structure données entre Search API et Import API
+- **Search API** : Utilise champ `cover_i` fiable pour construire URLs
+- **Import API** : Tente reconstruction depuis `first_edition.covers` souvent vide
+- **Code problématique** : `/app/backend/app/openlibrary/routes.py:184`
+
+#### Phase 2 : Analyse Technique Détaillée
+
+✅ **STRUCTURE DONNÉES IDENTIFIÉE** :
+```python
+# RECHERCHE (fonctionnel) - /api/openlibrary/search
+"cover_url": "https://covers.openlibrary.org/b/id/10521270-M.jpg"  # ✅ VALIDE
+
+# IMPORT (défaillant) - /api/openlibrary/import  
+"cover_url": extract_cover_url(first_edition.get("covers", [None])[0])  # ❌ VIDE
+```
+
+✅ **PROBLÈME ARCHITECTURAL** :
+- **Recherche** : API Search Open Library retourne `cover_i` directement
+- **Import** : Code fetch `{ol_key}/editions.json` où `covers` array souvent manquant
+- **Logique défaillante** : Au lieu d'utiliser URL déjà disponible, tentative reconstruction
+- **Perte données** : URL valide de recherche ignorée lors import
+
+#### Phase 3 : Solution Technique Identifiée
+
+✅ **CORRECTION REQUISE** :
+- **Fichier** : `/app/backend/app/openlibrary/routes.py` ligne 184
+- **Modification** : Accepter `cover_url` depuis `import_data` si disponible
+- **Code cible** : `"cover_url": import_data.get("cover_url", "") or extract_cover_url(...)`
+- **Frontend** : Passer `cover_url` depuis résultats recherche vers endpoint import
+
+✅ **ARCHITECTURE SOLUTION** :
+1. **Frontend** : Inclure `cover_url` dans données envoyées à `/api/openlibrary/import`
+2. **Backend** : Prioriser `cover_url` fournie avant reconstruction depuis éditions
+3. **Fallback** : Maintenir logique existante si aucune URL fournie
+4. **Validation** : Tester avec livre ayant couverture valide
+
+#### État Investigation
+
+✅ **DIAGNOSTIC COMPLET** :
+- **Cause racine** : Mismatch APIs Search vs Import Open Library
+- **Solution identifiée** : Prioriser cover_url depuis recherche
+- **Impact** : Résolution complète problème couvertures manquantes
+- **Prêt pour implémentation** : Phase correction suivante
+
+**🎯 INVESTIGATION DOCUMENTÉE** - Prêt pour correction ciblée avec solution technique précise
+
+---
+
 ### [DOCUMENTATION COMPLÈTE SESSION 33] - Analyse + Correction Bouton Manquant
 **Date** : 10 Juillet 2025  
 **Prompts Utilisateur** : 
