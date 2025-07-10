@@ -305,12 +305,29 @@ function MainApp() {
           duration: 2000
         });
         
-        // Recharger les données
-        await booksHook.loadBooks();
-        await booksHook.loadStats();
-        
         // Fermer le modal
         seriesHook.closeSeriesModal();
+        
+        // ✅ SOLUTION ROBUSTE OPTION C : Utiliser verifyAndDisplayBook pour les séries
+        // Même logique que pour les livres individuels avec retry intelligent
+        console.log('🔍 [SÉRIE] Vérification et affichage série ajoutée:', series.name);
+        
+        const result = await searchHook.verifyAndDisplayBook(
+          series.name,
+          series.category || 'roman',
+          booksHook.books,
+          booksHook.loadBooks,
+          booksHook.loadStats
+        );
+        
+        // Analytics de performance
+        console.log('📊 [SÉRIE] Performance metrics:', {
+          seriesName: series.name,
+          category: series.category,
+          success: result.success,
+          attempts: result.attempts,
+          totalTime: result.totalTime
+        });
         
         // Mesure performance API
         const apiTime = Date.now() - apiStartTime;
@@ -328,7 +345,6 @@ function MainApp() {
         toast.error(`Erreur : ${error.detail || 'Impossible d\'ajouter la série'}`);
         performanceMonitoring.measureApiResponse('add_series', apiStartTime, false);
       }
-      
     } catch (error) {
       console.error('Error adding series:', error);
       toast.error('Erreur lors de l\'ajout de la série');
