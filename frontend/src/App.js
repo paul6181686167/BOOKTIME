@@ -267,6 +267,75 @@ function MainApp() {
     }
   };
 
+  // Fonction pour ajouter une série à la bibliothèque
+  const handleAddSeries = async (series) => {
+    // PHASE 2.4 - Monitoring API
+    const apiStartTime = Date.now();
+    
+    try {
+      const token = localStorage.getItem('token');
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+      
+      // Créer un livre "série" avec statut "À lire"
+      const seriesBook = {
+        title: series.name,
+        author: series.author || 'Auteur inconnu',
+        category: series.category || 'roman',
+        description: `Collection ${series.name} - ${series.total_volumes || 0} tome(s)`,
+        saga: series.name,
+        volume_number: null, // Pas de numéro de tome car c'est la série entière
+        status: 'to_read', // Statut par défaut "À lire"
+        cover_url: series.cover_url || '',
+        total_pages: null,
+        is_series: true // Marquer comme série
+      };
+
+      const response = await fetch(`${backendUrl}/api/books`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(seriesBook)
+      });
+
+      if (response.ok) {
+        // Message de succès
+        toast.success(`Série "${series.name}" ajoutée à votre bibliothèque ! 📚`, {
+          duration: 2000
+        });
+        
+        // Recharger les données
+        await booksHook.loadBooks();
+        await booksHook.loadStats();
+        
+        // Fermer le modal
+        seriesHook.closeSeriesModal();
+        
+        // Mesure performance API
+        const apiTime = Date.now() - apiStartTime;
+        performanceMonitoring.measureApiResponse('add_series', apiStartTime, true);
+        alertSystem.checkResponseTime('add_series', apiTime);
+        
+        // Analytics
+        userAnalytics.trackSeriesInteraction('add_to_library', {
+          name: series.name,
+          category: series.category
+        });
+        
+      } else {
+        const error = await response.json();
+        toast.error(`Erreur : ${error.detail || 'Impossible d\'ajouter la série'}`);
+        performanceMonitoring.measureApiResponse('add_series', apiStartTime, false);
+      }
+      
+    } catch (error) {
+      console.error('Error adding series:', error);
+      toast.error('Erreur lors de l\'ajout de la série');
+      performanceMonitoring.measureApiResponse('add_series', apiStartTime, false);
+    }
+  };
+
   // Gestionnaires de clic
   const handleSeriesClick = (series) => {
     // PHASE 2.4 - Analytics séries
