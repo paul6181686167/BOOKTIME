@@ -140,14 +140,23 @@ class OpenLibraryImportTest:
         response = requests.get(f"{API_URL}/books", headers=self.get_auth_headers())
         
         if response.status_code == 200:
-            books = response.json()
-            print(f"✅ API Books fonctionne: {len(books)} livres trouvés")
+            books_data = response.json()
             
-            # Chercher le livre importé (utiliser 'id' au lieu de '_id')
+            # L'API retourne une structure paginée avec 'items'
+            if isinstance(books_data, dict) and 'items' in books_data:
+                books = books_data['items']
+                total = books_data['total']
+                print(f"✅ API Books fonctionne: {len(books)} livres sur {total} total")
+            else:
+                # Fallback si c'est une liste directe
+                books = books_data if isinstance(books_data, list) else []
+                print(f"✅ API Books fonctionne: {len(books)} livres trouvés")
+            
+            # Chercher le livre importé
             book_id = imported_book['id']
             imported_book_found = None
             for book in books:
-                # Les livres dans la base peuvent avoir '_id' ou 'id'
+                # Les livres peuvent avoir '_id' et/ou 'id'
                 if book.get('_id') == book_id or book.get('id') == book_id:
                     imported_book_found = book
                     break
@@ -165,7 +174,8 @@ class OpenLibraryImportTest:
             else:
                 print(f"❌ Livre importé NON trouvé dans la liste des livres!")
                 print(f"   ID recherché: {book_id}")
-                print(f"   IDs disponibles: {[book.get('_id', book.get('id', 'NO_ID')) for book in books[:5]]}")
+                if books:
+                    print(f"   IDs disponibles: {[book.get('_id', book.get('id', 'NO_ID')) for book in books[:5]]}")
                 return False
         else:
             print(f"❌ Erreur API Books: {response.status_code} - {response.text}")
@@ -193,7 +203,14 @@ class OpenLibraryImportTest:
         )
         
         if response.status_code == 200:
-            filtered_books = response.json()
+            filtered_data = response.json()
+            
+            # Gérer la structure paginée
+            if isinstance(filtered_data, dict) and 'items' in filtered_data:
+                filtered_books = filtered_data['items']
+            else:
+                filtered_books = filtered_data if isinstance(filtered_data, list) else []
+            
             book_found_in_filter = any(
                 book.get('_id') == imported_book['id'] or book.get('id') == imported_book['id'] 
                 for book in filtered_books
