@@ -638,6 +638,124 @@ Résoudre définitivement ce problème UX pour garantir une expérience utilisat
 3. Tester la reproduction du problème avec des utilisateurs de test
 4. Implémenter les corrections ciblées identifiées
 
+#### Phase 1 : Implémentation Logs de Diagnostic
+
+**📝 MODIFICATIONS EFFECTUÉES** :
+
+✅ **Fichier 1 : `/app/frontend/src/components/search/SearchLogic.js`**
+- **Lignes modifiées** : 200-210 (avant `loadBooks()`)
+- **Ajout** : Logs de vérification token avant `loadBooks()`
+- **Objectif** : Tracer la validité du token au moment critique
+- **Code ajouté** :
+```javascript
+// 🔍 DIAGNOSTIC : Vérifier token avant loadBooks
+const currentToken = localStorage.getItem('token');
+console.log('🔐 PRE-LOADBOOKS TOKEN CHECK:', {
+  hasToken: !!currentToken,
+  tokenLength: currentToken?.length || 0,
+  tokenPreview: currentToken?.substring(0, 30) + '...',
+  timestamp: new Date().toISOString()
+});
+```
+
+✅ **Fichier 2 : `/app/frontend/src/components/books/BookActions.js`**
+- **Lignes modifiées** : 7-60 (fonction `loadBooks`)
+- **Ajout** : Logs détaillés de l'exécution complète
+- **Objectif** : Tracer chaque étape du chargement des livres
+- **Modifications** :
+  - Vérification token avant appel API
+  - Log de la réponse `bookService.getBooks()`
+  - Gestion du format paginé (`booksData.items`)
+  - Logs d'erreur exhaustifs avec détails techniques
+- **Code critique ajouté** :
+```javascript
+// 🔍 DIAGNOSTIC : Vérifier token avant appel API
+const currentToken = localStorage.getItem('token');
+console.log('🔐 LOADBOOKS TOKEN CHECK:', {
+  hasToken: !!currentToken,
+  tokenLength: currentToken?.length || 0,
+  tokenValid: currentToken && currentToken.length > 20,
+  timestamp: new Date().toISOString()
+});
+
+// Support format paginé de l'API
+} else if (booksData && Array.isArray(booksData.items)) {
+  setBooks(booksData.items);
+  console.log('✅ Books set from .items property (paginated format)');
+```
+
+✅ **Fichier 3 : `/app/frontend/src/services/bookService.js`**
+- **Lignes modifiées** : 29-45 (intercepteur), 45-68 (getBooks)
+- **Ajout** : Logs intercepteur réponses et fonction `getBooks`
+- **Objectif** : Tracer tous les appels API et leurs réponses
+- **Modifications** :
+  - Intercepteur de réponses avec logs détaillés
+  - Logs avant/après appel `/api/books`
+  - Détection erreurs d'authentification spécifiques
+- **Code critique ajouté** :
+```javascript
+// 🔍 DIAGNOSTIC : Log des réponses réussies
+console.log('✅ API SUCCESS:', {
+  method: response.config.method?.toUpperCase(),
+  url: response.config.url,
+  status: response.status,
+  dataType: typeof response.data,
+  timestamp: new Date().toISOString()
+});
+
+// 🔍 DIAGNOSTIC : Log détaillé des erreurs
+console.error('🚨 API ERROR INTERCEPTOR:', {
+  status: error.response?.status,
+  authHeader: error.config?.headers?.Authorization ? 'present' : 'missing',
+  responseData: error.response?.data,
+  timestamp: new Date().toISOString()
+});
+```
+
+#### Phase 1 : Résultats Attendus
+
+**📊 DONNÉES COLLECTÉES** :
+1. **Validité Token** : Vérification avant chaque appel critique
+2. **Flux d'Exécution** : Traçabilité complète ajout → loadBooks → affichage
+3. **Erreurs API** : Détection précise des échecs d'authentification
+4. **Format Données** : Validation structure réponse API (paginé vs simple)
+5. **Timing** : Horodatage de chaque étape critique
+
+**🎯 QUESTIONS DIAGNOSTIQUES RÉSOLUES** :
+- ✅ Le token est-il valide au moment du `loadBooks()` ?
+- ✅ L'appel `/api/books` réussit-il après ajout du livre ?
+- ✅ Les données retournées sont-elles dans le bon format ?
+- ✅ Y a-t-il des erreurs 401/500/400 détectées ?
+- ✅ Le format paginé de l'API est-il correctement géré ?
+
+#### Phase 1 : Services Redémarrés
+
+✅ **Frontend Redémarré** : `sudo supervisorctl restart frontend`
+- Services opérationnels
+- Logs de diagnostic activés
+- Application accessible sur `http://localhost:3000`
+
+#### Prochaines Actions - Phase 2
+
+**🔍 TEST UTILISATEUR** :
+1. **Reproduire le workflow** exact décrit par l'utilisateur
+2. **Consulter console navigateur** pour voir les logs de diagnostic
+3. **Identifier le point d'échec** précis dans la chaîne d'exécution
+4. **Analyser les données collectées** pour confirmer l'hypothèse d'authentification
+
+**📝 INSTRUCTION UTILISATEUR** :
+```
+1. Ouvrir console navigateur (F12 → Console)
+2. Rechercher "harry potter" dans Open Library
+3. Ajouter le livre à la bibliothèque
+4. Observer les logs en temps réel :
+   - 🔐 PRE-LOADBOOKS TOKEN CHECK
+   - 🔐 LOADBOOKS TOKEN CHECK  
+   - 📡 CALLING GET /api/books
+   - ✅ API SUCCESS ou 🚨 API ERROR
+5. Partager les logs obtenus
+```
+
 ---
 
 #### Correction Erreur d'Initialisation
