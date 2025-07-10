@@ -471,7 +471,7 @@ async def delete_series_from_library_endpoint(
 ):
     """Endpoint de délégation pour supprimer une série de la bibliothèque"""
     # Importer la fonction depuis library.routes
-    from app.library.routes import delete_series_from_library
+    from app.library.routes import delete_series
     
     # Déléguer l'appel à la fonction existante
-    return await delete_series_from_library(series_id, current_user)
+    return await delete_series(series_id, current_user)
