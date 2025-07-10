@@ -314,6 +314,38 @@ function MainApp() {
     ? searchHook.openLibraryResults 
     : createUnifiedDisplay(filteredBooks);
 
+  // MODIFICATION ORGANISATIONNELLE : Grouper les livres par statut pour affichage en sections
+  const groupBooksByStatus = (books) => {
+    if (searchHook.isSearchMode) {
+      // En mode recherche, pas de groupement par statut
+      return { all: books };
+    }
+
+    const groups = {
+      reading: [],    // EN COURS
+      to_read: [],    // À LIRE  
+      completed: [],  // TERMINÉ
+      series: []      // SÉRIES (toujours au début)
+    };
+
+    books.forEach(book => {
+      if (book.isSeriesCard) {
+        groups.series.push(book);
+      } else {
+        const status = book.status || 'to_read';
+        if (groups[status]) {
+          groups[status].push(book);
+        } else {
+          groups.to_read.push(book); // Statut inconnu → À lire par défaut
+        }
+      }
+    });
+
+    return groups;
+  };
+
+  const groupedBooks = groupBooksByStatus(displayedBooks);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       {/* Header */}
