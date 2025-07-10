@@ -280,7 +280,8 @@ export const handleAddFromOpenLibrary = async (openLibraryBook, {
       },
       body: JSON.stringify({
         ol_key: openLibraryBook.ol_key,
-        category: targetCategory
+        category: targetCategory,
+        cover_url: openLibraryBook.cover_url || ""
       })
     });
 
