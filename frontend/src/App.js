@@ -484,6 +484,7 @@ function MainApp() {
                     books={groupedBooks.series}
                     loading={false}
                     onItemClick={handleItemClick}
+                    onUpdateBook={booksHook.handleUpdateBook}
                     showEmptyState={false}
                   />
                 </div>
