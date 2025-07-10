@@ -478,7 +478,7 @@ function MainApp() {
               await addBook(bookData);
               setActiveTab(bookData.category || 'roman');
               setViewMode('books');
-              await refetchBooks();
+              await booksHook.loadBooks();
             } catch (error) {
               console.error('Erreur lors de l\'ajout du livre:', error);
             }
