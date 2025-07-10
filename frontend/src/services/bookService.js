@@ -50,31 +50,10 @@ export const bookService = {
       if (category) params.category = category;
       if (status) params.status = status;
       
-      // 🔍 DIAGNOSTIC : Log avant appel API
-      console.log('📡 CALLING GET /api/books:', {
-        params,
-        hasToken: !!localStorage.getItem('token'),
-        timestamp: new Date().toISOString()
-      });
-      
       const response = await api.get('/api/books', { params });
-      
-      // 🔍 DIAGNOSTIC : Log après succès API
-      console.log('✅ GET /api/books SUCCESS:', {
-        status: response.status,
-        dataKeys: Object.keys(response.data || {}),
-        itemsCount: response.data?.items?.length || 0,
-        total: response.data?.total || 0
-      });
-      
       return response.data;
     } catch (error) {
-      console.error('🚨 getBooks ERROR:', {
-        message: error.message,
-        status: error.response?.status,
-        url: error.config?.url,
-        timestamp: new Date().toISOString()
-      });
+      console.error('Erreur lors de la récupération des livres:', error);
       throw new Error('Erreur lors de la récupération des livres');
     }
   },
