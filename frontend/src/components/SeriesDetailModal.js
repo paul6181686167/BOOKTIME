@@ -31,8 +31,6 @@ const SeriesDetailModal = ({
   const [selectedTomes, setSelectedTomes] = useState(new Set());
   const [autoCompleting, setAutoCompleting] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
-  const [missingAnalysis, setMissingAnalysis] = useState(null);
-  const [addingToLibrary, setAddingToLibrary] = useState(false); // 🆕 État ajout série
 
   useEffect(() => {
     if (isOpen && series) {
