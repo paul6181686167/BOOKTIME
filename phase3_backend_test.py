@@ -107,20 +107,22 @@ def login():
     print_subheader("Authentification")
     
     # Données de test
-    test_user = {
+    login_data = {
         "username": "testuser",
-        "password": "testpassword"
+        "password": "testpassword",
+        "first_name": "Test",
+        "last_name": "User"
     }
     
     # Tentative de connexion
-    success, response = make_request("POST", "auth/login", test_user)
+    success, response = make_request("POST", "auth/login", login_data)
     
     if success:
         data = response.json()
-        if "token" in data:
+        if "access_token" in data:
             global TOKEN, USER_ID
-            TOKEN = data["token"]
-            USER_ID = data.get("user_id")
+            TOKEN = data["access_token"]
+            USER_ID = data.get("user", {}).get("id")
             print_result(True, f"Authentification réussie. Token obtenu.")
             return True
         else:
