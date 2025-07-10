@@ -223,7 +223,6 @@ function MainApp() {
     
     await searchHook.searchOpenLibrary(query, {
       books: booksHook.books,
-      handleAddSeriesToLibrary: seriesHook.handleAddSeriesToLibrary,
       getCategoryBadgeFromBook
     });
 
