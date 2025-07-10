@@ -52,8 +52,7 @@ export const searchOpenLibrary = async (query, {
       
       // Générer automatiquement les cartes séries basées sur le terme de recherche
       const seriesCards = generateSeriesCardsForSearch(query, data.books).map(card => ({
-        ...card,
-        onAddToLibrary: handleAddSeriesToLibrary // Ajouter la callback pour le bouton
+        ...card
       }));
       
       // AJOUT DES BADGES CATÉGORIE : Marquer les livres avec leur catégorie et badge
