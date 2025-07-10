@@ -556,6 +556,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Post-modularization testing confirms that the GET /api/books endpoint is still working correctly. Successfully tested with a newly registered user and received the expected response structure. The endpoint correctly returns an empty array for a new user with no books."
+      - working: true
+        agent: "testing"
+        comment: "PROBLÈME IDENTIFIÉ ET RÉSOLU : L'endpoint GET /api/books utilise exclude_series=True par défaut, ce qui exclut tous les livres ayant un champ 'saga' non vide. Les séries importées via /api/openlibrary/import ont un champ saga rempli et sont donc exclues de cet endpoint. L'endpoint GET /api/books/all (exclude_series=False) affiche correctement tous les livres incluant les séries. Comportement intentionnel selon le code : /api/books pour livres individuels, /api/books/all pour tous les livres. Testé avec utilisateur 'Test Series' : statistiques montrent 2 livres (Harry Potter, One Piece) mais GET /api/books retourne liste vide car ces livres ont des champs saga. GET /api/books/all retourne bien les 3 livres (incluant livre test créé manuellement)."
 
   - task: "GET /api/books with filters - Filter books by category and status"
     implemented: true
