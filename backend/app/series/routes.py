@@ -408,3 +408,15 @@ async def auto_complete_series(
         "existing_volumes": len(existing_volumes),
         "created_volumes": len(created_books)
     }
+
+@router.get("/library")
+async def get_series_library_endpoint(
+    category: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Endpoint de délégation pour obtenir les séries de la bibliothèque"""
+    # Importer la fonction depuis library.routes
+    from app.library.routes import get_series_library
+    
+    # Déléguer l'appel à la fonction existante
+    return await get_series_library(category, current_user)
