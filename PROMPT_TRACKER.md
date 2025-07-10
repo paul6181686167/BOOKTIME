@@ -49,10 +49,10 @@ Documenter CHAQUE prompt utilisateur immédiatement après réception pour maint
    - Statut : ✅ Documenté et traité
    - Résultat : Identification du dernier message et continuation
 
-4. **Prompt 4** : `"lorsque je tape dans la barre de recherche un livre puis que je clique sur la vignette de ce livre dans les résultats, je clique sur le bouton pour l'ajouter à ma bibliothèque je ne retrouve pas cette vignette dans ma bibliothèque pourtant il y a marqué 1 dans à lire"`
+5. **Prompt 5** : `"bon bah préserve tout ce qui a été fait et règle ça:Uncaught runtime errors: Cannot access 'backToLibrary' before initialization"`
    - Statut : ⏳ En cours de traitement
-   - Action : Analyse du problème fonctionnel de synchronisation ajout/affichage
-   - **VRAI PROBLÈME IDENTIFIÉ** : Livre ajouté (compteur +1) mais pas visible dans bibliothèque
+   - Action : Correction erreur d'initialisation fonction backToLibrary
+   - **NOUVELLE ERREUR** : Ordre d'initialisation React hooks - backToLibrary utilisé avant définition
 
 ### Session Précédente (Référence)
 - **Dernier prompt** : `"analyse l'appli en consultant d'abord DOCUMENTATION.md et CHANGELOG.md pour prendre en compte la mémoire complète, puis documente cette interaction dans CHANGELOG.md"`
