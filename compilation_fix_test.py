@@ -71,7 +71,13 @@ def test_authentication():
             else:
                 return log_test("Authentication", False, "Token manquant dans la réponse d'inscription"), None
         else:
-            return log_test("Authentication", False, f"Inscription échouée: HTTP {register_response.status_code}"), None
+            # Add detailed error information
+            try:
+                error_data = register_response.json()
+                error_detail = error_data.get('detail', 'No detail provided')
+            except:
+                error_detail = register_response.text
+            return log_test("Authentication", False, f"Inscription échouée: HTTP {register_response.status_code} - {error_detail}"), None
             
     except Exception as e:
         return log_test("Authentication", False, f"Exception: {str(e)}"), None
