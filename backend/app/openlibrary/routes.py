@@ -181,7 +181,7 @@ async def import_from_open_library(
             "publication_year": first_edition.get("publish_date"),
             "publisher": ", ".join(first_edition.get("publishers", [])) if first_edition.get("publishers") else "",
             "isbn": first_edition.get("isbn_13", [""])[0] if first_edition.get("isbn_13") else "",
-            "cover_url": extract_cover_url(first_edition.get("covers", [None])[0]),
+            "cover_url": import_data.get("cover_url", "") or extract_cover_url(first_edition.get("covers", [None])[0]),
             "status": "to_read",
             "current_page": None,
             "rating": None,
