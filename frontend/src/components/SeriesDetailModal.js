@@ -15,7 +15,16 @@ const SeriesDetailModal = ({
   series, 
   isOpen, 
   onClose, 
-  onUpdate
+  onUpdate,
+  // 🆕 NOUVELLES PROPS POUR AJOUT SÉRIE
+  onAddFromOpenLibrary,
+  addingBooks,
+  setAddingBooks,
+  books: userBooks,
+  loadBooks,
+  loadStats,
+  setOpenLibraryResults,
+  getCategoryBadgeFromSeries
 }) => {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -23,6 +32,7 @@ const SeriesDetailModal = ({
   const [autoCompleting, setAutoCompleting] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [missingAnalysis, setMissingAnalysis] = useState(null);
+  const [addingToLibrary, setAddingToLibrary] = useState(false); // 🆕 État ajout série
 
   useEffect(() => {
     if (isOpen && series) {
