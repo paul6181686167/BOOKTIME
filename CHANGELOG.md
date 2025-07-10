@@ -511,6 +511,73 @@ cd /app/frontend && yarn add lucide-react
 
 ---
 
+### [CORRECTION RCA] - Problème Synchronisation Ajout/Affichage Livres
+**Date** : Mars 2025  
+**Prompt Utilisateur** : `"J'ai un problème avec l'ajout de livres dans ma bibliothèque : lorsque j'ajoute un livre ou une série complète depuis la recherche Open Library, celui-ci ne s'affiche pas dans ma bibliothèque. L'action semble réussir (pas de message d'erreur) mais le livre n'apparaît nulle part dans mes listes. Peux-tu investiguer et corriger ce problème de synchronisation entre l'ajout et l'affichage ? Je veux que mes livres ajoutés apparaissent immédiatement dans ma bibliothèque."`
+
+#### Phase 1 : Investigation RCA Complète
+
+##### ✅ **1.1 Documentation Consultée** :
+- ✅ DOCUMENTATION.md : Architecture ajout/affichage comprise
+- ✅ CHANGELOG.md : Aucun problème similaire dans l'historique
+- ✅ Application mature avec 89 endpoints fonctionnels
+
+##### ✅ **1.2 troubleshoot_agent utilisé (OBLIGATOIRE)** :
+**CAUSE RACINE IDENTIFIÉE** : 🎯 **Problème UX/État Frontend - Pas un bug technique**
+
+**Résultats Investigation Détaillés** :
+1. ✅ **Backend API Fonctionnel** :
+   - API `/api/openlibrary/import` fonctionne correctement (200 OK)
+   - Livres correctement sauvegardés en MongoDB
+   - Transformation données Open Library → BOOKTIME réussie
+   - Association user_id correcte
+
+2. ✅ **Base de Données Opérationnelle** :
+   - MongoDB connecté et collections configurées
+   - Livres importés présents en base avec bon user_id
+   - Structure données conforme au schéma attendu
+
+3. 🎯 **CAUSE RACINE - Problème État Frontend** :
+   - **Livres ajoutés en base MAIS frontend ne refresh pas la vue bibliothèque**
+   - **Utilisateur reste en mode recherche après ajout**
+   - **Fonction `handleAddFromOpenLibrary` appelle `loadBooks()` mais utilisateur ne voit pas sa bibliothèque mise à jour**
+   - **Pas de navigation automatique vers bibliothèque où livres seraient visibles**
+
+##### ✅ **1.3 Impact Global Analysé** :
+- **Portée** : Affecte uniquement l'UX d'ajout depuis Open Library
+- **Sévérité** : Critique pour expérience utilisateur (livres "perdus")
+- **Architecture** : Aucun impact sur backend/base données (fonctionnels)
+- **Fonctionnalités** : 89 endpoints préservés, aucune régression
+
+#### Phase 2 : Diagnostic Technique Complet
+
+##### ✅ **Fichiers Analysés** :
+- `/app/backend/app/openlibrary/routes.py` : ✅ Import fonctionnel
+- `/app/frontend/src/App.js` : ✅ Hooks intégrés correctement
+- `/app/frontend/src/hooks/useSearch.js` : ⚠️ Logique état présente mais UX incomplète
+- MongoDB collections : ✅ Données persistées correctement
+
+##### ✅ **Points Critiques Identifiés** :
+1. **Synchronisation État** : `loadBooks()` appelé mais utilisateur en mode recherche
+2. **Navigation UX** : Pas de retour automatique vers bibliothèque
+3. **Feedback Visuel** : Pas de notification claire du succès
+4. **Vue Active** : Utilisateur ne voit pas bibliothèque mise à jour
+
+#### Phase 3 : Stratégie de Correction
+
+##### ✅ **Solution Recommandée troubleshoot_agent** :
+1. **Modifier frontend** pour retour automatique vers bibliothèque après ajout réussi
+2. **OU** refresh état bibliothèque en mode recherche avec notification claire
+3. **Ajouter** action explicite "Voir dans Bibliothèque" dans notifications succès
+4. **Assurer** attente correcte de `loadBooks()` après ajouts réussis
+
+##### ✅ **Approche Correction** :
+- 🎯 **UNE correction ciblée** sur synchronisation état frontend
+- 🛡️ **Préservation totale** des 89 endpoints + Phases 3+4
+- 📝 **Documentation** complète de chaque modification
+
+---
+
 ### [MÉMOIRE COMPLÈTE 25] - Analyse Application État Complet Mars 2025 + Détection Erreur Critique
 **Date** : Mars 2025  
 **Prompt Utilisateur** : `"analyse l'appli en consultant d'abord DOCUMENTATION.md et CHANGELOG.md pour prendre en compte la mémoire complète, puis documente cette interaction dans CHANGELOG.md"`
