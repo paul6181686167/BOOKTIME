@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 
 # Configuration
-BACKEND_URL = "https://5281545e-c9bb-4ca0-9dbd-74c876674cbd.preview.emergentagent.com"
+BACKEND_URL = "https://5e73fac5-5915-4103-a67e-8c7378dcce86.preview.emergentagent.com"
 API_BASE = f"{BACKEND_URL}/api"
 
 def investigate_auth():
