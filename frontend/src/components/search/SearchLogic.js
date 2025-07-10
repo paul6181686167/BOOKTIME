@@ -213,7 +213,7 @@ export const handleAddFromOpenLibrary = async (openLibraryBook, {
           }
         });
         window.dispatchEvent(backToLibraryEvent);
-      }, 1500); // Délai pour que l'utilisateur voie le toast de succès
+      }, 500); // Délai réduit pour une meilleure expérience utilisateur
       
       // Message de succès avec indication de l'onglet ET retour automatique
       const categoryLabels = {
