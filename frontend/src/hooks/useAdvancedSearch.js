@@ -76,7 +76,10 @@ export const useAdvancedSearch = (books = []) => {
 
   // Logique de filtrage classique (utilisée quand pas de recherche groupée active)
   const filteredBooks = useMemo(() => {
-    if (!books || books.length === 0) return [];
+    // Vérification renforcée : s'assurer que books est toujours un array
+    if (!books || !Array.isArray(books) || books.length === 0) {
+      return [];
+    }
 
     return books.filter(book => {
       // Filtrage par terme de recherche (avec debounce)
