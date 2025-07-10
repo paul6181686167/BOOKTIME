@@ -119,6 +119,30 @@ function MainApp() {
     };
   }, []);
 
+  // Gestionnaire d'événements pour les recommandations avancées
+  useEffect(() => {
+    const handleOpenAdvancedRecommendations = () => {
+      setShowAdvancedRecommendationsModal(true);
+    };
+
+    window.addEventListener('openAdvancedRecommendations', handleOpenAdvancedRecommendations);
+    return () => {
+      window.removeEventListener('openAdvancedRecommendations', handleOpenAdvancedRecommendations);
+    };
+  }, []);
+
+  // Gestionnaire d'événements pour les intégrations
+  useEffect(() => {
+    const handleOpenIntegrations = () => {
+      setShowIntegrationsModal(true);
+    };
+
+    window.addEventListener('openIntegrations', handleOpenIntegrations);
+    return () => {
+      window.removeEventListener('openIntegrations', handleOpenIntegrations);
+    };
+  }, []);
+
   // Démarrage automatique du monitoring
   useEffect(() => {
     performanceMonitoring.startMonitoring();
