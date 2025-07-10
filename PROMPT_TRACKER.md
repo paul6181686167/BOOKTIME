@@ -49,10 +49,10 @@ Documenter CHAQUE prompt utilisateur immédiatement après réception pour maint
    - Statut : ✅ Documenté et traité
    - Résultat : Identification du dernier message et continuation
 
-5. **Prompt 5** : `"bon bah préserve tout ce qui a été fait et règle ça:Uncaught runtime errors: Cannot access 'backToLibrary' before initialization"`
+6. **Prompt 6** : `"bon documente absolument tout et prépare toi à bien enregister mon prochain message"`
    - Statut : ⏳ En cours de traitement
-   - Action : Correction erreur d'initialisation fonction backToLibrary
-   - **NOUVELLE ERREUR** : Ordre d'initialisation React hooks - backToLibrary utilisé avant définition
+   - Action : Documentation exhaustive + préparation capture prochain message
+   - **INSTRUCTION** : Documentation complète de la session + préparation système rigoureux
 
 ### Session Précédente (Référence)
 - **Dernier prompt** : `"analyse l'appli en consultant d'abord DOCUMENTATION.md et CHANGELOG.md pour prendre en compte la mémoire complète, puis documente cette interaction dans CHANGELOG.md"`
