@@ -64,6 +64,7 @@ const SeriesDetailModal = ({
   useEffect(() => {
     if (isOpen && series) {
       loadSeriesBooks();
+      checkIfSeriesOwned();
     }
   }, [isOpen, series]);
 
