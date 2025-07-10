@@ -102,58 +102,6 @@ const SeriesDetailModal = ({
     }
   };
 
-  // 🆕 FONCTION AJOUT SÉRIE À LA BIBLIOTHÈQUE
-  const handleAddSeries = async () => {
-    if (!onAddFromOpenLibrary || !series) return;
-    
-    try {
-      setAddingToLibrary(true);
-      
-      // Préparer les données de la série pour l'API
-      const seriesData = {
-        series_name: series.name,
-        author: series.author,
-        category: series.category,
-        description: series.description || "",
-        total_volumes: series.totalBooks || 0,
-        cover_url: series.cover_url || ""
-      };
-      
-      // ✅ FEEDBACK : Toast de succès avec nom série
-      toast.success(`Série "${seriesData.series_name}" ajoutée à votre bibliothèque ! 📚`, {
-        duration: 2000
-      });
-      
-      // ✅ UTILISER SOLUTION C ADAPTÉE pour les séries
-      await onAddFromOpenLibrary(seriesData, {
-        books: userBooks,
-        addingBooks,
-        setAddingBooks,
-        activeTab: series.category || 'roman',
-        getCategoryBadgeFromSeries,
-        loadBooks,
-        loadStats,
-        setOpenLibraryResults
-      });
-      
-    } catch (error) {
-      console.error('Erreur ajout série:', error);
-      toast.error('Erreur lors de l\'ajout de la série');
-    } finally {
-      setAddingToLibrary(false);
-    }
-  };
-
-  // 🆕 VÉRIFIER SI LA SÉRIE EST DÉJÀ DANS LA BIBLIOTHÈQUE
-  const isSeriesInLibrary = () => {
-    if (!userBooks || !series) return false;
-    return userBooks.some(book => 
-      book.saga && 
-      book.saga.toLowerCase().trim() === series.name.toLowerCase().trim() &&
-      book.is_series_entity === true
-    );
-  };
-
   const getStatusBadge = (status) => {
     switch (status) {
       case 'completed':
