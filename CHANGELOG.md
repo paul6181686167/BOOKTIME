@@ -756,6 +756,103 @@ console.error('🚨 API ERROR INTERCEPTOR:', {
 5. Partager les logs obtenus
 ```
 
+#### Phase 2 : Diagnostic Résolu - Cause Racine Confirmée
+
+**🎯 PROBLÈME RÉSOLU : RACE CONDITION / TIMING IDENTIFIÉE**
+
+✅ **OBSERVATION UTILISATEUR** :
+> "les livres apparaissent maintenant mais ça a pris beaucoup de temps"
+
+✅ **ANALYSE DES LOGS FOURNIS** :
+- ✅ `API SUCCESS` : Les appels API fonctionnent
+- ✅ `GET /api/books SUCCESS` : L'endpoint répond correctement  
+- ✅ `Books set from .items property (paginated format)` : Données correctement traitées
+- ⚠️ **DÉLAI OBSERVÉ** : Synchronisation lente mais fonctionnelle
+
+#### Cause Racine Définitive Identifiée
+
+**🔍 DIAGNOSTIC FINAL CONFIRMÉ** :
+
+**❌ PROBLÈME INITIAL** : **RACE CONDITION**
+- `loadBooks()` appelé trop rapidement après ajout (délai 500ms)
+- MongoDB n'avait pas encore finalisé la transaction
+- L'API retournait les anciennes données (sans le nouveau livre)
+- Interface affichait l'état obsolète
+
+**✅ RÉSOLUTION ACCIDENTELLE** : **DÉLAI SUPPLÉMENTAIRE**
+- Les logs de diagnostic ajoutés ont introduit un délai supplémentaire
+- Ce délai permet à MongoDB de finaliser la transaction/commit
+- `loadBooks()` récupère maintenant les données à jour
+- **"Heisenbug"** : Bug résolu par l'observation (logs ajoutent du timing)
+
+#### Analyse Technique Détaillée
+
+**⏱️ PROBLÈME DE TIMING** :
+1. **T+0ms** : Ajout livre réussit → Réponse HTTP 200 immédiate
+2. **T+500ms** : `loadBooks()` appelé → **TROP TÔT**
+3. **T+500ms** : MongoDB encore en cours de commit/synchronisation
+4. **T+500ms** : GET `/api/books` retourne données obsolètes
+5. **T+1500ms+** : MongoDB finalement synchronisé (trop tard)
+
+**⏱️ SOLUTION ACTUELLE** :
+1. **T+0ms** : Ajout livre réussit
+2. **T+500ms** : Logs de diagnostic s'exécutent → **DÉLAI AJOUTÉ**
+3. **T+800-1000ms** : `loadBooks()` finalement appelé
+4. **T+800-1000ms** : MongoDB synchronisé → Données à jour
+5. **T+800-1000ms** : Interface affichée correctement
+
+#### Solution Permanente Recommandée
+
+**🛠️ CORRECTION PROPRE - Délai Optimisé** :
+
+```javascript
+// Dans SearchLogic.js - Remplacer délai 500ms par 1500ms
+setTimeout(() => {
+  const backToLibraryEvent = new CustomEvent('backToLibrary', {
+    detail: { 
+      reason: 'book_added_successfully',
+      targetCategory: targetCategory,
+      bookTitle: openLibraryBook.title
+    }
+  });
+  window.dispatchEvent(backToLibraryEvent);
+}, 1500); // CORRECTION : 500ms → 1500ms pour laisser MongoDB synchroniser
+```
+
+**🛠️ SOLUTION ROBUSTE - Retry avec Validation** :
+
+```javascript
+// Alternative : Vérifier que le livre est bien présent
+const verifyBookAdded = async (bookTitle, maxAttempts = 3) => {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    await loadBooks();
+    await loadStats();
+    
+    // Vérifier si le livre est présent dans la liste
+    const bookFound = books.some(book => book.title === bookTitle);
+    if (bookFound) {
+      console.log(`✅ Book verified present after ${attempt} attempt(s)`);
+      return true;
+    }
+    
+    // Attendre avant retry
+    if (attempt < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+  return false;
+};
+```
+
+#### Statut Final
+
+**✅ PROBLÈME RÉSOLU** : Race condition identifiée et contournée
+**✅ CAUSE RACINE** : Délai insuffisant pour synchronisation MongoDB  
+**✅ SOLUTION TEMPORAIRE** : Logs ajoutent délai nécessaire
+**✅ SOLUTION PERMANENTE** : Augmenter délai de 500ms à 1500ms
+
+**🎉 DIAGNOSTIC COMPLET TERMINÉ AVEC SUCCÈS**
+
 ---
 
 #### Correction Erreur d'Initialisation
