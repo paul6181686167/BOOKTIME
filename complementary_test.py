@@ -10,7 +10,7 @@ import sys
 from datetime import datetime
 
 # Configuration
-BACKEND_URL = "https://80ed81fe-8288-46c1-beac-9587a62a6265.preview.emergentagent.com"
+BACKEND_URL = "https://5172f225-6040-41e3-9a59-60f461308ce1.preview.emergentagent.com"
 API_BASE = f"{BACKEND_URL}/api"
 
 def log_test(test_name, status, details=""):
