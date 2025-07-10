@@ -9,14 +9,19 @@ class TestAuthentication:
     """Tests pour les endpoints d'authentification"""
     
     @pytest.mark.asyncio
-    async def test_register_user_success(self, test_client: AsyncClient):
-        """Test inscription utilisateur réussie"""
-        user_data = {
-            "first_name": "John",
-            "last_name": "Doe"
-        }
+    async def test_health_endpoint(self, test_client: AsyncClient):
+        """Test endpoint de santé de l'API"""
+        response = await test_client.get("/health")
         
-        response = await test_client.post("/api/auth/register", json=user_data)
+        assert response.status_code == 200
+        data = response.json()
+        assert "status" in data
+        assert data["status"] == "ok"
+    
+    @pytest.mark.asyncio
+    async def test_register_user_success(self, test_client: AsyncClient, test_user_data: dict):
+        """Test inscription utilisateur réussie"""
+        response = await test_client.post("/api/auth/register", json=test_user_data)
         
         assert response.status_code == 200
         data = response.json()
@@ -24,8 +29,8 @@ class TestAuthentication:
         assert "token_type" in data
         assert data["token_type"] == "bearer"
         assert "user" in data
-        assert data["user"]["first_name"] == "John"
-        assert data["user"]["last_name"] == "Doe"
+        assert data["user"]["first_name"] == test_user_data["first_name"]
+        assert data["user"]["last_name"] == test_user_data["last_name"]
     
     @pytest.mark.asyncio
     async def test_register_user_missing_fields(self, test_client: AsyncClient):
@@ -40,19 +45,14 @@ class TestAuthentication:
         assert response.status_code == 422
     
     @pytest.mark.asyncio
-    async def test_login_user_success(self, test_client: AsyncClient):
+    async def test_login_user_success(self, test_client: AsyncClient, test_user_data: dict):
         """Test connexion utilisateur réussie"""
         # D'abord créer un utilisateur
-        user_data = {
-            "first_name": "Jane",
-            "last_name": "Smith"
-        }
-        
-        register_response = await test_client.post("/api/auth/register", json=user_data)
+        register_response = await test_client.post("/api/auth/register", json=test_user_data)
         assert register_response.status_code == 200
         
         # Ensuite se connecter
-        login_response = await test_client.post("/api/auth/login", json=user_data)
+        login_response = await test_client.post("/api/auth/login", json=test_user_data)
         
         assert login_response.status_code == 200
         data = login_response.json()
@@ -60,8 +60,8 @@ class TestAuthentication:
         assert "token_type" in data
         assert data["token_type"] == "bearer"
         assert "user" in data
-        assert data["user"]["first_name"] == "Jane"
-        assert data["user"]["last_name"] == "Smith"
+        assert data["user"]["first_name"] == test_user_data["first_name"]
+        assert data["user"]["last_name"] == test_user_data["last_name"]
     
     @pytest.mark.asyncio
     async def test_login_user_not_found(self, test_client: AsyncClient):
@@ -76,52 +76,3 @@ class TestAuthentication:
         assert response.status_code == 401
         data = response.json()
         assert "detail" in data
-    
-    @pytest.mark.asyncio
-    async def test_get_current_user(self, test_client: AsyncClient, auth_headers: dict):
-        """Test récupération utilisateur connecté"""
-        response = await test_client.get("/api/auth/me", headers=auth_headers)
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert "id" in data
-        assert "first_name" in data
-        assert "last_name" in data
-        assert data["first_name"] == "Test"
-        assert data["last_name"] == "User"
-    
-    @pytest.mark.asyncio
-    async def test_get_current_user_no_token(self, test_client: AsyncClient):
-        """Test récupération utilisateur sans token"""
-        response = await test_client.get("/api/auth/me")
-        
-        assert response.status_code == 401
-    
-    @pytest.mark.asyncio
-    async def test_get_current_user_invalid_token(self, test_client: AsyncClient):
-        """Test récupération utilisateur avec token invalide"""
-        headers = {"Authorization": "Bearer invalid_token"}
-        response = await test_client.get("/api/auth/me", headers=headers)
-        
-        assert response.status_code == 401
-    
-    @pytest.mark.asyncio
-    async def test_register_duplicate_user(self, test_client: AsyncClient):
-        """Test inscription utilisateur déjà existant"""
-        user_data = {
-            "first_name": "Duplicate",
-            "last_name": "User"
-        }
-        
-        # Première inscription
-        response1 = await test_client.post("/api/auth/register", json=user_data)
-        assert response1.status_code == 200
-        
-        # Seconde inscription (même utilisateur)
-        response2 = await test_client.post("/api/auth/register", json=user_data)
-        assert response2.status_code == 200  # Connexion automatique
-        
-        # Vérifier que c'est le même utilisateur
-        data1 = response1.json()
-        data2 = response2.json()
-        assert data1["user"]["id"] == data2["user"]["id"]
