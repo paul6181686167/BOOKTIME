@@ -114,12 +114,27 @@ class OpenLibraryImportTest:
         
         if response.status_code == 200:
             imported_book = response.json()
-            self.created_books.append(imported_book['_id'])
-            print(f"✅ Livre importé avec succès: {imported_book['title']}")
-            print(f"   ID: {imported_book['_id']}")
-            print(f"   Auteur: {imported_book['author']}")
-            print(f"   Catégorie: {imported_book['category']}")
-            return imported_book
+            print(f"📋 Réponse import: {json.dumps(imported_book, indent=2)}")
+            
+            # Vérifier la structure de la réponse
+            if 'book' in imported_book:
+                book_data = imported_book['book']
+                self.created_books.append(book_data['_id'])
+                print(f"✅ Livre importé avec succès: {book_data['title']}")
+                print(f"   ID: {book_data['_id']}")
+                print(f"   Auteur: {book_data['author']}")
+                print(f"   Catégorie: {book_data['category']}")
+                return book_data
+            elif '_id' in imported_book:
+                self.created_books.append(imported_book['_id'])
+                print(f"✅ Livre importé avec succès: {imported_book['title']}")
+                print(f"   ID: {imported_book['_id']}")
+                print(f"   Auteur: {imported_book['author']}")
+                print(f"   Catégorie: {imported_book['category']}")
+                return imported_book
+            else:
+                print(f"⚠️  Structure de réponse inattendue: {list(imported_book.keys())}")
+                return imported_book
         else:
             print(f"❌ Erreur import: {response.status_code} - {response.text}")
             return False
