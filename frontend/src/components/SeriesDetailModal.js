@@ -58,11 +58,14 @@ const SeriesDetailModal = ({
   const handleAddSeries = async () => {
     if (onAddSeries && series) {
       try {
+        console.log('🟢 Tentative d\'ajout de la série:', series);
         await onAddSeries(series);
         setIsSeriesOwned(true); // Marquer comme possédée après ajout
       } catch (error) {
-        console.error('Erreur lors de l\'ajout de la série:', error);
+        console.error('❌ Erreur lors de l\'ajout de la série:', error);
       }
+    } else {
+      console.log('⚠️ Pas de fonction onAddSeries ou pas de série:', { onAddSeries: !!onAddSeries, series });
     }
   };
 
