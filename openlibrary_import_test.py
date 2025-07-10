@@ -143,10 +143,12 @@ class OpenLibraryImportTest:
             books = response.json()
             print(f"✅ API Books fonctionne: {len(books)} livres trouvés")
             
-            # Chercher le livre importé
+            # Chercher le livre importé (utiliser 'id' au lieu de '_id')
+            book_id = imported_book['id']
             imported_book_found = None
             for book in books:
-                if book['_id'] == imported_book['_id']:
+                # Les livres dans la base peuvent avoir '_id' ou 'id'
+                if book.get('_id') == book_id or book.get('id') == book_id:
                     imported_book_found = book
                     break
             
@@ -154,7 +156,7 @@ class OpenLibraryImportTest:
                 print(f"✅ Livre importé trouvé dans la liste: {imported_book_found['title']}")
                 
                 # Vérifier les champs requis
-                required_fields = ['_id', 'title', 'author', 'category', 'status']
+                required_fields = ['title', 'author', 'category', 'status']
                 missing_fields = [field for field in required_fields if field not in imported_book_found]
                 if missing_fields:
                     print(f"⚠️  Champs manquants: {missing_fields}")
@@ -162,8 +164,8 @@ class OpenLibraryImportTest:
                     print("✅ Tous les champs requis sont présents")
             else:
                 print(f"❌ Livre importé NON trouvé dans la liste des livres!")
-                print(f"   ID recherché: {imported_book['_id']}")
-                print(f"   IDs disponibles: {[book['_id'] for book in books[:5]]}")
+                print(f"   ID recherché: {book_id}")
+                print(f"   IDs disponibles: {[book.get('_id', book.get('id', 'NO_ID')) for book in books[:5]]}")
                 return False
         else:
             print(f"❌ Erreur API Books: {response.status_code} - {response.text}")
@@ -171,7 +173,7 @@ class OpenLibraryImportTest:
         
         # Test 3b: GET /api/books/{book_id} - Récupérer le livre spécifique
         response = requests.get(
-            f"{API_URL}/books/{imported_book['_id']}", 
+            f"{API_URL}/books/{imported_book['id']}", 
             headers=self.get_auth_headers()
         )
         
@@ -192,7 +194,10 @@ class OpenLibraryImportTest:
         
         if response.status_code == 200:
             filtered_books = response.json()
-            book_found_in_filter = any(book['_id'] == imported_book['_id'] for book in filtered_books)
+            book_found_in_filter = any(
+                book.get('_id') == imported_book['id'] or book.get('id') == imported_book['id'] 
+                for book in filtered_books
+            )
             if book_found_in_filter:
                 print(f"✅ Livre trouvé dans le filtre catégorie '{category}'")
             else:
