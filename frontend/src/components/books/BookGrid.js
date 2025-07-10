@@ -72,11 +72,31 @@ const BookGrid = ({
           {item.isSeriesCard ? (
             // Carte série
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700">
-              <div className="aspect-[2/1] bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                <div className="text-white text-center">
-                  <div className="text-4xl mb-2">📚</div>
-                  <div className="text-sm font-medium">Série</div>
-                </div>
+              <div className="aspect-[2/1] bg-gray-100 dark:bg-gray-700 flex items-center justify-center relative overflow-hidden">
+                {item.cover_url ? (
+                  <>
+                    <img 
+                      src={item.cover_url} 
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                    />
+                    {/* Overlay pour le texte "Série" */}
+                    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                      <div className="text-white text-center">
+                        <div className="text-4xl mb-2">📚</div>
+                        <div className="text-sm font-medium bg-black bg-opacity-50 px-2 py-1 rounded">Série</div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  // Fallback avec dégradé si pas d'image
+                  <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                    <div className="text-white text-center">
+                      <div className="text-4xl mb-2">📚</div>
+                      <div className="text-sm font-medium">Série</div>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="p-4">
                 <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2 mb-2">
