@@ -69,8 +69,8 @@ export const TAB_CONFIG = [
   },
   {
     key: BOOK_CATEGORIES.MANGA,
-    label: '🇯🇵 Mangas',
-    emoji: '🇯🇵'
+    label: 'Mangas',
+    emoji: ''
   }
 ];
 
