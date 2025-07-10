@@ -36,7 +36,28 @@
   transition: background-color 0.3s ease;
 }
 
+/* MODIFICATION: Classe spécifique pour les fiches livres et séries - même largeur */
+.modal-content-wide {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 1024px; /* Équivalent à max-w-4xl */
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: modalSlideIn 0.3s ease-out;
+  transition: background-color 0.3s ease;
+}
+
 .dark .modal-content {
+  background: #1f2937;
+  border: 1px solid #374151;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+}
+
+/* Mode sombre pour la classe wide */
+.dark .modal-content-wide {
   background: #1f2937;
   border: 1px solid #374151;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
