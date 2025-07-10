@@ -308,11 +308,13 @@ function MainApp() {
             {/* Barre de recherche centrale */}
             <div className="flex-1 max-w-2xl mx-8">
               <UnifiedSearchBar 
-                onSearch={searchOpenLibrary}
-                onTermChange={searchHook.handleSearchTermChange}
-                isSearchMode={searchHook.isSearchMode}
-                searchLoading={searchHook.searchLoading}
-                lastSearchTerm={searchHook.lastSearchTerm}
+                searchTerm={searchHook.lastSearchTerm || ''}
+                onSearchChange={searchHook.handleSearchTermChange}
+                books={booksHook.books || []}
+                onOpenLibrarySearch={searchOpenLibrary}
+                filters={filters || {}}
+                onFiltersChange={setFilters}
+                isCompact={true}
               />
             </div>
             
