@@ -121,8 +121,8 @@ const SeriesDetailModal = ({
         cover_url: series.cover_url || ""
       };
       
-      // Message de succès immédiat
-      toast.success(`"${series.name}" en cours d'ajout à votre bibliothèque ! 📚`, {
+      // ✅ FEEDBACK : Toast de succès avec nom série
+      toast.success(`Série "${seriesData.series_name}" ajoutée à votre bibliothèque ! 📚`, {
         duration: 2000
       });
       
