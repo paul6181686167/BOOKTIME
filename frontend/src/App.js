@@ -479,7 +479,7 @@ function MainApp() {
           onClose={booksHook.closeBookModal}
           onUpdate={booksHook.handleUpdateBook}
           onDelete={booksHook.handleDeleteBook}
-          onAddFromOpenLibrary={handleAddFromOpenLibrary}
+          onAddFromOpenLibrary={handleAddSeriesFromOpenLibrary}
         />
       )}
       
