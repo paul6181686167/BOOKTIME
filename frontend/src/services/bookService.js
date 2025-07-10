@@ -27,9 +27,32 @@ api.interceptors.request.use(
 
 // Intercepteur pour gérer les erreurs
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // 🔍 DIAGNOSTIC : Log des réponses réussies
+    console.log('✅ API SUCCESS:', {
+      method: response.config.method?.toUpperCase(),
+      url: response.config.url,
+      status: response.status,
+      dataType: typeof response.data,
+      timestamp: new Date().toISOString()
+    });
+    return response;
+  },
   (error) => {
+    // 🔍 DIAGNOSTIC : Log détaillé des erreurs
+    console.error('🚨 API ERROR INTERCEPTOR:', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      url: error.config?.url,
+      method: error.config?.method?.toUpperCase(),
+      authHeader: error.config?.headers?.Authorization ? 'present' : 'missing',
+      responseData: error.response?.data,
+      timestamp: new Date().toISOString()
+    });
+    
     if (error.response?.status === 401) {
+      console.log('🔐 AUTH ERROR: Token expiré ou invalide, redirecting...');
       // Token expiré ou invalide
       localStorage.removeItem('token');
       localStorage.removeItem('user');
