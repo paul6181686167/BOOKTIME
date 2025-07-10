@@ -201,13 +201,29 @@ export const handleAddFromOpenLibrary = async (openLibraryBook, {
       await loadBooks();
       await loadStats();
       
-      // Message de succès avec indication de l'onglet
+      // CORRECTION RCA : Retour automatique vers bibliothèque après ajout réussi
+      // Solution au problème de synchronisation ajout/affichage
+      setTimeout(() => {
+        // Déclencher l'événement de retour à la bibliothèque
+        const backToLibraryEvent = new CustomEvent('backToLibrary', {
+          detail: { 
+            reason: 'book_added_successfully',
+            targetCategory: targetCategory,
+            bookTitle: openLibraryBook.title
+          }
+        });
+        window.dispatchEvent(backToLibraryEvent);
+      }, 1500); // Délai pour que l'utilisateur voie le toast de succès
+      
+      // Message de succès avec indication de l'onglet ET retour automatique
       const categoryLabels = {
         'roman': 'Roman',
         'bd': 'BD',
         'manga': 'Manga'
       };
-      toast.success(`"${openLibraryBook.title}" ajouté à l'onglet ${categoryLabels[targetCategory]} !`);
+      toast.success(`"${openLibraryBook.title}" ajouté à l'onglet ${categoryLabels[targetCategory]} ! 📚\nRetour automatique vers votre bibliothèque...`, {
+        duration: 2000
+      });
       
       // Mettre à jour le statut de possession dans les résultats
       setOpenLibraryResults(prev => 
