@@ -164,7 +164,7 @@ function MainApp() {
     return () => {
       window.removeEventListener('backToLibrary', handleBackToLibrary);
     };
-  }, []);
+  }, [backToLibrary, userAnalytics]);
 
   // Démarrage automatique du monitoring
   useEffect(() => {
