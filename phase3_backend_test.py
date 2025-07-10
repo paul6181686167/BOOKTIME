@@ -247,10 +247,10 @@ def test_advanced_recommendations():
     # Récupérer un livre pour tester la prédiction
     success, response = make_request("GET", "books", params={"limit": 1})
     
-    if success and response.json():
+    if success:
         books = response.json()
-        if books and len(books) > 0:
-            book_id = books[0].get("_id")
+        if isinstance(books, list) and len(books) > 0:
+            book_id = books[0].get("_id") or books[0].get("id")
             
             if book_id:
                 success, response = make_request("GET", "recommendations/advanced/ml/predict-rating", params={"book_id": book_id})
