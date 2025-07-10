@@ -428,14 +428,14 @@ async def add_series_to_library_endpoint(
 ):
     """Endpoint de délégation pour ajouter une série à la bibliothèque"""
     # Importer la fonction depuis library.routes
-    from app.library.routes import add_series_to_library
+    from app.library.routes import create_series_library
     from app.models.series import SeriesLibraryCreate
     
     # Convertir les données en modèle Pydantic
     series_create = SeriesLibraryCreate(**series_data)
     
     # Déléguer l'appel à la fonction existante
-    return await add_series_to_library(series_create, current_user)
+    return await create_series_library(series_create, current_user)
 
 @router.put("/library/{series_id}/volume/{volume_number}")
 async def update_volume_status_endpoint(
