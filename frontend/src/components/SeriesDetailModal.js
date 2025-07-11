@@ -174,18 +174,28 @@ const SeriesDetailModal = ({
     }
   };
 
-  // Fonction pour cocher automatiquement tous les tomes précédents
-  const handleCheckPreviousTomes = () => {
+  // Fonction pour cocher automatiquement tous les tomes précédents avec sauvegarde
+  const handleCheckPreviousTomes = async () => {
     if (!missingPreviousWarning) return;
     
-    setReadTomes(prev => {
-      const newReadTomes = new Set(prev);
-      // Ajouter tous les tomes manquants
-      missingPreviousWarning.missingTomes.forEach(tomeNumber => {
-        newReadTomes.add(tomeNumber);
-      });
-      return newReadTomes;
+    const newReadTomes = new Set(readTomes);
+    // Ajouter tous les tomes manquants
+    missingPreviousWarning.missingTomes.forEach(tomeNumber => {
+      newReadTomes.add(tomeNumber);
     });
+    
+    // Mettre à jour l'état local
+    setReadTomes(newReadTomes);
+    
+    // ✅ PERSISTANCE : Sauvegarder en base de données
+    if (enrichedSeries?.name) {
+      const saved = await saveReadingPreferences(enrichedSeries.name, newReadTomes);
+      if (saved) {
+        console.log('✅ Préférences sauvegardées après cochage automatique');
+      } else {
+        console.warn('⚠️ Échec de la sauvegarde, état local maintenu');
+      }
+    }
     
     // Effacer l'avertissement
     setMissingPreviousWarning(null);
