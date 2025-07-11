@@ -37,6 +37,11 @@ export const EXTENDED_SERIES_DATABASE = {
       authors: ['J.R.R. Tolkien'],
       category: 'roman',
       volumes: 3,
+      volume_titles: {
+        1: "La Communauté de l'Anneau",
+        2: "Les Deux Tours",
+        3: "Le Retour du Roi"
+      },
       description: 'Épopée fantasy de Tolkien dans la Terre du Milieu.',
       first_published: '1954',
       status: 'completed',
