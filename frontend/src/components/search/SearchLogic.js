@@ -14,6 +14,7 @@
 import { toast } from 'react-hot-toast';
 import SearchOptimizer from '../../utils/searchOptimizer';
 import { calculateRelevanceScore, getRelevanceLevel } from './RelevanceEngine';
+import { AutoSeriesDetector } from '../../hooks/useAutoSeriesDetection';
 
 // FONCTION PRINCIPALE DE RECHERCHE OPEN LIBRARY
 export const searchOpenLibrary = async (query, {
