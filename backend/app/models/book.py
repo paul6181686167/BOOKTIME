@@ -54,6 +54,7 @@ class BookResponse(BaseModel):
     publisher: str
     isbn: str
     auto_added: bool
+    is_series: Optional[bool] = False  # CORRECTION: Ajout champ is_series manquant
     language: str
     ol_key: Optional[str] = None
     ol_work_id: Optional[str] = None
