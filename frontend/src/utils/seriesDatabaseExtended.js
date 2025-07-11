@@ -17,6 +17,57 @@ export const EXTENDED_SERIES_DATABASE = {
         6: "Harry Potter et le prince de sang-mêlé",
         7: "Harry Potter et les reliques de la mort"
       },
+      volume_details: {
+        1: {
+          pages: 320,
+          published_year: 1997,
+          description: "Harry découvre qu'il est un sorcier et entre à Poudlard pour sa première année.",
+          isbn: "978-2-07-054120-4",
+          publisher: "Gallimard Jeunesse"
+        },
+        2: {
+          pages: 368,
+          published_year: 1998,
+          description: "Harry affronte le mystère de la Chambre des Secrets et le souvenir de Tom Jedusor.",
+          isbn: "978-2-07-054130-3",
+          publisher: "Gallimard Jeunesse"
+        },
+        3: {
+          pages: 448,
+          published_year: 1999,
+          description: "Harry découvre la vérité sur son parrain Sirius Black et les secrets de son passé.",
+          isbn: "978-2-07-054140-2",
+          publisher: "Gallimard Jeunesse"
+        },
+        4: {
+          pages: 768,
+          published_year: 2000,
+          description: "Harry participe au Tournoi des Trois Sorciers et assiste au retour de Voldemort.",
+          isbn: "978-2-07-054150-1",
+          publisher: "Gallimard Jeunesse"
+        },
+        5: {
+          pages: 984,
+          published_year: 2003,
+          description: "Harry forme l'Armée de Dumbledore et découvre une importante prophétie.",
+          isbn: "978-2-07-054160-0",
+          publisher: "Gallimard Jeunesse"
+        },
+        6: {
+          pages: 696,
+          published_year: 2005,
+          description: "Harry explore le passé de Voldemort et assiste à la mort de Dumbledore.",
+          isbn: "978-2-07-054170-9",
+          publisher: "Gallimard Jeunesse"
+        },
+        7: {
+          pages: 896,
+          published_year: 2007,
+          description: "Harry, Ron et Hermione partent à la recherche des Horcruxes pour détruire Voldemort.",
+          isbn: "978-2-07-054180-8",
+          publisher: "Gallimard Jeunesse"
+        }
+      },
       description: 'Série de romans fantastiques de J.K. Rowling sur un jeune sorcier à Poudlard.',
       first_published: '1997',
       status: 'completed',
