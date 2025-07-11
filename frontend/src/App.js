@@ -409,20 +409,15 @@ function MainApp() {
     const groups = {
       reading: [],    // EN COURS
       to_read: [],    // À LIRE  
-      completed: [],  // TERMINÉ
-      series: []      // SÉRIES (toujours au début)
+      completed: []   // TERMINÉ
     };
 
     books.forEach(book => {
-      if (book.isSeriesCard) {
-        groups.series.push(book);
+      const status = book.status || 'to_read';
+      if (groups[status]) {
+        groups[status].push(book);
       } else {
-        const status = book.status || 'to_read';
-        if (groups[status]) {
-          groups[status].push(book);
-        } else {
-          groups.to_read.push(book); // Statut inconnu → À lire par défaut
-        }
+        groups.to_read.push(book); // Statut inconnu → À lire par défaut
       }
     });
 
