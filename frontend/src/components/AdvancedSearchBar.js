@@ -242,9 +242,9 @@ const AdvancedSearchBar = React.memo(({
 
   const statusOptions = [
     { value: '', label: 'Tous les statuts' },
-    { value: 'to_read', label: 'À lire', icon: '📚' },
-    { value: 'reading', label: 'En cours', icon: '📖' },
-    { value: 'completed', label: 'Terminés', icon: '✅' }
+    { value: 'to_read', label: 'À lire', icon: '' },
+    { value: 'reading', label: 'En cours', icon: '' },
+    { value: 'completed', label: 'Terminés', icon: '' }
   ];
 
   const categoryOptions = [
