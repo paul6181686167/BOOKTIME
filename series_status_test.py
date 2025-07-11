@@ -329,7 +329,7 @@ class BookTimeAPITester:
                 return False
             
             # Création et connexion utilisateur
-            success, test_user = self.test_register_user()
+            success, test_user = self.test_register_or_login_user()
             if not success:
                 self.log("❌ Échec création utilisateur")
                 return False
