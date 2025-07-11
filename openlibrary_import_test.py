@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime
 
 # Configuration
-BACKEND_URL = "https://10544d7c-9b1f-4e01-bfbc-e3dab3fac4ed.preview.emergentagent.com"
+BACKEND_URL = "https://08bd90bc-cd2e-49c8-99d9-71fefc6983a7.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 class OpenLibraryImportTest:
