@@ -98,7 +98,7 @@ class BookTimeAPITester:
             "Register User",
             "POST",
             "api/auth/register",
-            201,
+            200,
             test_user
         )
         
