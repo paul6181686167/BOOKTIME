@@ -141,6 +141,68 @@ const SeriesDetailModal = ({
     return series;
   };
 
+  // ✅ NOUVELLE FONCTION : Calculer et mettre à jour automatiquement le statut de la série
+  const calculateAndUpdateSeriesStatus = async (newReadTomes) => {
+    if (!enrichedSeries?.name || !enrichedSeries?.volumes || !isSeriesOwned) {
+      console.log('🔄 Calcul statut ignoré - série non valide ou non possédée');
+      return;
+    }
+
+    const totalTomes = enrichedSeries.volumes;
+    const readTomesCount = newReadTomes.size;
+    
+    console.log('📊 Calcul statut série:', {
+      seriesName: enrichedSeries.name,
+      totalTomes,
+      readTomesCount,
+      readTomes: Array.from(newReadTomes)
+    });
+
+    // Déterminer le nouveau statut selon les règles
+    let newStatus = 'to_read'; // Par défaut
+    
+    if (readTomesCount === 0) {
+      newStatus = 'to_read'; // Aucun tome lu = À lire
+    } else if (readTomesCount === totalTomes) {
+      newStatus = 'completed'; // Tous les tomes lus = Terminé
+    } else {
+      newStatus = 'reading'; // Quelques tomes lus = En cours
+    }
+
+    console.log('🎯 Nouveau statut calculé:', newStatus, 'depuis', seriesStatus);
+
+    // Mettre à jour seulement si le statut change
+    if (newStatus !== seriesStatus) {
+      console.log('🔄 Mise à jour statut série automatique:', seriesStatus, '→', newStatus);
+      
+      try {
+        // Utiliser la fonction existante pour changer le statut
+        await handleQuickStatusChange(newStatus);
+        
+        // Mettre à jour l'état local
+        setSeriesStatus(newStatus);
+        
+        // Notification utilisateur
+        const statusLabels = {
+          'to_read': 'À lire',
+          'reading': 'En cours',
+          'completed': 'Terminé'
+        };
+        
+        toast.success(`Statut de la série mis à jour automatiquement : ${statusLabels[newStatus]}`, {
+          icon: '🎯',
+          duration: 3000
+        });
+        
+      } catch (error) {
+        console.error('❌ Erreur lors de la mise à jour automatique du statut:', error);
+        // Ne pas bloquer l'utilisateur, juste log l'erreur
+      }
+    } else {
+      console.log('ℹ️ Statut série inchangé, pas de mise à jour nécessaire');
+    }
+  };
+
   // Fonction pour basculer l'état lu/non lu d'un tome avec sauvegarde en base de données
   const handleTomeReadToggle = async (tomeNumber) => {
     const newReadTomes = new Set(readTomes);
@@ -189,6 +251,9 @@ const SeriesDetailModal = ({
         // L'utilisateur peut réessayer et ça sera sauvegardé
       }
     }
+
+    // ✅ NOUVEAU : Calculer et mettre à jour automatiquement le statut de la série
+    await calculateAndUpdateSeriesStatus(newReadTomes);
   };
 
   // Fonction pour cocher automatiquement tous les tomes précédents avec sauvegarde
