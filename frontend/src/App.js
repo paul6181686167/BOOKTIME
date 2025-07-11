@@ -608,7 +608,6 @@ function MainApp() {
               {groupedBooks.completed && groupedBooks.completed.length > 0 && (
                 <div>
                   <div className="flex items-center mb-4">
-                    <span className="text-2xl mr-3">🟢</span>
                     <h2 className="text-xl font-semibold text-green-600 dark:text-green-400">
                       Terminé ({groupedBooks.completed.length})
                     </h2>
