@@ -173,6 +173,12 @@ export const EXTENDED_SERIES_DATABASE = {
       authors: ['Stephenie Meyer'],
       category: 'roman',
       volumes: 4,
+      volume_titles: {
+        1: "Fascination",
+        2: "Tentation",
+        3: "Hésitation",
+        4: "Révélation"
+      },
       description: 'Romance paranormale entre Bella Swan et Edward Cullen.',
       first_published: '2005',
       status: 'completed',
