@@ -25,6 +25,70 @@ const SeriesDetailModal = ({
   const [analyzing, setAnalyzing] = useState(false);
   const [missingAnalysis, setMissingAnalysis] = useState(null);
   const [isSeriesOwned, setIsSeriesOwned] = useState(false);
+  const [seriesStatus, setSeriesStatus] = useState('to_read');
+
+  // Options de statut pour les boutons rapides
+  const statusOptions = [
+    { value: 'to_read', label: 'À lire', color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300', emoji: '📚' },
+    { value: 'reading', label: 'En cours', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300', emoji: '🟡' },
+    { value: 'completed', label: 'Terminé', color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300', emoji: '🟢' },
+  ];
+
+  // Fonction pour changer rapidement le statut de la série
+  const handleQuickStatusChange = async (newStatus) => {
+    if (!isSeriesOwned) {
+      toast.error('Vous devez d\'abord ajouter cette série à votre bibliothèque');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+      
+      console.log('🔄 Changement statut série:', series.name, 'vers', newStatus);
+      
+      // Rechercher le livre série dans la bibliothèque
+      const response = await fetch(`${backendUrl}/api/books?saga=${encodeURIComponent(series.name)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const seriesBook = data.items?.find(book => book.is_series === true);
+        
+        if (seriesBook) {
+          // Mettre à jour le statut du livre série
+          const updateResponse = await fetch(`${backendUrl}/api/books/${seriesBook.id}`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: newStatus })
+          });
+          
+          if (updateResponse.ok) {
+            setSeriesStatus(newStatus);
+            toast.success(`Statut de la série "${series.name}" changé vers "${statusOptions.find(s => s.value === newStatus)?.label}"`);
+            
+            // Actualiser la bibliothèque
+            if (onUpdate) {
+              onUpdate();
+            }
+          } else {
+            toast.error('Erreur lors de la mise à jour du statut');
+          }
+        } else {
+          toast.error('Livre série non trouvé dans la bibliothèque');
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du changement de statut:', error);
+      toast.error('Erreur lors du changement de statut');
+    }
+  };
 
   // Fonction pour vérifier si la série est déjà dans la bibliothèque
   const checkIfSeriesOwned = async () => {
