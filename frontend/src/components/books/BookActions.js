@@ -57,7 +57,7 @@ const BookActions = {
   },
 
   // Fonction pour créer l'affichage unifié des livres et séries
-  // SESSION 81 - MASQUAGE VIGNETTES LIVRES INDIVIDUELS D'UNE SÉRIE
+  // SESSION 81.1 - MASQUAGE RENFORCÉ VIGNETTES LIVRES INDIVIDUELS D'UNE SÉRIE
   createUnifiedDisplay(booksList, getCategoryBadgeFromBook) {
     // Vérification renforcée : s'assurer que booksList est toujours un array
     if (!booksList || !Array.isArray(booksList)) {
@@ -65,13 +65,24 @@ const BookActions = {
       return [];
     }
 
-    console.log('🔍 [SESSION 81] createUnifiedDisplay - Livres reçus:', booksList.length);
+    console.log('🔍 [SESSION 81.1] createUnifiedDisplay - Livres reçus:', booksList.length);
 
     const seriesGroups = {};
     const standaloneBooks = [];
 
-    booksList.forEach(book => {
-      if (book.saga && book.saga.trim()) {
+    // 🔍 SESSION 81.1 - DOUBLE PROTECTION : Filtrage en amont des livres de série
+    const booksWithSeriesMarked = booksList.map(book => ({
+      ...book,
+      belongsToSeries: !!(book.saga && book.saga.trim())
+    }));
+
+    console.log('🔍 [SESSION 81.1] Analyse des livres:');
+    console.log(`📚 Total: ${booksWithSeriesMarked.length} livres`);
+    console.log(`📚 Avec série: ${booksWithSeriesMarked.filter(b => b.belongsToSeries).length} livres`);
+    console.log(`📖 Standalone: ${booksWithSeriesMarked.filter(b => !b.belongsToSeries).length} livres`);
+
+    booksWithSeriesMarked.forEach(book => {
+      if (book.belongsToSeries) {
         // 📚 LIVRE APPARTENANT À UNE SÉRIE - REGROUPEMENT DANS VIGNETTE SÉRIE
         const seriesKey = book.saga.toLowerCase().trim();
         if (!seriesGroups[seriesKey]) {
@@ -126,13 +137,13 @@ const BookActions = {
           seriesGroups[seriesKey].status = 'to_read';
         }
         
-        // ✅ SESSION 81 - MASQUAGE CONFIRMÉ : Livre d'une série, PAS d'ajout aux standaloneBooks
-        console.log(`📚 [SESSION 81] Livre "${book.title}" appartient à la série "${book.saga}" - MASQUÉ (regroupé dans vignette série)`);
+        // ✅ SESSION 81.1 - MASQUAGE CONFIRMÉ : Livre d'une série, PAS d'ajout aux standaloneBooks
+        console.log(`📚 [SESSION 81.1] Livre "${book.title}" appartient à la série "${book.saga}" - MASQUÉ (regroupé dans vignette série)`);
         
       } else {
         // 📖 LIVRE STANDALONE (sans série) - VIGNETTE INDIVIDUELLE AUTORISÉE
         standaloneBooks.push(book);
-        console.log(`📖 [SESSION 81] Livre "${book.title}" standalone - VIGNETTE INDIVIDUELLE`);
+        console.log(`📖 [SESSION 81.1] Livre "${book.title}" standalone - VIGNETTE INDIVIDUELLE`);
       }
     });
 
@@ -166,10 +177,14 @@ const BookActions = {
       return dateB - dateA;
     });
     
-    // 📊 SESSION 81 - RÉSUMÉ AFFICHAGE
-    console.log(`🎯 [SESSION 81] Résumé affichage - ${seriesCards.length} vignettes de série, ${sortedStandaloneBooks.length} livres standalone`);
+    // 📊 SESSION 81.1 - RÉSUMÉ AFFICHAGE DÉTAILLÉ
+    console.log(`🎯 [SESSION 81.1] Résumé affichage final:`);
+    console.log(`🎯 - ${seriesCards.length} vignettes de série (${Object.keys(seriesGroups).length} séries uniques)`);
+    console.log(`🎯 - ${sortedStandaloneBooks.length} livres standalone (vignettes individuelles)`);
+    console.log(`🎯 - ${booksList.length - sortedStandaloneBooks.length} livres masqués (dans vignettes série)`);
+    
     seriesCards.forEach(series => {
-      console.log(`📚 [SESSION 81] Série "${series.name}" - ${series.totalBooks} tomes regroupés`);
+      console.log(`📚 [SESSION 81.1] Série "${series.name}" - ${series.totalBooks} tomes regroupés`);
     });
     
     return [...seriesCards, ...sortedStandaloneBooks];
