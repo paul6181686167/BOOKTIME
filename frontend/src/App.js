@@ -411,24 +411,32 @@ function MainApp() {
   const getDisplayedBooks = () => {
     // En mode recherche, afficher tous les résultats Open Library
     if (searchHook.isSearchMode) {
-      // 🔒 MASQUAGE UNIVERSEL - RECHERCHE : Filtrer les livres de série aussi dans les résultats
+      // 🔒 MASQUAGE UNIVERSEL INTELLIGENT - RECHERCHE : Utiliser détection automatique
       const filteredSearchResults = searchHook.openLibraryResults.filter(item => {
         // Garder les vignettes de série
         if (item.isSeriesCard) {
           return true;
         }
         
-        // Masquer les livres appartenant à une saga
+        // Vérifier d'abord le champ saga existant
         const belongsToSeries = !!(item.saga && item.saga.trim());
         if (belongsToSeries) {
           console.log(`🔒 [MASQUAGE UNIVERSEL - RECHERCHE] Livre "${item.title}" appartenant à la série "${item.saga}" - MASQUÉ`);
           return false;
         }
         
+        // Utiliser la détection intelligente pour les livres sans champ saga
+        const detection = SeriesDetector.detectBookSeries(item);
+        
+        if (detection.belongsToSeries && detection.confidence >= 70) {
+          console.log(`🔒 [MASQUAGE INTELLIGENT - RECHERCHE] Livre "${item.title}" détecté série "${detection.seriesName}" (${detection.confidence}% confiance) - MASQUÉ`);
+          return false;
+        }
+        
         return true; // Livre standalone autorisé
       });
       
-      console.log(`🔒 [MASQUAGE UNIVERSEL - RECHERCHE] ${searchHook.openLibraryResults.length - filteredSearchResults.length} livre(s) masqué(s) sur ${searchHook.openLibraryResults.length} résultats`);
+      console.log(`🔒 [MASQUAGE INTELLIGENT - RECHERCHE] ${searchHook.openLibraryResults.length - filteredSearchResults.length} livre(s) masqué(s) sur ${searchHook.openLibraryResults.length} résultats`);
       
       return filteredSearchResults;
     }
