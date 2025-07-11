@@ -5,7 +5,7 @@ import uuid
 import re
 from ..database.connection import books_collection, series_library_collection
 from ..security.jwt import get_current_user
-from ..models.series import VolumeData, SeriesLibraryCreate
+from ..models.series import VolumeData, SeriesLibraryCreate, SeriesReadingPreferences, SeriesReadingPreferencesUpdate
 
 router = APIRouter(prefix="/api/series", tags=["series"])
 
