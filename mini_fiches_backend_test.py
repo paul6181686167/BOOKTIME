@@ -339,7 +339,7 @@ class BookTimeMiniFilesTester:
             return False
             
         # Authentication
-        if not self.test_auth_login():
+        if not self.test_auth_register_and_login():
             self.log("❌ Authentication failed, stopping tests")
             return False
             
