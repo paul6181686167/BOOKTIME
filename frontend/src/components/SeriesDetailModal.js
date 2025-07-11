@@ -53,6 +53,7 @@ const SeriesDetailModal = ({
       return {
         ...series,
         volumes: referenceData.volumes,
+        volume_titles: referenceData.volume_titles, // ← AJOUT: Inclure les vrais noms des tomes
         description: referenceData.description,
         first_published: referenceData.first_published,
         status: referenceData.status,
