@@ -77,14 +77,22 @@ export const searchOpenLibrary = async (query, {
         };
       });
 
-      // 🔒 MASQUAGE UNIVERSEL : Filtrer tous les livres faisant partie d'une saga
+      // 🔒 MASQUAGE UNIVERSEL INTELLIGENT : Utiliser détection automatique en temps réel
       const filteredResults = resultsWithOwnership.filter(book => {
-        // Vérifier si le livre fait partie d'une saga
+        // Vérifier d'abord le champ saga existant (méthode rapide)
         const belongsToSeries = !!(book.saga && book.saga.trim());
         
         if (belongsToSeries) {
           console.log(`🔒 [MASQUAGE UNIVERSEL] Livre "${book.title}" appartenant à la série "${book.saga}" - MASQUÉ des résultats`);
           return false; // Masquer le livre
+        }
+        
+        // Utiliser la détection intelligente pour les livres sans champ saga
+        const detection = SeriesDetector.detectBookSeries(book);
+        
+        if (detection.belongsToSeries && detection.confidence >= 70) {
+          console.log(`🔒 [MASQUAGE INTELLIGENT] Livre "${book.title}" détecté série "${detection.seriesName}" (${detection.confidence}% confiance) - MASQUÉ des résultats`);
+          return false; // Masquer le livre détecté comme série
         }
         
         return true; // Livre standalone, affiché
