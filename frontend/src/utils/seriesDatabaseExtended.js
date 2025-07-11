@@ -125,6 +125,13 @@ export const EXTENDED_SERIES_DATABASE = {
       authors: ['Rick Riordan'],
       category: 'roman',
       volumes: 5,
+      volume_titles: {
+        1: "Le Voleur de Foudre",
+        2: "La Mer des Monstres",
+        3: "Le Sort du Titan",
+        4: "La Bataille du Labyrinthe",
+        5: "Le Dernier Olympien"
+      },
       description: 'Série fantasy moderne avec les dieux grecs dans le monde contemporain.',
       first_published: '2005',
       status: 'completed',
