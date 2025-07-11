@@ -551,25 +551,7 @@ function MainApp() {
           {/* Affichage par sections de statut - MODIFICATION ORGANISATIONNELLE */}
           {!searchHook.isSearchMode && (
             <div className="space-y-8">
-              {/* Section Séries */}
-              {groupedBooks.series && groupedBooks.series.length > 0 && (
-                <div>
-                  <div className="flex items-center mb-4">
-                    <span className="text-2xl mr-3">📚</span>
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                      Séries ({groupedBooks.series.length})
-                    </h2>
-                  </div>
-                  <BookGrid
-                    books={groupedBooks.series}
-                    loading={false}
-                    onItemClick={handleItemClick}
-                    showEmptyState={false}
-                  />
-                </div>
-              )}
-
-              {/* Section EN COURS */}
+              {/* Section EN COURS - Vignettes séries + livres individuels mélangés */}
               {groupedBooks.reading && groupedBooks.reading.length > 0 && (
                 <div>
                   <div className="flex items-center mb-4">
@@ -587,7 +569,7 @@ function MainApp() {
                 </div>
               )}
 
-              {/* Section À LIRE */}
+              {/* Section À LIRE - Vignettes séries + livres individuels mélangés */}
               {groupedBooks.to_read && groupedBooks.to_read.length > 0 && (
                 <div>
                   <div className="flex items-center mb-4">
@@ -605,7 +587,7 @@ function MainApp() {
                 </div>
               )}
 
-              {/* Section TERMINÉ */}
+              {/* Section TERMINÉ - Vignettes séries + livres individuels mélangés */}
               {groupedBooks.completed && groupedBooks.completed.length > 0 && (
                 <div>
                   <div className="flex items-center mb-4">
@@ -624,8 +606,7 @@ function MainApp() {
               )}
 
               {/* État vide si aucun livre */}
-              {(!groupedBooks.series || groupedBooks.series.length === 0) &&
-               (!groupedBooks.reading || groupedBooks.reading.length === 0) &&
+              {(!groupedBooks.reading || groupedBooks.reading.length === 0) &&
                (!groupedBooks.to_read || groupedBooks.to_read.length === 0) &&
                (!groupedBooks.completed || groupedBooks.completed.length === 0) && (
                 <div className="text-center py-12">
