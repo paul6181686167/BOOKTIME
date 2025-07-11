@@ -69,6 +69,32 @@
       window.addEventListener('load', function() {
         document.body.classList.add('loaded');
       });
+      
+      // 🔍 SCRIPTS D'ANALYSE GLOBALE DES SÉRIES
+      // Chargement des analyseurs après le chargement de React
+      window.addEventListener('load', function() {
+        // Attendre que React soit chargé
+        setTimeout(function() {
+          // Charger les analyseurs de série
+          if (window.SeriesAnalyzer) {
+            console.log('🔍 SeriesAnalyzer disponible globalement');
+            console.log('💡 Commandes disponibles:');
+            console.log('   - analyzeAllSeries() : Analyse tous les livres');
+            console.log('   - updateDetectedSeries() : Met à jour les séries détectées');
+            console.log('   - generateSeriesReport() : Génère un rapport complet');
+          }
+          
+          if (window.AutoSeriesDetector) {
+            console.log('🤖 AutoSeriesDetector disponible globalement');
+            console.log('💡 Détection automatique activée lors de l\'ajout de livres');
+          }
+          
+          if (window.SeriesReportGenerator) {
+            console.log('📊 SeriesReportGenerator disponible globalement');
+            console.log('💡 Génération de rapports détaillés disponible');
+          }
+        }, 2000);
+      });
     </script>
   </body>
 </html>
