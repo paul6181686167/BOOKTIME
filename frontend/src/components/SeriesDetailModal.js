@@ -27,6 +27,7 @@ const SeriesDetailModal = ({
   const [missingAnalysis, setMissingAnalysis] = useState(null);
   const [isSeriesOwned, setIsSeriesOwned] = useState(false);
   const [seriesStatus, setSeriesStatus] = useState('to_read');
+  const [readTomes, setReadTomes] = useState(new Set()); // ← AJOUT: État des tomes lus/non lus
 
   // Fonction pour enrichir les données de série avec les métadonnées de référence
   const enrichSeriesData = (series) => {
