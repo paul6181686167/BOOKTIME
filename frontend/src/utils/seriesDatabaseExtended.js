@@ -61,6 +61,15 @@ export const EXTENDED_SERIES_DATABASE = {
       authors: ['George R.R. Martin'],
       category: 'roman',
       volumes: 7,
+      volume_titles: {
+        1: "Le Trône de Fer",
+        2: "Le Donjon Rouge",
+        3: "La Bataille des Rois",
+        4: "L'Ombre Maléfique",
+        5: "L'Invincible Forteresse",
+        6: "Les Vents de l'Hiver",
+        7: "Un Rêve de Printemps"
+      },
       description: 'Saga fantasy épique dans les Sept Couronnes.',
       first_published: '1996',
       status: 'ongoing',
