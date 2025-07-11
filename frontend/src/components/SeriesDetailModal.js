@@ -9,6 +9,7 @@ import {
   SparklesIcon
 } from '@heroicons/react/24/outline';
 import { bookService } from '../services/bookService';
+import { EXTENDED_SERIES_DATABASE } from '../utils/seriesDatabaseExtended';
 import toast from 'react-hot-toast';
 
 const SeriesDetailModal = ({ 
