@@ -574,7 +574,6 @@ function MainApp() {
               {groupedBooks.reading && groupedBooks.reading.length > 0 && (
                 <div>
                   <div className="flex items-center mb-4">
-                    <span className="text-2xl mr-3">🟡</span>
                     <h2 className="text-xl font-semibold text-yellow-600 dark:text-yellow-400">
                       En cours ({groupedBooks.reading.length})
                     </h2>
