@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 class SeriesManagementTester:
-    def __init__(self, base_url="https://1d7d4cd2-2268-4564-9231-3dcb79a472da.preview.emergentagent.com"):
+    def __init__(self, base_url="https://82cb558e-2c8b-4443-8e07-fb05af172ed3.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
         self.tests_run = 0
