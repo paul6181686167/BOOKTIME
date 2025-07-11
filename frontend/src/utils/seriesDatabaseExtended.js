@@ -150,6 +150,11 @@ export const EXTENDED_SERIES_DATABASE = {
       authors: ['Suzanne Collins'],
       category: 'roman',
       volumes: 3,
+      volume_titles: {
+        1: "Hunger Games",
+        2: "L'Embrasement",
+        3: "La Révolte"
+      },
       description: 'Dystopie avec Katniss Everdeen dans les arènes de Panem.',
       first_published: '2008',
       status: 'completed',
