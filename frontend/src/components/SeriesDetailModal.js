@@ -503,7 +503,7 @@ const SeriesDetailModal = ({
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Liste des tomes</h3>
           
           {enrichedSeries?.volumes && enrichedSeries.volumes > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+            <div className="space-y-2 max-h-40 overflow-y-auto">
               {Array.from({ length: enrichedSeries.volumes }, (_, index) => {
                 const tomeNumber = index + 1;
                 const tomeTitle = `${enrichedSeries.name} - Tome ${tomeNumber}`;
