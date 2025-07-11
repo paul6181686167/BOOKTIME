@@ -47,8 +47,8 @@ const SeriesDetailModal = ({
       
       console.log('🔄 Changement statut série:', series.name, 'vers', newStatus);
       
-      // Rechercher le livre série dans la bibliothèque
-      const response = await fetch(`${backendUrl}/api/books?saga=${encodeURIComponent(series.name)}`, {
+      // Rechercher le livre série dans la bibliothèque (CORRECTION: utiliser /api/books/all pour supporter le paramètre saga)
+      const response = await fetch(`${backendUrl}/api/books/all?saga=${encodeURIComponent(series.name)}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
