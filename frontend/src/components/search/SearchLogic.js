@@ -273,6 +273,23 @@ export const handleAddFromOpenLibrary = async (openLibraryBook, {
       targetCategory = activeTab;
     }
     
+    // 🔍 DÉTECTION AUTOMATIQUE DE SÉRIE
+    console.log('🔍 DÉTECTION AUTOMATIQUE: Analyse du livre pour séries...');
+    const autoDetector = new AutoSeriesDetector();
+    
+    // Préparer les données du livre pour la détection
+    const bookData = {
+      title: openLibraryBook.title,
+      author: openLibraryBook.author,
+      category: targetCategory,
+      cover_url: openLibraryBook.cover_url || "",
+      ol_key: openLibraryBook.ol_key
+    };
+    
+    // Lancer la détection automatique
+    const enhancedBookData = await autoDetector.detectAndEnhanceBook(bookData);
+    
+    // Utiliser les données enrichies pour l'import
     const response = await fetch(`${backendUrl}/api/openlibrary/import`, {
       method: 'POST',
       headers: {
@@ -282,7 +299,12 @@ export const handleAddFromOpenLibrary = async (openLibraryBook, {
       body: JSON.stringify({
         ol_key: openLibraryBook.ol_key,
         category: targetCategory,
-        cover_url: openLibraryBook.cover_url || ""
+        cover_url: openLibraryBook.cover_url || "",
+        // Ajouter les données de série détectées si disponibles
+        saga: enhancedBookData.saga || null,
+        volume_number: enhancedBookData.volume_number || null,
+        auto_detected_series: enhancedBookData.auto_detected_series || false,
+        detection_confidence: enhancedBookData.detection_confidence || null
       })
     });
 
