@@ -98,9 +98,19 @@ export const useAdvancedSearch = (books = []) => {
         }
       }
 
-      // Filtrage par catégorie
-      if (filters.category && book.category !== filters.category) {
-        return false;
+      // Filtrage par catégorie - MISE À JOUR SESSION 75 : Support Romans graphiques (BD + Manga)
+      if (filters.category) {
+        if (filters.category === 'graphic_novels') {
+          // Pour Romans graphiques, inclure BD et Manga
+          if (book.category !== 'bd' && book.category !== 'manga') {
+            return false;
+          }
+        } else {
+          // Pour les autres catégories, filtrage normal
+          if (book.category !== filters.category) {
+            return false;
+          }
+        }
       }
 
       // Filtrage par statut
