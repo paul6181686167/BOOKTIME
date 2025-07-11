@@ -519,7 +519,7 @@ const SeriesDetailModal = ({
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Liste des tomes</h3>
           
           {enrichedSeries?.volumes && enrichedSeries.volumes > 0 ? (
-            <div className="space-y-2 max-h-40 overflow-y-auto">
+            <div className="space-y-2">
               {Array.from({ length: enrichedSeries.volumes }, (_, index) => {
                 const tomeNumber = index + 1;
                 // Utiliser le titre spécifique s'il existe, sinon titre générique
