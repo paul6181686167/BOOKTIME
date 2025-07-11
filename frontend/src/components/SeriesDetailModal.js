@@ -71,12 +71,53 @@ const SeriesDetailModal = ({
     setReadTomes(prev => {
       const newReadTomes = new Set(prev);
       if (newReadTomes.has(tomeNumber)) {
+        // Décocher le tome
         newReadTomes.delete(tomeNumber);
+        setMissingPreviousWarning(null); // Effacer l'avertissement si on décoche
       } else {
+        // Cocher le tome
         newReadTomes.add(tomeNumber);
+        
+        // ✅ NOUVELLE LOGIQUE : Vérifier si des tomes précédents manquent
+        if (tomeNumber > 1) {
+          const missingPrevious = [];
+          for (let i = 1; i < tomeNumber; i++) {
+            if (!newReadTomes.has(i)) {
+              missingPrevious.push(i);
+            }
+          }
+          
+          if (missingPrevious.length > 0) {
+            setMissingPreviousWarning({
+              currentTome: tomeNumber,
+              missingTomes: missingPrevious
+            });
+          } else {
+            setMissingPreviousWarning(null);
+          }
+        } else {
+          setMissingPreviousWarning(null);
+        }
       }
       return newReadTomes;
     });
+  };
+
+  // Fonction pour cocher automatiquement tous les tomes précédents
+  const handleCheckPreviousTomes = () => {
+    if (!missingPreviousWarning) return;
+    
+    setReadTomes(prev => {
+      const newReadTomes = new Set(prev);
+      // Ajouter tous les tomes manquants
+      missingPreviousWarning.missingTomes.forEach(tomeNumber => {
+        newReadTomes.add(tomeNumber);
+      });
+      return newReadTomes;
+    });
+    
+    // Effacer l'avertissement
+    setMissingPreviousWarning(null);
   };
 
   // Enrichir les données de série au chargement
