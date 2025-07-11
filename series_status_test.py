@@ -84,10 +84,12 @@ class BookTimeAPITester:
 
     def test_register_user(self):
         """Créer un utilisateur de test"""
+        import random
         timestamp = int(time.time())
+        random_suffix = random.randint(1000, 9999)
         test_user = {
-            "username": f"test_series_{timestamp}",
-            "email": f"test_series_{timestamp}@example.com",
+            "username": f"test_series_{timestamp}_{random_suffix}",
+            "email": f"test_series_{timestamp}_{random_suffix}@example.com",
             "password": "TestPass123!",
             "first_name": "Test",
             "last_name": "Series"
