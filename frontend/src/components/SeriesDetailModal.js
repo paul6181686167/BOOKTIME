@@ -65,6 +65,19 @@ const SeriesDetailModal = ({
     return series;
   };
 
+  // Fonction pour basculer l'état lu/non lu d'un tome
+  const handleTomeReadToggle = (tomeNumber) => {
+    setReadTomes(prev => {
+      const newReadTomes = new Set(prev);
+      if (newReadTomes.has(tomeNumber)) {
+        newReadTomes.delete(tomeNumber);
+      } else {
+        newReadTomes.add(tomeNumber);
+      }
+      return newReadTomes;
+    });
+  };
+
   // Enrichir les données de série au chargement
   const enrichedSeries = enrichSeriesData(series);
 
