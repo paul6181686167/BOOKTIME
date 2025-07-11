@@ -344,12 +344,23 @@ const SeriesDetailModal = ({
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center mb-2">
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Changer le statut rapidement :</h3>
+            {/* Indicateur de debug */}
+            <span className="ml-2 text-xs text-gray-500">
+              (Série possédée: {isSeriesOwned ? '✅' : '❌'})
+            </span>
           </div>
           <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 w-fit">
             {statusOptions.map((option) => (
               <button
                 key={option.value}
-                onClick={() => handleQuickStatusChange(option.value)}
+                onClick={() => {
+                  console.log('🖱️ CLIC BOUTON STATUT:', {
+                    option: option.value,
+                    isSeriesOwned,
+                    seriesName: series?.name
+                  });
+                  handleQuickStatusChange(option.value);
+                }}
                 className={`px-4 py-2 text-sm font-medium transition-all flex items-center space-x-2 ${
                   seriesStatus === option.value
                     ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
