@@ -120,17 +120,50 @@ Deployment: Kubernetes + Supervisor
 - **Base de séries populaires** : 50+ séries pré-configurées
 - **Correspondances intelligentes** : Titre, auteur, mots-clés
 - **Scoring de confiance** : Algorithme de pertinence
+- **🆕 Analyse automatique bibliothèque** : Détection séries pour tous livres existants
+- **🆕 Détection temps réel** : Enrichissement automatique nouveaux livres
 
 #### Gestion des Collections
 - **Cartes séries** : Affichage spécial pour les sagas
 - **Progression visuelle** : Pourcentage de completion
 - **Auto-complétion** : Ajout automatique de tous les tomes
 - **Détection des manques** : Volumes manquants dans une série
+- **🆕 Masquage intelligent** : Livres individuels de série masqués automatiquement
+
+#### 🆕 **Analyse Automatique des Séries (Session 81.6)**
+- **Script d'analyse complet** : SeriesAnalyzer pour analyser toute la bibliothèque
+- **Détection automatique à l'ajout** : AutoSeriesDetector intégré au flux d'ajout
+- **Rapports détaillés** : SeriesReportGenerator avec métriques avancées
+- **Interface utilisateur F12** : Commandes directes pour analyse et gestion
+- **Score de confiance** : Système de validation intelligent (défaut: 120)
+- **Configuration flexible** : Seuils, délais, callbacks personnalisables
 
 #### Séries Pré-configurées
 **Romans** : Harry Potter, Seigneur des Anneaux, Game of Thrones
 **Mangas** : One Piece, Naruto, Dragon Ball, Attack on Titan
 **BD** : Astérix, Tintin, Lucky Luke, Thorgal
+
+### 🆕 **3. Analyse et Intelligence Automatique**
+
+#### Reconnaissance Automatique
+- **Détection séries existantes** : Analyse tous livres sans saga définie
+- **Enrichissement métadonnées** : Saga + volume_number automatiques
+- **Score de confiance** : Validation intelligente des détections
+- **Progression temps réel** : Feedback utilisateur pendant analyse
+
+#### Rapports et Insights
+- **Vue d'ensemble bibliothèque** : Répartition séries vs standalone
+- **Analyse par auteur** : Productivité, nombre de séries, taux completion
+- **Analyse par catégorie** : Distribution roman/bd/manga
+- **Tendances temporelles** : Évolution ajouts mensuels
+- **Recommandations** : Suggestions basées sur analyse
+- **Export données** : Rapports JSON pour analyse externe
+
+#### Interface Utilisateur Avancée
+- **Console F12** : Accès direct aux fonctions d'analyse
+- **Fonctions globales** : `analyzeAllSeries()`, `generateSeriesReport()`, etc.
+- **Démonstrations** : `runSeriesAnalysisDemo()` pour tout automatiser
+- **Aide intégrée** : `showSeriesAnalysisHelp()` pour documentation
 
 ### 3. Recherche et Découverte
 
