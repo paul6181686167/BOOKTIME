@@ -20,6 +20,7 @@ class BookCreate(BaseModel):
     publisher: str = ""
     isbn: str = ""
     auto_added: bool = False
+    is_series: Optional[bool] = False  # CORRECTION: Ajout champ is_series manquant
     language: Optional[str] = "fr"
     ol_key: Optional[str] = None
     ol_work_id: Optional[str] = None
