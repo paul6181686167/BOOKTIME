@@ -502,14 +502,6 @@ const SeriesDetailModal = ({
         <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Liste des tomes</h3>
           
-          {/* DEBUG: Afficher les données enrichies */}
-          <div className="mb-4 p-2 bg-green-50 dark:bg-green-900/20 rounded text-xs">
-            <strong>DEBUG - Données enrichies:</strong>
-            <div>Volumes: {enrichedSeries?.volumes}</div>
-            <div>Référence trouvée: {enrichedSeries?.referenceFound ? 'OUI' : 'NON'}</div>
-            <div>Nom: {enrichedSeries?.name}</div>
-          </div>
-          
           {enrichedSeries?.volumes && enrichedSeries.volumes > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto">
               {Array.from({ length: enrichedSeries.volumes }, (_, index) => {
@@ -529,7 +521,7 @@ const SeriesDetailModal = ({
             </div>
           ) : (
             <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-              Informations sur les tomes non disponibles pour cette série (volumes: {enrichedSeries?.volumes || 'non trouvé'})
+              Informations sur les tomes non disponibles pour cette série
             </p>
           )}
         </div>
