@@ -36,7 +36,10 @@ const SeriesDetailModal = ({
 
   // Fonction pour changer rapidement le statut de la série
   const handleQuickStatusChange = async (newStatus) => {
+    console.log('🎯 DÉBUT handleQuickStatusChange:', { newStatus, isSeriesOwned, series });
+    
     if (!isSeriesOwned) {
+      console.log('❌ Série non possédée, affichage erreur');
       toast.error('Vous devez d\'abord ajouter cette série à votre bibliothèque');
       return;
     }
@@ -45,6 +48,7 @@ const SeriesDetailModal = ({
       const token = localStorage.getItem('token');
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
       
+      console.log('🔑 Token trouvé:', !!token);
       console.log('🔄 Changement statut série:', series.name, 'vers', newStatus);
       
       // Rechercher le livre série dans la bibliothèque (CORRECTION: utiliser /api/books/all pour supporter le paramètre saga)
@@ -54,11 +58,15 @@ const SeriesDetailModal = ({
         }
       });
       
+      console.log('📡 Réponse recherche série:', { status: response.status, ok: response.ok });
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('📚 Données reçues:', data);
         const seriesBook = data.items?.find(book => book.is_series === true);
         
         if (seriesBook) {
+          console.log('📖 Livre série trouvé:', seriesBook);
           // Mettre à jour le statut du livre série
           const updateResponse = await fetch(`${backendUrl}/api/books/${seriesBook.id}`, {
             method: 'PUT',
@@ -69,23 +77,35 @@ const SeriesDetailModal = ({
             body: JSON.stringify({ status: newStatus })
           });
           
+          console.log('🔄 Réponse mise à jour:', { status: updateResponse.status, ok: updateResponse.ok });
+          
           if (updateResponse.ok) {
+            const updatedBook = await updateResponse.json();
+            console.log('✅ Livre mis à jour:', updatedBook);
             setSeriesStatus(newStatus);
             toast.success(`Statut de la série "${series.name}" changé vers "${statusOptions.find(s => s.value === newStatus)?.label}"`);
             
             // Actualiser la bibliothèque
             if (onUpdate) {
+              console.log('🔄 Actualisation bibliothèque');
               onUpdate();
             }
           } else {
+            const errorData = await updateResponse.json();
+            console.error('❌ Erreur mise à jour:', errorData);
             toast.error('Erreur lors de la mise à jour du statut');
           }
         } else {
+          console.error('❌ Livre série non trouvé dans les résultats');
           toast.error('Livre série non trouvé dans la bibliothèque');
         }
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Erreur recherche série:', errorData);
+        toast.error('Erreur lors de la recherche de la série');
       }
     } catch (error) {
-      console.error('Erreur lors du changement de statut:', error);
+      console.error('❌ Erreur générale changement statut:', error);
       toast.error('Erreur lors du changement de statut');
     }
   };
