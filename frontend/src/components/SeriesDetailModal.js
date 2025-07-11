@@ -115,8 +115,18 @@ const SeriesDetailModal = ({
         const hasSeriesBook = data.items && data.items.some(book => 
           book.saga === series.name && book.volume_number === null
         );
-        console.log('✅ Série déjà possédée:', hasSeriesBook);
         setIsSeriesOwned(hasSeriesBook);
+        
+        // Récupérer le statut de la série si elle existe
+        if (hasSeriesBook) {
+          const seriesBook = data.items.find(book => book.saga === series.name && book.volume_number === null);
+          if (seriesBook) {
+            setSeriesStatus(seriesBook.status || 'to_read');
+            console.log('📊 Statut série récupéré:', seriesBook.status);
+          }
+        }
+        
+        console.log('✅ Série déjà possédée:', hasSeriesBook);
       }
     } catch (error) {
       console.error('❌ Erreur lors de la vérification de la série:', error);
