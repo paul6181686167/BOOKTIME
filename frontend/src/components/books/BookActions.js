@@ -57,6 +57,7 @@ const BookActions = {
   },
 
   // Fonction pour créer l'affichage unifié des livres et séries
+  // SESSION 81 - MASQUAGE VIGNETTES LIVRES INDIVIDUELS D'UNE SÉRIE
   createUnifiedDisplay(booksList, getCategoryBadgeFromBook) {
     // Vérification renforcée : s'assurer que booksList est toujours un array
     if (!booksList || !Array.isArray(booksList)) {
@@ -64,11 +65,14 @@ const BookActions = {
       return [];
     }
 
+    console.log('🔍 [SESSION 81] createUnifiedDisplay - Livres reçus:', booksList.length);
+
     const seriesGroups = {};
     const standaloneBooks = [];
 
     booksList.forEach(book => {
       if (book.saga && book.saga.trim()) {
+        // 📚 LIVRE APPARTENANT À UNE SÉRIE - REGROUPEMENT DANS VIGNETTE SÉRIE
         const seriesKey = book.saga.toLowerCase().trim();
         if (!seriesGroups[seriesKey]) {
           seriesGroups[seriesKey] = {
@@ -121,9 +125,14 @@ const BookActions = {
         } else {
           seriesGroups[seriesKey].status = 'to_read';
         }
+        
+        // ✅ SESSION 81 - MASQUAGE CONFIRMÉ : Livre d'une série, PAS d'ajout aux standaloneBooks
+        console.log(`📚 [SESSION 81] Livre "${book.title}" appartient à la série "${book.saga}" - MASQUÉ (regroupé dans vignette série)`);
+        
       } else {
-        // Livre standalone (sans série)
+        // 📖 LIVRE STANDALONE (sans série) - VIGNETTE INDIVIDUELLE AUTORISÉE
         standaloneBooks.push(book);
+        console.log(`📖 [SESSION 81] Livre "${book.title}" standalone - VIGNETTE INDIVIDUELLE`);
       }
     });
 
@@ -155,6 +164,12 @@ const BookActions = {
       const dateA = new Date(a.date_added || a.updated_at || 0);
       const dateB = new Date(b.date_added || b.updated_at || 0);
       return dateB - dateA;
+    });
+    
+    // 📊 SESSION 81 - RÉSUMÉ AFFICHAGE
+    console.log(`🎯 [SESSION 81] Résumé affichage - ${seriesCards.length} vignettes de série, ${sortedStandaloneBooks.length} livres standalone`);
+    seriesCards.forEach(series => {
+      console.log(`📚 [SESSION 81] Série "${series.name}" - ${series.totalBooks} tomes regroupés`);
     });
     
     return [...seriesCards, ...sortedStandaloneBooks];
