@@ -90,7 +90,7 @@ export const searchOpenLibrary = async (query, {
       });
       
       // ALGORITHME DE TRI PRIORITAIRE OPTIMISÉ : Garantir fiches séries EN PREMIER avec scores 100000+
-      const allResults = [...seriesCards, ...resultsWithOwnership];
+      const allResults = [...seriesCards, ...filteredResults];
       
       // TRI FINAL AVEC PRIORITÉ ABSOLUE DES SÉRIES selon les consignes du CHANGELOG
       // 1) Séries officielles (100000+) par pertinence
@@ -104,9 +104,14 @@ export const searchOpenLibrary = async (query, {
         console.log(`${index + 1}. ${item.isSeriesCard ? '📚 SÉRIE' : '📖 LIVRE'}: ${item.title || item.name} - Score: ${item.relevanceScore || item.confidence || 0}`);
       });
       
+      // Afficher les statistiques de masquage
+      const totalBooks = data.books.length;
+      const maskedBooks = totalBooks - filteredResults.length;
+      console.log(`🔒 [MASQUAGE UNIVERSEL] ${maskedBooks} livre(s) masqué(s) sur ${totalBooks} (appartenant à des séries)`);
+      
       // Stocker les résultats triés avec priorité absolue aux fiches séries
       setOpenLibraryResults(sortedResults);
-      toast.success(`${data.books.length} livres trouvés${seriesCards.length > 0 ? ` + ${seriesCards.length} série(s) détectée(s) EN PREMIER` : ''}`);
+      toast.success(`${filteredResults.length} livres trouvés${seriesCards.length > 0 ? ` + ${seriesCards.length} série(s) détectée(s) EN PREMIER` : ''}${maskedBooks > 0 ? ` (${maskedBooks} livre(s) de série masqué(s))` : ''}`);
     } else {
       toast.error('Erreur lors de la recherche Open Library');
     }
