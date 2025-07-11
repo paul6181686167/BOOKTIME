@@ -281,6 +281,9 @@ const SeriesDetailModal = ({
     
     // Effacer l'avertissement
     setMissingPreviousWarning(null);
+
+    // ✅ NOUVEAU : Calculer et mettre à jour automatiquement le statut de la série
+    await calculateAndUpdateSeriesStatus(newReadTomes);
   };
 
   // Enrichir les données de série au chargement
