@@ -93,6 +93,29 @@ export const EXTENDED_SERIES_DATABASE = {
         2: "Les Deux Tours",
         3: "Le Retour du Roi"
       },
+      volume_details: {
+        1: {
+          pages: 576,
+          published_year: 1954,
+          description: "Frodon et la Communauté partent de la Comté pour détruire l'Anneau Unique.",
+          isbn: "978-2-266-11574-8",
+          publisher: "Christian Bourgois"
+        },
+        2: {
+          pages: 512,
+          published_year: 1954,
+          description: "La Communauté se sépare, Aragorn poursuit les Uruk-hai, Frodon et Sam continuent vers le Mordor.",
+          isbn: "978-2-266-11575-5",
+          publisher: "Christian Bourgois"
+        },
+        3: {
+          pages: 640,
+          published_year: 1955,
+          description: "La bataille finale contre Sauron et le couronnement d'Aragorn comme roi du Gondor.",
+          isbn: "978-2-266-11576-2",
+          publisher: "Christian Bourgois"
+        }
+      },
       description: 'Épopée fantasy de Tolkien dans la Terre du Milieu.',
       first_published: '1954',
       status: 'completed',
