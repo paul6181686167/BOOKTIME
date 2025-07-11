@@ -408,9 +408,28 @@ function MainApp() {
   // Calculer les livres à afficher selon le mode
   // SESSION 81.1 - DOUBLE PROTECTION : Filtrage renforcé des livres individuels appartenant à une série
   const getDisplayedBooks = () => {
+    // En mode recherche, afficher tous les résultats Open Library
     if (searchHook.isSearchMode) {
-      // En mode recherche, afficher tous les résultats Open Library
-      return searchHook.openLibraryResults;
+      // 🔒 MASQUAGE UNIVERSEL - RECHERCHE : Filtrer les livres de série aussi dans les résultats
+      const filteredSearchResults = searchHook.openLibraryResults.filter(item => {
+        // Garder les vignettes de série
+        if (item.isSeriesCard) {
+          return true;
+        }
+        
+        // Masquer les livres appartenant à une saga
+        const belongsToSeries = !!(item.saga && item.saga.trim());
+        if (belongsToSeries) {
+          console.log(`🔒 [MASQUAGE UNIVERSEL - RECHERCHE] Livre "${item.title}" appartenant à la série "${item.saga}" - MASQUÉ`);
+          return false;
+        }
+        
+        return true; // Livre standalone autorisé
+      });
+      
+      console.log(`🔒 [MASQUAGE UNIVERSEL - RECHERCHE] ${searchHook.openLibraryResults.length - filteredSearchResults.length} livre(s) masqué(s) sur ${searchHook.openLibraryResults.length} résultats`);
+      
+      return filteredSearchResults;
     }
     
     // En mode bibliothèque, appliquer le double filtrage renforcé
