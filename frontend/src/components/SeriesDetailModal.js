@@ -97,6 +97,10 @@ const SeriesDetailModal = ({
       const preferences = await loadReadingPreferences(enrichedSeries.name);
       setReadTomes(preferences);
       console.log('📚 Préférences chargées pour', enrichedSeries.name, ':', preferences.size, 'tomes');
+      
+      // ✅ NOUVEAU : Calculer et mettre à jour le statut de la série au chargement
+      await calculateAndUpdateSeriesStatus(preferences);
+      
     } catch (error) {
       console.error('❌ Erreur chargement préférences:', error);
       // Fallback : initialiser vide en cas d'erreur
