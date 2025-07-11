@@ -109,6 +109,18 @@ const BookActions = {
         seriesGroups[seriesKey].progressPercent = Math.round(
           (seriesGroups[seriesKey].completedBooks / seriesGroups[seriesKey].totalBooks) * 100
         );
+        
+        // MODIFICATION ORGANISATIONNELLE : Déterminer le statut de la série
+        // Logique : Si au moins un livre est "en cours" → EN COURS
+        //          Sinon, si tous les livres sont "terminés" → TERMINÉ  
+        //          Sinon → À LIRE
+        if (seriesGroups[seriesKey].readingBooks > 0) {
+          seriesGroups[seriesKey].status = 'reading';
+        } else if (seriesGroups[seriesKey].completedBooks === seriesGroups[seriesKey].totalBooks) {
+          seriesGroups[seriesKey].status = 'completed';
+        } else {
+          seriesGroups[seriesKey].status = 'to_read';
+        }
       } else {
         // Livre standalone (sans série)
         standaloneBooks.push(book);
