@@ -7,7 +7,7 @@ import requests
 import json
 
 # Get the backend URL from the frontend .env file
-BACKEND_URL = "https://8c8b9cc8-8549-4c1c-a355-e2de2cd1dbe0.preview.emergentagent.com"
+BACKEND_URL = "https://684f053f-b2bd-4e48-a640-ae3e6e0115e9.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 def test_register():
