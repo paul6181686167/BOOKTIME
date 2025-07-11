@@ -329,7 +329,10 @@ const SeriesDetailModal = ({
                     try {
                       console.log('🟢 Clic sur ajouter série:', series);
                       await onAddSeries(series);
-                      setIsSeriesOwned(true); // Marquer comme possédée après ajout
+                      // CORRECTION: Attendre un peu puis re-vérifier si la série est possédée
+                      setTimeout(() => {
+                        checkIfSeriesOwned();
+                      }, 1000);
                     } catch (error) {
                       console.error('❌ Erreur lors de l\'ajout de la série:', error);
                     }
