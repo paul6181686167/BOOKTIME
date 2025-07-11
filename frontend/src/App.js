@@ -64,6 +64,7 @@ import SeriesActions from './components/series/SeriesActions';
 // Books components imports (Phase 1.1 - Step 5 & 6)
 import BookActions from './components/books/BookActions';
 import BookGrid from './components/books/BookGrid';
+import SeriesDetector from './utils/seriesDetector';
 
 import './App.css';
 
