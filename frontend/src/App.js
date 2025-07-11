@@ -402,26 +402,66 @@ function MainApp() {
   }, [user]);
 
   // Calculer les livres à afficher selon le mode
-  // SESSION 81 - DOUBLE PROTECTION : Filtrage des livres individuels appartenant à une série
+  // SESSION 81.1 - DOUBLE PROTECTION : Filtrage renforcé des livres individuels appartenant à une série
   const getDisplayedBooks = () => {
     if (searchHook.isSearchMode) {
       // En mode recherche, afficher tous les résultats Open Library
       return searchHook.openLibraryResults;
     }
     
-    // En mode bibliothèque, appliquer le double filtrage
+    // En mode bibliothèque, appliquer le double filtrage renforcé
     const booksToDisplay = filteredBooks || [];
     
-    // 🔍 SESSION 81 - FILTRAGE EN AMONT : Identifier les livres appartenant à des séries
+    // 🔍 SESSION 81.1 - FILTRAGE EN AMONT RENFORCÉ : Identifier et analyser les livres appartenant à des séries
     const seriesBooks = booksToDisplay.filter(book => book.saga && book.saga.trim());
     const standaloneBooks = booksToDisplay.filter(book => !book.saga || !book.saga.trim());
     
-    console.log(`🔍 [SESSION 81] Filtrage en amont - ${booksToDisplay.length} livres total:`);
-    console.log(`📚 [SESSION 81] - ${seriesBooks.length} livres appartenant à des séries (seront regroupés)`);
-    console.log(`📖 [SESSION 81] - ${standaloneBooks.length} livres standalone (vignettes individuelles)`);
+    console.log(`🔍 [SESSION 81.1] Filtrage en amont renforcé - ${booksToDisplay.length} livres total:`);
+    console.log(`📚 [SESSION 81.1] - ${seriesBooks.length} livres appartenant à des séries (seront regroupés et masqués)`);
+    console.log(`📖 [SESSION 81.1] - ${standaloneBooks.length} livres standalone (vignettes individuelles autorisées)`);
+    
+    // Analyse détaillée des séries détectées
+    const seriesAnalysis = {};
+    seriesBooks.forEach(book => {
+      const seriesKey = book.saga.toLowerCase().trim();
+      if (!seriesAnalysis[seriesKey]) {
+        seriesAnalysis[seriesKey] = {
+          name: book.saga,
+          count: 0,
+          titles: []
+        };
+      }
+      seriesAnalysis[seriesKey].count++;
+      seriesAnalysis[seriesKey].titles.push(book.title);
+    });
+    
+    console.log(`🔍 [SESSION 81.1] Analyse des séries détectées:`);
+    Object.values(seriesAnalysis).forEach(series => {
+      console.log(`📚 [SESSION 81.1] Série "${series.name}" - ${series.count} livre(s) masqué(s): ${series.titles.join(', ')}`);
+    });
     
     // Créer l'affichage unifié avec la logique de masquage renforcée
-    return createUnifiedDisplay(booksToDisplay);
+    const unifiedDisplay = createUnifiedDisplay(booksToDisplay);
+    
+    // 🔍 SESSION 81.1 - DOUBLE PROTECTION : Vérification finale qu'aucun livre de série n'échappe
+    const finalBooks = unifiedDisplay.filter(item => {
+      if (item.isSeriesCard) {
+        // Les vignettes de série sont autorisées
+        return true;
+      } else {
+        // Pour les livres individuels, vérifier qu'ils n'appartiennent pas à une série
+        const belongsToSeries = !!(item.saga && item.saga.trim());
+        if (belongsToSeries) {
+          console.warn(`⚠️ [SESSION 81.1] PROTECTION FINALE: Livre "${item.title}" de la série "${item.saga}" détecté - MASQUÉ`);
+          return false; // Masquer ce livre
+        }
+        return true; // Livre standalone autorisé
+      }
+    });
+    
+    console.log(`🎯 [SESSION 81.1] Affichage final: ${finalBooks.length} éléments (${finalBooks.filter(f => f.isSeriesCard).length} séries + ${finalBooks.filter(f => !f.isSeriesCard).length} livres standalone)`);
+    
+    return finalBooks;
   };
 
   const displayedBooks = getDisplayedBooks();
