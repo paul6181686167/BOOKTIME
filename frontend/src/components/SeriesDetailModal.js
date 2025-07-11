@@ -513,7 +513,7 @@ const SeriesDetailModal = ({
           </div>
         )}
 
-        {/* Liste des tomes simple */}
+        {/* Liste des tomes avec toggles lu/non lu */}
         <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Liste des tomes</h3>
           
@@ -523,14 +523,44 @@ const SeriesDetailModal = ({
                 const tomeNumber = index + 1;
                 // Utiliser le titre spécifique s'il existe, sinon titre générique
                 const tomeTitle = enrichedSeries.volume_titles?.[tomeNumber] || `${enrichedSeries.name} - Tome ${tomeNumber}`;
+                const isRead = readTomes.has(tomeNumber);
+                
                 return (
-                  <div key={tomeNumber} className="flex items-center space-x-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded">
-                    <span className="text-sm font-medium text-purple-600 dark:text-purple-400 min-w-[60px]">
-                      Tome {tomeNumber}
-                    </span>
-                    <span className="text-sm text-gray-700 dark:text-gray-300">
-                      {tomeTitle}
-                    </span>
+                  <div key={tomeNumber} className="flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-purple-600 dark:text-purple-400 min-w-[60px]">
+                        Tome {tomeNumber}
+                      </span>
+                      <span className={`text-sm transition-colors ${
+                        isRead 
+                          ? 'text-green-700 dark:text-green-300 line-through' 
+                          : 'text-gray-700 dark:text-gray-300'
+                      }`}>
+                        {tomeTitle}
+                      </span>
+                    </div>
+                    
+                    {/* Toggle Switch lu/non lu */}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {isRead ? 'Lu' : 'Non lu'}
+                      </span>
+                      <button
+                        onClick={() => handleTomeReadToggle(tomeNumber)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                          isRead
+                            ? 'bg-green-600 hover:bg-green-700'
+                            : 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500'
+                        }`}
+                        title={isRead ? 'Marquer comme non lu' : 'Marquer comme lu'}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${
+                            isRead ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
                   </div>
                 );
               })}
