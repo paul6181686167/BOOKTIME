@@ -88,6 +88,21 @@ const SeriesDetailModal = ({
     }
   };
 
+  // ✅ NOUVELLE FONCTION : Charger les préférences pour la série courante
+  const loadReadingPreferencesForSeries = async () => {
+    if (!enrichedSeries?.name) return;
+    
+    try {
+      const preferences = await loadReadingPreferences(enrichedSeries.name);
+      setReadTomes(preferences);
+      console.log('📚 Préférences chargées pour', enrichedSeries.name, ':', preferences.size, 'tomes');
+    } catch (error) {
+      console.error('❌ Erreur chargement préférences:', error);
+      // Fallback : initialiser vide en cas d'erreur
+      setReadTomes(new Set());
+    }
+  };
+
   // Fonction pour enrichir les données de série avec les métadonnées de référence
   const enrichSeriesData = (series) => {
     if (!series?.name) return series;
