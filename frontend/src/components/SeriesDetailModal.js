@@ -124,41 +124,54 @@ const SeriesDetailModal = ({
     return series;
   };
 
-  // Fonction pour basculer l'état lu/non lu d'un tome
-  const handleTomeReadToggle = (tomeNumber) => {
-    setReadTomes(prev => {
-      const newReadTomes = new Set(prev);
-      if (newReadTomes.has(tomeNumber)) {
-        // Décocher le tome
-        newReadTomes.delete(tomeNumber);
-        setMissingPreviousWarning(null); // Effacer l'avertissement si on décoche
-      } else {
-        // Cocher le tome
-        newReadTomes.add(tomeNumber);
+  // Fonction pour basculer l'état lu/non lu d'un tome avec sauvegarde en base de données
+  const handleTomeReadToggle = async (tomeNumber) => {
+    const newReadTomes = new Set(readTomes);
+    
+    if (newReadTomes.has(tomeNumber)) {
+      // Décocher le tome
+      newReadTomes.delete(tomeNumber);
+      setMissingPreviousWarning(null); // Effacer l'avertissement si on décoche
+    } else {
+      // Cocher le tome
+      newReadTomes.add(tomeNumber);
+      
+      // ✅ LOGIQUE SUGGESTION : Vérifier si des tomes précédents manquent
+      if (tomeNumber > 1) {
+        const missingPrevious = [];
+        for (let i = 1; i < tomeNumber; i++) {
+          if (!newReadTomes.has(i)) {
+            missingPrevious.push(i);
+          }
+        }
         
-        // ✅ NOUVELLE LOGIQUE : Vérifier si des tomes précédents manquent
-        if (tomeNumber > 1) {
-          const missingPrevious = [];
-          for (let i = 1; i < tomeNumber; i++) {
-            if (!newReadTomes.has(i)) {
-              missingPrevious.push(i);
-            }
-          }
-          
-          if (missingPrevious.length > 0) {
-            setMissingPreviousWarning({
-              currentTome: tomeNumber,
-              missingTomes: missingPrevious
-            });
-          } else {
-            setMissingPreviousWarning(null);
-          }
+        if (missingPrevious.length > 0) {
+          setMissingPreviousWarning({
+            currentTome: tomeNumber,
+            missingTomes: missingPrevious
+          });
         } else {
           setMissingPreviousWarning(null);
         }
+      } else {
+        setMissingPreviousWarning(null);
       }
-      return newReadTomes;
-    });
+    }
+    
+    // Mettre à jour l'état local immédiatement
+    setReadTomes(newReadTomes);
+    
+    // ✅ PERSISTANCE : Sauvegarder en base de données
+    if (enrichedSeries?.name) {
+      const saved = await saveReadingPreferences(enrichedSeries.name, newReadTomes);
+      if (saved) {
+        console.log('✅ Préférences sauvegardées automatiquement');
+      } else {
+        console.warn('⚠️ Échec de la sauvegarde, état local maintenu');
+        // Note: On garde l'état local même si la sauvegarde échoue
+        // L'utilisateur peut réessayer et ça sera sauvegardé
+      }
+    }
   };
 
   // Fonction pour cocher automatiquement tous les tomes précédents
