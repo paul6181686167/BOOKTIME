@@ -131,7 +131,7 @@ const SeriesDetailModal = ({
       console.log('🔑 Token disponible:', !!token);
       console.log('🌐 Backend URL:', backendUrl);
       
-      // Rechercher les livres de cette saga (CORRECTION: utiliser /api/books/all pour supporter le paramètre saga)
+      // Rechercher les livres de cette saga
       const response = await fetch(`${backendUrl}/api/books/all?saga=${encodeURIComponent(series.name)}`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -148,16 +148,21 @@ const SeriesDetailModal = ({
         const data = await response.json();
         console.log('📚 Livres trouvés pour saga:', data);
         
-        // Vérifier s'il y a déjà un livre série (is_series: true)
+        // CORRECTION: Vérifier s'il y a déjà un livre série avec logique étendue
         const hasSeriesBook = data.items && data.items.some(book => 
-          book.saga === series.name && book.is_series === true
+          book.saga === series.name && 
+          (book.is_series === true || book.title?.toLowerCase().includes('collection'))
         );
+        
         console.log('📖 Série déjà possédée:', hasSeriesBook);
         setIsSeriesOwned(hasSeriesBook);
         
         // Récupérer le statut de la série si elle existe
         if (hasSeriesBook) {
-          const seriesBook = data.items.find(book => book.saga === series.name && book.is_series === true);
+          const seriesBook = data.items.find(book => 
+            book.saga === series.name && 
+            (book.is_series === true || book.title?.toLowerCase().includes('collection'))
+          );
           if (seriesBook) {
             setSeriesStatus(seriesBook.status || 'to_read');
             console.log('📊 Statut série récupéré:', seriesBook.status);
