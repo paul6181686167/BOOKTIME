@@ -159,8 +159,9 @@ const SeriesDetailModal = ({
         
         // Récupérer le statut de la série si elle existe
         if (hasSeriesBook) {
+          // CORRECTION RCA: Même logique case-insensitive pour récupérer le statut
           const seriesBook = data.items.find(book => 
-            book.saga === series.name && 
+            book.saga?.toLowerCase().includes(series.name.toLowerCase()) && 
             (book.is_series === true || book.title?.toLowerCase().includes('collection'))
           );
           if (seriesBook) {
