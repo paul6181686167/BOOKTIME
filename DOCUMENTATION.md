@@ -300,17 +300,21 @@ Deployment: Kubernetes + Supervisor
 
 ### Évolution Design System (Juillet 2025)
 
-#### Épurement Interface Complété
-**Sessions 35-52** : Progression vers design professionnel
+#### Épurement Interface Complété - MISE À JOUR SESSION 73
+**Sessions 35-73** : Progression vers design professionnel
 - **Session 35** : Suppression drapeau 🇯🇵 onglet Manga
 - **Session 36** : Remplacement "🎨 BD" → "Bandes dessinées"
 - **Session 38** : Suppression émoji 📚 onglet Romans
 - **Session 52** : Suppression émojis boutons statut (🟡, 🔵, 🟢, 📚, 📖, ✅)
+- **Session 72** : Suppression bouton Export/Import du header
+- **Session 73** : Suppression section "Gestion détaillée" modal série
 
-#### Interface Finale Épurée
+#### Interface Finale Épurée - SESSION 73
 ✅ **Boutons de statut** : Texte seul sans émojis
 ✅ **Sections organisées** : Titres épurés (En cours/À lire/Terminé)
 ✅ **Onglets navigation** : Termes explicites sans décorations
+✅ **Header simplifié** : Focus sur actions principales (Recommandations + Profil)
+✅ **Modal série épuré** : Section détaillée supprimée, focus sur toggles lu/non lu
 ✅ **Design professionnel** : Interface mature business-ready
 
 ### Composants Principaux
