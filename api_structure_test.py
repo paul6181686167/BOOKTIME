@@ -6,7 +6,7 @@ import requests
 import json
 
 # Configuration
-BACKEND_URL = "https://08bd90bc-cd2e-49c8-99d9-71fefc6983a7.preview.emergentagent.com"
+BACKEND_URL = "https://d246c7cc-6728-4f48-8043-1d131ee95b28.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 def test_api_structure():
