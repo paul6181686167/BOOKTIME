@@ -44,6 +44,7 @@ import useBooks from './hooks/useBooks';
 import useSeries from './hooks/useSeries';
 import useSearch from './hooks/useSearch';
 import SearchOptimizer from './utils/searchOptimizer';
+import { useAutoSeriesDetection } from './hooks/useAutoSeriesDetection';
 
 // PHASE 2.4 - Monitoring et Analytics hooks
 import usePerformanceMonitoring from './hooks/usePerformanceMonitoring';
