@@ -462,11 +462,11 @@ const SeriesDetailModal = ({
         {/* Liste des tomes simple */}
         <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Liste des tomes</h3>
-          {series?.total_volumes && series.total_volumes > 0 ? (
+          {series?.volumes && series.volumes > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto">
-              {Array.from({ length: series.total_volumes }, (_, index) => {
+              {Array.from({ length: series.volumes }, (_, index) => {
                 const tomeNumber = index + 1;
-                const tomeTitle = series.volumes?.[tomeNumber] || `${series.name} - Tome ${tomeNumber}`;
+                const tomeTitle = `${series.name} - Tome ${tomeNumber}`;
                 return (
                   <div key={tomeNumber} className="flex items-center space-x-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded">
                     <span className="text-sm font-medium text-purple-600 dark:text-purple-400 min-w-[60px]">
