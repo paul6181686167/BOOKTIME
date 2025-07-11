@@ -386,9 +386,8 @@ function MainApp() {
   useEffect(() => {
     // Nouvelle logique pour gérer le regroupement BD + Manga = Romans graphiques
     if (activeTab === 'graphic_novels') {
-      // Pour Romans graphiques, on n'applique pas de filtre de catégorie spécifique
-      // car on veut afficher à la fois BD et Manga
-      setFilters(prev => ({ ...prev, category: '' }));
+      // Pour Romans graphiques, on utilise un filtre spécial qui sera géré dans useAdvancedSearch
+      setFilters(prev => ({ ...prev, category: 'graphic_novels' }));
     } else {
       // Pour Romans, on applique le filtre normal
       setFilters(prev => ({ ...prev, category: activeTab }));
