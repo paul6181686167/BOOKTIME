@@ -100,8 +100,8 @@ const SeriesDetailModal = ({
       
       console.log('🔍 Vérification série possédée:', series.name);
       
-      // Rechercher les livres de cette saga
-      const response = await fetch(`${backendUrl}/api/books?saga=${encodeURIComponent(series.name)}`, {
+      // Rechercher les livres de cette saga (CORRECTION: utiliser /api/books/all pour supporter le paramètre saga)
+      const response = await fetch(`${backendUrl}/api/books/all?saga=${encodeURIComponent(series.name)}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
