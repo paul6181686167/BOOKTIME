@@ -28,6 +28,44 @@ const SeriesDetailModal = ({
   const [isSeriesOwned, setIsSeriesOwned] = useState(false);
   const [seriesStatus, setSeriesStatus] = useState('to_read');
 
+  // Fonction pour enrichir les données de série avec les métadonnées de référence
+  const enrichSeriesData = (series) => {
+    if (!series?.name) return series;
+    
+    // Rechercher dans la base de données de référence
+    const seriesName = series.name.toLowerCase();
+    let referenceData = null;
+    
+    // Parcourir toutes les catégories de la base de données de référence
+    for (const category of Object.values(EXTENDED_SERIES_DATABASE)) {
+      for (const seriesData of Object.values(category)) {
+        if (seriesData.name.toLowerCase() === seriesName || 
+            seriesData.variations?.some(variation => variation.toLowerCase() === seriesName)) {
+          referenceData = seriesData;
+          break;
+        }
+      }
+      if (referenceData) break;
+    }
+    
+    // Enrichir avec les données de référence si trouvées
+    if (referenceData) {
+      return {
+        ...series,
+        volumes: referenceData.volumes,
+        description: referenceData.description,
+        first_published: referenceData.first_published,
+        status: referenceData.status,
+        referenceFound: true
+      };
+    }
+    
+    return series;
+  };
+
+  // Enrichir les données de série au chargement
+  const enrichedSeries = enrichSeriesData(series);
+
   // Options de statut pour les boutons rapides
   const statusOptions = [
     { value: 'to_read', label: 'À lire', color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300', emoji: '' },
