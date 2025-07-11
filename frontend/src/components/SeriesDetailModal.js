@@ -30,6 +30,64 @@ const SeriesDetailModal = ({
   const [readTomes, setReadTomes] = useState(new Set()); // ← AJOUT: État des tomes lus/non lus
   const [missingPreviousWarning, setMissingPreviousWarning] = useState(null); // ← AJOUT: Avertissement tomes précédents manquants
 
+  // ✅ NOUVELLE FONCTION : Charger les préférences de lecture depuis la base de données
+  const loadReadingPreferences = async (seriesName) => {
+    try {
+      const token = localStorage.getItem('token');
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+      
+      const response = await fetch(`${backendUrl}/api/series/reading-preferences/${encodeURIComponent(seriesName)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('📚 Préférences de lecture chargées:', data);
+        return new Set(data.read_tomes || []);
+      } else {
+        console.log('ℹ️ Aucune préférence trouvée, initialisation vide');
+        return new Set();
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors du chargement des préférences:', error);
+      return new Set();
+    }
+  };
+
+  // ✅ NOUVELLE FONCTION : Sauvegarder les préférences de lecture en base de données
+  const saveReadingPreferences = async (seriesName, readTomes) => {
+    try {
+      const token = localStorage.getItem('token');
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+      
+      const response = await fetch(`${backendUrl}/api/series/reading-preferences`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          series_name: seriesName,
+          read_tomes: [...readTomes]
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Préférences sauvegardées:', data);
+        return true;
+      } else {
+        console.error('❌ Erreur lors de la sauvegarde:', response.status);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors de la sauvegarde des préférences:', error);
+      return false;
+    }
+  };
+
   // Fonction pour enrichir les données de série avec les métadonnées de référence
   const enrichSeriesData = (series) => {
     if (!series?.name) return series;
