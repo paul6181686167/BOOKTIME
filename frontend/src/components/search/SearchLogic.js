@@ -75,6 +75,19 @@ export const searchOpenLibrary = async (query, {
           category: book.category || categoryBadge.key || 'roman' // Défaut roman si non détecté
         };
       });
+
+      // 🔒 MASQUAGE UNIVERSEL : Filtrer tous les livres faisant partie d'une saga
+      const filteredResults = resultsWithOwnership.filter(book => {
+        // Vérifier si le livre fait partie d'une saga
+        const belongsToSeries = !!(book.saga && book.saga.trim());
+        
+        if (belongsToSeries) {
+          console.log(`🔒 [MASQUAGE UNIVERSEL] Livre "${book.title}" appartenant à la série "${book.saga}" - MASQUÉ des résultats`);
+          return false; // Masquer le livre
+        }
+        
+        return true; // Livre standalone, affiché
+      });
       
       // ALGORITHME DE TRI PRIORITAIRE OPTIMISÉ : Garantir fiches séries EN PREMIER avec scores 100000+
       const allResults = [...seriesCards, ...resultsWithOwnership];
