@@ -402,9 +402,29 @@ function MainApp() {
   }, [user]);
 
   // Calculer les livres à afficher selon le mode
-  const displayedBooks = searchHook.isSearchMode 
-    ? searchHook.openLibraryResults 
-    : createUnifiedDisplay(filteredBooks);
+  // SESSION 81 - DOUBLE PROTECTION : Filtrage des livres individuels appartenant à une série
+  const getDisplayedBooks = () => {
+    if (searchHook.isSearchMode) {
+      // En mode recherche, afficher tous les résultats Open Library
+      return searchHook.openLibraryResults;
+    }
+    
+    // En mode bibliothèque, appliquer le double filtrage
+    const booksToDisplay = filteredBooks || [];
+    
+    // 🔍 SESSION 81 - FILTRAGE EN AMONT : Identifier les livres appartenant à des séries
+    const seriesBooks = booksToDisplay.filter(book => book.saga && book.saga.trim());
+    const standaloneBooks = booksToDisplay.filter(book => !book.saga || !book.saga.trim());
+    
+    console.log(`🔍 [SESSION 81] Filtrage en amont - ${booksToDisplay.length} livres total:`);
+    console.log(`📚 [SESSION 81] - ${seriesBooks.length} livres appartenant à des séries (seront regroupés)`);
+    console.log(`📖 [SESSION 81] - ${standaloneBooks.length} livres standalone (vignettes individuelles)`);
+    
+    // Créer l'affichage unifié avec la logique de masquage renforcée
+    return createUnifiedDisplay(booksToDisplay);
+  };
+
+  const displayedBooks = getDisplayedBooks();
 
   // MODIFICATION ORGANISATIONNELLE : Grouper les livres par statut pour affichage en sections
   const groupBooksByStatus = (books) => {
