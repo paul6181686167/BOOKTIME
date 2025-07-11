@@ -1,8 +1,8 @@
 # 📋 CHANGELOG - HISTORIQUE DES MODIFICATIONS
 
-### [SESSION AJOUT TOGGLE LU/NON LU TOMES 60] - Amélioration Esthétique Modal Série avec Toggle Interactif ✅ IMPLÉMENTÉ
+### [SESSION AJOUT TOGGLE LU/NON LU TOMES 60] - Amélioration Esthétique Modal Série avec Toggle Interactif ✅ VALIDÉ UTILISATEUR
 **Date** : 11 Juillet 2025  
-**Prompt Utilisateur** : `"ok maintenant je veux que tu fasse un ajout esthétique: tu vas ajouter un toggle lu/non lu dans le listing pour les tomes qui composent une série, préserve les fonctionnalités et documente au fur et à mesure, as-tu des questions?"` → Clarifications → Implémentation
+**Prompt Utilisateur** : `"ok maintenant je veux que tu fasse un ajout esthétique: tu vas ajouter un toggle lu/non lu dans le listing pour les tomes qui composent une série, préserve les fonctionnalités et documente au fur et à mesure, as-tu des questions?"` → Clarifications → Implémentation → `"nickel documente tout"`
 
 #### Context et Demande Utilisateur
 
