@@ -289,6 +289,7 @@ const SeriesDetailModal = ({
       loadSeriesBooks();
       checkIfSeriesOwned();
       setReadTomes(new Set()); // ← AJOUT: Réinitialiser l'état des tomes lus à chaque ouverture
+      setMissingPreviousWarning(null); // ← AJOUT: Réinitialiser l'avertissement à chaque ouverture
     }
   }, [isOpen, series]);
 
