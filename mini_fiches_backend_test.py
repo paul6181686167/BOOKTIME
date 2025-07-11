@@ -74,15 +74,38 @@ class BookTimeMiniFilesTester:
             self.log(f"✅ Backend is healthy: {response}")
         return success
 
-    def test_auth_login(self):
-        """Test user login with Test User credentials"""
+    def test_auth_register_and_login(self):
+        """Test user registration and login"""
+        # First try to register a new user
+        register_data = {
+            "first_name": "Test",
+            "last_name": "User",
+            "email": f"test_{int(time.time())}@example.com",
+            "password": "TestPass123!"
+        }
+        
+        success, response = self.run_test(
+            "User Registration",
+            "POST",
+            "api/auth/register",
+            201,
+            data=register_data
+        )
+        
+        if success and 'access_token' in response:
+            self.token = response['access_token']
+            self.user_id = response.get('user', {}).get('id')
+            self.log(f"✅ Registered and logged in user with ID: {self.user_id}")
+            return True
+        
+        # If registration fails, try login with existing Test User
         login_data = {
             "first_name": "Test",
             "last_name": "User"
         }
         
         success, response = self.run_test(
-            "User Login",
+            "User Login Fallback",
             "POST",
             "api/auth/login",
             200,
@@ -92,8 +115,9 @@ class BookTimeMiniFilesTester:
         if success and 'access_token' in response:
             self.token = response['access_token']
             self.user_id = response.get('user', {}).get('id')
-            self.log(f"✅ Logged in user with ID: {self.user_id}")
+            self.log(f"✅ Logged in existing user with ID: {self.user_id}")
             return True
+        
         return False
 
     def test_series_popular(self):
