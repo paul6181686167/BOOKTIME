@@ -190,6 +190,9 @@ function MainApp() {
   const booksHook = useBooks();
   const seriesHook = useSeries();
   const searchHook = useSearch();
+  
+  // Hook de détection automatique des séries
+  const { enhanceBookWithSeries, configure: configureAutoDetection } = useAutoSeriesDetection();
 
   // Hook de recherche avancée
   const {
