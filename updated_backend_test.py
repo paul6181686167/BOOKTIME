@@ -235,7 +235,7 @@ class BooktimeAPITester:
 
 def run_tests():
     # Get the backend URL from the frontend .env file
-    backend_url = "https://3de9b0f4-467c-44df-815b-98cdc75beb7b.preview.emergentagent.com"
+    backend_url = "https://2380c720-0b31-4a2e-91ba-23c2b9b7eb26.preview.emergentagent.com"
     
     print(f"🚀 Starting BOOKTIME API tests against {backend_url}")
     tester = BooktimeAPITester(backend_url)
