@@ -18,3 +18,11 @@ class SeriesLibraryCreate(BaseModel):
     last_published: str = ""
     publisher: str = ""
     series_status: str = "to_read"
+
+# ✅ NOUVEAU MODÈLE : Préférences de lecture des tomes par série
+class SeriesReadingPreferences(BaseModel):
+    series_name: str
+    read_tomes: List[int]  # Liste des numéros de tomes marqués comme lus
+    
+class SeriesReadingPreferencesUpdate(BaseModel):
+    read_tomes: List[int]  # Liste des numéros de tomes marqués comme lus
