@@ -506,13 +506,14 @@ const SeriesDetailModal = ({
             <div className="space-y-2 max-h-40 overflow-y-auto">
               {Array.from({ length: enrichedSeries.volumes }, (_, index) => {
                 const tomeNumber = index + 1;
-                const tomeTitle = `${enrichedSeries.name} - Tome ${tomeNumber}`;
+                // Utiliser le titre spécifique s'il existe, sinon titre générique
+                const tomeTitle = enrichedSeries.volume_titles?.[tomeNumber] || `${enrichedSeries.name} - Tome ${tomeNumber}`;
                 return (
                   <div key={tomeNumber} className="flex items-center space-x-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded">
                     <span className="text-sm font-medium text-purple-600 dark:text-purple-400 min-w-[60px]">
                       Tome {tomeNumber}
                     </span>
-                    <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
                       {tomeTitle}
                     </span>
                   </div>
