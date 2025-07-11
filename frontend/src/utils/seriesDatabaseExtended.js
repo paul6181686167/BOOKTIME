@@ -8,6 +8,15 @@ export const EXTENDED_SERIES_DATABASE = {
       authors: ['J.K. Rowling'],
       category: 'roman',
       volumes: 7,
+      volume_titles: {
+        1: "Harry Potter à l'école des sorciers",
+        2: "Harry Potter et la chambre des secrets",
+        3: "Harry Potter et le prisonnier d'Azkaban",
+        4: "Harry Potter et la coupe de feu",
+        5: "Harry Potter et l'ordre du phénix",
+        6: "Harry Potter et le prince de sang-mêlé",
+        7: "Harry Potter et les reliques de la mort"
+      },
       description: 'Série de romans fantastiques de J.K. Rowling sur un jeune sorcier à Poudlard.',
       first_published: '1997',
       status: 'completed',
