@@ -55,7 +55,7 @@ export const STATUS_CONFIG = {
   }
 };
 
-// Configuration des onglets de navigation
+// Configuration des onglets de navigation - MISE À JOUR SESSION 75 : Regroupement BD + Manga = Romans graphiques
 export const TAB_CONFIG = [
   {
     key: BOOK_CATEGORIES.ROMAN,
@@ -63,14 +63,10 @@ export const TAB_CONFIG = [
     emoji: ''
   },
   {
-    key: BOOK_CATEGORIES.BD,
-    label: 'Bandes dessinées',
-    emoji: ''
-  },
-  {
-    key: BOOK_CATEGORIES.MANGA,
-    label: 'Mangas',
-    emoji: ''
+    key: 'graphic_novels', // Nouvelle clé pour regrouper BD + Manga
+    label: 'Romans graphiques',
+    emoji: '',
+    categories: [BOOK_CATEGORIES.BD, BOOK_CATEGORIES.MANGA] // Inclut les deux catégories
   }
 ];
 
