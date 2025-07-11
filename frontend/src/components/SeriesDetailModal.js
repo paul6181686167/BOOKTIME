@@ -148,9 +148,9 @@ const SeriesDetailModal = ({
         const data = await response.json();
         console.log('📚 Livres trouvés pour saga:', data);
         
-        // CORRECTION: Vérifier s'il y a déjà un livre série avec logique étendue
+        // CORRECTION RCA: Utiliser case-insensitive substring match pour compatibilité avec regex backend
         const hasSeriesBook = data.items && data.items.some(book => 
-          book.saga === series.name && 
+          book.saga?.toLowerCase().includes(series.name.toLowerCase()) && 
           (book.is_series === true || book.title?.toLowerCase().includes('collection'))
         );
         
