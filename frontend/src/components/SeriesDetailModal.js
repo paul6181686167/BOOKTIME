@@ -51,7 +51,7 @@ const SeriesDetailModal = ({
       console.log('🔑 Token trouvé:', !!token);
       console.log('🔄 Changement statut série:', series.name, 'vers', newStatus);
       
-      // Rechercher le livre série dans la bibliothèque (CORRECTION: utiliser /api/books/all pour supporter le paramètre saga)
+      // Rechercher le livre série dans la bibliothèque
       const response = await fetch(`${backendUrl}/api/books/all?saga=${encodeURIComponent(series.name)}`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -63,7 +63,12 @@ const SeriesDetailModal = ({
       if (response.ok) {
         const data = await response.json();
         console.log('📚 Données reçues:', data);
-        const seriesBook = data.items?.find(book => book.is_series === true);
+        
+        // CORRECTION: Chercher le livre série soit par is_series=true OU par saga correspondant
+        const seriesBook = data.items?.find(book => 
+          (book.is_series === true && book.saga === series.name) || 
+          (book.saga === series.name && book.title?.toLowerCase().includes('collection'))
+        );
         
         if (seriesBook) {
           console.log('📖 Livre série trouvé:', seriesBook);
@@ -97,6 +102,7 @@ const SeriesDetailModal = ({
           }
         } else {
           console.error('❌ Livre série non trouvé dans les résultats');
+          console.log('📋 Livres disponibles:', data.items?.map(b => ({ title: b.title, saga: b.saga, is_series: b.is_series })));
           toast.error('Livre série non trouvé dans la bibliothèque');
         }
       } else {
