@@ -475,3 +475,160 @@ async def delete_series_from_library_endpoint(
     
     # Déléguer l'appel à la fonction existante
     return await delete_series(series_id, current_user)
+
+# ✅ NOUVEAUX ENDPOINTS : Gestion des préférences de lecture des tomes par série
+
+@router.get("/reading-preferences/{series_name}")
+async def get_series_reading_preferences(
+    series_name: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Récupérer les préférences de lecture d'une série pour l'utilisateur connecté
+    """
+    try:
+        # Chercher les préférences existantes pour cette série et cet utilisateur
+        preferences = series_library_collection.find_one({
+            "user_id": current_user["id"],
+            "series_name": series_name
+        }, {"_id": 0})
+        
+        if preferences and "read_tomes" in preferences:
+            return {
+                "series_name": series_name,
+                "read_tomes": preferences["read_tomes"]
+            }
+        else:
+            # Aucune préférence trouvée, retourner liste vide
+            return {
+                "series_name": series_name,
+                "read_tomes": []
+            }
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération des préférences: {str(e)}")
+
+@router.post("/reading-preferences")
+async def save_series_reading_preferences(
+    preferences: SeriesReadingPreferences,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Sauvegarder les préférences de lecture d'une série pour l'utilisateur connecté
+    """
+    try:
+        # Préparer les données à sauvegarder
+        preference_data = {
+            "user_id": current_user["id"],
+            "series_name": preferences.series_name,
+            "read_tomes": preferences.read_tomes,
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        
+        # Upsert (créer ou mettre à jour) les préférences
+        result = series_library_collection.update_one(
+            {
+                "user_id": current_user["id"],
+                "series_name": preferences.series_name
+            },
+            {
+                "$set": preference_data,
+                "$setOnInsert": {
+                    "id": str(uuid.uuid4()),
+                    "created_at": datetime.utcnow().isoformat()
+                }
+            },
+            upsert=True
+        )
+        
+        return {
+            "message": "Préférences de lecture sauvegardées avec succès",
+            "series_name": preferences.series_name,
+            "read_tomes": preferences.read_tomes,
+            "updated": result.modified_count > 0,
+            "created": result.upserted_id is not None
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la sauvegarde des préférences: {str(e)}")
+
+@router.put("/reading-preferences/{series_name}")
+async def update_series_reading_preferences(
+    series_name: str,
+    preferences: SeriesReadingPreferencesUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Mettre à jour les préférences de lecture d'une série pour l'utilisateur connecté
+    """
+    try:
+        # Mettre à jour les préférences existantes
+        result = series_library_collection.update_one(
+            {
+                "user_id": current_user["id"],
+                "series_name": series_name
+            },
+            {
+                "$set": {
+                    "read_tomes": preferences.read_tomes,
+                    "updated_at": datetime.utcnow().isoformat()
+                }
+            }
+        )
+        
+        if result.matched_count == 0:
+            # Aucune préférence trouvée, créer une nouvelle entrée
+            preference_data = {
+                "id": str(uuid.uuid4()),
+                "user_id": current_user["id"],
+                "series_name": series_name,
+                "read_tomes": preferences.read_tomes,
+                "created_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.utcnow().isoformat()
+            }
+            
+            series_library_collection.insert_one(preference_data)
+            
+            return {
+                "message": "Nouvelles préférences de lecture créées",
+                "series_name": series_name,
+                "read_tomes": preferences.read_tomes,
+                "created": True
+            }
+        
+        return {
+            "message": "Préférences de lecture mises à jour avec succès",
+            "series_name": series_name,
+            "read_tomes": preferences.read_tomes,
+            "updated": result.modified_count > 0
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la mise à jour des préférences: {str(e)}")
+
+@router.delete("/reading-preferences/{series_name}")
+async def delete_series_reading_preferences(
+    series_name: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Supprimer les préférences de lecture d'une série pour l'utilisateur connecté
+    """
+    try:
+        result = series_library_collection.delete_one({
+            "user_id": current_user["id"],
+            "series_name": series_name
+        })
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Aucune préférence trouvée pour cette série")
+        
+        return {
+            "message": f"Préférences de lecture supprimées pour la série '{series_name}'",
+            "deleted": True
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la suppression des préférences: {str(e)}")
