@@ -298,30 +298,34 @@ const SeriesDetailModal = ({
         </div>
 
         {/* Boutons rapides de changement de statut - MÊME EMPLACEMENT QUE DANS BookDetailModal */}
-        {isSeriesOwned && (
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center mb-2">
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Changer le statut rapidement :</h3>
-            </div>
-            <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 w-fit">
-              {statusOptions.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => handleQuickStatusChange(option.value)}
-                  className={`px-4 py-2 text-sm font-medium transition-all flex items-center space-x-2 ${
-                    seriesStatus === option.value
-                      ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
-                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
-                  }`}
-                  title={`Marquer comme ${option.label}`}
-                >
-                  <span className="text-base">{option.emoji}</span>
-                  <span>{option.label}</span>
-                </button>
-              ))}
-            </div>
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center mb-2">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Changer le statut rapidement :</h3>
           </div>
-        )}
+          <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 w-fit">
+            {statusOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => handleQuickStatusChange(option.value)}
+                className={`px-4 py-2 text-sm font-medium transition-all flex items-center space-x-2 ${
+                  seriesStatus === option.value
+                    ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                }`}
+                title={`Marquer comme ${option.label}`}
+                disabled={!isSeriesOwned}
+              >
+                <span className="text-base">{option.emoji}</span>
+                <span>{option.label}</span>
+              </button>
+            ))}
+          </div>
+          {!isSeriesOwned && (
+            <p className="text-xs text-gray-500 mt-2">
+              Ajoutez d'abord cette série à votre bibliothèque pour changer son statut
+            </p>
+          )}
+        </div>
 
         {/* Actions Bar */}
         <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
