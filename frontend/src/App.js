@@ -382,9 +382,17 @@ function MainApp() {
     setActiveTab(newTab);
   };
 
-  // CORRECTION RCA - Synchronisation activeTab avec filters.category
+  // CORRECTION RCA - Synchronisation activeTab avec filters.category - MISE À JOUR SESSION 75
   useEffect(() => {
-    setFilters(prev => ({ ...prev, category: activeTab }));
+    // Nouvelle logique pour gérer le regroupement BD + Manga = Romans graphiques
+    if (activeTab === 'graphic_novels') {
+      // Pour Romans graphiques, on n'applique pas de filtre de catégorie spécifique
+      // car on veut afficher à la fois BD et Manga
+      setFilters(prev => ({ ...prev, category: '' }));
+    } else {
+      // Pour Romans, on applique le filtre normal
+      setFilters(prev => ({ ...prev, category: activeTab }));
+    }
   }, [activeTab]);
 
   // Chargement initial au montage du composant
