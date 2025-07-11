@@ -421,6 +421,25 @@ function MainApp() {
       }
     });
 
+    // Trier chaque groupe : vignettes séries d'abord, puis livres individuels
+    const sortGroup = (groupArray) => {
+      return groupArray.sort((a, b) => {
+        // Vignettes séries en premier
+        if (a.isSeriesCard && !b.isSeriesCard) return -1;
+        if (!a.isSeriesCard && b.isSeriesCard) return 1;
+        
+        // Si même type, trier par date d'ajout (plus récent d'abord)
+        const dateA = new Date(a.date_added || a.updated_at || 0);
+        const dateB = new Date(b.date_added || b.updated_at || 0);
+        return dateB - dateA;
+      });
+    };
+
+    // Appliquer le tri à chaque groupe
+    Object.keys(groups).forEach(status => {
+      groups[status] = sortGroup(groups[status]);
+    });
+
     return groups;
   };
 
