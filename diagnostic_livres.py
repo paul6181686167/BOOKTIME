@@ -54,8 +54,12 @@ def analyze_books():
             return
             
         books = response.json()
-        print(f"📚 TOTAL LIVRES TROUVÉS: {len(books)}")
-        print("=" * 80)
+        if isinstance(books, str):
+            books = json.loads(books)
+        if not isinstance(books, list):
+            print(f"❌ Format de données inattendu: {type(books)}")
+            print(f"📄 Données reçues: {books}")
+            return
         
         # Analyser chaque livre
         series_books = []
