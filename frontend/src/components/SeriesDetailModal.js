@@ -28,6 +28,7 @@ const SeriesDetailModal = ({
   const [isSeriesOwned, setIsSeriesOwned] = useState(false);
   const [seriesStatus, setSeriesStatus] = useState('to_read');
   const [readTomes, setReadTomes] = useState(new Set()); // ← AJOUT: État des tomes lus/non lus
+  const [missingPreviousWarning, setMissingPreviousWarning] = useState(null); // ← AJOUT: Avertissement tomes précédents manquants
 
   // Fonction pour enrichir les données de série avec les métadonnées de référence
   const enrichSeriesData = (series) => {
