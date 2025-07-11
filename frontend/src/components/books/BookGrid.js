@@ -9,23 +9,55 @@ const BookGrid = ({
   onItemClick,
   showEmptyState = true 
 }) => {
-  // Créer l'affichage unifié des livres et séries
-  const displayedBooks = BookActions.createUnifiedDisplay(books, (book) => {
-    // Fonction pour déterminer le badge de catégorie
-    if (book.category) {
-      switch (book.category.toLowerCase()) {
-        case 'roman':
-          return { key: 'roman', text: 'Roman', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300', emoji: '📚' };
-        case 'bd':
-          return { key: 'bd', text: 'BD', class: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300', emoji: '🎨' };
-        case 'manga':
-          return { key: 'manga', text: 'Manga', class: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300', emoji: '🇯🇵' };
-        default:
-          return { key: 'roman', text: 'Roman', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300', emoji: '📚' };
-      }
+  // SESSION 81.1 - DOUBLE PROTECTION : Masquage des livres individuels de série dans BookGrid
+  const applySeriesBookMasking = (booksList) => {
+    if (!booksList || !Array.isArray(booksList)) {
+      return [];
     }
-    return { key: 'roman', text: 'Roman', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300', emoji: '📚' };
-  });
+    
+    console.log('🔍 [SESSION 81.1] BookGrid - Masquage des livres de série:', booksList.length, 'livres reçus');
+    
+    // Créer l'affichage unifié avec masquage
+    const unifiedDisplay = BookActions.createUnifiedDisplay(booksList, (book) => {
+      // Fonction pour déterminer le badge de catégorie
+      if (book.category) {
+        switch (book.category.toLowerCase()) {
+          case 'roman':
+            return { key: 'roman', text: 'Roman', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300', emoji: '📚' };
+          case 'bd':
+            return { key: 'bd', text: 'BD', class: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300', emoji: '🎨' };
+          case 'manga':
+            return { key: 'manga', text: 'Manga', class: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300', emoji: '🇯🇵' };
+          default:
+            return { key: 'roman', text: 'Roman', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300', emoji: '📚' };
+        }
+      }
+      return { key: 'roman', text: 'Roman', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300', emoji: '📚' };
+    });
+    
+    // 🔍 SESSION 81.1 - PROTECTION FINALE dans BookGrid : Vérifier qu'aucun livre de série n'échappe
+    const finalBooks = unifiedDisplay.filter(item => {
+      if (item.isSeriesCard) {
+        // Les vignettes de série sont autorisées
+        return true;
+      } else {
+        // Pour les livres individuels, vérifier qu'ils n'appartiennent pas à une série
+        const belongsToSeries = !!(item.saga && item.saga.trim());
+        if (belongsToSeries) {
+          console.warn(`⚠️ [SESSION 81.1] BookGrid PROTECTION FINALE: Livre "${item.title}" de la série "${item.saga}" détecté - MASQUÉ`);
+          return false; // Masquer ce livre
+        }
+        return true; // Livre standalone autorisé
+      }
+    });
+    
+    console.log(`🎯 [SESSION 81.1] BookGrid - Résultat final: ${finalBooks.length} éléments (${finalBooks.filter(f => f.isSeriesCard).length} séries + ${finalBooks.filter(f => !f.isSeriesCard).length} livres standalone)`);
+    
+    return finalBooks;
+  };
+  
+  // Appliquer le masquage des livres de série
+  const displayedBooks = applySeriesBookMasking(books);
 
   // État de chargement
   if (loading) {
