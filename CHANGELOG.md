@@ -871,7 +871,7 @@ backend                          RUNNING   pid 1660, uptime 0:00:02
 
 ### [SESSION MODIFICATION ORGANISATIONNELLE 45] - Intégration Vignettes Séries dans Sections Statut + Boutons Rapides Modal Série
 **Date** : 11 Juillet 2025  
-**Prompt Utilisateur** : `"ok je veux que tu fasses un changement organisationnel dans la bibliothèque personnelle je veux que les vignettes séries rentre dans les catégories en cours/à lire/terminé, préserve les fonctionnalités documente tout"` + `"le modal série doit avoir ce bouton la et non pas chaque tome de la série, as-tu compris?"`
+**Prompt Utilisateur** : `"ok je veux que tu fasses un changement organisationnel dans la bibliothèque personnelle je veux que les vignettes séries rentre dans les catégories en cours/à lire/terminé, préserve les fonctionnalités documente tout"` + `"le modal série doit avoir ce bouton la et non pas chaque tome de la série, as-tu compris?"` + `"non ça n'a pas été implémenter"` + `"documente tout"`
 
 #### Context et Objectif
 - **Demande principale** : Réorganiser l'affichage des vignettes séries pour qu'elles soient intégrées dans les sections de statut (En cours/À lire/Terminé) au lieu d'être dans une section séparée
