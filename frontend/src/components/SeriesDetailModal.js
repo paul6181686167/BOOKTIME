@@ -462,28 +462,26 @@ const SeriesDetailModal = ({
         {/* Liste des tomes simple */}
         <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Liste des tomes</h3>
-          {loading ? (
-            <div className="space-y-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-              ))}
-            </div>
-          ) : books.length > 0 ? (
+          {series?.total_volumes && series.total_volumes > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto">
-              {books.map((book) => (
-                <div key={book.id} className="flex items-center space-x-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded">
-                  <span className="text-sm font-medium text-purple-600 dark:text-purple-400 min-w-[60px]">
-                    Tome {book.volume_number || '?'}
-                  </span>
-                  <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
-                    {book.title}
-                  </span>
-                </div>
-              ))}
+              {Array.from({ length: series.total_volumes }, (_, index) => {
+                const tomeNumber = index + 1;
+                const tomeTitle = series.volumes?.[tomeNumber] || `${series.name} - Tome ${tomeNumber}`;
+                return (
+                  <div key={tomeNumber} className="flex items-center space-x-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded">
+                    <span className="text-sm font-medium text-purple-600 dark:text-purple-400 min-w-[60px]">
+                      Tome {tomeNumber}
+                    </span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                      {tomeTitle}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-              Aucun tome trouvé pour cette série
+              Informations sur les tomes non disponibles pour cette série
             </p>
           )}
         </div>
