@@ -550,6 +550,21 @@ const SeriesDetailModal = ({
           </div>
         </div>
 
+        {/* Section Résumé de la série */}
+        {enrichedSeries?.description && (
+          <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+              <BookOpenIcon className="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" />
+              Résumé de la série
+            </h3>
+            <div className="prose prose-gray dark:prose-invert max-w-none">
+              <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+                {enrichedSeries.description}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Boutons rapides de changement de statut - MÊME EMPLACEMENT QUE DANS BookDetailModal */}
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center mb-2">
