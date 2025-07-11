@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 
 # Configuration
-BACKEND_URL = "https://d246c7cc-6728-4f48-8043-1d131ee95b28.preview.emergentagent.com"
+BACKEND_URL = "https://1d1b6086-bdb3-4df1-8ff7-e440d6e21f07.preview.emergentagent.com"
 API_BASE = f"{BACKEND_URL}/api"
 
 def investigate_books_endpoint():
