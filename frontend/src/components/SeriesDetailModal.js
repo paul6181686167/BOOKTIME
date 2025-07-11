@@ -64,10 +64,10 @@ const SeriesDetailModal = ({
         const data = await response.json();
         console.log('📚 Données reçues:', data);
         
-        // CORRECTION: Chercher le livre série soit par is_series=true OU par saga correspondant
+        // CORRECTION RCA: Même logique case-insensitive pour chercher le livre série
         const seriesBook = data.items?.find(book => 
-          (book.is_series === true && book.saga === series.name) || 
-          (book.saga === series.name && book.title?.toLowerCase().includes('collection'))
+          book.saga?.toLowerCase().includes(series.name.toLowerCase()) && 
+          (book.is_series === true || book.title?.toLowerCase().includes('collection'))
         );
         
         if (seriesBook) {
