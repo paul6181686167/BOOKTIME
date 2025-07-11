@@ -93,6 +93,15 @@
             console.log('📊 SeriesReportGenerator disponible globalement');
             console.log('💡 Génération de rapports détaillés disponible');
           }
+          
+          // Charger le script de démonstration
+          const script = document.createElement('script');
+          script.src = '/seriesAnalysisDemo.js';
+          script.onload = function() {
+            console.log('🚀 Script de démonstration chargé !');
+            console.log('💡 Tapez showSeriesAnalysisHelp() pour voir l\'aide');
+          };
+          document.head.appendChild(script);
         }, 2000);
       });
     </script>
