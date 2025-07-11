@@ -591,7 +591,6 @@ function MainApp() {
               {groupedBooks.to_read && groupedBooks.to_read.length > 0 && (
                 <div>
                   <div className="flex items-center mb-4">
-                    <span className="text-2xl mr-3">🔵</span>
                     <h2 className="text-xl font-semibold text-blue-600 dark:text-blue-400">
                       À lire ({groupedBooks.to_read.length})
                     </h2>
