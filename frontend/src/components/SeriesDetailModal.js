@@ -112,19 +112,30 @@ const SeriesDetailModal = ({
 
   // Fonction pour vérifier si la série est déjà dans la bibliothèque
   const checkIfSeriesOwned = async () => {
-    if (!series?.name) return;
+    if (!series?.name) {
+      console.log('⚠️ Pas de nom de série fourni');
+      return;
+    }
     
     try {
       const token = localStorage.getItem('token');
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
       
       console.log('🔍 Vérification série possédée:', series.name);
+      console.log('🔑 Token disponible:', !!token);
+      console.log('🌐 Backend URL:', backendUrl);
       
       // Rechercher les livres de cette saga (CORRECTION: utiliser /api/books/all pour supporter le paramètre saga)
       const response = await fetch(`${backendUrl}/api/books/all?saga=${encodeURIComponent(series.name)}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
+      });
+      
+      console.log('📡 Réponse vérification:', { 
+        status: response.status, 
+        ok: response.ok,
+        statusText: response.statusText 
       });
       
       if (response.ok) {
@@ -135,6 +146,7 @@ const SeriesDetailModal = ({
         const hasSeriesBook = data.items && data.items.some(book => 
           book.saga === series.name && book.is_series === true
         );
+        console.log('📖 Série déjà possédée:', hasSeriesBook);
         setIsSeriesOwned(hasSeriesBook);
         
         // Récupérer le statut de la série si elle existe
@@ -147,9 +159,20 @@ const SeriesDetailModal = ({
         }
         
         console.log('✅ Série déjà possédée:', hasSeriesBook);
+      } else {
+        const errorData = await response.json().catch(() => ({ detail: 'Erreur inconnue' }));
+        console.error('❌ Erreur API vérification série:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
+        // Ne pas bloquer l'interface si l'API échoue
+        setIsSeriesOwned(false);
       }
     } catch (error) {
       console.error('❌ Erreur lors de la vérification de la série:', error);
+      // Ne pas bloquer l'interface si la vérification échoue
+      setIsSeriesOwned(false);
     }
   };
 
