@@ -41,17 +41,17 @@ export const STATUS_CONFIG = {
   [BOOK_STATUSES.TO_READ]: {
     label: 'À lire',
     color: 'gray',
-    emoji: '📖'
+    emoji: ''
   },
   [BOOK_STATUSES.READING]: {
     label: 'En cours',
     color: 'yellow',
-    emoji: '📚'
+    emoji: ''
   },
   [BOOK_STATUSES.COMPLETED]: {
     label: 'Terminé',
     color: 'green',
-    emoji: '✅'
+    emoji: ''
   }
 };
 
