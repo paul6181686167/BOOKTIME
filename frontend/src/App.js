@@ -481,14 +481,6 @@ function MainApp() {
               </button>
               
               <button
-                onClick={() => window.location.href = '/export-import'}
-                className="flex items-center space-x-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors duration-200"
-              >
-                <span>📤</span>
-                <span className="hidden sm:inline">Export/Import</span>
-              </button>
-              
-              <button
                 onClick={() => setShowProfileModal(true)}
                 className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full transition-colors duration-200"
               >
