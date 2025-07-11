@@ -147,11 +147,13 @@ const SeriesDetailModal = ({
 
   // ✅ NOUVELLE FONCTION : Calculer et mettre à jour automatiquement le statut de la série
   const calculateAndUpdateSeriesStatus = async (newReadTomes) => {
-    if (!enrichedSeries?.name || !enrichedSeries?.volumes || !isSeriesOwned) {
-      console.log('🔄 Calcul statut ignoré - série non valide ou non possédée');
+    if (!enrichedSeries?.name || !enrichedSeries?.volumes) {
+      console.log('🔄 Calcul statut ignoré - série non valide ou données manquantes');
       return;
     }
 
+    // ✅ CORRECTION : Permettre le calcul même si la série n'est pas encore "officiellement" possédée
+    // L'utilisateur peut marquer des tomes comme lus avant d'ajouter la série à sa bibliothèque
     const totalTomes = enrichedSeries.volumes;
     const readTomesCount = newReadTomes.size;
     
@@ -159,7 +161,8 @@ const SeriesDetailModal = ({
       seriesName: enrichedSeries.name,
       totalTomes,
       readTomesCount,
-      readTomes: Array.from(newReadTomes)
+      readTomes: Array.from(newReadTomes),
+      isSeriesOwned
     });
 
     // Déterminer le nouveau statut selon les règles
@@ -175,18 +178,16 @@ const SeriesDetailModal = ({
 
     console.log('🎯 Nouveau statut calculé:', newStatus, 'depuis', seriesStatus);
 
-    // Mettre à jour seulement si le statut change
-    if (newStatus !== seriesStatus) {
-      console.log('🔄 Mise à jour statut série automatique:', seriesStatus, '→', newStatus);
+    // ✅ CORRECTION : Seulement tenter la mise à jour API si la série est possédée
+    // Sinon, juste mettre à jour l'état local pour l'affichage
+    if (isSeriesOwned && newStatus !== seriesStatus) {
+      console.log('🔄 Mise à jour statut série automatique (série possédée):', seriesStatus, '→', newStatus);
       
       try {
         // Utiliser la fonction existante pour changer le statut
         await handleQuickStatusChange(newStatus);
         
-        // Mettre à jour l'état local
-        setSeriesStatus(newStatus);
-        
-        // Notification utilisateur
+        // Notification utilisateur pour série possédée
         const statusLabels = {
           'to_read': 'À lire',
           'reading': 'En cours',
@@ -200,8 +201,24 @@ const SeriesDetailModal = ({
         
       } catch (error) {
         console.error('❌ Erreur lors de la mise à jour automatique du statut:', error);
-        // Ne pas bloquer l'utilisateur, juste log l'erreur
       }
+    } else if (!isSeriesOwned && newStatus !== seriesStatus) {
+      console.log('📝 Mise à jour statut série local (série non possédée):', seriesStatus, '→', newStatus);
+      
+      // Mettre à jour l'état local pour l'affichage même si série non possédée
+      setSeriesStatus(newStatus);
+      
+      // Notification utilisateur pour série non possédée
+      const statusLabels = {
+        'to_read': 'À lire',
+        'reading': 'En cours',
+        'completed': 'Terminé'
+      };
+      
+      toast.success(`Progression mise à jour : ${statusLabels[newStatus]}`, {
+        icon: '📈',
+        duration: 2000
+      });
     } else {
       console.log('ℹ️ Statut série inchangé, pas de mise à jour nécessaire');
     }
