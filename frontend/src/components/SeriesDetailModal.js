@@ -111,15 +111,15 @@ const SeriesDetailModal = ({
         const data = await response.json();
         console.log('📚 Livres trouvés pour saga:', data);
         
-        // Vérifier s'il y a déjà un livre série (volume_number: null)
+        // Vérifier s'il y a déjà un livre série (is_series: true)
         const hasSeriesBook = data.items && data.items.some(book => 
-          book.saga === series.name && book.volume_number === null
+          book.saga === series.name && book.is_series === true
         );
         setIsSeriesOwned(hasSeriesBook);
         
         // Récupérer le statut de la série si elle existe
         if (hasSeriesBook) {
-          const seriesBook = data.items.find(book => book.saga === series.name && book.volume_number === null);
+          const seriesBook = data.items.find(book => book.saga === series.name && book.is_series === true);
           if (seriesBook) {
             setSeriesStatus(seriesBook.status || 'to_read');
             console.log('📊 Statut série récupéré:', seriesBook.status);
