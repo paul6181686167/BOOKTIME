@@ -355,7 +355,7 @@ class MegaExpansionOpenLibrary:
         logger.info(f"✅ Stratégie 1 terminée: {len(all_series)} séries trouvées")
         return all_series
     
-    async def expansion_strategy_authors(self, limit_per_author: int = 30) -> List[Dict]:
+    async def expansion_strategy_authors(self, limit_per_author: int = 300) -> List[Dict]:
         """Stratégie 2: Exploration auteurs prolifiques"""
         logger.info("👥 Stratégie 2: Expansion par auteurs prolifiques")
         all_series = []
