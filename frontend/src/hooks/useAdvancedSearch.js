@@ -119,9 +119,15 @@ export const useAdvancedSearch = (books = []) => {
         return false;
       }
 
-      // Filtrage par auteur
-      if (filters.author && !book.author?.toLowerCase().includes(filters.author.toLowerCase())) {
-        return false;
+      // Filtrage par auteur - 🔍 CORRECTION: Support des cartes de série avec multiple auteurs
+      if (filters.author) {
+        const authorFilter = filters.author.toLowerCase();
+        const matchesMainAuthor = book.author?.toLowerCase().includes(authorFilter);
+        const matchesAuthorsArray = book.authors?.some(author => author?.toLowerCase().includes(authorFilter));
+        
+        if (!matchesMainAuthor && !matchesAuthorsArray) {
+          return false;
+        }
       }
 
       // Filtrage par saga
