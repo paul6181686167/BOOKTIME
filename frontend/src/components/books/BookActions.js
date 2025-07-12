@@ -108,6 +108,11 @@ const BookActions = {
         seriesGroups[seriesKey].books.push(book);
         seriesGroups[seriesKey].totalBooks += 1;
         
+        // 🔍 NOUVEAU: Ajouter l'auteur à la liste si pas déjà présent
+        if (book.author && !seriesGroups[seriesKey].authors.includes(book.author)) {
+          seriesGroups[seriesKey].authors.push(book.author);
+        }
+        
         // Compter les statuts
         switch (book.status) {
           case 'completed':
