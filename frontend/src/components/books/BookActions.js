@@ -93,6 +93,7 @@ const BookActions = {
             name: book.saga,
             title: book.saga,
             author: book.author,
+            authors: [book.author], // 🔍 NOUVEAU: Stockage de tous les auteurs de la série
             category: book.category,
             books: [],
             totalBooks: 0,
