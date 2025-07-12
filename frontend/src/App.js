@@ -281,13 +281,14 @@ function MainApp() {
       const token = localStorage.getItem('token');
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
       
-      // Créer un livre "série" avec statut "À lire"
+      // Créer un livre "série" avec statut "À lire" - OPTION 2 SÉCURISÉE
       const seriesBook = {
         title: series.name,
         author: series.author || 'Auteur inconnu',
         category: series.category || 'roman',
         description: `Collection ${series.name} - ${series.total_volumes || 0} tome(s)`,
-        saga: series.name,
+        saga: null, // ✅ OPTION 2: Pas de saga pour éviter le masquage automatique
+        series_name: series.name, // ✅ OPTION 2: Nouveau champ spécial pour les séries ajoutées
         volume_number: null, // Pas de numéro de tome car c'est la série entière
         status: 'to_read', // Statut par défaut "À lire"
         cover_url: series.cover_url || '',
