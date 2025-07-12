@@ -118,15 +118,15 @@ class SeriesImageService:
         
         # Variantes spécifiques aux séries populaires
         popular_variants = {
-            'harry potter': ['harry potter', '"harry potter"', 'potter', 'j.k. rowling'],
+            'harry potter': ['harry potter', '"harry potter"', 'potter', 'j.k. rowling', 'harry potter philosopher stone', 'harry potter sorcerer stone'],
             'one piece': ['one piece', '"one piece"', 'eiichiro oda'],
             'astérix': ['asterix', 'astérix', 'goscinny', 'uderzo'],
-            'le seigneur des anneaux': ['lord of the rings', 'tolkien', 'lotr'],
+            'le seigneur des anneaux': ['lord of the rings', 'tolkien', 'lotr', 'fellowship of the ring'],
             'dragon ball': ['dragonball', 'akira toriyama'],
             'naruto': ['naruto uzumaki', 'masashi kishimoto'],
             'tintin': ['adventures of tintin', 'hergé'],
             'lucky luke': ['morris', 'rené goscinny'],
-            'game of thrones': ['song of ice and fire', 'george r.r. martin'],
+            'game of thrones': ['song of ice and fire', 'george r.r. martin', 'game of thrones'],
             'sherlock holmes': ['arthur conan doyle', 'conan doyle']
         }
         
