@@ -94,8 +94,18 @@ def test_exclusions():
         title = book['title']
         subjects = book.get('subject', [])
         
-        # Simuler le calcul de confidence score
-        confidence = harvester._calculate_confidence_score(book, type('Match', (), {'groups': lambda: ['Test Series', '1']})(), '')
+        # Créer un mock match object correct
+        class MockMatch:
+            def groups(self):
+                return ('Test Series', '1')
+            def group(self, index):
+                if index == 1:
+                    return 'Test Series'
+                elif index == 2:
+                    return '1'
+                return None
+        
+        confidence = harvester._calculate_confidence_score(book, MockMatch(), '')
         
         print(f"📖 {title[:50]}")
         print(f"   📊 Confidence: {confidence}%")
