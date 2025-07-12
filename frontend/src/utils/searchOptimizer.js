@@ -57,6 +57,26 @@ export class SearchOptimizer {
           }
         }
         
+        // 🆕 2.1. CORRESPONDANCE PAR AUTEUR - CORRECTION PRINCIPALE
+        for (const author of series.authors || []) {
+          const authorMatch = FuzzyMatcher.advancedMatch(searchQuery, author, {
+            exactWeight: 180,
+            fuzzyWeight: 160,
+            partialWeight: 140,
+            phoneticWeight: 120,
+            transposeWeight: 150
+          });
+          
+          if (authorMatch > bestScore && authorMatch >= 50) { // Seuil adapté pour auteurs
+            bestScore = authorMatch;
+            bestMatch = {
+              type: 'author_match',
+              target: author,
+              score: authorMatch
+            };
+          }
+        }
+        
         // 3. CORRESPONDANCE LINGUISTIQUE MULTILINGUE
         const linguisticScore = FuzzyMatcher.checkLinguisticVariations(
           searchQuery, 
@@ -97,7 +117,7 @@ export class SearchOptimizer {
         const matchQuality = FuzzyMatcher.validateMatchQuality(searchQuery, bestMatch?.target || '', 60);
         
         // Si correspondance valide trouvée, ajouter avec score prioritaire
-        if (bestMatch && matchQuality.isValid && bestScore >= 60) {
+        if (bestMatch && matchQuality.isValid && bestScore >= 50) { // Seuil réduit pour inclure les auteurs
           detectedSeries.push({
             series: series,
             confidence: 100000 + bestScore, // SCORE PRIORITAIRE ABSOLU 100000+
