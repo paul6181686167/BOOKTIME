@@ -389,7 +389,7 @@ class MegaExpansionOpenLibrary:
         logger.info(f"✅ Stratégie 3 terminée: {len(all_series)} séries trouvées")
         return all_series
     
-    async def expansion_strategy_categories(self, limit_per_category: int = 40) -> List[Dict]:
+    async def expansion_strategy_categories(self, limit_per_category: int = 400) -> List[Dict]:
         """Stratégie 4: Scan catégories avec sous-genres"""
         logger.info("📚 Stratégie 4: Expansion par catégories étendues")
         all_series = []
