@@ -444,13 +444,32 @@ function MainApp() {
     // En mode bibliothèque, appliquer le double filtrage renforcé
     const booksToDisplay = filteredBooks || [];
     
-    // 🔍 SESSION 81.1 - FILTRAGE EN AMONT RENFORCÉ : Identifier et analyser les livres appartenant à des séries
-    const seriesBooks = booksToDisplay.filter(book => book.saga && book.saga.trim());
-    const standaloneBooks = booksToDisplay.filter(book => !book.saga || !book.saga.trim());
+    // 🔍 SESSION 81.1 + 81.8 - FILTRAGE EN AMONT INTELLIGENT : Identifier et analyser les livres appartenant à des séries
+    const seriesBooks = booksToDisplay.filter(book => {
+      // Méthode 1 : Champ saga existant
+      if (book.saga && book.saga.trim()) {
+        return true;
+      }
+      
+      // Méthode 2 : Détection intelligente automatique
+      const detection = SeriesDetector.detectBookSeries(book);
+      return detection.belongsToSeries && detection.confidence >= 70;
+    });
     
-    console.log(`🔍 [SESSION 81.1] Filtrage en amont renforcé - ${booksToDisplay.length} livres total:`);
-    console.log(`📚 [SESSION 81.1] - ${seriesBooks.length} livres appartenant à des séries (seront regroupés et masqués)`);
-    console.log(`📖 [SESSION 81.1] - ${standaloneBooks.length} livres standalone (vignettes individuelles autorisées)`);
+    const standaloneBooks = booksToDisplay.filter(book => {
+      // Vérifier le champ saga
+      if (book.saga && book.saga.trim()) {
+        return false;
+      }
+      
+      // Vérifier la détection intelligente
+      const detection = SeriesDetector.detectBookSeries(book);
+      return !(detection.belongsToSeries && detection.confidence >= 70);
+    });
+    
+    console.log(`🔍 [SESSION 81.8] Filtrage en amont intelligent - ${booksToDisplay.length} livres total:`);
+    console.log(`📚 [SESSION 81.8] - ${seriesBooks.length} livres appartenant à des séries (seront regroupés et masqués)`);
+    console.log(`📖 [SESSION 81.8] - ${standaloneBooks.length} livres standalone (vignettes individuelles autorisées)`);
     
     // Analyse détaillée des séries détectées
     const seriesAnalysis = {};
