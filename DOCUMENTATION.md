@@ -164,6 +164,8 @@ Deployment: Kubernetes + Supervisor
 - **Performance optimisée** : Détection < 5ms par livre avec cache intelligent
 - **Robustesse** : Gestion des faux positifs avec scoring adaptatif
 
+### 4. Analyse et Intelligence Automatique (Session 81.6)
+
 #### Reconnaissance Automatique
 - **Détection séries existantes** : Analyse tous livres sans saga définie
 - **Enrichissement métadonnées** : Saga + volume_number automatiques
