@@ -639,3 +639,169 @@ async def delete_series_reading_preferences(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la suppression des préférences: {str(e)}")
+
+# ✅ NOUVELLES ROUTES : Enrichissement d'images pour les séries
+
+@router.post("/enrich/images")
+async def enrich_series_with_images(
+    request_data: Dict,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Enrichir une liste de séries avec des images de couverture
+    """
+    try:
+        series_list = request_data.get('series_list', [])
+        if not series_list:
+            raise HTTPException(status_code=400, detail="Liste de séries vide")
+        
+        # Traitement en arrière-plan pour éviter les timeouts
+        background_tasks.add_task(
+            _enrich_series_background,
+            series_list,
+            current_user["id"]
+        )
+        
+        return {
+            "message": f"Enrichissement de {len(series_list)} séries démarré en arrière-plan",
+            "status": "processing",
+            "series_count": len(series_list)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors du lancement de l'enrichissement: {str(e)}")
+
+@router.get("/enrich/sample")
+async def enrich_sample_series(
+    count: int = 10,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Enrichir un échantillon de séries populaires avec des images
+    """
+    try:
+        # Récupérer un échantillon de séries populaires
+        popular_response = await get_popular_series(None, "fr", count, current_user)
+        series_list = popular_response["series"]
+        
+        # Enrichir chaque série avec une image
+        enriched_series = await image_service.batch_enrich_series(series_list, max_concurrent=3)
+        
+        return {
+            "message": f"Échantillon de {len(enriched_series)} séries enrichi",
+            "enriched_count": sum(1 for s in enriched_series if s.get('cover_url')),
+            "total_count": len(enriched_series),
+            "series": enriched_series
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'enrichissement de l'échantillon: {str(e)}")
+
+@router.post("/enrich/single")
+async def enrich_single_series_image(
+    series_data: Dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Enrichir une série unique avec une image de couverture
+    """
+    try:
+        if not series_data.get('name'):
+            raise HTTPException(status_code=400, detail="Nom de série requis")
+        
+        # Enrichir la série
+        enriched_series = await image_service.enrich_series_with_image(series_data)
+        
+        return {
+            "message": f"Série '{series_data['name']}' enrichie",
+            "found_image": bool(enriched_series.get('cover_url')),
+            "series": enriched_series
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'enrichissement de la série: {str(e)}")
+
+@router.post("/enrich/database")
+async def enrich_database_with_images(
+    request_data: Dict,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Enrichir la base de données complète des séries avec des images
+    """
+    try:
+        sample_size = request_data.get('sample_size', None)
+        database_path = "/app/backend/data/extended_series_database.json"
+        
+        if not os.path.exists(database_path):
+            raise HTTPException(status_code=404, detail="Base de données des séries non trouvée")
+        
+        # Traitement en arrière-plan pour éviter les timeouts
+        background_tasks.add_task(
+            _enrich_database_background,
+            database_path,
+            sample_size,
+            current_user["id"]
+        )
+        
+        return {
+            "message": f"Enrichissement de la base de données démarré (échantillon: {sample_size or 'toute la base'})",
+            "status": "processing",
+            "database_path": database_path
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors du lancement de l'enrichissement: {str(e)}")
+
+@router.get("/images/status")
+async def get_image_enrichment_status(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Obtenir le statut de l'enrichissement d'images
+    """
+    try:
+        database_path = "/app/backend/data/extended_series_database.json"
+        
+        if not os.path.exists(database_path):
+            return {"status": "no_database", "message": "Base de données non trouvée"}
+        
+        # Charger un échantillon pour analyser l'état
+        with open(database_path, 'r', encoding='utf-8') as f:
+            series_data = json.load(f)
+        
+        total_series = len(series_data)
+        series_with_images = sum(1 for series in series_data if series.get('cover_url'))
+        
+        return {
+            "total_series": total_series,
+            "series_with_images": series_with_images,
+            "enrichment_percentage": (series_with_images / total_series * 100) if total_series > 0 else 0,
+            "status": "complete" if series_with_images == total_series else "partial"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la vérification du statut: {str(e)}")
+
+# Fonctions utilitaires pour les tâches en arrière-plan
+
+async def _enrich_series_background(series_list: List[Dict], user_id: str):
+    """Enrichir une liste de séries en arrière-plan"""
+    try:
+        enriched_series = await image_service.batch_enrich_series(series_list, max_concurrent=5)
+        logger.info(f"✅ Enrichissement terminé pour utilisateur {user_id}: {len(enriched_series)} séries")
+    except Exception as e:
+        logger.error(f"❌ Erreur enrichissement arrière-plan: {e}")
+
+async def _enrich_database_background(database_path: str, sample_size: Optional[int], user_id: str):
+    """Enrichir la base de données en arrière-plan"""
+    try:
+        result = await image_service.enrich_series_database(
+            database_path, 
+            sample_size=sample_size
+        )
+        logger.info(f"✅ Enrichissement base terminé pour utilisateur {user_id}: {result}")
+    except Exception as e:
+        logger.error(f"❌ Erreur enrichissement base arrière-plan: {e}")
