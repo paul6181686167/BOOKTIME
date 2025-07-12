@@ -921,10 +921,20 @@ class UltraHarvest100K:
         
         # Malus patterns problématiques
         title_lower = book.get('title', '').lower()
-        problematic_terms = ['anthology', 'collection', 'best of', 'selected', 'complete works']
+        subjects_lower = ' '.join([s.lower() for s in book.get('subject', [])])
+        
+        # Exclusions spécifiques ajoutées pour éviter livres de cuisine et publications académiques
+        problematic_terms = [
+            'anthology', 'collection', 'best of', 'selected', 'complete works',
+            'cookbook', 'recipes', 'cooking', 'culinary',  # Livres de cuisine
+            'textbook', 'coursebook', 'handbook', 'manual', 'guide',  # Publications académiques
+            'university press', 'academic', 'scholarly', 'proceedings',
+            'journal', 'yearbook', 'encyclopedia', 'dictionary', 'reference'
+        ]
+        
         for term in problematic_terms:
-            if term in title_lower:
-                base_score -= 15
+            if term in title_lower or term in subjects_lower:
+                base_score -= 15  # Malus plus fort pour ces exclusions
         
         return min(max(base_score, 0), 100)  # Score entre 0-100
     
