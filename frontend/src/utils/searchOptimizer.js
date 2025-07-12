@@ -398,7 +398,7 @@ export class SearchOptimizer {
 
 
 
-  // Label de pertinence selon le type de correspondance
+  // Label de pertinence selon le type de correspondance - AMÉLIORÉ AVEC AUTEURS
   static getRelevanceLabel(detected) {
     switch (detected.matchType) {
       case 'exact_match':
@@ -411,8 +411,12 @@ export class SearchOptimizer {
         return 'Série (correspondance approximative)';
       case 'phonetic_match':
         return 'Série (correspondance phonétique)';
+      case 'author_match':
+        return 'Série (par auteur)';
       case 'user_library_match':
         return 'Série (votre bibliothèque)';
+      case 'user_library_author_match':
+        return 'Série (votre auteur)';
       default:
         return 'Série détectée';
     }
