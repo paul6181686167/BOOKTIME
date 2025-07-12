@@ -204,6 +204,7 @@ class SeriesImageService:
     async def enrich_series_with_image(self, series_data: Dict) -> Dict:
         """
         Enrichir une série avec une image de couverture
+        OPTIMISÉ - Amélioration logique et gestion erreurs
         
         Args:
             series_data: Données de la série
@@ -212,26 +213,43 @@ class SeriesImageService:
             Données de la série enrichies avec cover_url
         """
         series_name = series_data.get('name', '')
-        author = series_data.get('authors', [])
-        author_name = author[0] if author and isinstance(author, list) else str(author) if author else None
+        authors = series_data.get('authors', [])
         category = series_data.get('category', 'roman')
         
+        # Gérer différents formats d'auteurs
+        author_name = None
+        if authors:
+            if isinstance(authors, list) and len(authors) > 0:
+                author_name = authors[0] if isinstance(authors[0], str) else str(authors[0])
+            elif isinstance(authors, str):
+                author_name = authors
+        
         if not series_name:
+            logger.warning("⚠️ Série sans nom, enrichissement impossible")
             return series_data
+        
+        # Ne pas ré-enrichir si l'image existe déjà
+        if series_data.get('cover_url'):
+            logger.info(f"✅ Série '{series_name}' a déjà une image: {series_data['cover_url']}")
+            return series_data
+        
+        logger.info(f"🔍 Enrichissement démarré pour '{series_name}' (auteur: {author_name}, catégorie: {category})")
         
         # Étape 1: Chercher sur Open Library
         cover_url = await self.search_series_cover_openlibrary(series_name, author_name)
         
         # Étape 2: Si pas trouvé, utiliser vision expert (placeholder pour l'instant)
         if not cover_url:
+            logger.info(f"🎨 Open Library: aucune image trouvée pour '{series_name}', vision expert requis")
             cover_url = await self.get_placeholder_image_from_vision_expert(series_name, category)
         
         # Ajouter l'URL de couverture si trouvée
         if cover_url:
             series_data['cover_url'] = cover_url
-            logger.info(f"✅ Série '{series_name}' enrichie avec image: {cover_url}")
+            series_data['image_source'] = 'openlibrary'
+            series_data['image_enriched_at'] = logger.info(f"✅ Série '{series_name}' enrichie avec image: {cover_url}")
         else:
-            logger.info(f"📷 Série '{series_name}' conserve le dégradé par défaut")
+            logger.info(f"📷 Série '{series_name}' conserve le dégradé par défaut (aucune image trouvée)")
         
         return series_data
     
