@@ -1,0 +1,57 @@
+[
+  {
+    "name": "Harry Potter",
+    "authors": ["J.K. Rowling"],
+    "category": "roman",
+    "volumes": 7,
+    "keywords": ["harry", "potter", "wizard", "hogwarts", "magic"],
+    "variations": ["Harry Potter", "HP", "Potter"],
+    "first_published": 1997,
+    "status": "completed",
+    "description": "Série de romans fantastiques",
+    "subjects": ["fantasy", "wizards", "magic", "children"],
+    "languages": ["en", "fr"],
+    "translations": {
+      "en": "Harry Potter",
+      "fr": "Harry Potter"
+    },
+    "source": "manual"
+  },
+  {
+    "name": "One Piece",
+    "authors": ["Eiichiro Oda"],
+    "category": "manga",
+    "volumes": 105,
+    "keywords": ["one", "piece", "luffy", "pirates", "treasure"],
+    "variations": ["One Piece", "OP", "Wan Pīsu"],
+    "first_published": 1997,
+    "status": "ongoing",
+    "description": "Manga d'aventure et de pirates",
+    "subjects": ["manga", "pirates", "adventure", "shonen"],
+    "languages": ["ja", "fr", "en"],
+    "translations": {
+      "en": "One Piece",
+      "fr": "One Piece",
+      "ja": "ワンピース"
+    },
+    "source": "manual"
+  },
+  {
+    "name": "Astérix",
+    "authors": ["René Goscinny", "Albert Uderzo"],
+    "category": "bd",
+    "volumes": 39,
+    "keywords": ["asterix", "obelix", "gaulois", "roman", "comic"],
+    "variations": ["Astérix", "Asterix", "Astérix le Gaulois"],
+    "first_published": 1959,
+    "status": "ongoing",
+    "description": "Série de bande dessinée française",
+    "subjects": ["comic", "french", "historical", "humor"],
+    "languages": ["fr", "en"],
+    "translations": {
+      "en": "Asterix",
+      "fr": "Astérix"
+    },
+    "source": "manual"
+  }
+]
