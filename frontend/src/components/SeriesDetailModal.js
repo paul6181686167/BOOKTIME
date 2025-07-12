@@ -583,8 +583,25 @@ const SeriesDetailModal = ({
         <div className="border-b border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-20 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-2xl">
-                {getCategoryEmoji(series?.category)}
+              {/* Image de couverture ou icône de série */}
+              <div className="w-16 h-20 rounded-lg flex items-center justify-center shadow-md overflow-hidden">
+                {series.cover_url ? (
+                  <img 
+                    src={series.cover_url} 
+                    alt={`Couverture de ${series.name}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback vers le dégradé si l'image ne charge pas
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div 
+                  className={`w-full h-full bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-2xl ${series.cover_url ? 'hidden' : 'flex'}`}
+                >
+                  {getCategoryEmoji(series?.category)}
+                </div>
               </div>
               
               <div>
