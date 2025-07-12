@@ -393,7 +393,7 @@ class UltraExpansionOpenLibrary:
             }
         }
     
-    async def ultra_strategy_languages(self, limit_per_lang: int = 25) -> List[Dict]:
+    async def ultra_strategy_languages(self, limit_per_lang: int = 250) -> List[Dict]:
         """Stratégie ultra 1: Exploration par marchés linguistiques"""
         logger.info("🌍 Stratégie Ultra 1: Exploration marchés linguistiques")
         all_series = []
