@@ -1471,6 +1471,258 @@ export const EXTENDED_SERIES_DATABASE = {
         fr: 'One Punch Man',
         ja: 'ワンパンマン'
       }
+    },
+    'death_note': {
+      name: 'Death Note',
+      authors: ['Tsugumi Ohba', 'Takeshi Obata'],
+      category: 'manga',
+      volumes: 12,
+      description: 'Light Yagami trouve un carnet de la mort et devient Kira.',
+      first_published: '2003',
+      status: 'completed',
+      keywords: ['death note', 'light yagami', 'l', 'kira', 'ryuk', 'shinigami'],
+      variations: ['death note', 'deathnote', 'death not'],
+      exclusions: ['light up', 'another note', 'films'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Death_Note',
+      translations: {
+        en: 'Death Note',
+        fr: 'Death Note',
+        ja: 'デスノート'
+      }
+    },
+    'my_hero_academia': {
+      name: 'My Hero Academia',
+      authors: ['Kōhei Horikoshi'],
+      category: 'manga',
+      volumes: 37,
+      description: 'Izuku Midoriya rêve de devenir un héros dans un monde de super-pouvoirs.',
+      first_published: '2014',
+      status: 'ongoing',
+      keywords: ['my hero academia', 'deku', 'midoriya', 'all might', 'quirk', 'ua'],
+      variations: ['my hero academia', 'mha', 'boku no hero academia'],
+      exclusions: ['vigilantes', 'spin-offs', 'films'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/My_Hero_Academia',
+      translations: {
+        en: 'My Hero Academia',
+        fr: 'My Hero Academia',
+        ja: '僕のヒーローアカデミア'
+      }
+    },
+    'demon_slayer': {
+      name: 'Demon Slayer',
+      authors: ['Koyoharu Gotouge'],
+      category: 'manga',
+      volumes: 23,
+      description: 'Tanjiro Kamado devient un chasseur de démons pour sauver sa sœur.',
+      first_published: '2016',
+      status: 'completed',
+      keywords: ['demon slayer', 'tanjiro', 'nezuko', 'kimetsu no yaiba', 'hashira'],
+      variations: ['demon slayer', 'kimetsu no yaiba', 'kny'],
+      exclusions: ['spin-offs', 'films'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Demon_Slayer',
+      translations: {
+        en: 'Demon Slayer',
+        fr: 'Demon Slayer',
+        ja: '鬼滅の刃'
+      }
+    },
+    'jujutsu_kaisen': {
+      name: 'Jujutsu Kaisen',
+      authors: ['Gege Akutami'],
+      category: 'manga',
+      volumes: 24,
+      description: 'Yuji Itadori avale un doigt de démon et rejoint l\'école de sorcellerie.',
+      first_published: '2018',
+      status: 'ongoing',
+      keywords: ['jujutsu kaisen', 'yuji itadori', 'sukuna', 'gojo', 'megumi', 'nobara'],
+      variations: ['jujutsu kaisen', 'jjk', 'jujutsu'],
+      exclusions: ['0 prequel', 'spin-offs'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Jujutsu_Kaisen',
+      translations: {
+        en: 'Jujutsu Kaisen',
+        fr: 'Jujutsu Kaisen',
+        ja: '呪術廻戦'
+      }
+    },
+    'tokyo_ghoul': {
+      name: 'Tokyo Ghoul',
+      authors: ['Sui Ishida'],
+      category: 'manga',
+      volumes: 14,
+      description: 'Ken Kaneki devient un hybride humain-goule à Tokyo.',
+      first_published: '2011',
+      status: 'completed',
+      keywords: ['tokyo ghoul', 'kaneki', 'goule', 'ccg', 'kagune', 'tokyo'],
+      variations: ['tokyo ghoul', 'tokyo goul', 'tg'],
+      exclusions: ['tokyo ghoul re', 'spin-offs'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Tokyo_Ghoul',
+      translations: {
+        en: 'Tokyo Ghoul',
+        fr: 'Tokyo Ghoul',
+        ja: '東京喰種'
+      }
+    },
+    'chainsaw_man': {
+      name: 'Chainsaw Man',
+      authors: ['Tatsuki Fujimoto'],
+      category: 'manga',
+      volumes: 11,
+      description: 'Denji fusionne avec son démon-tronçonneuse pour devenir Chainsaw Man.',
+      first_published: '2018',
+      status: 'completed',
+      keywords: ['chainsaw man', 'denji', 'makima', 'pochita', 'devil hunter'],
+      variations: ['chainsaw man', 'csm', 'chainsaw'],
+      exclusions: ['part 2', 'spin-offs'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Chainsaw_Man',
+      translations: {
+        en: 'Chainsaw Man',
+        fr: 'Chainsaw Man',
+        ja: 'チェンソーマン'
+      }
+    },
+    'haikyuu': {
+      name: 'Haikyū!!',
+      authors: ['Haruichi Furudate'],
+      category: 'manga',
+      volumes: 45,
+      description: 'Hinata Shoyo rêve de devenir le meilleur volleyeur malgré sa petite taille.',
+      first_published: '2012',
+      status: 'completed',
+      keywords: ['haikyuu', 'hinata', 'kageyama', 'volley', 'karasuno', 'sport'],
+      variations: ['haikyuu', 'haikyu', 'haikyū'],
+      exclusions: ['spin-offs', 'films'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Haikyū!!',
+      translations: {
+        en: 'Haikyū!!',
+        fr: 'Haikyū!!',
+        ja: 'ハイキュー!!'
+      }
+    },
+    'one_piece_spin_off': {
+      name: 'Boruto',
+      authors: ['Ukyo Kodachi', 'Mikio Ikemoto'],
+      category: 'manga',
+      volumes: 20,
+      description: 'Suite de Naruto avec Boruto, le fils de Naruto.',
+      first_published: '2016',
+      status: 'ongoing',
+      keywords: ['boruto', 'naruto next generations', 'kawaki', 'ninja', 'technology'],
+      variations: ['boruto', 'boruto naruto next generations'],
+      exclusions: ['naruto', 'original'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Boruto',
+      translations: {
+        en: 'Boruto',
+        fr: 'Boruto',
+        ja: 'ボルト'
+      }
+    },
+    'dr_stone': {
+      name: 'Dr. Stone',
+      authors: ['Riichiro Inagaki', 'Boichi'],
+      category: 'manga',
+      volumes: 26,
+      description: 'Senku utilise la science pour reconstruire la civilisation.',
+      first_published: '2017',
+      status: 'completed',
+      keywords: ['dr stone', 'senku', 'science', 'stone age', 'civilization'],
+      variations: ['dr stone', 'doctor stone', 'dr.stone'],
+      exclusions: ['spin-offs'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Dr._Stone',
+      translations: {
+        en: 'Dr. Stone',
+        fr: 'Dr. Stone',
+        ja: 'Dr.STONE'
+      }
+    },
+    'spy_x_family': {
+      name: 'Spy x Family',
+      authors: ['Tatsuya Endo'],
+      category: 'manga',
+      volumes: 12,
+      description: 'Un espion, une assassin et une télépathe forment une fausse famille.',
+      first_published: '2019',
+      status: 'ongoing',
+      keywords: ['spy x family', 'loid', 'yor', 'anya', 'espion', 'assassin', 'télépathe'],
+      variations: ['spy x family', 'spy family', 'spyxfamily'],
+      exclusions: ['spin-offs'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Spy_×_Family',
+      translations: {
+        en: 'Spy x Family',
+        fr: 'Spy x Family',
+        ja: 'スパイファミリー'
+      }
+    },
+    'jojo_bizarre_adventure': {
+      name: 'JoJo\'s Bizarre Adventure',
+      authors: ['Hirohiko Araki'],
+      category: 'manga',
+      volumes: 131,
+      description: 'Saga multi-générationnelle de la famille Joestar.',
+      first_published: '1987',
+      status: 'ongoing',
+      keywords: ['jojo', 'bizarre adventure', 'joestar', 'stand', 'dio', 'araki'],
+      variations: ['jojo', 'jojo bizarre adventure', 'jjba'],
+      exclusions: ['spin-offs', 'novels'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/JoJo\'s_Bizarre_Adventure',
+      translations: {
+        en: 'JoJo\'s Bizarre Adventure',
+        fr: 'JoJo\'s Bizarre Adventure',
+        ja: 'ジョジョの奇妙な冒険'
+      }
+    },
+    'berserk': {
+      name: 'Berserk',
+      authors: ['Kentaro Miura'],
+      category: 'manga',
+      volumes: 41,
+      description: 'Guts, guerrier sombre dans un monde de fantasy brutal.',
+      first_published: '1989',
+      status: 'ongoing',
+      keywords: ['berserk', 'guts', 'griffith', 'casca', 'kentaro miura', 'dark fantasy'],
+      variations: ['berserk', 'bersek'],
+      exclusions: ['adaptations', 'films'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Berserk_(manga)',
+      translations: {
+        en: 'Berserk',
+        fr: 'Berserk',
+        ja: 'ベルセルク'
+      }
+    },
+    'vagabond': {
+      name: 'Vagabond',
+      authors: ['Takehiko Inoue'],
+      category: 'manga',
+      volumes: 37,
+      description: 'Histoire de Miyamoto Musashi, légendaire samouraï.',
+      first_published: '1998',
+      status: 'ongoing',
+      keywords: ['vagabond', 'miyamoto musashi', 'takehiko inoue', 'samurai', 'bushido'],
+      variations: ['vagabond', 'vagabon'],
+      exclusions: ['adaptations'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Vagabond_(manga)',
+      translations: {
+        en: 'Vagabond',
+        fr: 'Vagabond',
+        ja: 'バガボンド'
+      }
+    },
+    'vinland_saga': {
+      name: 'Vinland Saga',
+      authors: ['Makoto Yukimura'],
+      category: 'manga',
+      volumes: 27,
+      description: 'Thorfinn, jeune viking en quête de vengeance puis de rédemption.',
+      first_published: '2005',
+      status: 'ongoing',
+      keywords: ['vinland saga', 'thorfinn', 'askeladd', 'viking', 'yukimura'],
+      variations: ['vinland saga', 'vinland', 'viking saga'],
+      exclusions: ['adaptations'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Vinland_Saga',
+      translations: {
+        en: 'Vinland Saga',
+        fr: 'Vinland Saga',
+        ja: 'ヴィンランド・サガ'
+      }
     }
   }
 };
