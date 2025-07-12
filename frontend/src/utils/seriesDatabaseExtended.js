@@ -599,8 +599,251 @@ export const EXTENDED_SERIES_DATABASE = {
       wikipedia_url: 'https://fr.wikipedia.org/wiki/Blake_et_Mortimer',
       translations: {
         en: 'Blake and Mortimer',
-        fr: 'Blake et Mortimer',
-        nl: 'Blake en Mortimer'
+        fr: 'Blake et Mortimer'
+      }
+    },
+    'les_schtroumpfs': {
+      name: 'Les Schtroumpfs',
+      authors: ['Peyo'],
+      category: 'bd',
+      volumes: 36,
+      description: 'Aventures des petits êtres bleus dans leur village champignon.',
+      first_published: '1958',
+      status: 'ongoing',
+      keywords: ['schtroumpfs', 'peyo', 'gargamel', 'azrael', 'grand schtroumpf', 'schtroumpfette'],
+      variations: ['schtroumpfs', 'schtroumpf', 'les schtroumpfs', 'smurfs'],
+      exclusions: ['films', 'adaptations'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Les_Schtroumpfs',
+      translations: {
+        en: 'The Smurfs',
+        fr: 'Les Schtroumpfs',
+        nl: 'De Smurfen'
+      }
+    },
+    'boule_et_bill': {
+      name: 'Boule et Bill',
+      authors: ['Jean Roba'],
+      category: 'bd',
+      volumes: 40,
+      description: 'Gags d\'un petit garçon et son chien cocker.',
+      first_published: '1959',
+      status: 'ongoing',
+      keywords: ['boule', 'bill', 'caroline', 'cocker', 'roba', 'tortue'],
+      variations: ['boule et bill', 'boule bill', 'boule & bill'],
+      exclusions: ['autres auteurs'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Boule_et_Bill',
+      translations: {
+        en: 'Boule and Bill',
+        fr: 'Boule et Bill',
+        nl: 'Borre en Bil'
+      }
+    },
+    'marsupilami': {
+      name: 'Marsupilami',
+      authors: ['André Franquin', 'Batem'],
+      category: 'bd',
+      volumes: 38,
+      description: 'Aventures de l\'animal fantastique à la queue préhensile.',
+      first_published: '1987',
+      status: 'ongoing',
+      keywords: ['marsupilami', 'palombie', 'bobo', 'houba', 'franquin', 'batem'],
+      variations: ['marsupilami', 'marsupilami', 'marsu'],
+      exclusions: ['dessins animés'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Marsupilami',
+      translations: {
+        en: 'Marsupilami',
+        fr: 'Marsupilami',
+        es: 'Marsupilami'
+      }
+    },
+    'michel_vaillant': {
+      name: 'Michel Vaillant',
+      authors: ['Jean Graton'],
+      category: 'bd',
+      volumes: 77,
+      description: 'Course automobile avec le pilote Michel Vaillant.',
+      first_published: '1957',
+      status: 'ongoing',
+      keywords: ['michel vaillant', 'course', 'automobile', 'f1', 'formule 1', 'vaillante'],
+      variations: ['michel vaillant', 'michel vaillant', 'vaillant'],
+      exclusions: ['autres auteurs'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Michel_Vaillant',
+      translations: {
+        en: 'Michel Vaillant',
+        fr: 'Michel Vaillant'
+      }
+    },
+    'les_tuniques_bleues': {
+      name: 'Les Tuniques Bleues',
+      authors: ['Lambil', 'Raoul Cauvin'],
+      category: 'bd',
+      volumes: 65,
+      description: 'Guerre de Sécession américaine avec Blutch et Chesterfield.',
+      first_published: '1968',
+      status: 'ongoing',
+      keywords: ['tuniques bleues', 'blutch', 'chesterfield', 'guerre secession', 'lambil'],
+      variations: ['tuniques bleues', 'les tuniques bleues', 'tunique bleue'],
+      exclusions: ['autres auteurs'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Les_Tuniques_bleues',
+      translations: {
+        en: 'The Bluecoats',
+        fr: 'Les Tuniques Bleues'
+      }
+    },
+    'buck_danny': {
+      name: 'Buck Danny',
+      authors: ['Victor Hubinon', 'Jean-Michel Charlier'],
+      category: 'bd',
+      volumes: 58,
+      description: 'Aviation militaire avec le pilote Buck Danny.',
+      first_published: '1947',
+      status: 'ongoing',
+      keywords: ['buck danny', 'aviation', 'pilote', 'guerre', 'hubinon', 'charlier'],
+      variations: ['buck danny', 'buck dany', 'danny'],
+      exclusions: ['autres auteurs'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Buck_Danny',
+      translations: {
+        en: 'Buck Danny',
+        fr: 'Buck Danny'
+      }
+    },
+    'les_aventures_de_tintin': {
+      name: 'Les Aventures de Tintin',
+      authors: ['Hergé'],
+      category: 'bd',
+      volumes: 24,
+      description: 'Reporter belge et ses aventures à travers le monde.',
+      first_published: '1930',
+      status: 'completed',
+      keywords: ['tintin', 'milou', 'capitaine haddock', 'tournesol', 'dupond dupont', 'herge'],
+      variations: ['tintin', 'les aventures de tintin', 'adventures of tintin'],
+      exclusions: ['adaptations', 'films'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Les_Aventures_de_Tintin',
+      translations: {
+        en: 'The Adventures of Tintin',
+        fr: 'Les Aventures de Tintin',
+        nl: 'De Avonturen van Kuifje'
+      }
+    },
+    'yoko_tsuno': {
+      name: 'Yoko Tsuno',
+      authors: ['Roger Leloup'],
+      category: 'bd',
+      volumes: 30,
+      description: 'Science-fiction avec l\'électronicienne japonaise Yoko Tsuno.',
+      first_published: '1970',
+      status: 'ongoing',
+      keywords: ['yoko tsuno', 'science fiction', 'japon', 'electronique', 'leloup'],
+      variations: ['yoko tsuno', 'yoko', 'tsuno'],
+      exclusions: ['adaptations'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Yoko_Tsuno',
+      translations: {
+        en: 'Yoko Tsuno',
+        fr: 'Yoko Tsuno'
+      }
+    },
+    'largo_winch': {
+      name: 'Largo Winch',
+      authors: ['Jean Van Hamme', 'Philippe Francq'],
+      category: 'bd',
+      volumes: 24,
+      description: 'Thriller économique avec l\'héritier milliardaire Largo Winch.',
+      first_published: '1990',
+      status: 'ongoing',
+      keywords: ['largo winch', 'milliardaire', 'business', 'thriller', 'van hamme', 'francq'],
+      variations: ['largo winch', 'largo', 'winch'],
+      exclusions: ['films', 'séries TV'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Largo_Winch',
+      translations: {
+        en: 'Largo Winch',
+        fr: 'Largo Winch'
+      }
+    },
+    'blacksad': {
+      name: 'Blacksad',
+      authors: ['Juan Díaz Canales', 'Juanjo Guarnido'],
+      category: 'bd',
+      volumes: 6,
+      description: 'Noir policier avec des animaux anthropomorphes.',
+      first_published: '2000',
+      status: 'ongoing',
+      keywords: ['blacksad', 'john blacksad', 'polar', 'animaux', 'guarnido'],
+      variations: ['blacksad', 'black sad', 'black-sad'],
+      exclusions: ['jeux vidéo'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Blacksad',
+      translations: {
+        en: 'Blacksad',
+        fr: 'Blacksad',
+        es: 'Blacksad'
+      }
+    },
+    'corto_maltese': {
+      name: 'Corto Maltese',
+      authors: ['Hugo Pratt'],
+      category: 'bd',
+      volumes: 15,
+      description: 'Aventures du marin-aventurier Corto Maltese.',
+      first_published: '1967',
+      status: 'completed',
+      keywords: ['corto maltese', 'marin', 'aventurier', 'pratt', 'hugo pratt'],
+      variations: ['corto maltese', 'corto', 'maltese'],
+      exclusions: ['autres auteurs', 'adaptations'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Corto_Maltese',
+      translations: {
+        en: 'Corto Maltese',
+        fr: 'Corto Maltese',
+        it: 'Corto Maltese'
+      }
+    },
+    'les_petits_hommes': {
+      name: 'Les Petits Hommes',
+      authors: ['Pierre Seron'],
+      category: 'bd',
+      volumes: 45,
+      description: 'Aventures de petits êtres dans un monde géant.',
+      first_published: '1970',
+      status: 'ongoing',
+      keywords: ['petits hommes', 'eslapion', 'tignous', 'seron'],
+      variations: ['les petits hommes', 'petits hommes', 'petit homme'],
+      exclusions: ['autres auteurs'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Les_Petits_Hommes',
+      translations: {
+        en: 'The Little Men',
+        fr: 'Les Petits Hommes'
+      }
+    },
+    'lanfeust': {
+      name: 'Lanfeust de Troy',
+      authors: ['Christophe Arleston', 'Didier Tarquin'],
+      category: 'bd',
+      volumes: 8,
+      description: 'Fantasy humoristique avec le jeune forgeron Lanfeust.',
+      first_published: '1994',
+      status: 'completed',
+      keywords: ['lanfeust', 'troy', 'fantasy', 'forgeron', 'arleston', 'tarquin'],
+      variations: ['lanfeust', 'lanfeust de troy', 'lanfeust troy'],
+      exclusions: ['autres séries lanfeust'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Lanfeust_de_Troy',
+      translations: {
+        en: 'Lanfeust of Troy',
+        fr: 'Lanfeust de Troy'
+      }
+    },
+    'les_legendaires': {
+      name: 'Les Légendaires',
+      authors: ['Patrick Sobral'],
+      category: 'bd',
+      volumes: 23,
+      description: 'Fantasy avec des héros transformés en enfants.',
+      first_published: '2004',
+      status: 'ongoing',
+      keywords: ['légendaires', 'danaël', 'jadina', 'gryf', 'razzia', 'sobral'],
+      variations: ['les légendaires', 'légendaires', 'legendaires'],
+      exclusions: ['spin-offs'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Les_Légendaires',
+      translations: {
+        en: 'The Legendaries',
+        fr: 'Les Légendaires'
       }
     },
     'blacksad': {
