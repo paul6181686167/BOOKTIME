@@ -1,15 +1,15 @@
 {
   "session_stats": {
     "start_time": "2025-07-12 11:33:11.809168",
-    "books_processed": 26420,
-    "new_books_analyzed": 26420,
+    "books_processed": 30458,
+    "new_books_analyzed": 30458,
     "series_detected": 0,
-    "api_calls_made": 310,
+    "api_calls_made": 410,
     "strategies_completed": 2,
     "current_strategy": "franchise_universe_scan",
     "estimated_completion": "2025-07-12 11:50:50.483385",
-    "last_checkpoint": "2025-07-12 11:37:40.919309"
+    "last_checkpoint": "2025-07-12 11:38:37.226870"
   },
-  "timestamp": "2025-07-12T11:37:58.480324",
+  "timestamp": "2025-07-12T11:38:47.485407",
   "new_series_count": 0
 }
