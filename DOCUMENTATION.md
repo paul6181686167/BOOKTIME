@@ -198,8 +198,10 @@ Deployment: Kubernetes + Supervisor
 
 #### Recherche Locale
 - **Recherche textuelle** : Titre, auteur, saga, description
+- **🆕 Recherche par auteur** : Nom d'auteur retourne automatiquement ses séries
 - **Filtres avancés** : Catégorie, statut, auteur
 - **Groupement par saga** : Résultats organisés par séries
+- **🆕 Groupement par auteur** : Livres du même auteur sans saga regroupés
 - **Scoring de pertinence** : Classement intelligent
 - **🆕 Masquage intelligent** : Livres de série automatiquement masqués
 
@@ -210,6 +212,7 @@ Deployment: Kubernetes + Supervisor
 - **Enrichissement** : Métadonnées automatiques
 - **Recommandations** : Suggestions personnalisées
 - **🆕 Masquage universel** : Cohérence bibliothèque/recherche
+- **🆕 Détection séries** : Correspondance automatique par auteur
 
 #### 🆕 **Masquage Intelligent Universel (Sessions 81.8-81.9)**
 - **Détection automatique** : Utilise patterns titre + auteur + base de données
