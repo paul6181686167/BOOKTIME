@@ -34,6 +34,7 @@ class SeriesImageService:
     async def search_series_cover_openlibrary(self, series_name: str, author: str = None) -> Optional[str]:
         """
         Rechercher une image de couverture pour une série via Open Library
+        OPTIMISÉ - Amélioration recherche et gestion erreurs
         
         Args:
             series_name: Nom de la série
@@ -45,45 +46,103 @@ class SeriesImageService:
         try:
             session = await self.get_session()
             
-            # Construire la requête de recherche
-            search_query = series_name
+            # 🔍 OPTIMISATION : Essayer plusieurs stratégies de recherche
+            search_strategies = []
+            
+            # Stratégie 1: Série + auteur si disponible
             if author:
-                search_query += f" {author}"
+                search_strategies.append(f'title:"{series_name}" author:"{author}"')
+                search_strategies.append(f"{series_name} {author}")
             
-            # Rechercher dans Open Library
-            search_url = f"{self.base_openlibrary_url}/search.json"
-            params = {
-                'q': search_query,
-                'limit': 5,
-                'fields': 'key,title,author_name,cover_i,first_publish_year'
-            }
+            # Stratégie 2: Titre exact entre guillemets
+            search_strategies.append(f'title:"{series_name}"')
             
-            async with session.get(search_url, params=params) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    docs = data.get('docs', [])
-                    
-                    # Chercher un livre avec une couverture
-                    for doc in docs:
-                        cover_id = doc.get('cover_i')
-                        if cover_id:
-                            # Construire l'URL de la couverture
-                            cover_url = f"{self.base_covers_url}/id/{cover_id}-M.jpg"
+            # Stratégie 3: Recherche simple
+            search_strategies.append(series_name)
+            
+            # Stratégie 4: Variantes courantes pour séries populaires
+            series_variants = self._get_series_variants(series_name)
+            search_strategies.extend(series_variants)
+            
+            # Essayer chaque stratégie
+            for i, search_query in enumerate(search_strategies):
+                logger.info(f"🔍 Stratégie {i+1}/{len(search_strategies)} pour '{series_name}': {search_query}")
+                
+                # Rechercher dans Open Library
+                search_url = f"{self.base_openlibrary_url}/search.json"
+                params = {
+                    'q': search_query,
+                    'limit': 10,  # Plus de résultats pour plus de chances
+                    'fields': 'key,title,author_name,cover_i,first_publish_year,subject'
+                }
+                
+                try:
+                    async with session.get(search_url, params=params, timeout=10) as response:
+                        if response.status == 200:
+                            data = await response.json()
+                            docs = data.get('docs', [])
                             
-                            # Vérifier que l'image existe
-                            if await self._verify_image_exists(cover_url):
-                                logger.info(f"✅ Image trouvée pour '{series_name}': {cover_url}")
-                                return cover_url
-                    
-                    logger.info(f"❌ Aucune image trouvée sur Open Library pour '{series_name}'")
-                    return None
-                else:
-                    logger.warning(f"⚠️ Erreur Open Library search: {response.status}")
-                    return None
+                            # Chercher un livre avec une couverture
+                            for doc in docs:
+                                cover_id = doc.get('cover_i')
+                                if cover_id:
+                                    # Construire l'URL de la couverture (utiliser taille L pour meilleure qualité)
+                                    cover_url = f"{self.base_covers_url}/id/{cover_id}-L.jpg"
+                                    
+                                    # Vérifier que l'image existe
+                                    if await self._verify_image_exists(cover_url):
+                                        logger.info(f"✅ Image trouvée pour '{series_name}' (stratégie {i+1}): {cover_url}")
+                                        return cover_url
+                        else:
+                            logger.debug(f"⚠️ Stratégie {i+1} - Erreur Open Library: {response.status}")
+                            
+                except asyncio.TimeoutError:
+                    logger.debug(f"⏰ Stratégie {i+1} - Timeout")
+                    continue
+                except Exception as e:
+                    logger.debug(f"⚠️ Stratégie {i+1} - Erreur: {e}")
+                    continue
+            
+            logger.info(f"❌ Aucune image trouvée sur Open Library pour '{series_name}' après {len(search_strategies)} stratégies")
+            return None
                     
         except Exception as e:
             logger.error(f"❌ Erreur lors de la recherche d'image pour '{series_name}': {e}")
             return None
+    
+    def _get_series_variants(self, series_name: str) -> List[str]:
+        """Générer des variantes de recherche pour les séries populaires"""
+        variants = []
+        series_lower = series_name.lower().strip()
+        
+        # Variantes spécifiques aux séries populaires
+        popular_variants = {
+            'harry potter': ['harry potter', '"harry potter"', 'potter', 'j.k. rowling'],
+            'one piece': ['one piece', '"one piece"', 'eiichiro oda'],
+            'astérix': ['asterix', 'astérix', 'goscinny', 'uderzo'],
+            'le seigneur des anneaux': ['lord of the rings', 'tolkien', 'lotr'],
+            'dragon ball': ['dragonball', 'akira toriyama'],
+            'naruto': ['naruto uzumaki', 'masashi kishimoto'],
+            'tintin': ['adventures of tintin', 'hergé'],
+            'lucky luke': ['morris', 'rené goscinny'],
+            'game of thrones': ['song of ice and fire', 'george r.r. martin'],
+            'sherlock holmes': ['arthur conan doyle', 'conan doyle']
+        }
+        
+        # Chercher des correspondances
+        for key, variant_list in popular_variants.items():
+            if key in series_lower or any(v.lower() in series_lower for v in variant_list):
+                variants.extend(variant_list)
+                break
+        
+        # Ajouter des variantes génériques
+        if not variants:
+            # Essayer sans articles
+            no_articles = series_name.replace('Le ', '').replace('La ', '').replace('Les ', '')
+            if no_articles != series_name:
+                variants.append(no_articles)
+        
+        return variants
     
     async def _verify_image_exists(self, image_url: str) -> bool:
         """Vérifier qu'une image existe et est accessible"""
