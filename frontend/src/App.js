@@ -36,6 +36,7 @@ import AlertSystem from './components/monitoring/AlertSystem';
 // Service imports
 import { bookService } from './services/bookService';
 import * as seriesLibraryService from './services/seriesLibraryService';
+import { seriesImageService } from './services/seriesImageService';
 
 // Hook imports
 import { useAdvancedSearch } from './hooks/useAdvancedSearch';
