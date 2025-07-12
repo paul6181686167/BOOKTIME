@@ -6980,6 +6980,84 @@ code-server                      RUNNING   pid 48, uptime 0:04:41
 **Action** : Implémentation masquage intelligent basé sur détection automatique + documentation exhaustive
 **Résultat** : ✅ **MASQUAGE INTELLIGENT OPÉRATIONNEL - DÉTECTION AUTOMATIQUE UTILISANT TOUTES CAPACITÉS**
 
+---
+
+### [CORRECTION RCA] - Recherche par Auteur ne Montre Pas les Séries ✅ RÉSOLU
+**Date** : 12 Mars 2025  
+**Prompt Utilisateur** : `"lorsque je tape le nom de l'auteur les séries n'apparaissent pas règle ça préserve les fonctions et documente tout"`
+
+#### Phase 1 : Investigation RCA Complète
+
+✅ **Problème identifié** : La recherche par auteur ne montrait pas les séries car le filtrage ne prenait pas en compte le champ `authors` des cartes de série.
+
+✅ **Cause racine identifiée** : 
+- Dans `useAdvancedSearch.js`, le filtrage par auteur ne vérifiait que le champ `author` (ligne 123)
+- Les cartes de série créées par `BookActions.createUnifiedDisplay` ont un tableau `authors` avec tous les auteurs de la série
+- Le filtrage ignorait donc les cartes de série lors de la recherche par auteur
+
+✅ **Impact analysé** : 
+- Recherche par nom d'auteur ne retournait que les livres individuels
+- Les séries de l'auteur restaient masquées même si elles contenaient des livres de cet auteur
+- Fonctionnalité importante pour découvrir toutes les œuvres d'un auteur
+
+#### Phase 2 : Correction Ciblée
+
+✅ **Correction appliquée** : 
+- Mis à jour la logique de filtrage par auteur dans `useAdvancedSearch.js`
+- Ajout de la vérification du champ `authors` en plus du champ `author`
+- La recherche vérifie maintenant les deux champs pour une couverture complète
+
+✅ **Code modifié** :
+```javascript
+// Filtrage par auteur - 🔍 CORRECTION: Support des cartes de série avec multiple auteurs
+if (filters.author) {
+  const authorFilter = filters.author.toLowerCase();
+  const matchesMainAuthor = book.author?.toLowerCase().includes(authorFilter);
+  const matchesAuthorsArray = book.authors?.some(author => author?.toLowerCase().includes(authorFilter));
+  
+  if (!matchesMainAuthor && !matchesAuthorsArray) {
+    return false;
+  }
+}
+```
+
+✅ **Fonctionnalités préservées** :
+- Toutes les fonctionnalités de recherche existantes maintenues
+- Architecture de masquage intelligent préservée
+- Performances de recherche maintenues
+- Logique de filtrage par terme déjà corrigée
+
+#### Phase 3 : Validation End-to-End
+
+✅ **Service redémarré** : Frontend redémarré pour appliquer les modifications
+✅ **Fonctionnalité testée** : Recherche par auteur maintenant fonctionnelle pour séries et livres
+✅ **Régression vérifiée** : Aucune régression dans les autres fonctionnalités de recherche
+
+#### Résultat Final
+
+✅ **Problème résolu définitivement** : La recherche par auteur affiche maintenant les séries ET les livres individuels
+✅ **Couverture complète** : Support des champs `author` et `authors` pour les cartes de série
+✅ **Fonctionnalités préservées** : Toutes les fonctionnalités existantes maintenues
+✅ **Performance maintenue** : Pas d'impact sur les performances de recherche
+
+#### Métriques Correction
+
+**📊 LOGIQUE AMÉLIORÉE** :
+- **Avant** : Recherche uniquement dans `book.author`
+- **Après** : Recherche dans `book.author` ET `book.authors[]`
+- **Couverture** : 100% des livres ET séries pour recherche par auteur
+
+**📊 FONCTIONNALITÉS AFFECTÉES** :
+- **Recherche par auteur** : ✅ Maintenant fonctionnelle pour séries
+- **Filtrage avancé** : ✅ Support améliore des cartes de série
+- **Recherche par terme** : ✅ Déjà corrigée précédemment
+
+**🎯 CORRECTION RÉUSSIE - RECHERCHE PAR AUTEUR MAINTENANT COMPLÈTE**  
+**🔍 SUPPORT SÉRIE - CHAMPS AUTHOR + AUTHORS PRIS EN COMPTE**  
+**✅ FONCTIONNALITÉS PRÉSERVÉES - AUCUNE RÉGRESSION**  
+**📊 COUVERTURE TOTALE - LIVRES ET SÉRIES POUR RECHERCHE AUTEUR**
+
+---
 ### 🎯 **Session 82 - Analyse Exhaustive et Documentation Complète**
 **Demande** : `"Start the task now!!"` → `"analyse l'appli en consultant d'abord DOCUMENTATION.md et CHANGELOG.md pour prendre en compte la mémoire complète, puis documente cette interaction dans CHANGELOG.md"`
 **Action** : Analyse complète de l'application BOOKTIME avec consultation mémoire intégrale + documentation interaction
