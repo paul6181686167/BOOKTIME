@@ -73,7 +73,7 @@ const BookActions = {
     // 🔍 SESSION 81.1 - DOUBLE PROTECTION : Filtrage en amont des livres de série
     const booksWithSeriesMarked = booksList.map(book => ({
       ...book,
-      belongsToSeries: !!(book.saga && book.saga.trim())
+      belongsToSeries: !!(book.saga && book.saga.trim()) || !!(book.series_name && book.series_name.trim()) // ✅ OPTION 2: Détecter aussi series_name
     }));
 
     console.log('🔍 [SESSION 81.1] Analyse des livres:');
