@@ -230,6 +230,7 @@ async def search_books_grouped(
         "results": results,
         "total_books": len(matching_books),
         "total_sagas": len(saga_groups),
+        "total_author_series": len([author for author, books in author_groups.items() if len(books) > 1]),
         "search_term": q,
         "grouped_by_saga": True,
         "series_first": True
