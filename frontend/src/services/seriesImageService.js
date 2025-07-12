@@ -173,30 +173,33 @@ class SeriesImageService {
 
     /**
      * Enrichir automatiquement les séries populaires au chargement de l'app
+     * OPTIMISÉ - Robuste et sans dépendance au statut
      */
     async autoEnrichPopularSeries() {
         try {
             console.log('🚀 Auto-enrichissement des séries populaires...');
             
-            // Vérifier d'abord le statut
-            const status = await this.getEnrichmentStatus();
+            // Essayer directement l'enrichissement d'un échantillon
+            // Ne plus dépendre du statut qui nécessite une authentification
+            const result = await this.enrichSampleSeries(10);
             
-            if (status.enrichment_percentage < 50) {
-                console.log('📈 Enrichissement nécessaire, démarrage...');
-                
-                // Enrichir un échantillon pour commencer
-                const result = await this.enrichSampleSeries(20);
-                
-                console.log(`✅ Auto-enrichissement: ${result.enriched_count}/${result.total_count} séries`);
+            if (result && result.enriched_count > 0) {
+                console.log(`✅ Auto-enrichissement réussi: ${result.enriched_count}/${result.total_count} séries enrichies`);
+                console.log('🖼️ Images disponibles pour:', result.series
+                    .filter(s => s.cover_url)
+                    .map(s => s.name)
+                    .join(', ')
+                );
                 return result;
             } else {
-                console.log('✅ Séries déjà enrichies à', status.enrichment_percentage.toFixed(1), '%');
-                return status;
+                console.log('📷 Auto-enrichissement: aucune nouvelle image trouvée');
+                return result;
             }
 
         } catch (error) {
-            console.error('❌ Erreur auto-enrichissement:', error);
-            // Ne pas faire échouer l'app si l'enrichissement échoue
+            console.warn('⚠️ Auto-enrichissement échoué (mode graceful):', error.message);
+            // Mode dégradé: ne pas faire échouer l'app
+            // Les séries utiliseront les dégradés par défaut
             return null;
         }
     }
