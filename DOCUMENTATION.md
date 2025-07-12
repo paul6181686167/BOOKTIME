@@ -759,7 +759,7 @@ const verifyAndDisplayBook = async (bookTitle, targetCategory, books, loadBooks,
 12. ✅ **Masquage universel** : Cohérence bibliothèque + résultats recherche (Session 81.8)
 13. ✅ **🆕 Masquage intelligent** : Détection automatique basée sur toutes capacités (Session 81.9)
 
-### Architecture Finale - SESSIONS 81-81.3
+### Architecture Finale - SESSIONS 81-81.9
 
 #### Backend Architecture Modulaire Complète
 ```
@@ -767,7 +767,7 @@ const verifyAndDisplayBook = async (bookTitle, targetCategory, books, loadBooks,
 ├── server.py           # Point d'entrée (13 lignes) → app.main
 ├── app/main.py         # Application FastAPI principale
 ├── app/auth/           # Authentification JWT ✅ FONCTIONNELLE
-├── app/books/          # Gestion livres CRUD ✅ MASQUAGE VIGNETTES
+├── app/books/          # Gestion livres CRUD ✅ MASQUAGE INTELLIGENT
 ├── app/series/         # Gestion séries intelligente ✅ OPTIMISÉE
 ├── app/openlibrary/    # Intégration Open Library ✅ AIOHTTP
 ├── app/recommendations/ # Recommandations IA ✅ SCIKIT-LEARN
@@ -781,28 +781,31 @@ const verifyAndDisplayBook = async (bookTitle, targetCategory, books, loadBooks,
 #### Frontend Architecture Avancée Optimisée
 ```
 /app/frontend/src/
-├── App.js              # 780 lignes, masquage vignettes implémenté
-├── components/books/   # BookActions.js avec double protection
+├── App.js              # 780 lignes, masquage intelligent implémenté
+├── components/books/   # BookActions.js avec triple protection
 ├── components/export-import/ # ExportImportModal.js ✅ LUCIDE-REACT
+├── components/search/  # SearchLogic.js avec masquage intelligent
+├── utils/seriesDetector.js # 🆕 Détecteur intelligent multi-méthodes
 ├── hooks/              # 15 hooks personnalisés
 ├── services/           # 12 services API
 ├── contexts/           # Gestion état global
 └── utils/              # Utilitaires et helpers
 ```
 
-#### Métriques Architecture Sessions 81-81.3
+#### Métriques Architecture Sessions 81-81.9
 - **Fichiers totaux** : 27,755 fichiers JavaScript et Python
 - **Endpoints backend** : 89 endpoints tous fonctionnels ✅
 - **Dépendances frontend** : lucide-react@0.525.0 ✅
 - **Dépendances backend** : redis, aiohttp, scikit-learn ✅
+- **🆕 Module masquage** : SeriesDetector.js avec détection intelligente ✅
 - **Services** : Tous RUNNING ✅
 
-#### Fonctionnalités Nouvelles Sessions 81-81.3
-- **Masquage intelligent** : Vignettes livres individuels série masquées
-- **Double protection** : Filtrage amont + logique renforcée
-- **Logs détaillés** : Traçabilité complète masquage
+#### Fonctionnalités Nouvelles Sessions 81-81.9
+- **Masquage intelligent universel** : Détection automatique sans champ saga
+- **Triple protection** : Filtrage amont + logique renforcée + protection finale
+- **Logs détaillés intelligents** : Traçabilité méthode + confiance + série
 - **Authentification stable** : Création compte + connexion
-- **Architecture enterprise** : 100% opérationnelle
+- **Architecture enterprise** : 100% opérationnelle + innovations
 
 ### Structure de Modification Recommandée
 1. Analyser l'impact sur l'architecture existante
