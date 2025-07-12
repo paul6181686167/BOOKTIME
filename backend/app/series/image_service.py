@@ -248,7 +248,8 @@ class SeriesImageService:
         if cover_url:
             series_data['cover_url'] = cover_url
             series_data['image_source'] = 'openlibrary'
-            series_data['image_enriched_at'] = logger.info(f"✅ Série '{series_name}' enrichie avec image: {cover_url}")
+            series_data['image_enriched_at'] = datetime.now().isoformat()
+            logger.info(f"✅ Série '{series_name}' enrichie avec image: {cover_url}")
         else:
             logger.info(f"📷 Série '{series_name}' conserve le dégradé par défaut (aucune image trouvée)")
         
