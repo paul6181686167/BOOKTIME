@@ -293,11 +293,11 @@ class UltraHarvest100K:
                 'limit_per_query': 40,
                 'priority': 13
             },
-            'university_press_analysis': {
-                'queries': self._generate_academic_queries(),
-                'limit_per_query': 30,
-                'priority': 14
-            },
+            # 'university_press_analysis': {  # STRATÉGIE DÉSACTIVÉE : Revues universitaires non désirées
+            #     'queries': self._generate_academic_queries(),
+            #     'limit_per_query': 30,
+            #     'priority': 14
+            # },
             'obscure_patterns_mining': {
                 'queries': self._generate_obscure_queries(),
                 'limit_per_query': 25,
