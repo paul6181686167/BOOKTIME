@@ -6,7 +6,7 @@ import requests
 import json
 
 # Configuration
-BACKEND_URL = "https://579ff41b-7a86-4f34-b52b-3121e30e773f.preview.emergentagent.com"
+BACKEND_URL = "https://179cffa3-a5a9-48d3-912c-bfc7a39011a4.preview.emergentagent.com"
 JWT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1MGYxM2VhOS03MzZlLTRiYWQtYTdjZC1hNWYwZGQwNmU1OWQiLCJleHAiOjE3NTIxNTI1OTN9.55uecngVVunkozOPlbrF-jn92P_znD_8Q5ORWrDOWqE"
 
 headers = {
