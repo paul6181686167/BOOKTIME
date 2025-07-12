@@ -16,7 +16,7 @@ def log(message, level="INFO"):
 
 def test_api():
     """Test the API endpoints for series functionality"""
-    base_url = "https://179cffa3-a5a9-48d3-912c-bfc7a39011a4.preview.emergentagent.com"
+    base_url = "https://fb5276f5-eb96-4f81-800c-14708c6fe935.preview.emergentagent.com"
     
     log("🚀 Starting BOOKTIME Series Backend Test")
     log("=" * 50)
