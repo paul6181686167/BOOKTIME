@@ -1,0 +1,177 @@
+{
+  "timestamp": "2025-07-12T11:41:36.098592",
+  "operation": "ultra_harvest_integration_permissive",
+  "validation_stats": {
+    "total_candidates": 7637,
+    "single_book_accepted": 4974,
+    "multi_book_high_conf": 1503,
+    "multi_book_low_conf": 72,
+    "rejected_short_name": 9,
+    "rejected_low_conf_single": 1078
+  },
+  "duplicates_found": 6549,
+  "new_series_added": 0,
+  "duplicate_samples": [
+    {
+      "new_name": "&#120028;&#120016;&#120029;&#120019;&#120016;&#120027;&#120016; &#120017;&#120024;&#120033;&#120019;&#120034; &#120018;&#120030;&#120027;&#120030;&#120033;&#120024;&#120029;&#120022; &#120017;&#120030;&#120030;&#120026;",
+      "existing_name": "&#120028;&#120016;&#120029;&#120019;&#120016;&#120027;&#120016; &#120017;&#120024;&#120033;&#120019;&#120034; &#120018;&#120030;&#120027;&#120030;&#120033;&#120024;&#120029;&#120022; &#120017;&#120030;&#120030;&#120026;",
+      "new_confidence": 90,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "&#43457;&#3898; &#120028;&#120016;&#120029;&#120019;&#120016;&#120027;&#120016; &#120017;&#120024;&#120033;&#120019;&#120034; &#120018;&#120030;&#120027;&#120030;&#120033;&#120024;&#120029;&#120022; &#120017;&#120030;&#120030;&#120026; for Adult&#3899;",
+      "existing_name": "&#43457;&#3898; &#120028;&#120016;&#120029;&#120019;&#120016;&#120027;&#120016; &#120017;&#120024;&#120033;&#120019;&#120034; &#120018;&#120030;&#120027;&#120030;&#120033;&#120024;&#120029;&#120022; &#120017;&#120030;&#120030;&#120026; for Adult&#3899;",
+      "new_confidence": 90,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "&Nu;aruto &",
+      "existing_name": "&Nu;aruto &",
+      "new_confidence": 80,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "(Airhead",
+      "existing_name": "(Airhead",
+      "new_confidence": 100,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "(Publications,",
+      "existing_name": "(Publications,",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "(Rin,",
+      "existing_name": "(Rin,",
+      "new_confidence": 95,
+      "new_volumes": 2,
+      "existing_volumes": 2,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "(WCS)Statics",
+      "existing_name": "(WCS)Statics",
+      "new_confidence": 100,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "1 Chronicles, Chapters 7",
+      "existing_name": "1 Chronicles, Chapters 7",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "1 Corinthians Book II",
+      "existing_name": "1 Corinthians Book II",
+      "new_confidence": 90,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "1 Corinthians Book III",
+      "existing_name": "1 Corinthians Book III",
+      "new_confidence": 90,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "1 Kings,",
+      "existing_name": "1 Kings,",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "1 Kings, Chapters 7",
+      "existing_name": "1 Kings, Chapters 7",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "1 Samuel,",
+      "existing_name": "1 Samuel,",
+      "new_confidence": 100,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "1001 Quotes of Game of Thrones",
+      "existing_name": "1001 Quotes of Game of Thrones",
+      "new_confidence": 90,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "150 Slow Cook and Crockpot Food Recipe Cookbook",
+      "existing_name": "150 Slow Cook and Crockpot Food Recipe Cookbook",
+      "new_confidence": 80,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "1776 Season 1",
+      "existing_name": "1776 Season 1",
+      "new_confidence": 100,
+      "new_volumes": 9,
+      "existing_volumes": 9,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "1940s",
+      "existing_name": "1940s",
+      "new_confidence": 80,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "1958 edition encyclopedia americana",
+      "existing_name": "1958 edition encyclopedia americana",
+      "new_confidence": 80,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "1984,",
+      "existing_name": "1984,",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "2 Chronicles, Chapters 10",
+      "existing_name": "2 Chronicles, Chapters 10",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    }
+  ],
+  "new_series_samples": []
+}
