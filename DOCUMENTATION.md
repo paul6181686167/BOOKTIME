@@ -806,6 +806,8 @@ const verifyAndDisplayBook = async (bookTitle, targetCategory, books, loadBooks,
 11. ✅ **Intelligence automatique** : Analyse séries + détection automatique (Session 81.6)
 12. ✅ **Masquage universel** : Cohérence bibliothèque + résultats recherche (Session 81.8)
 13. ✅ **🆕 Masquage intelligent** : Détection automatique basée sur toutes capacités (Session 81.9)
+14. ✅ **🆕 Documentation complète** : Analyse exhaustive + mémoire intégrale (Session 81.10)
+15. ✅ **🆕 Recherche par auteur** : Séries détectées par nom d'auteur + validation utilisateur (Session 81.11)
 
 ### Architecture Finale - SESSIONS 81-81.9
 
