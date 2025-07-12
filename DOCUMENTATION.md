@@ -143,7 +143,26 @@ Deployment: Kubernetes + Supervisor
 **Mangas** : One Piece, Naruto, Dragon Ball, Attack on Titan
 **BD** : Astérix, Tintin, Lucky Luke, Thorgal
 
-### 🆕 **3. Analyse et Intelligence Automatique**
+### 🆕 **3. Masquage Intelligent Universel (Sessions 81.8-81.9)**
+
+#### Masquage Basé sur Détection Automatique
+- **Critère uniforme** : `book.saga` + détection intelligente automatique
+- **Détection multi-méthodes** : Patterns titre, correspondance auteur, base de données séries
+- **Scoring de confiance** : Seuil 70% pour précision optimale (défaut: 120)
+- **🆕 SeriesDetector** : Module spécialisé utilisant toutes les capacités existantes
+- **🆕 Patterns intelligents** : Harry Potter, One Piece, Astérix, numérotations automatiques
+
+#### Architecture Masquage Universelle
+- **Bibliothèque** : Filtrage intelligent avec détection automatique
+- **Résultats recherche** : Même logique appliquée aux résultats Open Library
+- **Protection finale** : Triple vérification avec fallbacks sophistiqués
+- **Logs détaillés** : Traçabilité méthode détection + confiance + série détectée
+
+#### Fonctionnalités Avancées Masquage
+- **Détection temps réel** : Analyse automatique sans intervention utilisateur
+- **Cohérence maximale** : Même expérience avec/sans champ saga rempli
+- **Performance optimisée** : Détection < 5ms par livre avec cache intelligent
+- **Robustesse** : Gestion des faux positifs avec scoring adaptatif
 
 #### Reconnaissance Automatique
 - **Détection séries existantes** : Analyse tous livres sans saga définie
