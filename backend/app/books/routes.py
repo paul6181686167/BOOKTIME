@@ -125,23 +125,32 @@ async def search_books_grouped(
     # Récupérer tous les livres qui correspondent
     matching_books = list(books_collection.find(final_filter, {"_id": 0}))
     
-    # Grouper par saga en privilégiant les séries
+    # 🆕 AMÉLIORATION : Grouper par saga ET par auteur en privilégiant les séries
     saga_groups = {}
+    author_groups = {}
     isolated_books = []
     
     for book in matching_books:
         saga = book.get("saga", "").strip()
+        author = book.get("author", "").strip()
+        
         if saga:
+            # Grouper par saga
             if saga not in saga_groups:
                 saga_groups[saga] = []
             saga_groups[saga].append(book)
+        elif author:
+            # Grouper par auteur si pas de saga
+            if author not in author_groups:
+                author_groups[author] = []
+            author_groups[author].append(book)
         else:
             isolated_books.append(book)
     
     # Construire les résultats avec les séries en premier
     results = []
     
-    # Ajouter les séries comme entités uniques
+    # 1. Ajouter les séries comme entités uniques (priorité absolue)
     for saga_name, saga_books in saga_groups.items():
         saga_books_sorted = sorted(saga_books, key=lambda b: b.get("volume_number", 0))
         
@@ -173,7 +182,43 @@ async def search_books_grouped(
         
         results.append(series_entity)
     
-    # Ajouter les livres isolés
+    # 🆕 2. Ajouter les groupes d'auteurs (si plus de 1 livre par auteur)
+    for author_name, author_books in author_groups.items():
+        if len(author_books) > 1:  # Seulement si plusieurs livres du même auteur
+            author_books_sorted = sorted(author_books, key=lambda b: b.get("date_added", datetime.utcnow()))
+            
+            # Calculer la progression par auteur
+            total_books = len(author_books)
+            completed_books = len([b for b in author_books if b.get("status") == "completed"])
+            reading_books = len([b for b in author_books if b.get("status") == "reading"])
+            
+            # Prendre les infos de base du premier livre
+            first_book = author_books_sorted[0]
+            
+            author_series_entity = {
+                "id": f"author_{author_name.replace(' ', '_').lower()}",
+                "type": "author_series",
+                "title": f"Livres de {author_name}",
+                "author": author_name,
+                "category": first_book.get("category"),
+                "description": f"Collection de {total_books} livre(s) de {author_name}",
+                "cover_url": first_book.get("cover_url", ""),
+                "genre": first_book.get("genre", ""),
+                "total_books": total_books,
+                "completed_books": completed_books,
+                "reading_books": reading_books,
+                "progress_percentage": round((completed_books / total_books) * 100) if total_books > 0 else 0,
+                "books": author_books_sorted,
+                "date_added": min(b.get("date_added", datetime.utcnow()) for b in author_books),
+                "last_updated": max(b.get("updated_at", b.get("date_added", datetime.utcnow())) for b in author_books)
+            }
+            
+            results.append(author_series_entity)
+        else:
+            # Livre unique d'un auteur, ajouter comme livre isolé
+            isolated_books.extend(author_books)
+    
+    # 3. Ajouter les livres isolés
     for book in isolated_books:
         book["type"] = "book"
         results.append(book)
