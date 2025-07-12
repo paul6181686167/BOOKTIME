@@ -87,13 +87,14 @@ export const useAdvancedSearch = (books = []) => {
         const term = debouncedSearchTerm.toLowerCase();
         const matchesTitle = book.title?.toLowerCase().includes(term);
         const matchesAuthor = book.author?.toLowerCase().includes(term);
+        const matchesAuthors = book.authors?.some(author => author?.toLowerCase().includes(term)); // 🔍 NOUVEAU: Recherche dans tous les auteurs
         const matchesSaga = book.saga?.toLowerCase().includes(term);
         const matchesDescription = book.description?.toLowerCase().includes(term);
         const matchesGenre = book.genre?.toLowerCase().includes(term);
         const matchesPublisher = book.publisher?.toLowerCase().includes(term);
         const matchesIsbn = book.isbn?.toLowerCase().includes(term);
 
-        if (!matchesTitle && !matchesAuthor && !matchesSaga && !matchesDescription && !matchesGenre && !matchesPublisher && !matchesIsbn) {
+        if (!matchesTitle && !matchesAuthor && !matchesAuthors && !matchesSaga && !matchesDescription && !matchesGenre && !matchesPublisher && !matchesIsbn) {
           return false;
         }
       }
