@@ -404,6 +404,15 @@ function MainApp() {
   useEffect(() => {
     if (user) {
       seriesHook.loadUserSeriesLibrary();
+      
+      // 🎨 Auto-enrichissement des images de séries au démarrage
+      seriesImageService.autoEnrichPopularSeries().then(result => {
+        if (result) {
+          console.log('✅ Auto-enrichissement terminé:', result);
+        }
+      }).catch(error => {
+        console.warn('⚠️ Auto-enrichissement échoué (non critique):', error);
+      });
     }
   }, [user]);
 
