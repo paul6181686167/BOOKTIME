@@ -43,6 +43,28 @@
         "last_analysis": "2025-07-12T10:23:52.259184",
         "detection_rate": 32.053890320538905
       }
+    },
+    {
+      "timestamp": "2025-07-12T10:44:25.278679",
+      "session_stats": {
+        "start_time": "2025-07-12 10:31:46.988859",
+        "books_processed": 44238,
+        "new_books_analyzed": 44238,
+        "series_detected": 0,
+        "api_calls_made": 927,
+        "strategies_completed": 15,
+        "current_strategy": "obscure_patterns_mining",
+        "estimated_completion": "2025-07-12 11:00:21.051384",
+        "last_checkpoint": "2025-07-12 10:44:24.158793"
+      },
+      "database_stats": {
+        "total_analyzed": 44238,
+        "series_found": 14180,
+        "strategies_used": 15,
+        "avg_processing_time_ms": 0.0473348704733487,
+        "last_analysis": "2025-07-12T10:44:25.250576",
+        "detection_rate": 32.053890320538905
+      }
     }
   ]
 }
