@@ -1,15 +1,15 @@
 {
   "session_stats": {
     "start_time": "2025-07-12 11:33:11.809168",
-    "books_processed": 35371,
-    "new_books_analyzed": 35371,
+    "books_processed": 37392,
+    "new_books_analyzed": 37392,
     "series_detected": 0,
-    "api_calls_made": 598,
-    "strategies_completed": 7,
-    "current_strategy": "award_winners_series",
-    "estimated_completion": "2025-07-12 11:57:40.807420",
-    "last_checkpoint": "2025-07-12 11:41:04.799669"
+    "api_calls_made": 661,
+    "strategies_completed": 8,
+    "current_strategy": "subject_classification",
+    "estimated_completion": "2025-07-12 11:58:34.895001",
+    "last_checkpoint": "2025-07-12 11:42:49.346634"
   },
-  "timestamp": "2025-07-12T11:42:03.722988",
+  "timestamp": "2025-07-12T11:43:24.400939",
   "new_series_count": 0
 }
