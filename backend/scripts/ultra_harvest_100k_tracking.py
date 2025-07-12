@@ -611,8 +611,9 @@ class UltraHarvest100K:
         subjects = [
             "adventure", "action", "mystery", "detective", "spy", "espionage",
             "military", "war", "historical fiction", "biography", "autobiography",
-            "self-help", "cookbook", "travel", "guide", "handbook", "manual",
-            "textbook", "reference", "encyclopedia", "dictionary", "atlas",
+            "self-help", "travel", "guide", "handbook", "manual",
+            # "cookbook" EXCLU : livres de cuisine non désirés
+            # "textbook", "reference", "encyclopedia", "dictionary", "atlas" EXCLUS : publications académiques non désirées
             "art", "photography", "music", "film", "television", "theater",
             "philosophy", "psychology", "sociology", "anthropology", "politics",
             "economics", "business", "technology", "computer", "programming",
