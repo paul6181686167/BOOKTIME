@@ -145,12 +145,25 @@ class SeriesImageService:
         return variants
     
     async def _verify_image_exists(self, image_url: str) -> bool:
-        """Vérifier qu'une image existe et est accessible"""
+        """
+        Vérifier qu'une image existe et est accessible
+        OPTIMISÉ - Amélioration gestion timeout et erreurs
+        """
         try:
             session = await self.get_session()
-            async with session.head(image_url) as response:
-                return response.status == 200
-        except:
+            # Timeout plus court pour vérification rapide
+            async with session.head(image_url, timeout=5) as response:
+                is_valid = response.status == 200 and response.headers.get('content-type', '').startswith('image/')
+                if is_valid:
+                    logger.debug(f"✅ Image valide: {image_url}")
+                else:
+                    logger.debug(f"❌ Image invalide (status: {response.status}): {image_url}")
+                return is_valid
+        except asyncio.TimeoutError:
+            logger.debug(f"⏰ Timeout vérification image: {image_url}")
+            return False
+        except Exception as e:
+            logger.debug(f"⚠️ Erreur vérification image: {e}")
             return False
     
     async def get_placeholder_image_from_vision_expert(self, series_name: str, category: str = None) -> Optional[str]:
