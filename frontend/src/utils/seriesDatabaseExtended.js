@@ -302,6 +302,258 @@ export const EXTENDED_SERIES_DATABASE = {
         es: 'El Corredor del Laberinto'
       }
     },
+    'sherlock_holmes': {
+      name: 'Sherlock Holmes',
+      authors: ['Arthur Conan Doyle'],
+      category: 'roman',
+      volumes: 56,
+      description: 'Aventures du détective britannique et son fidèle Watson.',
+      first_published: '1887',
+      status: 'completed',
+      keywords: ['sherlock holmes', 'watson', 'baker street', 'moriarty', 'detective', 'conan doyle'],
+      variations: ['sherlock holmes', 'sherlock', 'holmes', 'detective holmes'],
+      exclusions: ['adaptations', 'pastiches'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Sherlock_Holmes',
+      translations: {
+        en: 'Sherlock Holmes',
+        fr: 'Sherlock Holmes',
+        es: 'Sherlock Holmes'
+      }
+    },
+    'hercule_poirot': {
+      name: 'Hercule Poirot',
+      authors: ['Agatha Christie'],
+      category: 'roman',
+      volumes: 39,
+      description: 'Enquêtes du détective belge aux cellules grises.',
+      first_published: '1920',
+      status: 'completed',
+      keywords: ['hercule poirot', 'poirot', 'agatha christie', 'cellules grises', 'detective'],
+      variations: ['hercule poirot', 'poirot', 'hercule'],
+      exclusions: ['miss marple', 'autres détectives'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Hercule_Poirot',
+      translations: {
+        en: 'Hercule Poirot',
+        fr: 'Hercule Poirot',
+        es: 'Hercule Poirot'
+      }
+    },
+    'fondation': {
+      name: 'Fondation',
+      authors: ['Isaac Asimov'],
+      category: 'roman',
+      volumes: 7,
+      description: 'Science-fiction avec la psychohistoire d\'Hari Seldon.',
+      first_published: '1951',
+      status: 'completed',
+      keywords: ['fondation', 'foundation', 'asimov', 'psychohistoire', 'seldon', 'trantor'],
+      variations: ['fondation', 'foundation', 'fondations'],
+      exclusions: ['robots', 'empire'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Fondation_(Asimov)',
+      translations: {
+        en: 'Foundation',
+        fr: 'Fondation',
+        es: 'Fundación'
+      }
+    },
+    'dune': {
+      name: 'Dune',
+      authors: ['Frank Herbert'],
+      category: 'roman',
+      volumes: 6,
+      description: 'Science-fiction épique sur la planète Arrakis.',
+      first_published: '1965',
+      status: 'completed',
+      keywords: ['dune', 'arrakis', 'paul atreides', 'muad dib', 'spice', 'desert', 'herbert'],
+      variations: ['dune', 'dunes'],
+      exclusions: ['brian herbert', 'prequels'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Dune_(série)',
+      translations: {
+        en: 'Dune',
+        fr: 'Dune',
+        es: 'Duna'
+      }
+    },
+    'discworld': {
+      name: 'Les Annales du Disque-Monde',
+      authors: ['Terry Pratchett'],
+      category: 'roman',
+      volumes: 41,
+      description: 'Fantasy humoristique sur un monde porté par des éléphants.',
+      first_published: '1983',
+      status: 'completed',
+      keywords: ['discworld', 'disque monde', 'pratchett', 'rincewind', 'ankh morpork', 'vetinari'],
+      variations: ['discworld', 'disque monde', 'disque-monde', 'annales'],
+      exclusions: ['adaptations'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Les_Annales_du_Disque-monde',
+      translations: {
+        en: 'Discworld',
+        fr: 'Les Annales du Disque-Monde',
+        es: 'Mundodisco'
+      }
+    },
+    'la_roue_du_temps': {
+      name: 'La Roue du Temps',
+      authors: ['Robert Jordan'],
+      category: 'roman',
+      volumes: 14,
+      description: 'Fantasy épique avec Rand al\'Thor et la Roue du Temps.',
+      first_published: '1990',
+      status: 'completed',
+      keywords: ['roue du temps', 'wheel of time', 'rand thor', 'jordan', 'aes sedai'],
+      variations: ['roue du temps', 'wheel of time', 'roue temps'],
+      exclusions: ['brandon sanderson', 'prequels'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/La_Roue_du_temps',
+      translations: {
+        en: 'The Wheel of Time',
+        fr: 'La Roue du Temps',
+        es: 'La Rueda del Tiempo'
+      }
+    },
+    'witcher': {
+      name: 'The Witcher',
+      authors: ['Andrzej Sapkowski'],
+      category: 'roman',
+      volumes: 8,
+      description: 'Fantasy avec Geralt de Riv, sorceleur chasseur de monstres.',
+      first_published: '1993',
+      status: 'completed',
+      keywords: ['witcher', 'geralt', 'sorceleur', 'ciri', 'yennefer', 'sapkowski'],
+      variations: ['witcher', 'sorceleur', 'geralt'],
+      exclusions: ['jeux vidéo', 'série tv'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/The_Witcher',
+      translations: {
+        en: 'The Witcher',
+        fr: 'The Witcher',
+        es: 'The Witcher'
+      }
+    },
+    'les_fourmis': {
+      name: 'Les Fourmis',
+      authors: ['Bernard Werber'],
+      category: 'roman',
+      volumes: 3,
+      description: 'Science-fiction avec la civilisation des fourmis.',
+      first_published: '1991',
+      status: 'completed',
+      keywords: ['fourmis', 'werber', 'jonathan wells', 'encyclopédie', 'myrmécologie'],
+      variations: ['les fourmis', 'fourmis', 'la fourmis'],
+      exclusions: ['autres werber'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Les_Fourmis_(trilogie)',
+      translations: {
+        en: 'The Ants',
+        fr: 'Les Fourmis',
+        es: 'Las Hormigas'
+      }
+    },
+    'malaussene': {
+      name: 'Malaussène',
+      authors: ['Daniel Pennac'],
+      category: 'roman',
+      volumes: 6,
+      description: 'Polar humoristique avec Benjamin Malaussène.',
+      first_published: '1985',
+      status: 'completed',
+      keywords: ['malaussène', 'pennac', 'benjamin', 'belleville', 'polar', 'bouc émissaire'],
+      variations: ['malaussène', 'malaussene', 'malaussène', 'benjamin malaussène'],
+      exclusions: ['autres pennac'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Malaussène',
+      translations: {
+        en: 'Malaussène',
+        fr: 'Malaussène',
+        es: 'Malaussène'
+      }
+    },
+    'san_antonio': {
+      name: 'San-Antonio',
+      authors: ['Frédéric Dard'],
+      category: 'roman',
+      volumes: 175,
+      description: 'Polar humoristique avec le commissaire San-Antonio.',
+      first_published: '1949',
+      status: 'completed',
+      keywords: ['san antonio', 'bérurier', 'pinaud', 'commissaire', 'polar', 'dard'],
+      variations: ['san antonio', 'san-antonio', 'sanantonio'],
+      exclusions: ['autres auteurs'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/San-Antonio_(série)',
+      translations: {
+        en: 'San-Antonio',
+        fr: 'San-Antonio',
+        es: 'San-Antonio'
+      }
+    },
+    'arsene_lupin': {
+      name: 'Arsène Lupin',
+      authors: ['Maurice Leblanc'],
+      category: 'roman',
+      volumes: 17,
+      description: 'Aventures du gentleman cambrioleur français.',
+      first_published: '1905',
+      status: 'completed',
+      keywords: ['arsène lupin', 'lupin', 'gentleman cambrioleur', 'leblanc', 'sherlock holmes'],
+      variations: ['arsène lupin', 'arsene lupin', 'lupin'],
+      exclusions: ['adaptations', 'autres auteurs'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Arsène_Lupin',
+      translations: {
+        en: 'Arsène Lupin',
+        fr: 'Arsène Lupin',
+        es: 'Arsène Lupin'
+      }
+    },
+    'les_rougon_macquart': {
+      name: 'Les Rougon-Macquart',
+      authors: ['Émile Zola'],
+      category: 'roman',
+      volumes: 20,
+      description: 'Cycle naturaliste sur une famille sous le Second Empire.',
+      first_published: '1871',
+      status: 'completed',
+      keywords: ['rougon macquart', 'zola', 'naturalisme', 'second empire', 'germinal'],
+      variations: ['rougon macquart', 'rougon-macquart', 'les rougon macquart'],
+      exclusions: ['autres zola'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/Les_Rougon-Macquart',
+      translations: {
+        en: 'Les Rougon-Macquart',
+        fr: 'Les Rougon-Macquart',
+        es: 'Los Rougon-Macquart'
+      }
+    },
+    'la_comedie_humaine': {
+      name: 'La Comédie Humaine',
+      authors: ['Honoré de Balzac'],
+      category: 'roman',
+      volumes: 95,
+      description: 'Fresque sociale de la France du XIXe siècle.',
+      first_published: '1829',
+      status: 'completed',
+      keywords: ['comédie humaine', 'balzac', 'rastignac', 'vautrin', 'goriot', 'illusions perdues'],
+      variations: ['comédie humaine', 'comedie humaine', 'la comédie humaine'],
+      exclusions: ['autres balzac'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/La_Comédie_humaine',
+      translations: {
+        en: 'The Human Comedy',
+        fr: 'La Comédie Humaine',
+        es: 'La Comedia Humana'
+      }
+    },
+    'a_la_recherche_du_temps_perdu': {
+      name: 'À la recherche du temps perdu',
+      authors: ['Marcel Proust'],
+      category: 'roman',
+      volumes: 7,
+      description: 'Œuvre majeure de la littérature française du XXe siècle.',
+      first_published: '1913',
+      status: 'completed',
+      keywords: ['proust', 'temps perdu', 'madeleine', 'swann', 'recherche', 'involontaire'],
+      variations: ['à la recherche du temps perdu', 'recherche temps perdu', 'proust'],
+      exclusions: ['adaptations'],
+      wikipedia_url: 'https://fr.wikipedia.org/wiki/À_la_recherche_du_temps_perdu',
+      translations: {
+        en: 'In Search of Lost Time',
+        fr: 'À la recherche du temps perdu',
+        es: 'En busca del tiempo perdido'
+      }
+    },
     'dark_tower': {
       name: 'La Tour Sombre',
       authors: ['Stephen King'],
