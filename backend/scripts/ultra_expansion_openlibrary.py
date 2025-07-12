@@ -599,7 +599,8 @@ async def main():
     import argparse
     
     parser = argparse.ArgumentParser(description="Ultra Expansion Open Library")
-    parser.add_argument('--limit', type=int, default=200, help='Nombre maximum de nouvelles séries')
+    parser.add_argument('--limit', type=int, default=10000, help='Nombre maximum de nouvelles séries (SANS LIMITE)')
+    parser.add_argument('--unlimited', action='store_true', help='Mode illimité (ignorer toutes limites)')
     parser.add_argument('--test', action='store_true', help='Mode test sans sauvegarde')
     args = parser.parse_args()
     
