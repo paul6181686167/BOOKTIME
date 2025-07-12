@@ -68,9 +68,25 @@ const SeriesCard = ({
       {/* Contenu principal */}
       <div className="pt-8">
         <div className="flex items-start space-x-4">
-          {/* Icône de série */}
-          <div className="w-16 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white text-2xl flex-shrink-0 shadow-md">
-            {categoryBadge.emoji}
+          {/* Image de couverture ou icône de série */}
+          <div className="w-16 h-20 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md overflow-hidden">
+            {series.cover_url ? (
+              <img 
+                src={series.cover_url} 
+                alt={`Couverture de ${series.name}`}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback vers le dégradé si l'image ne charge pas
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div 
+              className={`w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white text-2xl ${series.cover_url ? 'hidden' : 'flex'}`}
+            >
+              {categoryBadge.emoji}
+            </div>
           </div>
 
           {/* Informations */}
