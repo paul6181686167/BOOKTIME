@@ -338,7 +338,7 @@ class MegaExpansionOpenLibrary:
             "subjects": list(series_data['subjects'])[:10]
         }
     
-    async def expansion_strategy_keywords(self, limit_per_keyword: int = 20) -> List[Dict]:
+    async def expansion_strategy_keywords(self, limit_per_keyword: int = 200) -> List[Dict]:
         """Stratégie 1: Recherche par mots-clés série"""
         logger.info("🎯 Stratégie 1: Expansion par mots-clés série")
         all_series = []
