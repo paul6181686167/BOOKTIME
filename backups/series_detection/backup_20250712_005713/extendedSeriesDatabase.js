@@ -2,7 +2,7 @@
  * 🚀 EXTENDED SERIES DATABASE - BOOKTIME
  * Base de données étendue des séries populaires
  * 
- * Dernière mise à jour: 2025-07-12 00:57:13
+ * Dernière mise à jour: 2025-07-12 00:57:06
  * Nombre de séries: 3
  * 
  * Généré automatiquement par: update_series_detection.py
@@ -68,7 +68,7 @@ export const SERIES_STATS = {
   },
   total_volumes: 151,
   avg_volumes_per_series: 50.3,
-  last_updated: "2025-07-12 00:57:13"
+  last_updated: "2025-07-12 00:57:06"
 };
 
 // Fonctions utilitaires
