@@ -1,11 +1,15 @@
-from fastapi import APIRouter, HTTPException, Depends
-from typing import Optional
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from typing import Optional, List, Dict
 from datetime import datetime
 import uuid
 import re
+import json
+import os
+import asyncio
 from ..database.connection import books_collection, series_library_collection
 from ..security.jwt import get_current_user
 from ..models.series import VolumeData, SeriesLibraryCreate, SeriesReadingPreferences, SeriesReadingPreferencesUpdate
+from .image_service import image_service
 
 router = APIRouter(prefix="/api/series", tags=["series"])
 
