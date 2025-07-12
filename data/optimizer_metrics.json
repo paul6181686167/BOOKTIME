@@ -1,0 +1,84 @@
+{
+  "sessions": [
+    {
+      "timestamp": 1752320212.1920714,
+      "result": {
+        "success": true,
+        "total_books_processed": 0,
+        "total_new_series": 77537,
+        "execution_time": 199.01425099372864,
+        "performance_bps": 0.0,
+        "scripts_used": 4,
+        "optimizations_applied": [
+          "mega_expansion: limite augment\u00e9e x1.2",
+          "mega_harvest: limite augment\u00e9e x1.5",
+          "unlimited_manager: limite augment\u00e9e x1.5"
+        ]
+      },
+      "session_metrics": {
+        "start_time": 1752320013.1776838,
+        "total_books_processed": 0,
+        "total_new_series": 77537,
+        "scripts_executed": [
+          {
+            "script": "mega_expansion",
+            "target": 49845,
+            "execution_time": 75.11355328559875,
+            "result": {
+              "books_processed": 0,
+              "new_series": 49845,
+              "queries_made": 0,
+              "success": true
+            }
+          },
+          {
+            "script": "ultra_expansion",
+            "target": 27692,
+            "execution_time": 123.24197578430176,
+            "result": {
+              "books_processed": 0,
+              "new_series": 27692,
+              "queries_made": 0,
+              "success": true
+            }
+          },
+          {
+            "script": "mega_harvest",
+            "target": 80769,
+            "execution_time": 0.3114185333251953,
+            "result": {
+              "books_processed": 0,
+              "new_series": 0,
+              "queries_made": 0,
+              "success": false,
+              "error": "usage: mega_harvest_openlibrary.py [-h] [--limit LIMIT]\nmega_harvest_openlibrary.py: error: unrecognized arguments: --unlimited\n"
+            }
+          },
+          {
+            "script": "unlimited_manager",
+            "target": 115384,
+            "execution_time": 0.3449828624725342,
+            "result": {
+              "books_processed": 0,
+              "new_series": 0,
+              "queries_made": 0,
+              "success": false,
+              "error": "usage: unlimited_expansion_manager.py [-h] [--target TARGET] [--test]\nunlimited_expansion_manager.py: error: unrecognized arguments: --limit 115384 --unlimited\n"
+            }
+          }
+        ],
+        "performance_data": {
+          "mega_expansion": 0.0,
+          "ultra_expansion": 0.0,
+          "mega_harvest": 0.0,
+          "unlimited_manager": 0.0
+        },
+        "optimization_applied": [
+          "mega_expansion: limite augment\u00e9e x1.2",
+          "mega_harvest: limite augment\u00e9e x1.5",
+          "unlimited_manager: limite augment\u00e9e x1.5"
+        ]
+      }
+    }
+  ]
+}
