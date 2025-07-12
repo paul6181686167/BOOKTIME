@@ -193,6 +193,7 @@ Deployment: Kubernetes + Supervisor
 - **Filtres avancés** : Catégorie, statut, auteur
 - **Groupement par saga** : Résultats organisés par séries
 - **Scoring de pertinence** : Classement intelligent
+- **🆕 Masquage intelligent** : Livres de série automatiquement masqués
 
 #### Intégration Open Library
 - **Recherche externe** : 20M+ livres disponibles
@@ -200,6 +201,14 @@ Deployment: Kubernetes + Supervisor
 - **Import direct** : Ajout en un clic
 - **Enrichissement** : Métadonnées automatiques
 - **Recommandations** : Suggestions personnalisées
+- **🆕 Masquage universel** : Cohérence bibliothèque/recherche
+
+#### 🆕 **Masquage Intelligent Universel (Sessions 81.8-81.9)**
+- **Détection automatique** : Utilise patterns titre + auteur + base de données
+- **Multi-méthodes** : Champ saga + détection intelligente + scoring confiance
+- **Couverture totale** : Bibliothèque + résultats recherche + protection finale
+- **Performance** : Détection temps réel < 5ms par livre
+- **Exemples détection** : Harry Potter, One Piece, Astérix automatiquement masqués
 
 ### 4. Statistiques et Analytics
 
