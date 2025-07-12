@@ -1,0 +1,177 @@
+{
+  "timestamp": "2025-07-12T11:33:48.503621",
+  "operation": "ultra_harvest_integration_permissive",
+  "validation_stats": {
+    "total_candidates": 656,
+    "single_book_accepted": 547,
+    "multi_book_high_conf": 80,
+    "multi_book_low_conf": 4,
+    "rejected_short_name": 0,
+    "rejected_low_conf_single": 25
+  },
+  "duplicates_found": 631,
+  "new_series_added": 0,
+  "duplicate_samples": [
+    {
+      "new_name": "(Airhead",
+      "existing_name": "(Airhead",
+      "new_confidence": 100,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "1776 Season 1",
+      "existing_name": "1776 Season 1",
+      "new_confidence": 100,
+      "new_volumes": 2,
+      "existing_volumes": 9,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "1958 edition encyclopedia americana",
+      "existing_name": "1958 edition encyclopedia americana",
+      "new_confidence": 80,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "1984,",
+      "existing_name": "1984,",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "2009 48 CFR",
+      "existing_name": "2009 48 CFR",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 2,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "A Canadian Heroine,",
+      "existing_name": "A Canadian Heroine,",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "A Shilling for Candles (Inspector Alan Grant",
+      "existing_name": "A Shilling for Candles (Inspector Alan Grant",
+      "new_confidence": 100,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "A Wind in the Door (Time Quintet",
+      "existing_name": "A Wind in the Door (Time Quintet",
+      "new_confidence": 100,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "ARCHITECTURE Rendez-Vous ART *",
+      "existing_name": "Architecture Rendez-Vous Art *",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 2,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "Acca",
+      "existing_name": "Acca",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 2,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "Adolescence and Health",
+      "existing_name": "Adolescence and Health",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 4,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "Advanced Tribe :",
+      "existing_name": "Advanced Tribe :",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "Adventures of Dr. Carrotsticks~",
+      "existing_name": "Adventures of Dr. Carrotsticks~",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "Adventures of the Scapegoat",
+      "existing_name": "Adventures of the Scapegoat",
+      "new_confidence": 100,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "Aetherius",
+      "existing_name": "Aetherius",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "Afallon",
+      "existing_name": "Afallon",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "After (After Series,",
+      "existing_name": "After (After Series,",
+      "new_confidence": 100,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "After We Collided (After Series,",
+      "existing_name": "After We Collided (After Series,",
+      "new_confidence": 100,
+      "new_volumes": 1,
+      "existing_volumes": 1,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "Agrippine,",
+      "existing_name": "Agrippine,",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 3,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "Ajax the Griffin :",
+      "existing_name": "Ajax the Griffin :",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 2,
+      "new_source": "ultra_harvest_100k_permissive"
+    }
+  ],
+  "new_series_samples": []
+}
