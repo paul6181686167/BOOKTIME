@@ -138,13 +138,10 @@ Deployment: Kubernetes + Supervisor
 - **Score de confiance** : Système de validation intelligent (défaut: 120)
 - **Configuration flexible** : Seuils, délais, callbacks personnalisables
 
-#### 🆕 **Recherche Intelligente par Auteur (Session 81.11)**
-- **Détection par auteur** : Recherche nom d'auteur retourne automatiquement ses séries
-- **Groupement d'auteur** : Livres sans saga du même auteur groupés en "Livres de [Auteur]"
-- **Priorité aux séries** : Séries d'auteur affichées en premier dans les résultats
-- **Types enrichis** : `author_match`, `user_library_author_match`, `author_series`
-- **Scoring adaptatif** : Seuils optimisés pour correspondance auteur (50% minimum)
-- **Validation utilisateur** : "C'est nickel" - fonctionnalité parfaitement opérationnelle
+#### Prompt Session 81.11 - Correction Recherche par Auteur
+**Demande** : `"vois ce qui a été fais et continue de réglé le probleme de ne pas avoir de série si on cherche le nom de l'auteur"` → `"c'est nickel documente tout"`
+**Action** : Analyse problème + correction complète recherche par auteur + validation utilisateur
+**Résultat** : ✅ **RECHERCHE PAR AUTEUR AVEC SÉRIES FONCTIONNELLE + VALIDATION UTILISATEUR COMPLÈTE**
 
 #### Séries Pré-configurées
 **Romans** : Harry Potter, Seigneur des Anneaux, Game of Thrones
