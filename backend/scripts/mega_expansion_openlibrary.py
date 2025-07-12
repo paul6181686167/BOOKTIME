@@ -186,7 +186,7 @@ class MegaExpansionOpenLibrary:
             logger.warning(f"⚠️ Erreur chargement séries existantes: {e}")
             self.existing_series = set()
     
-    async def search_open_library(self, query: str, limit: int = 50) -> List[Dict]:
+    async def search_open_library(self, query: str, limit: int = 1000) -> List[Dict]:
         """Recherche dans Open Library avec gestion d'erreur robuste"""
         try:
             # Délai anti-rate-limiting
