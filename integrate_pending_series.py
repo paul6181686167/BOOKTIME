@@ -33,7 +33,11 @@ def load_ultra_harvest_backups():
     ultra_harvest_files = [
         'backup_ultra_harvest_20250712_100905.json',
         'backup_ultra_harvest_20250712_102352.json',
-        'backup_20250712_013649_mega_harvest.json'
+        'backup_20250712_013649_mega_harvest.json',
+        'backup_20250712_114252_mega_expansion.json',
+        'backup_20250712_113447_mega_expansion.json',
+        'backup_20250712_114505_ultra_expansion.json',
+        'backup_20250712_113650_ultra_expansion.json'
     ]
     
     all_series = []
@@ -42,11 +46,14 @@ def load_ultra_harvest_backups():
         file_path = backup_dir / filename
         if file_path.exists():
             try:
+                logger.info(f"📁 Traitement {filename}...")
                 with open(file_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     if isinstance(data, list):
-                        all_series.extend(data)
-                        logger.info(f"📁 {filename}: {len(data)} séries chargées")
+                        # Filtrer les séries valides seulement
+                        valid_series = [s for s in data if 'name' in s and len(s.get('name', '').strip()) >= 3]
+                        all_series.extend(valid_series)
+                        logger.info(f"📁 {filename}: {len(valid_series)} séries valides chargées")
                     else:
                         logger.warning(f"⚠️ Format inattendu dans {filename}")
             except Exception as e:
