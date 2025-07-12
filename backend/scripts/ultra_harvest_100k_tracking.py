@@ -945,7 +945,7 @@ class UltraHarvest100K:
         for (series_name, author), data in series_candidates.items():
             # Critères validation stricts
             has_multiple_books = len(data['books']) >= 2
-            good_confidence = max(data['confidence_scores']) >= 75
+            good_confidence = max(data['confidence_scores']) >= 70
             not_existing = series_name.lower() not in self.existing_series
             meaningful_name = len(series_name) >= 3 and not series_name.isdigit()
             
