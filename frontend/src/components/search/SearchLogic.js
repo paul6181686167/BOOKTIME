@@ -185,9 +185,9 @@ const detectBookOwnership = (book, books) => {
  * Race condition MongoDB résolue définitivement
  */
 const verifyAndDisplayBook = async (bookTitle, targetCategory, books, loadBooks, loadStats) => {
-  const maxAttempts = 2;      // Réduit de 3 à 2 tentatives (optimisation prudente)
-  const baseDelayMs = 200;    // Réduit de 500ms à 200ms (délais 200ms→400ms au lieu de 500ms→1000ms→1500ms)
-  const timeoutMs = 3000;     // Réduit de 5s à 3s timeout global (optimisation prudente)
+  const maxAttempts = 3;
+  const baseDelayMs = 500;
+  const timeoutMs = 5000; // Timeout global 5s
   
   console.log(`🔍 [OPTION C] Vérification livre: "${bookTitle}" en catégorie "${targetCategory}"`);
   
