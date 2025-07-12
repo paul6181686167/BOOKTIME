@@ -494,18 +494,27 @@ function MainApp() {
     // Créer l'affichage unifié avec la logique de masquage renforcée
     const unifiedDisplay = createUnifiedDisplay(booksToDisplay);
     
-    // 🔍 SESSION 81.1 - DOUBLE PROTECTION : Vérification finale qu'aucun livre de série n'échappe
+    // 🔍 SESSION 81.8 - PROTECTION FINALE INTELLIGENTE : Vérification qu'aucun livre de série n'échappe
     const finalBooks = unifiedDisplay.filter(item => {
       if (item.isSeriesCard) {
         // Les vignettes de série sont autorisées
         return true;
       } else {
         // Pour les livres individuels, vérifier qu'ils n'appartiennent pas à une série
+        // Méthode 1 : Champ saga existant
         const belongsToSeries = !!(item.saga && item.saga.trim());
         if (belongsToSeries) {
-          console.warn(`⚠️ [SESSION 81.1] PROTECTION FINALE: Livre "${item.title}" de la série "${item.saga}" détecté - MASQUÉ`);
+          console.warn(`⚠️ [SESSION 81.8] PROTECTION FINALE: Livre "${item.title}" de la série "${item.saga}" détecté - MASQUÉ`);
           return false; // Masquer ce livre
         }
+        
+        // Méthode 2 : Détection intelligente automatique
+        const detection = SeriesDetector.detectBookSeries(item);
+        if (detection.belongsToSeries && detection.confidence >= 70) {
+          console.warn(`⚠️ [SESSION 81.8] PROTECTION INTELLIGENTE: Livre "${item.title}" détecté série "${detection.seriesName}" (${detection.confidence}% confiance) - MASQUÉ`);
+          return false; // Masquer ce livre détecté
+        }
+        
         return true; // Livre standalone autorisé
       }
     });
