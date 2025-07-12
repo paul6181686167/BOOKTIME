@@ -2,8 +2,8 @@
  * 🚀 EXTENDED SERIES DATABASE - BOOKTIME
  * Base de données étendue des séries populaires
  * 
- * Dernière mise à jour: 2025-07-12 01:37:56
- * Nombre de séries: 58
+ * Dernière mise à jour: 2025-07-12 01:25:37
+ * Nombre de séries: 38
  * 
  * Généré automatiquement par: update_series_detection.py
  * Source: Open Library + base manuelle
@@ -80,15 +80,6 @@ export const EXTENDED_SERIES_DATABASE = [
     source: "open_library_mega_expansion",
   },
   {
-    name: "Death Note",
-    authors: ["Tsugumi Ohba"],
-    category: "roman",
-    volumes: 12,
-    keywords: ["death note", "death note series", "death note saga", "death note novel", "death note book", "ohba"],
-    variations: ["Death Note", "The Death Note", "Death Note Series"],
-    source: "open_library_mega_harvest",
-  },
-  {
     name: "Dorian Hunter",
     authors: ["Neal Davenport"],
     category: "roman",
@@ -140,15 +131,6 @@ export const EXTENDED_SERIES_DATABASE = [
     source: "manual",
   },
   {
-    name: "House Atreides",
-    authors: ["Brian Herbert"],
-    category: "roman",
-    volumes: 4,
-    keywords: ["house atreides", "house atreides series", "house atreides saga", "house atreides novel", "house atreides book", "herbert"],
-    variations: ["House Atreides", "The House Atreides", "House Atreides Series"],
-    source: "open_library_mega_harvest",
-  },
-  {
     name: "Muchachas",
     authors: ["Katherine Pancol"],
     category: "roman",
@@ -167,15 +149,6 @@ export const EXTENDED_SERIES_DATABASE = [
     source: "open_library_mega_expansion",
   },
   {
-    name: "Oeuvres complètes,",
-    authors: ["Frédéric Dard"],
-    category: "roman",
-    volumes: 24,
-    keywords: ["oeuvres complètes,", "oeuvres complètes, series", "oeuvres complètes, saga", "dard"],
-    variations: ["Oeuvres complètes,", "The Oeuvres complètes,", "Oeuvres complètes, Series"],
-    source: "open_library_ultra_expansion",
-  },
-  {
     name: "Phönixakademie - Sammelband",
     authors: ["I. Bow"],
     category: "roman",
@@ -185,15 +158,6 @@ export const EXTENDED_SERIES_DATABASE = [
     source: "open_library_mega_expansion",
   },
   {
-    name: "San Antonio",
-    authors: ["Frédéric Dard"],
-    category: "roman",
-    volumes: 3,
-    keywords: ["san antonio", "san antonio series", "san antonio saga", "dard"],
-    variations: ["San Antonio", "The San Antonio", "San Antonio Series"],
-    source: "open_library_ultra_expansion",
-  },
-  {
     name: "Spirit",
     authors: ["Quality Comics"],
     category: "roman",
@@ -201,15 +165,6 @@ export const EXTENDED_SERIES_DATABASE = [
     keywords: ["spirit", "spirit series", "spirit saga", "the spirit", "quality"],
     variations: ["Spirit", "The Spirit", "Spirit Series"],
     source: "open_library_mega_expansion",
-  },
-  {
-    name: "Spring Series",
-    authors: ["Jennifer Cross"],
-    category: "roman",
-    volumes: 2,
-    keywords: ["spring series", "spring series series", "spring series saga", "cross"],
-    variations: ["Spring Series", "The Spring Series", "Spring Series Series"],
-    source: "open_library_ultra_expansion",
   },
   {
     name: "Star Trek",
@@ -242,15 +197,6 @@ export const EXTENDED_SERIES_DATABASE = [
     source: "open_library_mega_expansion",
   },
   {
-    name: "Terry Goodkind Sword of Truth Series",
-    authors: ["Terry Goodkind"],
-    category: "roman",
-    volumes: 2,
-    keywords: ["terry goodkind sword of truth series", "terry goodkind sword of truth series series", "terry goodkind sword of truth series saga", "terry goodkind sword of truth series novel", "terry goodkind sword of truth series book", "goodkind"],
-    variations: ["Terry Goodkind Sword of Truth Series", "The Terry Goodkind Sword of Truth Series", "Terry Goodkind Sword of Truth Series Series"],
-    source: "open_library_mega_harvest",
-  },
-  {
     name: "The Adventures of Sherlock Holmes [12 stories]",
     authors: ["Arthur Conan Doyle"],
     category: "roman",
@@ -277,15 +223,6 @@ export const EXTENDED_SERIES_DATABASE = [
     source: "open_library_search",
   },
   {
-    name: "The Book of Lost",
-    authors: ["J.R.R. Tolkien"],
-    category: "roman",
-    volumes: 2,
-    keywords: ["the book of lost", "the book of lost series", "the book of lost saga", "the book of lost novel", "the book of lost book", "tolkien"],
-    variations: ["The Book of Lost", "The The Book of Lost", "The Book of Lost Series"],
-    source: "open_library_mega_harvest",
-  },
-  {
     name: "The Complete Life and Adventures of Santa Claus",
     authors: ["L. Frank Baum"],
     category: "roman",
@@ -297,15 +234,6 @@ export const EXTENDED_SERIES_DATABASE = [
     languages: ["fre", "eng"],
     translations: {"en": "The Complete Life and Adventures of Santa Claus", "fr": "The Complete Life and Adventures of Santa Claus"},
     source: "open_library_search",
-  },
-  {
-    name: "The Name of the Wind",
-    authors: ["Patrick Rothfuss"],
-    category: "roman",
-    volumes: 2,
-    keywords: ["the name of the wind", "the name of the wind series", "the name of the wind saga", "the name of the wind novel", "the name of the wind book", "rothfuss"],
-    variations: ["The Name of the Wind", "The The Name of the Wind", "The Name of the Wind Series"],
-    source: "open_library_mega_harvest",
   },
   {
     name: "Untitled Jack Ryan",
@@ -360,69 +288,6 @@ export const EXTENDED_SERIES_DATABASE = [
     source: "manual",
   },
   {
-    name: "Attack On Titan",
-    authors: ["諫山創"],
-    category: "bd",
-    volumes: 13,
-    keywords: ["attack on titan", "attack on titan series", "attack on titan saga", "attack on titan comic", "attack on titan bd", "諫山創"],
-    variations: ["Attack On Titan", "The Attack On Titan", "Attack On Titan Series"],
-    source: "open_library_mega_harvest",
-  },
-  {
-    name: "Fullmetal Alchemist",
-    authors: ["荒川 弘"],
-    category: "bd",
-    volumes: 22,
-    keywords: ["fullmetal alchemist", "fullmetal alchemist series", "fullmetal alchemist saga", "fullmetal alchemist comic", "fullmetal alchemist bd"],
-    variations: ["Fullmetal Alchemist", "The Fullmetal Alchemist", "Fullmetal Alchemist Series"],
-    source: "open_library_mega_harvest",
-  },
-  {
-    name: "Le Petit Spirou",
-    authors: ["Tome"],
-    category: "bd",
-    volumes: 2,
-    keywords: ["le petit spirou", "le petit spirou series", "le petit spirou saga", "le petit spirou comic", "le petit spirou bd", "tome"],
-    variations: ["Le Petit Spirou", "The Le Petit Spirou", "Le Petit Spirou Series"],
-    source: "open_library_mega_harvest",
-  },
-  {
-    name: "Lucky Luke",
-    authors: ["Morris"],
-    category: "bd",
-    volumes: 68,
-    keywords: ["lucky luke", "lucky luke series", "lucky luke saga", "lucky luke comic", "lucky luke bd", "morris"],
-    variations: ["Lucky Luke", "The Lucky Luke", "Lucky Luke Series"],
-    source: "open_library_mega_harvest",
-  },
-  {
-    name: "New Excalibur",
-    authors: ["Michael Ryan (comic book artist)"],
-    category: "bd",
-    volumes: 2,
-    keywords: ["new excalibur", "new excalibur series", "new excalibur saga", "artist)"],
-    variations: ["New Excalibur", "The New Excalibur", "New Excalibur Series"],
-    source: "open_library_ultra_expansion",
-  },
-  {
-    name: "Saga,",
-    authors: ["Brian K. Vaughan"],
-    category: "bd",
-    volumes: 6,
-    keywords: ["saga,", "saga, series", "saga, saga", "vaughan"],
-    variations: ["Saga,", "The Saga,", "Saga, Series"],
-    source: "open_library_ultra_expansion",
-  },
-  {
-    name: "Spirou et Fantasio",
-    authors: ["André Franquin"],
-    category: "bd",
-    volumes: 17,
-    keywords: ["spirou et fantasio", "spirou et fantasio series", "spirou et fantasio saga", "spirou et fantasio comic", "spirou et fantasio bd", "franquin"],
-    variations: ["Spirou et Fantasio", "The Spirou et Fantasio", "Spirou et Fantasio Series"],
-    source: "open_library_mega_harvest",
-  },
-  {
     name: "Buddha,",
     authors: ["Osamu Tezuka"],
     category: "manga",
@@ -441,24 +306,6 @@ export const EXTENDED_SERIES_DATABASE = [
     variations: ["Death Note, Vol.", "The Death Note, Vol.", "Death Note, Vol. Series"],
     subjects: ["series:death_note", "Death", "Fiction", "Comic books, strips", "high school students", "gods", "Students", "United States", "Good and evil", "Criminals"],
     source: "open_library_mega_expansion",
-  },
-  {
-    name: "Demon Slayer : Kimetsu No Yaiba",
-    authors: ["Koyoharu Gotōge"],
-    category: "manga",
-    volumes: 13,
-    keywords: ["demon slayer : kimetsu no yaiba", "demon slayer : kimetsu no yaiba series", "demon slayer : kimetsu no yaiba saga", "demon slayer : kimetsu no yaiba manga", "demon slayer : kimetsu no yaiba light novel", "gotōge"],
-    variations: ["Demon Slayer : Kimetsu No Yaiba", "The Demon Slayer : Kimetsu No Yaiba", "Demon Slayer : Kimetsu No Yaiba Series"],
-    source: "open_library_mega_harvest",
-  },
-  {
-    name: "Dragon Ball Z",
-    authors: ["Akira Toriyama"],
-    category: "manga",
-    volumes: 19,
-    keywords: ["dragon ball z", "dragon ball z series", "dragon ball z saga", "dragon ball z manga", "dragon ball z light novel", "toriyama"],
-    variations: ["Dragon Ball Z", "The Dragon Ball Z", "Dragon Ball Z Series"],
-    source: "open_library_mega_harvest",
   },
   {
     name: "Dragon Ball Z,",
@@ -491,15 +338,6 @@ export const EXTENDED_SERIES_DATABASE = [
     source: "open_library_mega_expansion",
   },
   {
-    name: "InuYasha,",
-    authors: ["高橋留美子"],
-    category: "manga",
-    volumes: 10,
-    keywords: ["inuyasha,", "inuyasha, series", "inuyasha, saga", "高橋留美子"],
-    variations: ["InuYasha,", "The InuYasha,", "InuYasha, Series", "InuYasha, Light Novel", "InuYasha, LN"],
-    source: "open_library_ultra_expansion",
-  },
-  {
     name: "Les Tuniques Bleues,",
     authors: ["Raoul Cauvin"],
     category: "manga",
@@ -518,24 +356,6 @@ export const EXTENDED_SERIES_DATABASE = [
     variations: ["Liz and Beth Vol.", "The Liz and Beth Vol.", "Liz and Beth Vol. Series"],
     subjects: ["Comic books, strips", "Franco-Belgian comic books, strips", "Erotic comic books, strips", "Lesbians", "Translations into English"],
     source: "open_library_mega_expansion",
-  },
-  {
-    name: "My Hero Academia",
-    authors: ["Kohei Horikoshi"],
-    category: "manga",
-    volumes: 32,
-    keywords: ["my hero academia", "my hero academia series", "my hero academia saga", "my hero academia manga", "my hero academia light novel", "horikoshi"],
-    variations: ["My Hero Academia", "The My Hero Academia", "My Hero Academia Series"],
-    source: "open_library_mega_harvest",
-  },
-  {
-    name: "Naruto",
-    authors: ["Masashi Kishimoto"],
-    category: "manga",
-    volumes: 25,
-    keywords: ["naruto", "naruto series", "naruto saga", "naruto manga", "naruto light novel", "kishimoto"],
-    variations: ["Naruto", "The Naruto", "Naruto Series"],
-    source: "open_library_mega_harvest",
   },
   {
     name: "Naruto, Vol.",
@@ -596,15 +416,15 @@ export const EXTENDED_SERIES_DATABASE = [
 
 // Statistiques base de données
 export const SERIES_STATS = {
-  total_series: 58,
+  total_series: 38,
   by_category: {
-    roman: 33,
-    bd: 8,
-    manga: 17
+    roman: 25,
+    bd: 1,
+    manga: 12
   },
-  total_volumes: 757,
-  avg_volumes_per_series: 13.1,
-  last_updated: "2025-07-12 01:37:56"
+  total_volumes: 477,
+  avg_volumes_per_series: 12.6,
+  last_updated: "2025-07-12 01:25:37"
 };
 
 // Fonctions utilitaires
