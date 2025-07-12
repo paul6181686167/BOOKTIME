@@ -84,14 +84,16 @@ const BookActions = {
     booksWithSeriesMarked.forEach(book => {
       if (book.belongsToSeries) {
         // 📚 LIVRE APPARTENANT À UNE SÉRIE - REGROUPEMENT DANS VIGNETTE SÉRIE
-        const seriesKey = book.saga.toLowerCase().trim();
+        // ✅ OPTION 2: Utiliser series_name en priorité, puis saga en fallback
+        const seriesName = book.series_name || book.saga;
+        const seriesKey = seriesName.toLowerCase().trim();
         if (!seriesGroups[seriesKey]) {
           seriesGroups[seriesKey] = {
             id: `library-series-${seriesKey}`,
             isSeriesCard: true,
             isLibrarySeries: true,
-            name: book.saga,
-            title: book.saga,
+            name: seriesName,
+            title: seriesName,
             author: book.author,
             authors: [book.author], // 🔍 NOUVEAU: Stockage de tous les auteurs de la série
             category: book.category,
