@@ -12,7 +12,7 @@ from datetime import datetime
 import time
 
 class BookTimeAPITester:
-    def __init__(self, base_url="https://1acaa5e2-aac1-4c7e-9c29-fb4ce54435da.preview.emergentagent.com"):
+    def __init__(self, base_url="https://8d6421dd-3206-4a67-a223-7a1f1a7e4ca5.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
         self.user_id = None
