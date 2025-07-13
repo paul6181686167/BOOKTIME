@@ -401,9 +401,11 @@ function MainApp() {
   }, [activeTab]);
 
   // Chargement initial au montage du composant
+  // PHASE C.1 : Suppression du chargement manuel - useUnifiedContent s'en charge
   useEffect(() => {
     if (user) {
-      seriesHook.loadUserSeriesLibrary();
+      // Les données sont automatiquement chargées par useUnifiedContent
+      // Seul l'auto-enrichissement des images est conservé ici
       
       // 🎨 Auto-enrichissement des images de séries au démarrage
       seriesImageService.autoEnrichPopularSeries().then(result => {
