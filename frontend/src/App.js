@@ -258,12 +258,26 @@ function MainApp() {
     const apiStartTime = Date.now();
     
     try {
+      // CORRECTION RCA : Restaurer la compatibilité d'interface avec SearchLogic
+      // Créer des wrappers compatibles avec l'ancienne signature
+      const loadBooksWrapper = async () => {
+        await unifiedContent.refreshAfterAdd('books');
+        // Également rafraîchir les livres avec l'ancien hook pour compatibilité
+        await booksHook.loadBooks();
+      };
+      
+      const loadStatsWrapper = async () => {
+        await unifiedContent.refreshAfterAdd('stats');
+        // Également rafraîchir les stats avec l'ancien hook pour compatibilité
+        await booksHook.loadStats();
+      };
+      
       await searchHook.handleAddFromOpenLibrary(openLibraryBook, {
         books: unifiedContent.books,
         activeTab,
         getCategoryBadgeFromBook,
-        loadBooks: unifiedContent.refreshAfterAdd,
-        loadStats: () => unifiedContent.refreshAfterAdd('stats')
+        loadBooks: loadBooksWrapper,
+        loadStats: loadStatsWrapper
       });
 
       // Mesure performance API
