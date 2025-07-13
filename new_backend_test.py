@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 
 class BookTimeAPITester:
-    def __init__(self, base_url="https://e3913a49-e7ca-4d2f-95f0-15821d8314b6.preview.emergentagent.com"):
+    def __init__(self, base_url="https://58bc1b60-e48c-42b3-863c-80763e010aeb.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
         self.user = None
