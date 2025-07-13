@@ -224,12 +224,6 @@ function MainApp() {
     };
   }, [backToLibrary, userAnalytics]);
 
-  // Hook de recherche groupée
-  const {
-    groupedResults,
-    searchStats: groupedSearchStats,
-  } = useGroupedSearch();
-
   // FONCTION UTILITAIRE : Déterminer le badge de catégorie depuis un livre Open Library
   const getCategoryBadgeFromBook = (book) => {
     return getCategoryBadge(book);
