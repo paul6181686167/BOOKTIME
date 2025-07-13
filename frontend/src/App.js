@@ -494,6 +494,7 @@ function MainApp() {
     });
     
     // Créer l'affichage unifié avec la logique de masquage renforcée
+    // 🆕 PHASE B.2 : Utiliser la fonction createUnifiedDisplay locale qui passe userSeriesLibrary
     const unifiedDisplay = createUnifiedDisplay(booksToDisplay);
     
     // 🔍 SESSION 81.8 - PROTECTION FINALE INTELLIGENTE : Vérification qu'aucun livre de série n'échappe
