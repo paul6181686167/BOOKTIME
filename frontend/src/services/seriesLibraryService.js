@@ -133,7 +133,8 @@ const normalizeString = (str) => {
     .replace(/[ùúûü]/g, 'u')
     .replace(/[ñ]/g, 'n')
     .replace(/[ç]/g, 'c')
-    .replace(/[^a-z0-9]/g, '')
+    .replace(/\s+/g, '_')  // CORRECTION : Remplacer espaces par underscores
+    .replace(/[^a-z0-9_]/g, '')  // CORRECTION : Garder les underscores
     || '';
 };
 
