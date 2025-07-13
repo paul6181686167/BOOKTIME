@@ -76,9 +76,9 @@ def test_add_series_via_api(token):
         "category": "roman",
         "total_volumes": 3,
         "volumes": [
-            {"volume_number": 1, "title": "Tome 1", "is_read": False},
-            {"volume_number": 2, "title": "Tome 2", "is_read": False},
-            {"volume_number": 3, "title": "Tome 3", "is_read": False}
+            {"volume_number": 1, "volume_title": "Tome 1", "is_read": False},
+            {"volume_number": 2, "volume_title": "Tome 2", "is_read": False},
+            {"volume_number": 3, "volume_title": "Tome 3", "is_read": False}
         ],
         "description_fr": "Série de test pour Phase A",
         "series_status": "to_read"
