@@ -84,15 +84,30 @@ export const useUnifiedContent = () => {
       };
     });
   }, []);
+  /**
+   * FONCTION PRINCIPALE : Chargement unifié parallèle avec cache intelligent
+   * Charge livres + séries + stats en parallèle pour éviter les race conditions
+   */
   const loadUnifiedContent = useCallback(async (options = {}) => {
     const { 
       skipBooks = false, 
       skipSeries = false, 
       skipStats = false,
-      silent = false 
+      silent = false,
+      forceRefresh = false
     } = options;
 
-    console.log('🔄 [PHASE C.1] Début chargement unifié parallèle');
+    console.log('🔄 [PHASE C.2] Début chargement unifié avec cache intelligent');
+    
+    // PHASE C.2 - Vérification cache intelligent
+    const shouldRefreshBooks = !skipBooks && shouldRefresh('books', forceRefresh);
+    const shouldRefreshSeries = !skipSeries && shouldRefresh('series', forceRefresh);
+    const shouldRefreshStats = !skipStats && shouldRefresh('stats', forceRefresh);
+    
+    if (!shouldRefreshBooks && !shouldRefreshSeries && !shouldRefreshStats) {
+      console.log('📋 [PHASE C.2] Toutes les données sont en cache, pas de rechargement nécessaire');
+      return;
+    }
     
     // Démarrer le loading global si pas silent
     if (!silent) {
@@ -112,14 +127,16 @@ export const useUnifiedContent = () => {
       const promises = [];
       const promiseLabels = [];
 
-      // 1. Chargement des livres
-      if (!skipBooks) {
+      // 1. Chargement des livres (avec cache intelligent)
+      if (shouldRefreshBooks) {
         setBooksLoading(true);
         const booksPromise = BookActions.loadBooks(
           (loading) => !silent && setBooksLoading(loading),
           setBooks
-        ).catch(error => {
-          console.error('❌ [PHASE C.1] Erreur chargement livres:', error);
+        ).then(() => {
+          setLastLoadTimes(prev => ({ ...prev, books: Date.now() }));
+        }).catch(error => {
+          console.error('❌ [PHASE C.2] Erreur chargement livres:', error);
           setBooksError(error);
           throw new Error(`Books: ${error.message}`);
         });
@@ -127,14 +144,16 @@ export const useUnifiedContent = () => {
         promiseLabels.push('books');
       }
 
-      // 2. Chargement des séries utilisateur
-      if (!skipSeries) {
+      // 2. Chargement des séries utilisateur (avec cache intelligent)
+      if (shouldRefreshSeries) {
         setSeriesLoading(true);
         const seriesPromise = SeriesActions.loadUserSeriesLibrary(
           (loading) => !silent && setSeriesLoading(loading),
           setUserSeriesLibrary
-        ).catch(error => {
-          console.error('❌ [PHASE C.1] Erreur chargement séries:', error);
+        ).then(() => {
+          setLastLoadTimes(prev => ({ ...prev, series: Date.now() }));
+        }).catch(error => {
+          console.error('❌ [PHASE C.2] Erreur chargement séries:', error);
           setSeriesError(error);
           throw new Error(`Series: ${error.message}`);
         });
@@ -142,11 +161,13 @@ export const useUnifiedContent = () => {
         promiseLabels.push('series');
       }
 
-      // 3. Chargement des statistiques
-      if (!skipStats) {
+      // 3. Chargement des statistiques (avec cache intelligent)
+      if (shouldRefreshStats) {
         setStatsLoading(true);
-        const statsPromise = BookActions.loadStats(setStats).catch(error => {
-          console.error('❌ [PHASE C.1] Erreur chargement stats:', error);
+        const statsPromise = BookActions.loadStats(setStats).then(() => {
+          setLastLoadTimes(prev => ({ ...prev, stats: Date.now() }));
+        }).catch(error => {
+          console.error('❌ [PHASE C.2] Erreur chargement stats:', error);
           setStatsError(error);
           throw new Error(`Stats: ${error.message}`);
         });
@@ -155,32 +176,33 @@ export const useUnifiedContent = () => {
       }
 
       // Exécution parallèle avec Promise.all
-      console.log(`🚀 [PHASE C.1] Lancement ${promises.length} promesses parallèles: ${promiseLabels.join(', ')}`);
+      console.log(`🚀 [PHASE C.2] Lancement ${promises.length} promesses parallèles: ${promiseLabels.join(', ')}`);
       
       await Promise.all(promises);
       
       const loadTime = Date.now() - startTime;
-      console.log(`✅ [PHASE C.1] Chargement unifié réussi en ${loadTime}ms`);
+      updatePerformanceMetrics(loadTime);
+      console.log(`✅ [PHASE C.2] Chargement unifié réussi en ${loadTime}ms`);
       
       // Logs détaillés du résultat
-      if (!skipBooks) {
-        console.log(`📚 [PHASE C.1] Livres chargés: ${books.length || 0} éléments`);
+      if (shouldRefreshBooks) {
+        console.log(`📚 [PHASE C.2] Livres chargés: ${books.length || 0} éléments`);
       }
-      if (!skipSeries) {
-        console.log(`📖 [PHASE C.1] Séries utilisateur chargées: ${userSeriesLibrary.length || 0} éléments`);
+      if (shouldRefreshSeries) {
+        console.log(`📖 [PHASE C.2] Séries utilisateur chargées: ${userSeriesLibrary.length || 0} éléments`);
       }
-      if (!skipStats) {
-        console.log(`📊 [PHASE C.1] Statistiques chargées:`, stats);
+      if (shouldRefreshStats) {
+        console.log(`📊 [PHASE C.2] Statistiques chargées:`, stats);
       }
 
     } catch (error) {
       const loadTime = Date.now() - startTime;
-      console.error(`❌ [PHASE C.1] Échec chargement unifié après ${loadTime}ms:`, error);
+      console.error(`❌ [PHASE C.2] Échec chargement unifié après ${loadTime}ms:`, error);
       setError(error);
       
       // En cas d'erreur, on essaie de charger individuellement ce qui peut l'être
       if (promises.length > 1) {
-        console.log('🔄 [PHASE C.1] Tentative de récupération partielle...');
+        console.log('🔄 [PHASE C.2] Tentative de récupération partielle...');
         await loadUnifiedContentFallback(options);
       }
     } finally {
@@ -192,7 +214,7 @@ export const useUnifiedContent = () => {
       setSeriesLoading(false);
       setStatsLoading(false);
     }
-  }, [books.length, userSeriesLibrary.length, stats]);
+  }, [books.length, userSeriesLibrary.length, stats, shouldRefresh, updatePerformanceMetrics]);
 
   /**
    * FONCTION DE RÉCUPÉRATION : Fallback en cas d'échec parallèle
