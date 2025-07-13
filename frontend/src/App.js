@@ -316,12 +316,9 @@ function MainApp() {
           console.log('📊 Chargement série:', loading);
         },
         loadUserSeriesLibrary: async () => {
-          // Recharger les séries avec le hook approprié
-          await seriesHook.loadUserSeriesLibrary();
-          // Également recharger les livres pour synchroniser l'affichage
-          await booksHook.loadBooks();
-          // Recharger les stats
-          await booksHook.loadStats();
+          // ✅ CORRECTION : Utiliser le bon système d'état (unifiedContent)
+          await unifiedContent.refreshAfterAdd('series');
+          console.log('✅ [REFRESH] Série ajoutée - Interface synchronisée avec unifiedContent');
         }
       });
       
