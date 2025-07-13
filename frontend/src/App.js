@@ -232,7 +232,26 @@ function MainApp() {
   // FONCTION AFFICHAGE UNIFIÉ : Mélange séries et livres individuels par date d'ajout
   // PHASE C.1 : Utiliser données unifiées pour créer l'affichage
   const createUnifiedDisplay = (booksList) => {
-    return BookActions.createUnifiedDisplay(booksList, getCategoryBadgeFromBook, unifiedContent.userSeriesLibrary || []);
+    // ✅ CORRECTION RCA - Filtrer les séries selon l'onglet actif
+    const filteredSeries = (unifiedContent.userSeriesLibrary || []).filter(series => {
+      const seriesCategory = series.category || 'roman';
+      
+      // Logique de filtrage identique à useAdvancedSearch
+      if (activeTab === 'roman') {
+        return seriesCategory === 'roman';
+      } else if (activeTab === 'graphic_novels') {
+        // Romans graphiques = BD + Manga
+        return seriesCategory === 'bd' || seriesCategory === 'manga';
+      }
+      
+      return true; // Fallback pour autres onglets
+    });
+    
+    console.log(`🔍 [CORRECTION RCA] Onglet actif: ${activeTab}`);
+    console.log(`🔍 [CORRECTION RCA] Séries avant filtrage: ${(unifiedContent.userSeriesLibrary || []).length}`);
+    console.log(`🔍 [CORRECTION RCA] Séries après filtrage: ${filteredSeries.length}`);
+    
+    return BookActions.createUnifiedDisplay(booksList, getCategoryBadgeFromBook, filteredSeries);
   };
 
   // Fonction pour rechercher dans Open Library avec RECHERCHE GLOBALE (toutes catégories)
