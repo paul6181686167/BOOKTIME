@@ -57,18 +57,49 @@ const BookActions = {
   },
 
   // Fonction pour créer l'affichage unifié des livres et séries
-  // SESSION 82.2 - CORRECTION RCA SYSTÈME VIGNETTES : Intégration SeriesDetector
-  createUnifiedDisplay(booksList, getCategoryBadgeFromBook) {
+  // Fonction pour créer l'affichage unifié des livres et séries
+  // SESSION 84 - PHASE B : Intégration userSeriesLibrary dans affichage  
+  createUnifiedDisplay(booksList, getCategoryBadgeFromBook, userSeriesLibrary = []) {
     // Vérification renforcée : s'assurer que booksList est toujours un array
     if (!booksList || !Array.isArray(booksList)) {
       console.warn('createUnifiedDisplay: booksList n\'est pas un array:', booksList);
       return [];
     }
 
-    console.log('🔍 [SESSION 82.2] createUnifiedDisplay - Livres reçus:', booksList.length);
+    console.log('🔍 [PHASE B] createUnifiedDisplay - Livres reçus:', booksList.length);
+    console.log('🔍 [PHASE B] createUnifiedDisplay - Séries bibliothèque reçues:', userSeriesLibrary.length);
 
     const seriesGroups = {};
     const standaloneBooks = [];
+
+    // 🆕 PHASE B : Convertir séries bibliothèque en format d'affichage
+    const seriesCards = userSeriesLibrary.map(series => ({
+      id: series.id,
+      isSeriesCard: true,
+      isOwnedSeries: true, // Marquer comme série possédée
+      name: series.series_name,
+      author: series.authors?.[0] || 'Auteur inconnu',
+      category: series.category,
+      status: series.series_status || 'to_read',
+      date_added: series.created_at,
+      updated_at: series.updated_at,
+      completion_percentage: series.completion_percentage || 0,
+      total_books: series.total_volumes || 0,
+      totalBooks: series.total_volumes || 0,
+      completedBooks: series.volumes?.filter(v => v.is_read).length || 0,
+      readingBooks: 0, // Calculé selon logique série
+      toReadBooks: (series.total_volumes || 0) - (series.volumes?.filter(v => v.is_read).length || 0),
+      volumes: series.volumes || [],
+      cover_url: series.cover_image_url,
+      // Données pour tri et affichage
+      title: series.series_name,
+      saga: series.series_name,
+      // Métadonnées enrichies
+      description: series.description_fr || `Collection ${series.series_name}`,
+      progressPercent: series.completion_percentage || 0
+    }));
+
+    console.log(`🎯 [PHASE B] Séries bibliothèque converties: ${seriesCards.length} cartes série`);
 
     // 🔍 SESSION 82.2 - CORRECTION RCA : Utiliser SeriesDetector pour détection complète
     // Import dynamique du SeriesDetector
