@@ -326,8 +326,8 @@ function MainApp() {
       // Fermer le modal
       seriesHook.closeSeriesModal();
       
-      // Retour automatique à la bibliothèque
-      searchHook.backToLibrary();
+      // Retour automatique à la bibliothèque avec clearSearch
+      searchHook.backToLibrary(clearSearch);
       
       // Mesure performance API
       const apiTime = Date.now() - apiStartTime;
