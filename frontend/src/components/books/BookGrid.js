@@ -112,12 +112,9 @@ const BookGrid = ({
                       alt={item.name}
                       className="w-full h-full object-cover"
                     />
-                    {/* Overlay pour le texte "Série" */}
-                    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                      <div className="text-white text-center">
-                        <div className="text-4xl mb-2">📚</div>
-                        <div className="text-sm font-medium bg-black bg-opacity-50 px-2 py-1 rounded">Série</div>
-                      </div>
+                    {/* Badge "Série" en coin au lieu d'overlay complet */}
+                    <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white text-xs font-medium px-2 py-1 rounded">
+                      📚 Série
                     </div>
                   </>
                 ) : (
