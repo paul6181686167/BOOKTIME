@@ -1,15 +1,15 @@
 {
   "session_stats": {
-    "start_time": "2025-07-13 20:23:51.529678",
-    "books_processed": 31048,
-    "new_books_analyzed": 31048,
-    "series_detected": 1,
-    "api_calls_made": 441,
+    "start_time": "2025-07-13 20:25:57.819410",
+    "books_processed": 362,
+    "new_books_analyzed": 362,
+    "series_detected": 0,
+    "api_calls_made": 443,
     "strategies_completed": 3,
     "current_strategy": "genre_series_mining",
-    "estimated_completion": "2025-07-13 20:46:15.100579",
-    "last_checkpoint": "2025-07-13 20:30:30.492489"
+    "estimated_completion": "2025-07-13 22:43:28.540993",
+    "last_checkpoint": "2025-07-13 20:30:52.838016"
   },
-  "timestamp": "2025-07-13T20:31:07.407985",
-  "new_series_count": 1
+  "timestamp": "2025-07-13T20:31:20.073736",
+  "new_series_count": 0
 }
