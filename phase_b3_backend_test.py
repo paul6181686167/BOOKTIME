@@ -25,7 +25,11 @@ class PhaseB3BackendTester:
         
     def run_test(self, name, method, endpoint, expected_status, data=None, headers=None):
         """Exécuter un test API"""
-        url = f"{self.base_url}/api/{endpoint}" if not endpoint.startswith('http') else endpoint
+        # Handle special endpoints that don't use /api prefix
+        if endpoint in ['health']:
+            url = f"{self.base_url}/{endpoint}"
+        else:
+            url = f"{self.base_url}/api/{endpoint}" if not endpoint.startswith('http') else endpoint
         test_headers = {'Content-Type': 'application/json'}
         
         if self.token:
