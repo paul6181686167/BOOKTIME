@@ -860,7 +860,8 @@ function MainApp() {
               for (const bookData of booksArray) {
                 await BookActions.addBook(bookData);
               }
-              await booksHook.loadBooks();
+              // PHASE C.1 : Utiliser rafraîchissement unifié
+              await unifiedContent.refreshAfterAdd('books');
             } catch (error) {
               console.error('Erreur lors de l\'ajout des livres:', error);
             }
