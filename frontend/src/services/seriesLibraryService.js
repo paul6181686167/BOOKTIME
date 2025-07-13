@@ -26,7 +26,7 @@ export const getUserSeriesLibrary = async (token, filters = {}) => {
   if (filters.category) params.append('category', filters.category);
   if (filters.status) params.append('status', filters.status);
 
-  const response = await fetch(`${API_BASE}/api/library/series?${params}`, {
+  const response = await fetch(`${API_BASE}/api/series/library?${params}`, {
     headers: {
       'Authorization': `Bearer ${token}`
     }
