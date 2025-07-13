@@ -151,7 +151,39 @@ function MainApp() {
     };
   }, []);
 
-  // CORRECTION RCA DÉFINITIVE - Fonction backToLibrary définie avec useCallback AVANT tous useEffect
+  // Démarrage automatique du monitoring
+  useEffect(() => {
+    performanceMonitoring.startMonitoring();
+    userAnalytics.startTracking();
+    
+    return () => {
+      performanceMonitoring.stopMonitoring();
+      userAnalytics.stopTracking();
+    };
+  }, []);
+
+  // PHASE C.1 - Hooks unifiés pour rafraîchissement optimisé
+  const unifiedContent = useUnifiedContent();
+  
+  // Hooks personnalisés pour gérer les états (Phase 1.1 - Step 6)
+  // CONSERVÉS pour compatibilité avec les modals et actions spécialisées
+  const booksHook = useBooks();
+  const seriesHook = useSeries();
+  const searchHook = useSearch();
+  
+  // Hook de détection automatique des séries
+  const { enhanceBookWithSeries, configure: configureAutoDetection } = useAutoSeriesDetection();
+
+  // Hook de recherche avancée avec données unifiées
+  const {
+    filters,
+    setFilters,
+    filteredBooks,
+    searchStats,
+    clearSearch
+  } = useAdvancedSearch(unifiedContent.books);
+
+  // CORRECTION RCA DÉFINITIVE - Fonction backToLibrary définie APRÈS l'initialisation des hooks
   const backToLibrary = useCallback(() => {
     // PHASE 2.4 - Analytics navigation
     if (userAnalytics) {
@@ -185,38 +217,6 @@ function MainApp() {
       window.removeEventListener('backToLibrary', handleBackToLibrary);
     };
   }, [backToLibrary, userAnalytics]);
-
-  // Démarrage automatique du monitoring
-  useEffect(() => {
-    performanceMonitoring.startMonitoring();
-    userAnalytics.startTracking();
-    
-    return () => {
-      performanceMonitoring.stopMonitoring();
-      userAnalytics.stopTracking();
-    };
-  }, []);
-
-  // PHASE C.1 - Hooks unifiés pour rafraîchissement optimisé
-  const unifiedContent = useUnifiedContent();
-  
-  // Hooks personnalisés pour gérer les états (Phase 1.1 - Step 6)
-  // CONSERVÉS pour compatibilité avec les modals et actions spécialisées
-  const booksHook = useBooks();
-  const seriesHook = useSeries();
-  const searchHook = useSearch();
-  
-  // Hook de détection automatique des séries
-  const { enhanceBookWithSeries, configure: configureAutoDetection } = useAutoSeriesDetection();
-
-  // Hook de recherche avancée avec données unifiées
-  const {
-    filters,
-    setFilters,
-    filteredBooks,
-    searchStats,
-    clearSearch
-  } = useAdvancedSearch(unifiedContent.books);
 
   // Hook de recherche groupée
   const {
