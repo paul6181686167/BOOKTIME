@@ -176,9 +176,9 @@ def test_series_correction():
             'error': str(e)
         }
 
-async def main():
+def main():
     print("🚀 [TEST] Démarrage test correction système vignettes de série")
-    result = await test_series_correction()
+    result = test_series_correction()
     
     if result['success']:
         print(f"\n✅ [TEST] Test terminé avec succès!")
@@ -189,4 +189,4 @@ async def main():
     return result
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
