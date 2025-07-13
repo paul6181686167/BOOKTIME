@@ -121,11 +121,12 @@ export const useUnifiedContent = () => {
     setStatsError(null);
 
     const startTime = Date.now();
+    
+    // Préparer les promesses de chargement (défini avant try/catch)
+    const promises = [];
+    const promiseLabels = [];
 
     try {
-      // Préparer les promesses de chargement
-      const promises = [];
-      const promiseLabels = [];
 
       // 1. Chargement des livres (avec cache intelligent)
       if (shouldRefreshBooks) {
