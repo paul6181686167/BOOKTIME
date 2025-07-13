@@ -53,7 +53,9 @@ def test_series_library_endpoint(token):
         response = requests.get(f"{BACKEND_URL}/api/series/library", headers=headers)
         if response.status_code == 200:
             data = response.json()
-            print(f"✅ GET /api/series/library : {len(data.get('series', []))} séries")
+            # L'API retourne une liste directement, pas un objet avec une clé 'series'
+            series_count = len(data) if isinstance(data, list) else 0
+            print(f"✅ GET /api/series/library : {series_count} séries")
             return True
         else:
             print(f"❌ GET /api/series/library failed: {response.status_code}")
