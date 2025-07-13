@@ -10,7 +10,6 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from backend.app.database.connection import client
-from backend.app.models.book import Book
 
 async def test_series_correction():
     """
