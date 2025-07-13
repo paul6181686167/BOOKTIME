@@ -679,23 +679,23 @@ function MainApp() {
                 ))}
               </div>
               
-              {/* Statistiques */}
-              {booksHook.stats && Object.keys(booksHook.stats).length > 0 && (
+              {/* Statistiques avec données unifiées */}
+              {unifiedContent.stats && Object.keys(unifiedContent.stats).length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                   <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-                    <div className="text-2xl font-bold text-green-600">{booksHook.stats.total_books || 0}</div>
+                    <div className="text-2xl font-bold text-green-600">{unifiedContent.stats.total_books || 0}</div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">Total livres</div>
                   </div>
                   <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-                    <div className="text-2xl font-bold text-blue-600">{booksHook.stats.completed_books || 0}</div>
+                    <div className="text-2xl font-bold text-blue-600">{unifiedContent.stats.completed_books || 0}</div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">Terminés</div>
                   </div>
                   <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-                    <div className="text-2xl font-bold text-yellow-600">{booksHook.stats.reading_books || 0}</div>
+                    <div className="text-2xl font-bold text-yellow-600">{unifiedContent.stats.reading_books || 0}</div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">En cours</div>
                   </div>
                   <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-                    <div className="text-2xl font-bold text-gray-600">{booksHook.stats.to_read_books || 0}</div>
+                    <div className="text-2xl font-bold text-gray-600">{unifiedContent.stats.to_read_books || 0}</div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">À lire</div>
                   </div>
                 </div>
