@@ -151,7 +151,17 @@ function MainApp() {
     };
   }, []);
 
-  // CORRECTION ERREUR - Fonction backToLibrary sera définie après clearSearch pour éviter problème de scope
+  // CORRECTION RCA DÉFINITIVE - Fonction backToLibrary définie avec useCallback AVANT tous useEffect
+  const backToLibrary = useCallback(() => {
+    // PHASE 2.4 - Analytics navigation
+    if (userAnalytics) {
+      userAnalytics.trackInteraction('back_to_library', 'button');
+    }
+    
+    if (searchHook && clearSearch) {
+      searchHook.backToLibrary(clearSearch);
+    }
+  }, [userAnalytics, searchHook, clearSearch]);
 
   // CORRECTION RCA - Gestionnaire d'événements pour retour automatique vers bibliothèque
   useEffect(() => {
