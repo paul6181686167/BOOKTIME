@@ -299,63 +299,41 @@ function MainApp() {
 
   // Fonction pour ajouter une série à la bibliothèque
   const handleAddSeries = async (series) => {
-    // PHASE A.2 - UNIFICATION SYSTÈME AJOUT : Utiliser SeriesActions au lieu de /api/books
+    // CORRECTION RCA : Simplifier et restaurer la fonctionnalité d'ajout de série
     const apiStartTime = Date.now();
     
     try {
-      console.log('🔄 [PHASE A] Utilisation nouveau système série unifié pour:', series.name);
+      console.log('🔄 [CORRECTION RCA] Ajout série avec système restauré:', series.name);
       
-      // ✅ PHASE C.1 : Utiliser système de rafraîchissement unifié au lieu de hooks séparés
-      const result = await seriesHook.handleAddSeriesToLibrary({
-        name: series.name,
+      // CORRECTION : Utiliser le système d'ajout direct au lieu de l'ancien système cassé
+      const result = await seriesLibraryService.addSeriesToLibrary({
+        series_name: series.name,
         author: series.author || 'Auteur inconnu',
         category: series.category || 'roman',
-        volumes: series.total_volumes || 1,
+        total_volumes: series.total_volumes || 1,
         cover_url: series.cover_url || '',
         description: series.description || `Collection ${series.name}`,
         first_published: series.first_published || ''
       });
       
-      // Fermer le modal
-      seriesHook.closeSeriesModal();
-      
-      // ✅ PHASE C.2 : Utiliser rafraîchissement optimisé avec retry intelligent
-      console.log('🔄 [PHASE C.2] Rafraîchissement optimisé après ajout série');
-      const refreshSuccess = await unifiedContent.refreshAfterAdd('series', {
-        expectNewItem: true,
-        maxRetries: 3,
-        retryDelay: 1000,
-        forceRefresh: false
-      });
-      
-      // ✅ PHASE C.2 : Vérification série dans userSeriesLibrary unifiée avec retry
-      console.log('🔍 [PHASE C.2] Vérification série dans bibliothèque unifiée:', series.name);
-      
-      if (refreshSuccess) {
-        const seriesFound = unifiedContent.userSeriesLibrary.some(s => 
-          s.series_name?.toLowerCase().trim() === series.name.toLowerCase().trim() && 
-          s.category === (series.category || 'roman')
-        );
+      if (result.success) {
+        console.log('✅ [CORRECTION RCA] Série ajoutée avec succès');
         
-        if (seriesFound) {
-          console.log('✅ [PHASE C.2] Série trouvée dans userSeriesLibrary après rafraîchissement optimisé');
-          
-          // Déclencher retour bibliothèque
-          const backToLibraryEvent = new CustomEvent('backToLibrary', {
-            detail: { 
-              reason: 'series_added_success_optimized',
-              seriesName: series.name,
-              targetCategory: series.category || 'roman'
-            }
-          });
-          window.dispatchEvent(backToLibraryEvent);
-        } else {
-          console.warn('⚠️ [PHASE C.2] Série non trouvée après rafraîchissement optimisé, force refresh');
-          await unifiedContent.refreshAll();
-        }
+        // Fermer le modal
+        seriesHook.closeSeriesModal();
+        
+        // CORRECTION : Rafraîchissement simple et efficace
+        await booksHook.loadBooks();
+        await seriesHook.loadUserSeriesLibrary();
+        await booksHook.loadStats();
+        
+        // Retour automatique à la bibliothèque
+        searchHook.backToLibrary();
+        
+        toast.success(`✅ Série "${series.name}" ajoutée avec succès`);
       } else {
-        console.warn('⚠️ [PHASE C.2] Rafraîchissement optimisé échoué, force refresh complet');
-        await unifiedContent.refreshAll();
+        console.error('❌ [CORRECTION RCA] Échec ajout série:', result.error);
+        toast.error('Erreur lors de l\'ajout de la série');
       }
       
       // Mesure performance API
