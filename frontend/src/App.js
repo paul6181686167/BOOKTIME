@@ -205,14 +205,14 @@ function MainApp() {
   // Hook de détection automatique des séries
   const { enhanceBookWithSeries, configure: configureAutoDetection } = useAutoSeriesDetection();
 
-  // Hook de recherche avancée
+  // Hook de recherche avancée avec données unifiées
   const {
     filters,
     setFilters,
     filteredBooks,
     searchStats,
     clearSearch
-  } = useAdvancedSearch(booksHook.books);
+  } = useAdvancedSearch(unifiedContent.books);
 
   // Hook de recherche groupée
   const {
