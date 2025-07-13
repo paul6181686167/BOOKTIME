@@ -446,6 +446,151 @@ export const handleItemClick = (item, setSelectedSeries, setShowSeriesModal, set
 
 
 
+/**
+ * PHASE C.1 - SYSTÈME VÉRIFICATION SÉRIE UNIFIÉ
+ * Vérification intelligente avec retry progressif pour garantir l'affichage
+ * des séries après ajout/complétion avec système de fallback
+ */
+export const verifyAndDisplaySeries = async (seriesName, targetCategory, userSeriesLibrary, loadUserSeriesLibrary) => {
+  const maxAttempts = 3;
+  const baseDelayMs = 500;
+  
+  console.log(`🔍 [PHASE C.1] Vérification série: "${seriesName}" en catégorie "${targetCategory}"`);
+  
+  const startTime = Date.now();
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`📚 [PHASE C.1] Tentative ${attempt}/${maxAttempts} - Chargement séries...`);
+      
+      // Charger séries fraîches depuis le serveur
+      await loadUserSeriesLibrary();
+      
+      // Vérifier présence série avec critères stricts
+      const seriesFound = userSeriesLibrary.some(series => 
+        series.series_name?.toLowerCase().trim() === seriesName.toLowerCase().trim() && 
+        series.category === targetCategory
+      );
+      
+      if (seriesFound) {
+        const totalTime = Date.now() - startTime;
+        console.log(`✅ [PHASE C.1] Série trouvée après ${attempt} tentative(s) en ${totalTime}ms`);
+        
+        // Déclencher retour bibliothèque avec succès
+        const backToLibraryEvent = new CustomEvent('backToLibrary', {
+          detail: { 
+            reason: 'series_verified_success',
+            seriesName,
+            targetCategory,
+            attempts: attempt,
+            totalTime
+          }
+        });
+        window.dispatchEvent(backToLibraryEvent);
+        
+        return { success: true, attempts: attempt, totalTime };
+      }
+      
+      // Délai progressif avant retry
+      if (attempt < maxAttempts) {
+        const delayMs = baseDelayMs * attempt;
+        console.log(`⏳ [PHASE C.1] Série non trouvée, retry dans ${delayMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+      
+    } catch (error) {
+      console.error(`❌ [PHASE C.1] Tentative ${attempt} échouée:`, error);
+      if (attempt < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+  }
+  
+  // Échec après toutes les tentatives
+  const totalTime = Date.now() - startTime;
+  console.error(`❌ [PHASE C.1] Série non trouvée après ${maxAttempts} tentatives en ${totalTime}ms`);
+  
+  // Fallback : Déclencher retour bibliothèque avec échec
+  const backToLibraryEvent = new CustomEvent('backToLibrary', {
+    detail: { 
+      reason: 'series_verification_failed',
+      seriesName,
+      targetCategory,
+      attempts: maxAttempts,
+      totalTime
+    }
+  });
+  window.dispatchEvent(backToLibraryEvent);
+  
+  return { success: false, attempts: maxAttempts, totalTime };
+};
+
+/**
+ * PHASE C.1 - SYSTÈME VÉRIFICATION LIVRE UNIFIÉ
+ * Version adaptée pour livres individuels avec même logique de retry
+ */
+export const verifyAndDisplayBook = async (bookTitle, targetCategory, books, loadBooks) => {
+  const maxAttempts = 3;
+  const baseDelayMs = 500;
+  
+  console.log(`🔍 [PHASE C.1] Vérification livre: "${bookTitle}" en catégorie "${targetCategory}"`);
+  
+  const startTime = Date.now();
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`📖 [PHASE C.1] Tentative ${attempt}/${maxAttempts} - Chargement livres...`);
+      
+      // Charger livres frais depuis le serveur
+      await loadBooks();
+      
+      // Vérifier présence livre avec critères stricts
+      const bookFound = books.some(book => 
+        book.title?.toLowerCase().trim() === bookTitle.toLowerCase().trim() && 
+        book.category === targetCategory
+      );
+      
+      if (bookFound) {
+        const totalTime = Date.now() - startTime;
+        console.log(`✅ [PHASE C.1] Livre trouvé après ${attempt} tentative(s) en ${totalTime}ms`);
+        
+        // Déclencher retour bibliothèque avec succès
+        const backToLibraryEvent = new CustomEvent('backToLibrary', {
+          detail: { 
+            reason: 'book_verified_success',
+            bookTitle,
+            targetCategory,
+            attempts: attempt,
+            totalTime
+          }
+        });
+        window.dispatchEvent(backToLibraryEvent);
+        
+        return { success: true, attempts: attempt, totalTime };
+      }
+      
+      // Délai progressif avant retry
+      if (attempt < maxAttempts) {
+        const delayMs = baseDelayMs * attempt;
+        console.log(`⏳ [PHASE C.1] Livre non trouvé, retry dans ${delayMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+      
+    } catch (error) {
+      console.error(`❌ [PHASE C.1] Tentative ${attempt} échouée:`, error);
+      if (attempt < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+  }
+  
+  // Échec après toutes les tentatives
+  const totalTime = Date.now() - startTime;
+  console.error(`❌ [PHASE C.1] Livre non trouvé après ${maxAttempts} tentatives en ${totalTime}ms`);
+  
+  return { success: false, attempts: maxAttempts, totalTime };
+};
+
 export default {
   searchOpenLibrary,
   handleAddFromOpenLibrary,
@@ -454,5 +599,6 @@ export default {
   handleBookClick,
   calculateRelevanceScore,
   getRelevanceLevel,
-  verifyAndDisplayBook
+  verifyAndDisplayBook,
+  verifyAndDisplaySeries  // Phase C.1 - Nouvelle fonction
 };
