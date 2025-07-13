@@ -847,8 +847,12 @@ function MainApp() {
             try {
               await BookActions.addBook(bookData);
               setActiveTab(bookData.category || 'roman');
-              // PHASE C.1 : Utiliser rafraîchissement unifié
-              await unifiedContent.refreshAfterAdd('books');
+              // PHASE C.2 : Utiliser rafraîchissement optimisé avec cache intelligent
+              await unifiedContent.refreshAfterAdd('books', {
+                expectNewItem: true,
+                maxRetries: 2,
+                retryDelay: 800
+              });
             } catch (error) {
               console.error('Erreur lors de l\'ajout du livre:', error);
             }
