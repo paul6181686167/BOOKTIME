@@ -870,8 +870,12 @@ function MainApp() {
               for (const bookData of booksArray) {
                 await BookActions.addBook(bookData);
               }
-              // PHASE C.1 : Utiliser rafraîchissement unifié
-              await unifiedContent.refreshAfterAdd('books');
+              // PHASE C.2 : Utiliser rafraîchissement optimisé avec cache intelligent
+              await unifiedContent.refreshAfterAdd('books', {
+                expectNewItem: true,
+                maxRetries: 2,
+                retryDelay: 800
+              });
             } catch (error) {
               console.error('Erreur lors de l\'ajout des livres:', error);
             }
