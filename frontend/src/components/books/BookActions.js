@@ -233,8 +233,8 @@ const BookActions = {
       }
     });
 
-    // Convertir les groupes en tableau et trier par nombre de livres
-    const seriesCards = Object.values(seriesGroups).sort((a, b) => b.totalBooks - a.totalBooks);
+    // Convertir les groupes de livres détectés en tableau et trier par nombre de livres
+    const detectedSeriesCards = Object.values(seriesGroups).sort((a, b) => b.totalBooks - a.totalBooks);
     
     // MODIFICATION ORGANISATIONNELLE : Tri des livres standalone par statut
     // Ordre prioritaire : EN COURS → À LIRE → TERMINÉ
@@ -262,18 +262,36 @@ const BookActions = {
       const dateB = new Date(b.date_added || b.updated_at || 0);
       return dateB - dateA;
     });
+
+    // 🆕 PHASE B : Combiner séries bibliothèque + séries détectées + livres standalone
+    // Tri chronologique avec priorité aux séries (bibliothèque d'abord, puis détectées)
+    const allSeriesCards = [...seriesCards, ...detectedSeriesCards].sort((a, b) => {
+      // Priorité aux séries de bibliothèque (isOwnedSeries)
+      if (a.isOwnedSeries && !b.isOwnedSeries) return -1;
+      if (!a.isOwnedSeries && b.isOwnedSeries) return 1;
+      
+      // Pour même type, tri par date (plus récent d'abord)
+      const dateA = new Date(a.updated_at || a.date_added || 0);
+      const dateB = new Date(b.updated_at || b.date_added || 0);
+      return dateB - dateA;
+    });
     
-    // 📊 SESSION 82.2 - RÉSUMÉ AFFICHAGE DÉTAILLÉ AVEC DÉTECTION INTELLIGENTE
-    console.log(`🎯 [SESSION 82.2] Résumé affichage final avec détection intelligente:`);
-    console.log(`🎯 - ${seriesCards.length} vignettes de série (${Object.keys(seriesGroups).length} séries uniques détectées automatiquement)`);
+    // 📊 PHASE B - RÉSUMÉ AFFICHAGE UNIFIÉ AVEC SÉRIES BIBLIOTHÈQUE
+    console.log(`🎯 [PHASE B] Résumé affichage unifié avec séries bibliothèque:`);
+    console.log(`🎯 - ${seriesCards.length} séries bibliothèque (vraies séries possédées)`);
+    console.log(`🎯 - ${detectedSeriesCards.length} séries détectées (livres regroupés automatiquement)`);
     console.log(`🎯 - ${sortedStandaloneBooks.length} livres standalone (vignettes individuelles)`);
     console.log(`🎯 - ${booksList.length - sortedStandaloneBooks.length} livres masqués (dans vignettes série)`);
     
     seriesCards.forEach(series => {
-      console.log(`📚 [SESSION 82.2] Série "${series.name}" - ${series.totalBooks} tomes regroupés (détection: ${series.detectionMethod}, confiance: ${series.averageConfidence}%)`);
+      console.log(`📚 [PHASE B] Série bibliothèque "${series.name}" - ${series.total_books} tomes (${series.completion_percentage}% lu)`);
     });
     
-    return [...seriesCards, ...sortedStandaloneBooks];
+    detectedSeriesCards.forEach(series => {
+      console.log(`📚 [PHASE B] Série détectée "${series.name}" - ${series.totalBooks} tomes regroupés (détection: ${series.detectionMethod}, confiance: ${series.averageConfidence}%)`);
+    });
+    
+    return [...allSeriesCards, ...sortedStandaloneBooks];
   },
 
   // Fonction pour gérer le clic sur un livre
