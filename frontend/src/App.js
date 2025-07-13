@@ -305,36 +305,42 @@ function MainApp() {
       // Fermer le modal
       seriesHook.closeSeriesModal();
       
-      // ✅ PHASE C.1 : Rafraîchissement unifié optimisé après ajout
-      console.log('🔄 [PHASE C.1] Rafraîchissement unifié après ajout série');
-      await unifiedContent.refreshAfterAdd('series');
+      // ✅ PHASE C.2 : Utiliser rafraîchissement optimisé avec retry intelligent
+      console.log('🔄 [PHASE C.2] Rafraîchissement optimisé après ajout série');
+      const refreshSuccess = await unifiedContent.refreshAfterAdd('series', {
+        expectNewItem: true,
+        maxRetries: 3,
+        retryDelay: 1000,
+        forceRefresh: false
+      });
       
-      // Attendre un délai minimal pour propagation
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // ✅ PHASE C.2 : Vérification série dans userSeriesLibrary unifiée avec retry
+      console.log('🔍 [PHASE C.2] Vérification série dans bibliothèque unifiée:', series.name);
       
-      // ✅ PHASE C.1 : Vérification série dans userSeriesLibrary unifiée
-      console.log('🔍 [PHASE C.1] Vérification série dans bibliothèque unifiée:', series.name);
-      
-      const seriesFound = unifiedContent.userSeriesLibrary.some(s => 
-        s.series_name?.toLowerCase().trim() === series.name.toLowerCase().trim() && 
-        s.category === (series.category || 'roman')
-      );
-      
-      if (seriesFound) {
-        console.log('✅ [PHASE C.1] Série trouvée dans userSeriesLibrary unifiée');
+      if (refreshSuccess) {
+        const seriesFound = unifiedContent.userSeriesLibrary.some(s => 
+          s.series_name?.toLowerCase().trim() === series.name.toLowerCase().trim() && 
+          s.category === (series.category || 'roman')
+        );
         
-        // Déclencher retour bibliothèque
-        const backToLibraryEvent = new CustomEvent('backToLibrary', {
-          detail: { 
-            reason: 'series_added_success_unified',
-            seriesName: series.name,
-            targetCategory: series.category || 'roman'
-          }
-        });
-        window.dispatchEvent(backToLibraryEvent);
+        if (seriesFound) {
+          console.log('✅ [PHASE C.2] Série trouvée dans userSeriesLibrary après rafraîchissement optimisé');
+          
+          // Déclencher retour bibliothèque
+          const backToLibraryEvent = new CustomEvent('backToLibrary', {
+            detail: { 
+              reason: 'series_added_success_optimized',
+              seriesName: series.name,
+              targetCategory: series.category || 'roman'
+            }
+          });
+          window.dispatchEvent(backToLibraryEvent);
+        } else {
+          console.warn('⚠️ [PHASE C.2] Série non trouvée après rafraîchissement optimisé, force refresh');
+          await unifiedContent.refreshAll();
+        }
       } else {
-        console.warn('⚠️ [PHASE C.1] Série non trouvée dans userSeriesLibrary unifiée après ajout');
-        // Force rafraîchissement complet en cas d'échec
+        console.warn('⚠️ [PHASE C.2] Rafraîchissement optimisé échoué, force refresh complet');
         await unifiedContent.refreshAll();
       }
       
