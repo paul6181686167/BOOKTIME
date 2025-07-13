@@ -42,9 +42,48 @@ export const useUnifiedContent = () => {
   });
 
   /**
-   * FONCTION PRINCIPALE : Chargement unifié parallèle
-   * Charge livres + séries + stats en parallèle pour éviter les race conditions
+   * PHASE C.2 - FONCTION CACHE INTELLIGENT
+   * Vérifie si les données doivent être rechargées ou si le cache est valide
    */
+  const shouldRefresh = useCallback((type, forceRefresh = false) => {
+    if (forceRefresh) {
+      console.log(`🔄 [PHASE C.2] Force refresh demandé pour ${type}`);
+      return true;
+    }
+    
+    const now = Date.now();
+    const lastLoad = lastLoadTimes[type] || 0;
+    const cacheAge = now - lastLoad;
+    
+    if (cacheAge > cacheValidDuration) {
+      console.log(`🔄 [PHASE C.2] Cache expiré pour ${type}: ${cacheAge}ms > ${cacheValidDuration}ms`);
+      return true;
+    }
+    
+    console.log(`📋 [PHASE C.2] Cache valide pour ${type}: ${cacheAge}ms restants`);
+    setPerformanceMetrics(prev => ({
+      ...prev,
+      cacheHits: prev.cacheHits + 1
+    }));
+    return false;
+  }, [lastLoadTimes, cacheValidDuration]);
+
+  /**
+   * PHASE C.2 - MISE À JOUR MÉTRIQUES PERFORMANCE
+   */
+  const updatePerformanceMetrics = useCallback((loadTime) => {
+    setPerformanceMetrics(prev => {
+      const newTotalLoads = prev.totalLoads + 1;
+      const newAverageLoadTime = ((prev.averageLoadTime * prev.totalLoads) + loadTime) / newTotalLoads;
+      
+      return {
+        ...prev,
+        totalLoads: newTotalLoads,
+        averageLoadTime: Math.round(newAverageLoadTime),
+        lastLoadTime: loadTime
+      };
+    });
+  }, []);
   const loadUnifiedContent = useCallback(async (options = {}) => {
     const { 
       skipBooks = false, 
