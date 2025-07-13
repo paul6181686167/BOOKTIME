@@ -55,6 +55,9 @@ import useUserAnalytics from './hooks/useUserAnalytics';
 import { getCategoryBadge } from './utils/helpers';
 import { TAB_CONFIG } from './utils/constants';
 
+// SESSION 82.2 - Import utilitaire debug séries
+import './utils/seriesDebugger.js';
+
 // Search components imports (Phase 1.1 - Step 3)
 import { calculateRelevanceScore, getRelevanceLevel } from './components/search/RelevanceEngine';
 import SearchLogic from './components/search/SearchLogic';
