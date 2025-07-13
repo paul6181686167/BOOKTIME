@@ -149,12 +149,10 @@ def test_books_api_still_works(token):
             # Vérifier présence dans la liste
             check_response = requests.get(f"{BACKEND_URL}/api/books", headers=headers)
             if check_response.status_code == 200:
-                books_list = check_response.json()
-                # L'API books retourne une liste directement
-                if isinstance(books_list, list):
-                    found = any(b.get('title') == "Test Book Phase A" for b in books_list)
-                else:
-                    found = False
+                response_data = check_response.json()
+                # L'API books retourne une structure paginée {items: [], total: 0}
+                books_list = response_data.get('items', []) if isinstance(response_data, dict) else response_data
+                found = any(b.get('title') == "Test Book Phase A" for b in books_list)
                 
                 if found:
                     print("✅ Livre trouvé dans la liste")
