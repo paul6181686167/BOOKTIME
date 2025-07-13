@@ -44,6 +44,8 @@ import { useGroupedSearch } from './hooks/useGroupedSearch';
 import useBooks from './hooks/useBooks';
 import useSeries from './hooks/useSeries';
 import useSearch from './hooks/useSearch';
+// PHASE C.1 - Hook unifié pour rafraîchissement optimisé
+import useUnifiedContent from './hooks/useUnifiedContent';
 import SearchOptimizer from './utils/searchOptimizer';
 import { useAutoSeriesDetection } from './hooks/useAutoSeriesDetection';
 
