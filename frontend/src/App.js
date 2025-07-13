@@ -305,17 +305,30 @@ function MainApp() {
     try {
       console.log('🔄 [CORRECTION RCA] Ajout série avec système restauré:', series.name);
       
-      // CORRECTION : Utiliser le système d'ajout direct avec token d'authentification
+      // CORRECTION RCA FINALE : Transformer les données pour correspondre au modèle SeriesLibraryCreate
       const token = localStorage.getItem('token');
-      const result = await seriesLibraryService.addSeriesToLibrary({
+      
+      // Générer la liste des volumes selon le modèle VolumeData
+      const volumes = Array.from({ length: series.total_volumes || 1 }, (_, i) => ({
+        volume_number: i + 1,
+        volume_title: `${series.name} - Tome ${i + 1}`,
+        is_read: false,
+        date_read: null
+      }));
+      
+      const seriesData = {
         series_name: series.name,
-        author: series.author || 'Auteur inconnu',
+        authors: [series.author || 'Auteur inconnu'], // Transformer en tableau
         category: series.category || 'roman',
-        total_volumes: series.total_volumes || 1,
-        cover_url: series.cover_url || '',
         description: series.description || `Collection ${series.name}`,
-        first_published: series.first_published || ''
-      }, token);
+        cover_url: series.cover_url || '',
+        first_published: series.first_published || '',
+        volumes: volumes // Ajouter la liste des volumes
+      };
+      
+      console.log('🔧 [CORRECTION RCA] Données série formatées:', seriesData);
+      
+      const result = await seriesLibraryService.addSeriesToLibrary(seriesData, token);
       
       if (result.success) {
         console.log('✅ [CORRECTION RCA] Série ajoutée avec succès');
