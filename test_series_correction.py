@@ -23,13 +23,11 @@ async def test_series_correction():
         books_collection = db["books"]
         
         # Compter le nombre total de livres
-        total_books = await books_collection.count_documents({})
+        total_books = books_collection.count_documents({})
         print(f"📚 [TEST] Total livres en base: {total_books}")
         
         # Récupérer quelques livres pour tester
-        test_books = []
-        async for book in books_collection.find().limit(10):
-            test_books.append(book)
+        test_books = list(books_collection.find().limit(10))
         
         print(f"📖 [TEST] Livres de test récupérés: {len(test_books)}")
         
