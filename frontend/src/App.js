@@ -774,11 +774,11 @@ function MainApp() {
             </div>
           )}
 
-          {/* Mode recherche - Grille unique */}
+          {/* Mode recherche - Grille unique avec données unifiées */}
           {searchHook.isSearchMode && (
             <BookGrid
               books={displayedBooks}
-              loading={booksHook.loading}
+              loading={unifiedContent.loading}
               onItemClick={handleItemClick}
               showEmptyState={true}
             />
