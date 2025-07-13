@@ -198,4 +198,5 @@ Exemple d'utilisation:
 > await regenerateSeriesThumbnails()
 `);
 
-export { regenerateSeriesThumbnails, diagnoseSeries };
+// Export par défaut vide pour éviter l'erreur
+export default {};
