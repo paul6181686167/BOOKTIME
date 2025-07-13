@@ -214,6 +214,14 @@ function MainApp() {
     searchStats: groupedSearchStats,
   } = useGroupedSearch();
 
+  // CORRECTION RCA - Fonction backToLibrary définie après clearSearch pour éviter problème de scope
+  const backToLibrary = () => {
+    // PHASE 2.4 - Analytics navigation
+    userAnalytics.trackInteraction('back_to_library', 'button');
+    
+    searchHook.backToLibrary(clearSearch);
+  };
+
   // FONCTION UTILITAIRE : Déterminer le badge de catégorie depuis un livre Open Library
   const getCategoryBadgeFromBook = (book) => {
     return getCategoryBadge(book);
