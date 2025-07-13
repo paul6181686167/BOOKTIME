@@ -1,15 +1,15 @@
 {
   "session_stats": {
-    "start_time": "2025-07-13 20:23:51.529678",
-    "books_processed": 21004,
-    "new_books_analyzed": 21004,
-    "series_detected": 1,
-    "api_calls_made": 222,
+    "start_time": "2025-07-13 20:25:57.819410",
+    "books_processed": 362,
+    "new_books_analyzed": 362,
+    "series_detected": 0,
+    "api_calls_made": 174,
     "strategies_completed": 1,
     "current_strategy": "prolific_authors_deep",
-    "estimated_completion": "2025-07-13 20:48:23.838878",
-    "last_checkpoint": "2025-07-13 20:28:02.292001"
+    "estimated_completion": "2025-07-13 21:13:47.744751",
+    "last_checkpoint": "2025-07-13 20:28:18.454572"
   },
-  "timestamp": "2025-07-13T20:28:22.806366",
-  "new_series_count": 1
+  "timestamp": "2025-07-13T20:28:29.181610",
+  "new_series_count": 0
 }
