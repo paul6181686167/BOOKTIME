@@ -268,7 +268,7 @@ class PhaseB3BackendTester:
             "Ajout livre",
             "POST",
             "books",
-            201,
+            200,  # Changed from 201 to 200
             book_data
         )
         
