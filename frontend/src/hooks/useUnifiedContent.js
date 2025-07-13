@@ -27,6 +27,20 @@ export const useUnifiedContent = () => {
   const [seriesError, setSeriesError] = useState(null);
   const [statsError, setStatsError] = useState(null);
 
+  // PHASE C.2 - Cache intelligent et performance monitoring
+  const [lastLoadTimes, setLastLoadTimes] = useState({
+    books: 0,
+    series: 0,
+    stats: 0
+  });
+  const [cacheValidDuration] = useState(5000); // 5 secondes de cache
+  const [performanceMetrics, setPerformanceMetrics] = useState({
+    totalLoads: 0,
+    averageLoadTime: 0,
+    cacheHits: 0,
+    lastLoadTime: 0
+  });
+
   /**
    * FONCTION PRINCIPALE : Chargement unifié parallèle
    * Charge livres + séries + stats en parallèle pour éviter les race conditions
