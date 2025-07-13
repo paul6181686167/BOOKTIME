@@ -97,8 +97,12 @@ def test_add_series_via_api(token):
             # Vérifier présence dans la liste
             check_response = requests.get(f"{BACKEND_URL}/api/series/library", headers=headers)
             if check_response.status_code == 200:
-                series_list = check_response.json().get('series', [])
-                found = any(s['series_name'] == "Test Phase A Series" for s in series_list)
+                series_list = check_response.json()
+                # Gérer le cas où l'API retourne une liste directement
+                if isinstance(series_list, list):
+                    found = any(s.get('series_name') == "Test Phase A Series" for s in series_list)
+                else:
+                    found = any(s.get('series_name') == "Test Phase A Series" for s in series_list.get('series', []))
                 
                 if found:
                     print("✅ Série trouvée dans la liste après ajout")
