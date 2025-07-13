@@ -299,74 +299,51 @@ function MainApp() {
 
   // Fonction pour ajouter une série à la bibliothèque
   const handleAddSeries = async (series) => {
-    // CORRECTION RCA : Simplifier et restaurer la fonctionnalité d'ajout de série
+    // CORRECTION RCA FINALE : Utiliser l'implémentation robuste de SeriesActions
     const apiStartTime = Date.now();
     
     try {
-      console.log('🔄 [CORRECTION RCA] Ajout série avec système restauré:', series.name);
+      console.log('🔄 [CORRECTION RCA] Utilisation SeriesActions.handleAddSeriesToLibrary pour:', series.name);
       
-      // CORRECTION RCA FINALE : Transformer les données pour correspondre au modèle SeriesLibraryCreate
-      const token = localStorage.getItem('token');
+      // Utiliser l'implémentation complète et robuste de SeriesActions
+      await SeriesActions.handleAddSeriesToLibrary(series, {
+        setSeriesLibraryLoading: (loading) => {
+          // Mettre à jour l'état de chargement si nécessaire
+          console.log('📊 Chargement série:', loading);
+        },
+        loadUserSeriesLibrary: async () => {
+          // Recharger les séries avec le hook approprié
+          await seriesHook.loadUserSeriesLibrary();
+          // Également recharger les livres pour synchroniser l'affichage
+          await booksHook.loadBooks();
+          // Recharger les stats
+          await booksHook.loadStats();
+        }
+      });
       
-      // Générer la liste des volumes selon le modèle VolumeData
-      const volumes = Array.from({ length: series.total_volumes || 1 }, (_, i) => ({
-        volume_number: i + 1,
-        volume_title: `${series.name} - Tome ${i + 1}`,
-        is_read: false,
-        date_read: null
-      }));
+      // Fermer le modal
+      seriesHook.closeSeriesModal();
       
-      const seriesData = {
-        series_name: series.name,
-        authors: [series.author || 'Auteur inconnu'], // Transformer en tableau
-        category: series.category || 'roman',
-        description: series.description || `Collection ${series.name}`,
-        cover_url: series.cover_url || '',
-        first_published: series.first_published || '',
-        volumes: volumes // Ajouter la liste des volumes
-      };
-      
-      console.log('🔧 [CORRECTION RCA] Données série formatées:', seriesData);
-      
-      const result = await seriesLibraryService.addSeriesToLibrary(seriesData, token);
-      
-      if (result.success) {
-        console.log('✅ [CORRECTION RCA] Série ajoutée avec succès');
-        
-        // Fermer le modal
-        seriesHook.closeSeriesModal();
-        
-        // CORRECTION : Rafraîchissement simple et efficace
-        await booksHook.loadBooks();
-        await seriesHook.loadUserSeriesLibrary();
-        await booksHook.loadStats();
-        
-        // Retour automatique à la bibliothèque
-        searchHook.backToLibrary();
-        
-        toast.success(`✅ Série "${series.name}" ajoutée avec succès`);
-      } else {
-        console.error('❌ [CORRECTION RCA] Échec ajout série:', result.error);
-        toast.error('Erreur lors de l\'ajout de la série');
-      }
+      // Retour automatique à la bibliothèque
+      searchHook.backToLibrary();
       
       // Mesure performance API
       const apiTime = Date.now() - apiStartTime;
-      performanceMonitoring.measureApiResponse('add_series_corrected', apiStartTime, true);
-      alertSystem.checkResponseTime('add_series_corrected', apiTime);
+      performanceMonitoring.measureApiResponse('add_series_seriesactions', apiStartTime, true);
+      alertSystem.checkResponseTime('add_series_seriesactions', apiTime);
       
       // Analytics
-      userAnalytics.trackSeriesInteraction('add_to_library_corrected', {
+      userAnalytics.trackSeriesInteraction('add_to_library_seriesactions', {
         name: series.name,
         category: series.category
       });
       
-      console.log('✅ [CORRECTION RCA] Ajout série corrigé avec succès');
+      console.log('✅ [CORRECTION RCA] Série ajoutée avec SeriesActions avec succès');
       
     } catch (error) {
-      console.error('❌ [CORRECTION RCA] Erreur ajout série:', error);
-      toast.error('Erreur lors de l\'ajout de la série');
-      performanceMonitoring.measureApiResponse('add_series_corrected', apiStartTime, false);
+      console.error('❌ [CORRECTION RCA] Erreur SeriesActions:', error);
+      // L'erreur sera gérée par SeriesActions.handleAddSeriesToLibrary
+      performanceMonitoring.measureApiResponse('add_series_seriesactions', apiStartTime, false);
     }
   };
 
