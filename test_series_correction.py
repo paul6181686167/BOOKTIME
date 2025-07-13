@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from backend.app.database.connection import client
 
-async def test_series_correction():
+def test_series_correction():
     """
     Test de la correction du système de vignettes de série
     """
