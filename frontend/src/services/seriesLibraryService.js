@@ -95,17 +95,37 @@ export const generateVolumesList = (seriesData, extendedSeriesDatabase) => {
     const seriesKey = normalizeString(seriesData.name);
     const seriesInfo = extendedSeriesDatabase[seriesData.category]?.[seriesKey];
     
-    if (seriesInfo && seriesInfo.tomes_officiels) {
-      return seriesInfo.tomes_officiels.map((title, index) => ({
-        volume_number: index + 1,
-        volume_title: title,
-        is_read: false,
-        date_read: null
-      }));
+    console.log('🔍 [DEBUG] Recherche série:', { 
+      originalName: seriesData.name, 
+      normalizedKey: seriesKey, 
+      category: seriesData.category,
+      seriesFound: !!seriesInfo 
+    });
+    
+    if (seriesInfo) {
+      // CORRECTION : Chercher d'abord volume_titles, puis tomes_officiels
+      const volumes = seriesInfo.volume_titles || seriesInfo.tomes_officiels;
+      
+      if (volumes) {
+        console.log('✅ [DEBUG] Volumes trouvés:', volumes);
+        
+        // Si c'est un objet (volume_titles), convertir en array
+        const volumeArray = Array.isArray(volumes) ? volumes : Object.values(volumes);
+        
+        return volumeArray.map((title, index) => ({
+          volume_number: index + 1,
+          volume_title: title,
+          is_read: false,
+          date_read: null
+        }));
+      }
     }
     
-    // Fallback : Génération basique
-    return Array.from({ length: seriesData.volumes }, (_, i) => ({
+    // Fallback amélioré : Utiliser total_volumes ou volumes du seriesData
+    const volumeCount = seriesData.total_volumes || seriesData.volumes || 1;
+    console.log('⚠️ [DEBUG] Fallback génération:', volumeCount, 'volumes');
+    
+    return Array.from({ length: volumeCount }, (_, i) => ({
       volume_number: i + 1,
       volume_title: `${seriesData.name} - Tome ${i + 1}`,
       is_read: false,
