@@ -305,7 +305,8 @@ function MainApp() {
     try {
       console.log('🔄 [CORRECTION RCA] Ajout série avec système restauré:', series.name);
       
-      // CORRECTION : Utiliser le système d'ajout direct au lieu de l'ancien système cassé
+      // CORRECTION : Utiliser le système d'ajout direct avec token d'authentification
+      const token = localStorage.getItem('token');
       const result = await seriesLibraryService.addSeriesToLibrary({
         series_name: series.name,
         author: series.author || 'Auteur inconnu',
@@ -314,7 +315,7 @@ function MainApp() {
         cover_url: series.cover_url || '',
         description: series.description || `Collection ${series.name}`,
         first_published: series.first_published || ''
-      });
+      }, token);
       
       if (result.success) {
         console.log('✅ [CORRECTION RCA] Série ajoutée avec succès');
