@@ -224,18 +224,6 @@ function MainApp() {
     searchStats: groupedSearchStats,
   } = useGroupedSearch();
 
-  // CORRECTION RCA DÉFINITIVE - Fonction backToLibrary définie avec useCallback AVANT utilisation dans useEffect
-  const backToLibrary = useCallback(() => {
-    // PHASE 2.4 - Analytics navigation
-    if (userAnalytics) {
-      userAnalytics.trackInteraction('back_to_library', 'button');
-    }
-    
-    if (searchHook && clearSearch) {
-      searchHook.backToLibrary(clearSearch);
-    }
-  }, [userAnalytics, searchHook, clearSearch]);
-
   // FONCTION UTILITAIRE : Déterminer le badge de catégorie depuis un livre Open Library
   const getCategoryBadgeFromBook = (book) => {
     return getCategoryBadge(book);
