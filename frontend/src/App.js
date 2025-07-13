@@ -406,6 +406,34 @@ function MainApp() {
     }
   }, [activeTab]);
 
+  // PHASE C.1 : Gestionnaire d'événement pour retour automatique à la bibliothèque
+  useEffect(() => {
+    const handleBackToLibraryEvent = (event) => {
+      const { reason, seriesName, bookTitle, targetCategory, attempts, totalTime } = event.detail;
+      
+      console.log(`🔄 [PHASE C.1] Événement retour bibliothèque reçu: ${reason}`);
+      
+      if (reason === 'series_verified_success') {
+        toast.success(`✅ Série "${seriesName}" ajoutée avec succès en ${totalTime}ms (${attempts} tentatives)`);
+        searchHook.backToLibrary();
+      } else if (reason === 'book_verified_success') {
+        toast.success(`✅ Livre "${bookTitle}" ajouté avec succès en ${totalTime}ms (${attempts} tentatives)`);
+        searchHook.backToLibrary();
+      } else if (reason === 'series_verification_failed') {
+        toast.error(`❌ Série "${seriesName}" non trouvée après ${attempts} tentatives (${totalTime}ms)`);
+        // Ne pas revenir automatiquement en cas d'échec pour permettre investigation
+      }
+    };
+
+    // Ajouter l'écouteur d'événement
+    window.addEventListener('backToLibrary', handleBackToLibraryEvent);
+
+    // Nettoyage à la destruction du composant
+    return () => {
+      window.removeEventListener('backToLibrary', handleBackToLibraryEvent);
+    };
+  }, [searchHook]);
+
   // Chargement initial au montage du composant
   // PHASE C.1 : Suppression du chargement manuel - useUnifiedContent s'en charge
   useEffect(() => {
