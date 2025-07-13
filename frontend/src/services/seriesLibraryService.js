@@ -26,7 +26,7 @@ export const getUserSeriesLibrary = async (token, filters = {}) => {
   if (filters.category) params.append('category', filters.category);
   if (filters.status) params.append('status', filters.status);
 
-  const response = await fetch(`${API_BASE}/api/series/library?${params}`, {
+  const response = await fetch(`${API_BASE}/api/library/series?${params}`, {
     headers: {
       'Authorization': `Bearer ${token}`
     }
@@ -36,7 +36,13 @@ export const getUserSeriesLibrary = async (token, filters = {}) => {
     throw new Error(`Erreur ${response.status}: ${await response.text()}`);
   }
 
-  return response.json();
+  const result = await response.json();
+  
+  // Adapter le format pour compatibilité avec le frontend
+  return {
+    series: result || [],
+    total_count: (result || []).length
+  };
 };
 
 // Toggle statut lu/non lu d'un tome
