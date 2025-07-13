@@ -214,13 +214,17 @@ function MainApp() {
     searchStats: groupedSearchStats,
   } = useGroupedSearch();
 
-  // CORRECTION RCA - Fonction backToLibrary définie après clearSearch pour éviter problème de scope
-  const backToLibrary = () => {
+  // CORRECTION RCA DÉFINITIVE - Fonction backToLibrary définie avec useCallback pour éviter problème d'ordre
+  const backToLibrary = useCallback(() => {
     // PHASE 2.4 - Analytics navigation
-    userAnalytics.trackInteraction('back_to_library', 'button');
+    if (userAnalytics) {
+      userAnalytics.trackInteraction('back_to_library', 'button');
+    }
     
-    searchHook.backToLibrary(clearSearch);
-  };
+    if (searchHook && clearSearch) {
+      searchHook.backToLibrary(clearSearch);
+    }
+  }, [userAnalytics, searchHook, clearSearch]);
 
   // FONCTION UTILITAIRE : Déterminer le badge de catégorie depuis un livre Open Library
   const getCategoryBadgeFromBook = (book) => {
