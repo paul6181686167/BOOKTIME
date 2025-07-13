@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 
 class BookTimeAuthTester:
-    def __init__(self, base_url="https://0fe5fd4d-bbeb-4285-963f-9f5e9f67241d.preview.emergentagent.com"):
+    def __init__(self, base_url="https://9fc2dc6c-4a84-459e-9440-189c3942fdb5.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
         self.user = None
