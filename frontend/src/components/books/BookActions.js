@@ -70,8 +70,28 @@ const BookActions = {
     const seriesGroups = {};
     const standaloneBooks = [];
 
+  // SESSION 82.2 - CORRECTION RCA SYSTÈME VIGNETTES : Intégration SeriesDetector
+  createUnifiedDisplay(booksList, getCategoryBadgeFromBook) {
+    // Vérification renforcée : s'assurer que booksList est toujours un array
+    if (!booksList || !Array.isArray(booksList)) {
+      console.warn('createUnifiedDisplay: booksList n\'est pas un array:', booksList);
+      return [];
+    }
+
+    console.log('🔍 [SESSION 82.2] createUnifiedDisplay - Livres reçus:', booksList.length);
+
+    const seriesGroups = {};
+    const standaloneBooks = [];
+
     // 🔍 SESSION 82.2 - CORRECTION RCA : Utiliser SeriesDetector pour détection complète
-    const SeriesDetector = require('../../utils/seriesDetector').default;
+    // Import dynamique du SeriesDetector
+    let SeriesDetector;
+    try {
+      SeriesDetector = require('../../utils/seriesDetector').SeriesDetector;
+    } catch (e) {
+      console.warn('SeriesDetector non disponible, fallback vers détection saga uniquement');
+      SeriesDetector = null;
+    }
     
     const booksWithSeriesMarked = booksList.map(book => {
       // Méthode 1 : Champ saga existant (priorité haute)
@@ -85,17 +105,19 @@ const BookActions = {
         };
       }
       
-      // Méthode 2 : Détection intelligente automatique
-      const detection = SeriesDetector.detectBookSeries(book);
-      
-      if (detection.belongsToSeries && detection.confidence >= 70) {
-        return {
-          ...book,
-          belongsToSeries: true,
-          detectedSeriesName: detection.seriesName,
-          detectionMethod: detection.method,
-          confidence: detection.confidence
-        };
+      // Méthode 2 : Détection intelligente automatique (si disponible)
+      if (SeriesDetector) {
+        const detection = SeriesDetector.detectBookSeries(book);
+        
+        if (detection.belongsToSeries && detection.confidence >= 70) {
+          return {
+            ...book,
+            belongsToSeries: true,
+            detectedSeriesName: detection.seriesName,
+            detectionMethod: detection.method,
+            confidence: detection.confidence
+          };
+        }
       }
       
       // Méthode 3 : Livre standalone
