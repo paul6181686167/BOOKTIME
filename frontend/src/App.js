@@ -193,7 +193,11 @@ function MainApp() {
     };
   }, []);
 
+  // PHASE C.1 - Hooks unifiés pour rafraîchissement optimisé
+  const unifiedContent = useUnifiedContent();
+  
   // Hooks personnalisés pour gérer les états (Phase 1.1 - Step 6)
+  // CONSERVÉS pour compatibilité avec les modals et actions spécialisées
   const booksHook = useBooks();
   const seriesHook = useSeries();
   const searchHook = useSearch();
