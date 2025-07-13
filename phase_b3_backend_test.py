@@ -189,7 +189,11 @@ class PhaseB3BackendTester:
         )
         
         if success:
-            library_series = response.get('series', [])
+            # Handle both list and dict responses
+            if isinstance(response, list):
+                library_series = response
+            else:
+                library_series = response.get('series', [])
             self.log(f"✅ {len(library_series)} séries dans la bibliothèque")
         
         # Test ajout série à la bibliothèque
