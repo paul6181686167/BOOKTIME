@@ -151,13 +151,6 @@ function MainApp() {
     };
   }, []);
 
-  // CORRECTION ERREUR - Fonction clearSearch pour vider la barre de recherche
-  const clearSearch = () => {
-    // Vider le terme de recherche dans l'interface
-    console.log('🧹 clearSearch: Vidage de la barre de recherche');
-    searchHook.handleSearchTermChange('');
-  };
-
   // CORRECTION ERREUR - Fonction backToLibrary définie avant les useEffect qui l'utilisent
   const backToLibrary = () => {
     // PHASE 2.4 - Analytics navigation
