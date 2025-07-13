@@ -158,7 +158,8 @@ export const handleAddSeriesToLibrary = async (seriesData, {
     const result = await seriesLibraryService.addSeriesToLibrary(seriesPayload, token);
     
     if (result.success) {
-      // Recharger la bibliothèque des séries
+      // CORRECTION : Utiliser le callback fourni pour recharger la bibliothèque
+      console.log('🔄 Rechargement bibliothèque séries après ajout réussi...');
       await loadUserSeriesLibrary();
       
       // Message de succès détaillé
