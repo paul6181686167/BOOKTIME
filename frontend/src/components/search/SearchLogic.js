@@ -443,9 +443,10 @@ export const verifyAndDisplaySeries = async (seriesName, targetCategory, userSer
  * PHASE C.1 - SYSTÈME VÉRIFICATION LIVRE UNIFIÉ
  * Version adaptée pour livres individuels avec même logique de retry
  */
-export const verifyAndDisplayBook = async (bookTitle, targetCategory, books, loadBooks) => {
+export const verifyAndDisplayBook = async (bookTitle, targetCategory, books, loadBooks, loadStats = null) => {
   const maxAttempts = 3;
   const baseDelayMs = 500;
+  const timeoutMs = 5000; // Timeout global 5s
   
   console.log(`🔍 [PHASE C.1] Vérification livre: "${bookTitle}" en catégorie "${targetCategory}"`);
   
@@ -453,10 +454,14 @@ export const verifyAndDisplayBook = async (bookTitle, targetCategory, books, loa
   
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      console.log(`📖 [PHASE C.1] Tentative ${attempt}/${maxAttempts} - Chargement livres...`);
+      console.log(`📚 [PHASE C.1] Tentative ${attempt}/${maxAttempts} - Chargement données...`);
       
-      // Charger livres frais depuis le serveur
-      await loadBooks();
+      // Charger données fraîches (loadStats optionnel pour compatibilité)
+      if (loadStats) {
+        await Promise.all([loadBooks(), loadStats()]);
+      } else {
+        await loadBooks();
+      }
       
       // Vérifier présence livre avec critères stricts
       const bookFound = books.some(book => 
@@ -483,15 +488,23 @@ export const verifyAndDisplayBook = async (bookTitle, targetCategory, books, loa
         return { success: true, attempts: attempt, totalTime };
       }
       
-      // Délai progressif avant retry
+      // Délai progressif avant retry (500ms, 1000ms, 1500ms)
       if (attempt < maxAttempts) {
         const delayMs = baseDelayMs * attempt;
         console.log(`⏳ [PHASE C.1] Livre non trouvé, retry dans ${delayMs}ms...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
       }
       
+      // Vérification timeout global
+      if (Date.now() - startTime > timeoutMs) {
+        console.warn('⚠️ [PHASE C.1] Timeout global atteint, abandon verification');
+        break;
+      }
+      
     } catch (error) {
       console.error(`❌ [PHASE C.1] Tentative ${attempt} échouée:`, error);
+      
+      // En cas d'erreur, délai plus court avant retry
       if (attempt < maxAttempts) {
         await new Promise(resolve => setTimeout(resolve, 300));
       }
@@ -501,6 +514,18 @@ export const verifyAndDisplayBook = async (bookTitle, targetCategory, books, loa
   // Échec après toutes les tentatives
   const totalTime = Date.now() - startTime;
   console.error(`❌ [PHASE C.1] Livre non trouvé après ${maxAttempts} tentatives en ${totalTime}ms`);
+  
+  // Fallback UX : notification avec action manuelle
+  toast.error(
+    `Livre "${bookTitle}" ajouté avec succès mais non visible. Actualisez la page ou vérifiez l'onglet ${targetCategory}.`,
+    {
+      duration: 8000,
+      action: {
+        label: 'Actualiser',
+        onClick: () => window.location.reload()
+      }
+    }
+  );
   
   return { success: false, attempts: maxAttempts, totalTime };
 };
