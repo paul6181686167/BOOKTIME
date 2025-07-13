@@ -338,21 +338,21 @@ function MainApp() {
       
       // Mesure performance API
       const apiTime = Date.now() - apiStartTime;
-      performanceMonitoring.measureApiResponse('add_series_unified', apiStartTime, true);
-      alertSystem.checkResponseTime('add_series_unified', apiTime);
+      performanceMonitoring.measureApiResponse('add_series_corrected', apiStartTime, true);
+      alertSystem.checkResponseTime('add_series_corrected', apiTime);
       
       // Analytics
-      userAnalytics.trackSeriesInteraction('add_to_library_unified', {
+      userAnalytics.trackSeriesInteraction('add_to_library_corrected', {
         name: series.name,
         category: series.category
       });
       
-      console.log('✅ [PHASE C.1] Système unifié série utilisé avec succès');
+      console.log('✅ [CORRECTION RCA] Ajout série corrigé avec succès');
       
     } catch (error) {
-      console.error('❌ [PHASE C.1] Erreur système unifié série:', error);
+      console.error('❌ [CORRECTION RCA] Erreur ajout série:', error);
       toast.error('Erreur lors de l\'ajout de la série');
-      performanceMonitoring.measureApiResponse('add_series_unified', apiStartTime, false);
+      performanceMonitoring.measureApiResponse('add_series_corrected', apiStartTime, false);
     }
   };
 
