@@ -497,10 +497,14 @@ function MainApp() {
     // 🆕 PHASE B.2 : Utiliser la fonction createUnifiedDisplay locale qui passe userSeriesLibrary
     const unifiedDisplay = createUnifiedDisplay(booksToDisplay);
     
-    // 🔍 SESSION 81.8 - PROTECTION FINALE INTELLIGENTE : Vérification qu'aucun livre de série n'échappe
+    // 🔍 SESSION 81.8 + PHASE B.2 - PROTECTION FINALE INTELLIGENTE : Vérification qu'aucun livre de série n'échappe
     const finalBooks = unifiedDisplay.filter(item => {
       if (item.isSeriesCard) {
-        // Les vignettes de série sont autorisées
+        // 🆕 PHASE B.2 : TOUJOURS garder les vraies séries possédées
+        if (item.isOwnedSeries) {
+          return true; // Vraies séries de bibliothèque toujours visibles
+        }
+        // Les autres vignettes de série sont aussi autorisées
         return true;
       } else {
         // Pour les livres individuels, vérifier qu'ils n'appartiennent pas à une série
