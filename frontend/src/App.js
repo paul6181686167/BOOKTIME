@@ -349,10 +349,10 @@ function MainApp() {
         category: series.category
       });
       
-      console.log('✅ [PHASE A] Système unifié série utilisé avec succès');
+      console.log('✅ [PHASE C.1] Système unifié série utilisé avec succès');
       
     } catch (error) {
-      console.error('❌ [PHASE A] Erreur système unifié série:', error);
+      console.error('❌ [PHASE C.1] Erreur système unifié série:', error);
       toast.error('Erreur lors de l\'ajout de la série');
       performanceMonitoring.measureApiResponse('add_series_unified', apiStartTime, false);
     }
