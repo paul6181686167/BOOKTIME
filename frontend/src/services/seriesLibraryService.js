@@ -93,12 +93,24 @@ export const deleteSeriesFromLibrary = async (seriesId, token) => {
 export const generateVolumesList = (seriesData, extendedSeriesDatabase) => {
   try {
     const seriesKey = normalizeString(seriesData.name);
-    const seriesInfo = extendedSeriesDatabase[seriesData.category]?.[seriesKey];
+    
+    // CORRECTION : Essayer différentes variantes de catégorie pour correspondre à la base
+    const categoryMappings = {
+      'roman': 'romans',
+      'romans': 'romans',
+      'bd': 'bd',
+      'manga': 'mangas',
+      'mangas': 'mangas'
+    };
+    
+    const categoryKey = categoryMappings[seriesData.category] || seriesData.category;
+    const seriesInfo = extendedSeriesDatabase[categoryKey]?.[seriesKey];
     
     console.log('🔍 [DEBUG] Recherche série:', { 
       originalName: seriesData.name, 
       normalizedKey: seriesKey, 
-      category: seriesData.category,
+      originalCategory: seriesData.category,
+      mappedCategory: categoryKey,
       seriesFound: !!seriesInfo 
     });
     
