@@ -57,7 +57,7 @@ const BookActions = {
   },
 
   // Fonction pour créer l'affichage unifié des livres et séries
-  // SESSION 81.1 - MASQUAGE RENFORCÉ VIGNETTES LIVRES INDIVIDUELS D'UNE SÉRIE
+  // SESSION 82.2 - CORRECTION RCA SYSTÈME VIGNETTES : Intégration SeriesDetector
   createUnifiedDisplay(booksList, getCategoryBadgeFromBook) {
     // Vérification renforcée : s'assurer que booksList est toujours un array
     if (!booksList || !Array.isArray(booksList)) {
@@ -65,16 +65,48 @@ const BookActions = {
       return [];
     }
 
-    console.log('🔍 [SESSION 81.1] createUnifiedDisplay - Livres reçus:', booksList.length);
+    console.log('🔍 [SESSION 82.2] createUnifiedDisplay - Livres reçus:', booksList.length);
 
     const seriesGroups = {};
     const standaloneBooks = [];
 
-    // 🔍 SESSION 81.1 - DOUBLE PROTECTION : Filtrage en amont des livres de série
-    const booksWithSeriesMarked = booksList.map(book => ({
-      ...book,
-      belongsToSeries: !!(book.saga && book.saga.trim())
-    }));
+    // 🔍 SESSION 82.2 - CORRECTION RCA : Utiliser SeriesDetector pour détection complète
+    const SeriesDetector = require('../../utils/seriesDetector').default;
+    
+    const booksWithSeriesMarked = booksList.map(book => {
+      // Méthode 1 : Champ saga existant (priorité haute)
+      if (book.saga && book.saga.trim()) {
+        return {
+          ...book,
+          belongsToSeries: true,
+          detectedSeriesName: book.saga.trim(),
+          detectionMethod: 'existing_saga_field',
+          confidence: 100
+        };
+      }
+      
+      // Méthode 2 : Détection intelligente automatique
+      const detection = SeriesDetector.detectBookSeries(book);
+      
+      if (detection.belongsToSeries && detection.confidence >= 70) {
+        return {
+          ...book,
+          belongsToSeries: true,
+          detectedSeriesName: detection.seriesName,
+          detectionMethod: detection.method,
+          confidence: detection.confidence
+        };
+      }
+      
+      // Méthode 3 : Livre standalone
+      return {
+        ...book,
+        belongsToSeries: false,
+        detectedSeriesName: null,
+        detectionMethod: 'standalone',
+        confidence: 0
+      };
+    });
 
     console.log('🔍 [SESSION 81.1] Analyse des livres:');
     console.log(`📚 Total: ${booksWithSeriesMarked.length} livres`);
