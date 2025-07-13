@@ -189,7 +189,7 @@ function MainApp() {
     searchStats: groupedSearchStats,
   } = useGroupedSearch();
 
-  // CORRECTION RCA DÉFINITIVE - Fonction backToLibrary définie APRÈS l'initialisation des hooks
+  // CORRECTION RCA DÉFINITIVE - Fonction backToLibrary définie APRÈS tous les hooks mais AVANT tous les useEffect
   const backToLibrary = useCallback(() => {
     // PHASE 2.4 - Analytics navigation
     if (userAnalytics) {
