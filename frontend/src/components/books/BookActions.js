@@ -130,7 +130,7 @@ const BookActions = {
       };
     });
 
-    console.log('🔍 [SESSION 81.1] Analyse des livres:');
+    console.log('🔍 [SESSION 82.2] Analyse des livres avec détection intelligente:');
     console.log(`📚 Total: ${booksWithSeriesMarked.length} livres`);
     console.log(`📚 Avec série: ${booksWithSeriesMarked.filter(b => b.belongsToSeries).length} livres`);
     console.log(`📖 Standalone: ${booksWithSeriesMarked.filter(b => !b.belongsToSeries).length} livres`);
@@ -138,14 +138,14 @@ const BookActions = {
     booksWithSeriesMarked.forEach(book => {
       if (book.belongsToSeries) {
         // 📚 LIVRE APPARTENANT À UNE SÉRIE - REGROUPEMENT DANS VIGNETTE SÉRIE
-        const seriesKey = book.saga.toLowerCase().trim();
+        const seriesKey = book.detectedSeriesName.toLowerCase().trim();
         if (!seriesGroups[seriesKey]) {
           seriesGroups[seriesKey] = {
             id: `library-series-${seriesKey}`,
             isSeriesCard: true,
             isLibrarySeries: true,
-            name: book.saga,
-            title: book.saga,
+            name: book.detectedSeriesName,
+            title: book.detectedSeriesName,
             author: book.author,
             authors: [book.author], // 🔍 NOUVEAU: Stockage de tous les auteurs de la série
             category: book.category,
@@ -155,7 +155,10 @@ const BookActions = {
             readingBooks: 0,
             toReadBooks: 0,
             cover_url: book.cover_url,
-            progressPercent: 0
+            progressPercent: 0,
+            // SESSION 82.2 - NOUVEAUX CHAMPS : Informations de détection
+            detectionMethod: book.detectionMethod,
+            averageConfidence: book.confidence
           };
         }
         
@@ -166,6 +169,11 @@ const BookActions = {
         if (book.author && !seriesGroups[seriesKey].authors.includes(book.author)) {
           seriesGroups[seriesKey].authors.push(book.author);
         }
+        
+        // SESSION 82.2 - Mise à jour confiance moyenne
+        const currentBooks = seriesGroups[seriesKey].books;
+        const totalConfidence = currentBooks.reduce((sum, b) => sum + (b.confidence || 0), 0);
+        seriesGroups[seriesKey].averageConfidence = Math.round(totalConfidence / currentBooks.length);
         
         // Compter les statuts
         switch (book.status) {
@@ -197,13 +205,13 @@ const BookActions = {
           seriesGroups[seriesKey].status = 'to_read';
         }
         
-        // ✅ SESSION 81.1 - MASQUAGE CONFIRMÉ : Livre d'une série, PAS d'ajout aux standaloneBooks
-        console.log(`📚 [SESSION 81.1] Livre "${book.title}" appartient à la série "${book.saga}" - MASQUÉ (regroupé dans vignette série)`);
+        // ✅ SESSION 82.2 - MASQUAGE CONFIRMÉ : Livre d'une série, PAS d'ajout aux standaloneBooks
+        console.log(`📚 [SESSION 82.2] Livre "${book.title}" appartient à la série "${book.detectedSeriesName}" (${book.detectionMethod}, ${book.confidence}%) - MASQUÉ (regroupé dans vignette série)`);
         
       } else {
         // 📖 LIVRE STANDALONE (sans série) - VIGNETTE INDIVIDUELLE AUTORISÉE
         standaloneBooks.push(book);
-        console.log(`📖 [SESSION 81.1] Livre "${book.title}" standalone - VIGNETTE INDIVIDUELLE`);
+        console.log(`📖 [SESSION 82.2] Livre "${book.title}" standalone - VIGNETTE INDIVIDUELLE`);
       }
     });
 
