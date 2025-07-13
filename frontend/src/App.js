@@ -259,11 +259,11 @@ function MainApp() {
     
     try {
       await searchHook.handleAddFromOpenLibrary(openLibraryBook, {
-        books: booksHook.books,
+        books: unifiedContent.books,
         activeTab,
         getCategoryBadgeFromBook,
-        loadBooks: booksHook.loadBooks,
-        loadStats: booksHook.loadStats
+        loadBooks: unifiedContent.refreshAfterAdd,
+        loadStats: () => unifiedContent.refreshAfterAdd('stats')
       });
 
       // Mesure performance API
