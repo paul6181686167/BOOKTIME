@@ -4,12 +4,12 @@
     "books_processed": 0,
     "new_books_analyzed": 0,
     "series_detected": 0,
-    "api_calls_made": 200,
+    "api_calls_made": 225,
     "strategies_completed": 1,
     "current_strategy": "prolific_authors_deep",
     "estimated_completion": null,
-    "last_checkpoint": "2025-07-13 20:35:24.951761"
+    "last_checkpoint": "2025-07-13 20:35:40.516666"
   },
-  "timestamp": "2025-07-13T20:35:40.516374",
+  "timestamp": "2025-07-13T20:35:51.104058",
   "new_series_count": 0
 }
