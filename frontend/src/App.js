@@ -278,86 +278,74 @@ function MainApp() {
 
   // Fonction pour ajouter une série à la bibliothèque
   const handleAddSeries = async (series) => {
-    // PHASE 2.4 - Monitoring API
+    // PHASE A.2 - UNIFICATION SYSTÈME AJOUT : Utiliser SeriesActions au lieu de /api/books
     const apiStartTime = Date.now();
     
     try {
-      const token = localStorage.getItem('token');
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+      console.log('🔄 [PHASE A] Utilisation nouveau système série unifié pour:', series.name);
       
-      // Créer un livre "série" avec statut "À lire"
-      const seriesBook = {
-        title: series.name,
+      // ✅ NOUVEAU : Utiliser SeriesActions.handleAddSeriesToLibrary au lieu de fetch('/api/books')
+      const result = await seriesHook.handleAddSeriesToLibrary({
+        name: series.name,
         author: series.author || 'Auteur inconnu',
         category: series.category || 'roman',
-        description: `Collection ${series.name} - ${series.total_volumes || 0} tome(s)`,
-        saga: series.name,
-        volume_number: null, // Pas de numéro de tome car c'est la série entière
-        status: 'to_read', // Statut par défaut "À lire"
+        volumes: series.total_volumes || 1,
         cover_url: series.cover_url || '',
-        total_pages: null,
-        is_series: true // Marquer comme série
-      };
-
-      const response = await fetch(`${backendUrl}/api/books`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(seriesBook)
+        description: series.description || `Collection ${series.name}`,
+        first_published: series.first_published || ''
       });
-
-      if (response.ok) {
-        // Message de succès
-        toast.success(`Série "${series.name}" ajoutée à votre bibliothèque ! 📚`, {
-          duration: 2000
+      
+      // Fermer le modal
+      seriesHook.closeSeriesModal();
+      
+      // ✅ NOUVEAU : Vérification série dans userSeriesLibrary au lieu de books
+      console.log('🔍 [SÉRIE] Vérification série dans bibliothèque séries:', series.name);
+      
+      // Attendre un délai pour que l'ajout soit propagé
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Recharger userSeriesLibrary
+      await seriesHook.loadUserSeriesLibrary();
+      
+      // Vérifier présence dans la bibliothèque des séries
+      const seriesFound = seriesHook.userSeriesLibrary.some(s => 
+        s.series_name?.toLowerCase().trim() === series.name.toLowerCase().trim() && 
+        s.category === (series.category || 'roman')
+      );
+      
+      if (seriesFound) {
+        console.log('✅ [SÉRIE] Série trouvée dans userSeriesLibrary');
+        
+        // Déclencher retour bibliothèque
+        const backToLibraryEvent = new CustomEvent('backToLibrary', {
+          detail: { 
+            reason: 'series_added_success',
+            seriesName: series.name,
+            targetCategory: series.category || 'roman'
+          }
         });
-        
-        // Fermer le modal
-        seriesHook.closeSeriesModal();
-        
-        // ✅ SOLUTION ROBUSTE OPTION C : Utiliser verifyAndDisplayBook pour les séries
-        // Même logique que pour les livres individuels avec retry intelligent
-        console.log('🔍 [SÉRIE] Vérification et affichage série ajoutée:', series.name);
-        
-        const result = await searchHook.verifyAndDisplayBook(
-          series.name,
-          series.category || 'roman',
-          booksHook.books,
-          booksHook.loadBooks,
-          booksHook.loadStats
-        );
-        
-        // Analytics de performance
-        console.log('📊 [SÉRIE] Performance metrics:', {
-          seriesName: series.name,
-          category: series.category,
-          success: result.success,
-          attempts: result.attempts,
-          totalTime: result.totalTime
-        });
-        
-        // Mesure performance API
-        const apiTime = Date.now() - apiStartTime;
-        performanceMonitoring.measureApiResponse('add_series', apiStartTime, true);
-        alertSystem.checkResponseTime('add_series', apiTime);
-        
-        // Analytics
-        userAnalytics.trackSeriesInteraction('add_to_library', {
-          name: series.name,
-          category: series.category
-        });
-        
+        window.dispatchEvent(backToLibraryEvent);
       } else {
-        const error = await response.json();
-        toast.error(`Erreur : ${error.detail || 'Impossible d\'ajouter la série'}`);
-        performanceMonitoring.measureApiResponse('add_series', apiStartTime, false);
+        console.warn('⚠️ [SÉRIE] Série non trouvée dans userSeriesLibrary après ajout');
       }
+      
+      // Mesure performance API
+      const apiTime = Date.now() - apiStartTime;
+      performanceMonitoring.measureApiResponse('add_series_unified', apiStartTime, true);
+      alertSystem.checkResponseTime('add_series_unified', apiTime);
+      
+      // Analytics
+      userAnalytics.trackSeriesInteraction('add_to_library_unified', {
+        name: series.name,
+        category: series.category
+      });
+      
+      console.log('✅ [PHASE A] Système unifié série utilisé avec succès');
+      
     } catch (error) {
-      console.error('Error adding series:', error);
+      console.error('❌ [PHASE A] Erreur système unifié série:', error);
       toast.error('Erreur lors de l\'ajout de la série');
-      performanceMonitoring.measureApiResponse('add_series', apiStartTime, false);
+      performanceMonitoring.measureApiResponse('add_series_unified', apiStartTime, false);
     }
   };
 
