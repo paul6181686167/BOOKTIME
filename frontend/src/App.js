@@ -226,9 +226,9 @@ function MainApp() {
   };
 
   // FONCTION AFFICHAGE UNIFIÉ : Mélange séries et livres individuels par date d'ajout
-  // PHASE B : Integration userSeriesLibrary pour affichage unifié
+  // PHASE C.1 : Utiliser données unifiées pour créer l'affichage
   const createUnifiedDisplay = (booksList) => {
-    return BookActions.createUnifiedDisplay(booksList, getCategoryBadgeFromBook, seriesHook.userSeriesLibrary || []);
+    return BookActions.createUnifiedDisplay(booksList, getCategoryBadgeFromBook, unifiedContent.userSeriesLibrary || []);
   };
 
   // Fonction pour rechercher dans Open Library avec RECHERCHE GLOBALE (toutes catégories)
