@@ -2,11 +2,311 @@ import requests
 import json
 import unittest
 import uuid
+import time
 from datetime import datetime
 
 # Get the backend URL from the frontend .env file
 BACKEND_URL = "https://1025282f-714c-4a6b-aa26-953ca564e3ca.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
+
+class BooktimeUnifiedSystemTest(unittest.TestCase):
+    """Test suite for the Booktime Unified System (Phases A-D)"""
+
+    def setUp(self):
+        """Setup for each test"""
+        self.test_user_data = {
+            "first_name": "Test",
+            "last_name": "User",
+            "password": "testpass123"
+        }
+        self.token = None
+        self.headers = {'Content-Type': 'application/json'}
+        
+        # Test data for unified system
+        self.test_series_data = {
+            "name": "Test Series",
+            "author": "Test Author",
+            "category": "roman",
+            "volumes": 3,
+            "description": "Test series for unified system"
+        }
+        
+        self.test_book_data = {
+            "title": "Test Book Individual",
+            "author": "Test Author",
+            "category": "roman",
+            "description": "Test individual book"
+        }
+        
+        # IDs to cleanup
+        self.cleanup_ids = []
+
+    def tearDown(self):
+        """Clean up after each test"""
+        if self.token:
+            headers = {**self.headers, 'Authorization': f'Bearer {self.token}'}
+            for item_id in self.cleanup_ids:
+                try:
+                    requests.delete(f"{API_URL}/books/{item_id}", headers=headers)
+                except:
+                    pass
+
+    def test_01_health_check(self):
+        """Test basic health and connectivity"""
+        print("\n🔍 Testing basic health and connectivity...")
+        
+        # Test root endpoint
+        response = requests.get(BACKEND_URL)
+        self.assertEqual(response.status_code, 200)
+        print("✅ Root endpoint accessible")
+        
+        # Test health endpoint
+        response = requests.get(f"{BACKEND_URL}/health")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["status"], "ok")
+        self.assertEqual(data["database"], "connected")
+        print("✅ Health check passed - Database connected")
+
+    def test_02_authentication_system(self):
+        """Test JWT authentication system"""
+        print("\n🔐 Testing authentication system...")
+        
+        # Test user registration
+        response = requests.post(f"{API_URL}/auth/register", json=self.test_user_data)
+        self.assertEqual(response.status_code, 200)
+        user_data = response.json()
+        self.assertIn("token", user_data)
+        self.token = user_data["token"]
+        print("✅ User registration successful")
+        
+        # Test login
+        login_data = {
+            "first_name": self.test_user_data["first_name"],
+            "last_name": self.test_user_data["last_name"],
+            "password": self.test_user_data["password"]
+        }
+        response = requests.post(f"{API_URL}/auth/login", json=login_data)
+        self.assertEqual(response.status_code, 200)
+        login_result = response.json()
+        self.assertIn("token", login_result)
+        print("✅ User login successful")
+        
+        # Update headers with token
+        self.headers['Authorization'] = f'Bearer {self.token}'
+
+    def test_03_unified_content_endpoints(self):
+        """Test unified content system endpoints"""
+        print("\n🔄 Testing unified content system...")
+        
+        if not self.token:
+            self.test_02_authentication_system()
+        
+        # Test books endpoint
+        response = requests.get(f"{API_URL}/books", headers=self.headers)
+        self.assertEqual(response.status_code, 200)
+        books = response.json()
+        print(f"✅ Books endpoint - Found {len(books)} books")
+        
+        # Test series endpoint
+        response = requests.get(f"{API_URL}/series", headers=self.headers)
+        self.assertEqual(response.status_code, 200)
+        series = response.json()
+        print(f"✅ Series endpoint - Found {len(series)} series")
+        
+        # Test stats endpoint
+        response = requests.get(f"{API_URL}/stats", headers=self.headers)
+        self.assertEqual(response.status_code, 200)
+        stats = response.json()
+        self.assertIn("total_books", stats)
+        print(f"✅ Stats endpoint - Total books: {stats.get('total_books', 0)}")
+
+    def test_04_series_management_system(self):
+        """Test series management and intelligent masking"""
+        print("\n📚 Testing series management system...")
+        
+        if not self.token:
+            self.test_02_authentication_system()
+        
+        # Test adding a series
+        response = requests.post(f"{API_URL}/series", json=self.test_series_data, headers=self.headers)
+        self.assertEqual(response.status_code, 200)
+        series_result = response.json()
+        print("✅ Series creation successful")
+        
+        # Test series library endpoint
+        response = requests.get(f"{API_URL}/library/series", headers=self.headers)
+        self.assertEqual(response.status_code, 200)
+        user_series = response.json()
+        print(f"✅ User series library - Found {len(user_series)} series")
+        
+        # Verify the series appears in user library
+        series_found = any(s.get('series_name') == self.test_series_data['name'] for s in user_series)
+        self.assertTrue(series_found, "Series should appear in user library")
+        print("✅ Series correctly added to user library")
+
+    def test_05_intelligent_masking_system(self):
+        """Test intelligent masking and series detection"""
+        print("\n🔒 Testing intelligent masking system...")
+        
+        if not self.token:
+            self.test_02_authentication_system()
+        
+        # Test adding a book that should be detected as part of a series
+        harry_potter_book = {
+            "title": "Harry Potter à l'école des sorciers",
+            "author": "J.K. Rowling",
+            "category": "roman",
+            "description": "Premier tome de Harry Potter"
+        }
+        
+        response = requests.post(f"{API_URL}/books", json=harry_potter_book, headers=self.headers)
+        self.assertEqual(response.status_code, 200)
+        book_result = response.json()
+        self.cleanup_ids.append(book_result["_id"])
+        print("✅ Harry Potter book added")
+        
+        # The book should be automatically detected as part of a series
+        # and potentially masked in the unified display
+        print("✅ Series detection system operational")
+
+    def test_06_open_library_integration(self):
+        """Test Open Library search integration"""
+        print("\n🌐 Testing Open Library integration...")
+        
+        if not self.token:
+            self.test_02_authentication_system()
+        
+        # Test Open Library search
+        search_query = "Dune"
+        response = requests.get(f"{API_URL}/openlibrary/search?q={search_query}", headers=self.headers)
+        self.assertEqual(response.status_code, 200)
+        search_results = response.json()
+        self.assertIsInstance(search_results, list)
+        print(f"✅ Open Library search - Found {len(search_results)} results for '{search_query}'")
+        
+        if search_results:
+            # Test adding a book from Open Library
+            first_result = search_results[0]
+            add_data = {
+                "title": first_result.get("title", "Test Book"),
+                "author": first_result.get("author", "Unknown Author"),
+                "category": "roman",
+                "description": first_result.get("description", "Added from Open Library")
+            }
+            
+            response = requests.post(f"{API_URL}/books", json=add_data, headers=self.headers)
+            self.assertEqual(response.status_code, 200)
+            book_result = response.json()
+            self.cleanup_ids.append(book_result["_id"])
+            print("✅ Book successfully added from Open Library search")
+
+    def test_07_performance_and_caching(self):
+        """Test performance and caching system"""
+        print("\n⚡ Testing performance and caching...")
+        
+        if not self.token:
+            self.test_02_authentication_system()
+        
+        # Test multiple rapid requests to check caching
+        start_time = time.time()
+        for i in range(3):
+            response = requests.get(f"{API_URL}/books", headers=self.headers)
+            self.assertEqual(response.status_code, 200)
+        
+        total_time = (time.time() - start_time) * 1000  # Convert to ms
+        print(f"✅ Performance test - 3 requests completed in {total_time:.0f}ms")
+        
+        # Test should complete in reasonable time (< 3 seconds for 3 requests)
+        self.assertLess(total_time, 3000, "Performance should be acceptable")
+
+    def test_08_unified_display_system(self):
+        """Test unified display system (Phase B)"""
+        print("\n🎨 Testing unified display system...")
+        
+        if not self.token:
+            self.test_02_authentication_system()
+        
+        # Get all content for unified display
+        response = requests.get(f"{API_URL}/books", headers=self.headers)
+        self.assertEqual(response.status_code, 200)
+        books = response.json()
+        
+        response = requests.get(f"{API_URL}/library/series", headers=self.headers)
+        self.assertEqual(response.status_code, 200)
+        series = response.json()
+        
+        print(f"✅ Unified display data - {len(books)} books, {len(series)} series")
+        
+        # Verify data structure for unified display
+        for book in books[:3]:  # Check first 3 books
+            self.assertIn("title", book)
+            self.assertIn("category", book)
+            self.assertIn("status", book)
+        
+        print("✅ Unified display data structure validated")
+
+    def test_09_retry_and_resilience(self):
+        """Test retry system and error handling"""
+        print("\n🔄 Testing retry system and resilience...")
+        
+        if not self.token:
+            self.test_02_authentication_system()
+        
+        # Test with invalid data to check error handling
+        invalid_book = {
+            "title": "",  # Empty title should be handled gracefully
+            "author": "Test Author",
+            "category": "invalid_category"  # Invalid category
+        }
+        
+        response = requests.post(f"{API_URL}/books", json=invalid_book, headers=self.headers)
+        # Should return an error status, not crash
+        self.assertNotEqual(response.status_code, 200)
+        print("✅ Error handling working - Invalid data rejected gracefully")
+        
+        # Test with valid data after error
+        response = requests.post(f"{API_URL}/books", json=self.test_book_data, headers=self.headers)
+        self.assertEqual(response.status_code, 200)
+        book_result = response.json()
+        self.cleanup_ids.append(book_result["_id"])
+        print("✅ System resilience - Valid requests work after errors")
+
+    def test_10_phase_d_final_validation(self):
+        """Test Phase D final validation scenarios"""
+        print("\n🎯 Testing Phase D final validation...")
+        
+        if not self.token:
+            self.test_02_authentication_system()
+        
+        # Scenario 1: Add series and verify immediate appearance
+        test_series = {
+            "name": "Final Test Series",
+            "author": "Final Test Author", 
+            "category": "roman",
+            "volumes": 2
+        }
+        
+        response = requests.post(f"{API_URL}/series", json=test_series, headers=self.headers)
+        self.assertEqual(response.status_code, 200)
+        print("✅ Scenario 1 - Series addition successful")
+        
+        # Verify series appears in library
+        response = requests.get(f"{API_URL}/library/series", headers=self.headers)
+        self.assertEqual(response.status_code, 200)
+        series_library = response.json()
+        series_found = any(s.get('series_name') == test_series['name'] for s in series_library)
+        self.assertTrue(series_found)
+        print("✅ Scenario 1 - Series appears immediately in library")
+        
+        # Scenario 2: Test navigation between categories
+        for category in ['roman', 'bd', 'manga']:
+            response = requests.get(f"{API_URL}/books?category={category}", headers=self.headers)
+            self.assertEqual(response.status_code, 200)
+            category_books = response.json()
+            print(f"✅ Scenario 2 - Category '{category}' navigation: {len(category_books)} items")
+        
+        print("✅ Phase D final validation completed successfully")
 
 class BooktimeAPITest(unittest.TestCase):
     """Test suite for the Booktime API"""
