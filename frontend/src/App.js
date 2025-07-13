@@ -183,6 +183,12 @@ function MainApp() {
     clearSearch
   } = useAdvancedSearch(unifiedContent.books);
 
+  // Hook de recherche groupée
+  const {
+    groupedResults,
+    searchStats: groupedSearchStats,
+  } = useGroupedSearch();
+
   // CORRECTION RCA DÉFINITIVE - Fonction backToLibrary définie APRÈS l'initialisation des hooks
   const backToLibrary = useCallback(() => {
     // PHASE 2.4 - Analytics navigation
