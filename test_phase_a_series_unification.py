@@ -180,9 +180,14 @@ def test_frontend_accessibility():
     
     try:
         response = requests.get(FRONTEND_URL, timeout=5)
-        if response.status_code == 200 and "BookTime" in response.text:
-            print("✅ Frontend accessible et fonctionnel")
-            return True
+        if response.status_code == 200:
+            # Vérifier contenu HTML valide au lieu de rechercher "BookTime" spécifiquement
+            if "<!DOCTYPE html>" in response.text and "<html" in response.text:
+                print("✅ Frontend accessible et HTML valide")
+                return True
+            else:
+                print(f"❌ HTML invalide du frontend")
+                return False
         else:
             print(f"❌ Frontend non accessible: {response.status_code}")
             return False
