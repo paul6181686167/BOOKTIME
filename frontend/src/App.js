@@ -238,7 +238,7 @@ function MainApp() {
     userAnalytics.trackSearch(query, 0, activeTab, 'openlibrary');
     
     await searchHook.searchOpenLibrary(query, {
-      books: booksHook.books,
+      books: unifiedContent.books,
       getCategoryBadgeFromBook
     });
 
