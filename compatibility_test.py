@@ -13,7 +13,7 @@ from datetime import datetime
 import sys
 
 # Get the backend URL from the frontend .env file
-BACKEND_URL = "https://e1f99a98-82a7-48ec-b321-b83e9432b7a3.preview.emergentagent.com"
+BACKEND_URL = "https://e3913a49-e7ca-4d2f-95f0-15821d8314b6.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 class BooktimeAPITest(unittest.TestCase):
