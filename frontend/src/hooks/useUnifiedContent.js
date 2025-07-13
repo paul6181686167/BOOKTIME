@@ -371,7 +371,7 @@ export const useUnifiedContent = () => {
   // Calcul de l'état d'erreur global
   const hasError = error || booksError || seriesError || statsError;
 
-  // Interface du hook
+  // Interface du hook avec améliorations Phase C.2
   return {
     // 📚 Données
     books,
@@ -403,14 +403,24 @@ export const useUnifiedContent = () => {
     setUserSeriesLibrary,
     setStats,
     
-    // 🧪 Utilitaires de debugging
+    // 🚀 PHASE C.2 - Nouvelles fonctionnalités
+    performanceMetrics,
+    shouldRefresh,
+    cacheValidDuration,
+    
+    // 🧪 Utilitaires de debugging améliorés
     debugInfo: {
       lastLoadTime: Date.now(),
       booksCount: books.length,
       seriesCount: userSeriesLibrary.length,
       hasStats: Object.keys(stats).length > 0,
       isLoading,
-      hasError
+      hasError,
+      // Phase C.2 - Métriques avancées
+      cache: lastLoadTimes,
+      performance: performanceMetrics,
+      cacheHitRate: performanceMetrics.totalLoads > 0 ? 
+        (performanceMetrics.cacheHits / performanceMetrics.totalLoads * 100).toFixed(1) : 0
     }
   };
 };
