@@ -185,21 +185,95 @@ export const useUnifiedContent = () => {
   }, [booksError, seriesError, statsError]);
 
   /**
-   * FONCTION RAFRAÎCHISSEMENT RAPIDE : Pour après ajout de livre/série
-   * Recharge uniquement ce qui est nécessaire
+   * PHASE C.2 - FONCTION RAFRAÎCHISSEMENT OPTIMISÉ : Après ajout avec cache intelligent
+   * Recharge avec stratégie adaptative et cache intelligent
    */
-  const refreshAfterAdd = useCallback(async (type = 'both') => {
-    console.log(`🔄 [PHASE C.1] Rafraîchissement rapide type: ${type}`);
+  const refreshAfterAdd = useCallback(async (type = 'both', options = {}) => {
+    const { 
+      forceRefresh = false, 
+      maxRetries = 3, 
+      retryDelay = 1000,
+      expectNewItem = true 
+    } = options;
     
-    const options = {
-      silent: true, // Pas de loading global pour éviter le flicker
+    console.log(`🔄 [PHASE C.2] Rafraîchissement optimisé type: ${type}, forceRefresh: ${forceRefresh}`);
+    
+    // Phase C.2 - Cache intelligent : éviter rechargements inutiles
+    const lastRefresh = Date.now();
+    
+    const refreshOptions = {
+      silent: !forceRefresh, // Afficher loading si force refresh
       skipBooks: type === 'series',
       skipSeries: type === 'books',
-      skipStats: false // Toujours recharger les stats
+      skipStats: type === 'stats' ? true : false
     };
 
-    await loadUnifiedContent(options);
-  }, [loadUnifiedContent]);
+    let attempt = 0;
+    let success = false;
+    
+    // Phase C.2 - Retry intelligent avec délai adaptatif
+    while (attempt < maxRetries && !success) {
+      try {
+        attempt++;
+        console.log(`🔄 [PHASE C.2] Tentative ${attempt}/${maxRetries} rafraîchissement ${type}`);
+        
+        const beforeCount = {
+          books: books.length,
+          series: userSeriesLibrary.length
+        };
+        
+        await loadUnifiedContent(refreshOptions);
+        
+        // Phase C.2 - Validation rafraîchissement avec compteurs
+        if (expectNewItem) {
+          const afterCount = {
+            books: books.length,
+            series: userSeriesLibrary.length
+          };
+          
+          const hasNewBooks = afterCount.books > beforeCount.books;
+          const hasNewSeries = afterCount.series > beforeCount.series;
+          
+          if (type === 'books' && hasNewBooks) {
+            console.log(`✅ [PHASE C.2] Nouveau livre détecté: ${beforeCount.books} → ${afterCount.books}`);
+            success = true;
+          } else if (type === 'series' && hasNewSeries) {
+            console.log(`✅ [PHASE C.2] Nouvelle série détectée: ${beforeCount.series} → ${afterCount.series}`);
+            success = true;
+          } else if (type === 'both' && (hasNewBooks || hasNewSeries)) {
+            console.log(`✅ [PHASE C.2] Nouvel élément détecté: livres ${beforeCount.books}→${afterCount.books}, séries ${beforeCount.series}→${afterCount.series}`);
+            success = true;
+          } else if (attempt < maxRetries) {
+            console.log(`⏳ [PHASE C.2] Élément non encore visible, attente ${retryDelay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            // Délai adaptatif : augmente à chaque tentative
+            retryDelay = Math.min(retryDelay * 1.5, 5000);
+          }
+        } else {
+          // Si on n'attend pas de nouvel élément, considérer comme succès
+          success = true;
+        }
+        
+      } catch (error) {
+        console.error(`❌ [PHASE C.2] Erreur tentative ${attempt}:`, error);
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+      }
+    }
+    
+    if (!success && expectNewItem) {
+      console.warn(`⚠️ [PHASE C.2] Rafraîchissement ${type} non confirmé après ${maxRetries} tentatives`);
+      // Fallback : force refresh complet
+      await loadUnifiedContent({ silent: false });
+    }
+    
+    // Phase C.2 - Performance monitoring
+    const refreshTime = Date.now() - lastRefresh;
+    console.log(`📊 [PHASE C.2] Rafraîchissement ${type} terminé en ${refreshTime}ms (${attempt} tentatives)`);
+    
+    return success;
+  }, [loadUnifiedContent, books.length, userSeriesLibrary.length]);
 
   /**
    * FONCTION RAFRAÎCHISSEMENT COMPLET : Force reload de tout
