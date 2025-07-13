@@ -67,9 +67,6 @@ const BookActions = {
 
     console.log('🔍 [SESSION 82.2] createUnifiedDisplay - Livres reçus:', booksList.length);
 
-    const seriesGroups = {};
-    const standaloneBooks = [];
-
   // SESSION 82.2 - CORRECTION RCA SYSTÈME VIGNETTES : Intégration SeriesDetector
   createUnifiedDisplay(booksList, getCategoryBadgeFromBook) {
     // Vérification renforcée : s'assurer que booksList est toujours un array
