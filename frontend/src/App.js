@@ -321,19 +321,21 @@ function MainApp() {
       );
       
       if (seriesFound) {
-        console.log('✅ [SÉRIE] Série trouvée dans userSeriesLibrary');
+        console.log('✅ [PHASE C.1] Série trouvée dans userSeriesLibrary unifiée');
         
         // Déclencher retour bibliothèque
         const backToLibraryEvent = new CustomEvent('backToLibrary', {
           detail: { 
-            reason: 'series_added_success',
+            reason: 'series_added_success_unified',
             seriesName: series.name,
             targetCategory: series.category || 'roman'
           }
         });
         window.dispatchEvent(backToLibraryEvent);
       } else {
-        console.warn('⚠️ [SÉRIE] Série non trouvée dans userSeriesLibrary après ajout');
+        console.warn('⚠️ [PHASE C.1] Série non trouvée dans userSeriesLibrary unifiée après ajout');
+        // Force rafraîchissement complet en cas d'échec
+        await unifiedContent.refreshAll();
       }
       
       // Mesure performance API
