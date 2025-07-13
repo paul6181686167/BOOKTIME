@@ -291,7 +291,7 @@ function MainApp() {
     try {
       console.log('🔄 [PHASE A] Utilisation nouveau système série unifié pour:', series.name);
       
-      // ✅ NOUVEAU : Utiliser SeriesActions.handleAddSeriesToLibrary au lieu de fetch('/api/books')
+      // ✅ PHASE C.1 : Utiliser système de rafraîchissement unifié au lieu de hooks séparés
       const result = await seriesHook.handleAddSeriesToLibrary({
         name: series.name,
         author: series.author || 'Auteur inconnu',
@@ -305,17 +305,17 @@ function MainApp() {
       // Fermer le modal
       seriesHook.closeSeriesModal();
       
-      // ✅ NOUVEAU : Vérification série dans userSeriesLibrary au lieu de books
-      console.log('🔍 [SÉRIE] Vérification série dans bibliothèque séries:', series.name);
+      // ✅ PHASE C.1 : Rafraîchissement unifié optimisé après ajout
+      console.log('🔄 [PHASE C.1] Rafraîchissement unifié après ajout série');
+      await unifiedContent.refreshAfterAdd('series');
       
-      // Attendre un délai pour que l'ajout soit propagé
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Attendre un délai minimal pour propagation
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Recharger userSeriesLibrary
-      await seriesHook.loadUserSeriesLibrary();
+      // ✅ PHASE C.1 : Vérification série dans userSeriesLibrary unifiée
+      console.log('🔍 [PHASE C.1] Vérification série dans bibliothèque unifiée:', series.name);
       
-      // Vérifier présence dans la bibliothèque des séries
-      const seriesFound = seriesHook.userSeriesLibrary.some(s => 
+      const seriesFound = unifiedContent.userSeriesLibrary.some(s => 
         s.series_name?.toLowerCase().trim() === series.name.toLowerCase().trim() && 
         s.category === (series.category || 'roman')
       );
