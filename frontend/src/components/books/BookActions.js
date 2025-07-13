@@ -245,14 +245,14 @@ const BookActions = {
       return dateB - dateA;
     });
     
-    // 📊 SESSION 81.1 - RÉSUMÉ AFFICHAGE DÉTAILLÉ
-    console.log(`🎯 [SESSION 81.1] Résumé affichage final:`);
-    console.log(`🎯 - ${seriesCards.length} vignettes de série (${Object.keys(seriesGroups).length} séries uniques)`);
+    // 📊 SESSION 82.2 - RÉSUMÉ AFFICHAGE DÉTAILLÉ AVEC DÉTECTION INTELLIGENTE
+    console.log(`🎯 [SESSION 82.2] Résumé affichage final avec détection intelligente:`);
+    console.log(`🎯 - ${seriesCards.length} vignettes de série (${Object.keys(seriesGroups).length} séries uniques détectées automatiquement)`);
     console.log(`🎯 - ${sortedStandaloneBooks.length} livres standalone (vignettes individuelles)`);
     console.log(`🎯 - ${booksList.length - sortedStandaloneBooks.length} livres masqués (dans vignettes série)`);
     
     seriesCards.forEach(series => {
-      console.log(`📚 [SESSION 81.1] Série "${series.name}" - ${series.totalBooks} tomes regroupés`);
+      console.log(`📚 [SESSION 82.2] Série "${series.name}" - ${series.totalBooks} tomes regroupés (détection: ${series.detectionMethod}, confiance: ${series.averageConfidence}%)`);
     });
     
     return [...seriesCards, ...sortedStandaloneBooks];
