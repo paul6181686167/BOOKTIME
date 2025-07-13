@@ -106,9 +106,8 @@ class PhaseB3BackendTester:
             self.log(f"✅ Authentification réussie via registration - Token obtenu")
             return True
         
-        if not success:
-            self.log("❌ Échec création utilisateur")
-            return False
+        # If registration failed (user exists), try login directly
+        self.log("ℹ️ Utilisateur existe déjà, tentative de connexion...")
             
         # Test connexion
         login_data = {
