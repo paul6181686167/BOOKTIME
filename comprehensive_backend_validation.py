@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime
 
 # Configuration
-BACKEND_URL = "https://27d7695c-6101-46d8-8b32-111d477d54b6.preview.emergentagent.com"
+BACKEND_URL = "https://1025282f-714c-4a6b-aa26-953ca564e3ca.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 class ComprehensiveBackendTest:

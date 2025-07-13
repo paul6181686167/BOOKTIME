@@ -8790,7 +8790,7 @@ mongodb                 RUNNING   pid 643, uptime 0:00:08
 ```
 
 ✅ **CONFIGURATION ENVIRONNEMENT** :
-- **Backend URL** : `https://27d7695c-6101-46d8-8b32-111d477d54b6.preview.emergentagent.com`
+- **Backend URL** : `https://1025282f-714c-4a6b-aa26-953ca564e3ca.preview.emergentagent.com`
 - **MongoDB** : `mongodb://localhost:27017/booktime`
 - **Services** : Tous RUNNING et opérationnels
 
