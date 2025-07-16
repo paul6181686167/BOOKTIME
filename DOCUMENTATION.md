@@ -58,10 +58,10 @@ Deployment: Kubernetes + Supervisor
 
 ### Métriques Architecture (Juillet 2025)
 ```
-Fichiers totaux: 29,670 fichiers
+Fichiers totaux: 50,302 fichiers
 Backend Python: 227 fichiers
-Frontend JavaScript: 29,443 fichiers
-Routers Backend: 13+ routers spécialisés
+Frontend JavaScript: 29,437 fichiers
+Routers Backend: 16+ routers spécialisés
 App.js Principal: 1,045 lignes
 Services: 4 services RUNNING (backend, frontend, mongodb, code-server)
 ```
