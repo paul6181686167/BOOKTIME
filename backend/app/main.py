@@ -73,6 +73,7 @@ app.include_router(export_import_router)  # Phase 3.2
 app.include_router(social_router)  # Phase 3.3
 app.include_router(advanced_recommendations_router)  # Phase 3.4
 app.include_router(integrations_router)  # Phase 3.5
+app.include_router(wikipedia_router)  # Session 87.5
 
 if __name__ == "__main__":
     import uvicorn
