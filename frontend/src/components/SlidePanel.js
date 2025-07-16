@@ -2,11 +2,17 @@ import React, { useEffect, useRef } from 'react';
 
 const SlidePanel = ({ isOpen, onClose, children }) => {
   const panelRef = useRef(null);
+  
+  // Debug: log quand le panneau change d'état
+  useEffect(() => {
+    console.log('🔮 SlidePanel state changed:', isOpen);
+  }, [isOpen]);
 
   // Gestion de la fermeture par clic extérieur
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (panelRef.current && !panelRef.current.contains(event.target)) {
+        console.log('🔮 Closing panel - click outside');
         onClose();
       }
     };
@@ -24,6 +30,7 @@ const SlidePanel = ({ isOpen, onClose, children }) => {
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === 'Escape' && isOpen) {
+        console.log('🔮 Closing panel - escape key');
         onClose();
       }
     };
@@ -34,35 +41,75 @@ const SlidePanel = ({ isOpen, onClose, children }) => {
     };
   }, [isOpen, onClose]);
 
+  // Toujours rendre le composant pour déboguer
   return (
     <>
       {/* Overlay background */}
       <div
-        className={`fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 ${
-          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 9998,
+          opacity: isOpen ? 1 : 0,
+          pointerEvents: isOpen ? 'auto' : 'none',
+          transition: 'opacity 0.3s ease'
+        }}
         onClick={onClose}
       />
       
       {/* Slide Panel */}
       <div
         ref={panelRef}
-        className={`fixed top-0 left-0 h-full w-1/3 bg-white dark:bg-gray-800 shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          height: '100vh',
+          width: '33.333333%',
+          backgroundColor: 'white',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          zIndex: 9999,
+          transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 0.3s ease-in-out'
+        }}
       >
         {/* Header avec bouton de fermeture */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-            <span className="mr-2">🔮</span>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px',
+          borderBottom: '1px solid #e5e7eb'
+        }}>
+          <h2 style={{
+            fontSize: '18px',
+            fontWeight: '600',
+            color: '#111827',
+            display: 'flex',
+            alignItems: 'center'
+          }}>
+            <span style={{ marginRight: '8px' }}>🔮</span>
             À venir
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+            style={{
+              padding: '8px',
+              backgroundColor: 'transparent',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
           >
             <svg
-              className="w-5 h-5 text-gray-500 dark:text-gray-400"
+              style={{ width: '20px', height: '20px', color: '#6b7280' }}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -78,7 +125,11 @@ const SlidePanel = ({ isOpen, onClose, children }) => {
         </div>
 
         {/* Contenu du panneau */}
-        <div className="p-4 h-full overflow-y-auto">
+        <div style={{
+          padding: '16px',
+          height: 'calc(100% - 73px)',
+          overflowY: 'auto'
+        }}>
           {children}
         </div>
       </div>
