@@ -416,6 +416,107 @@ async def get_author_info(
     except requests.RequestException as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération des informations de l'auteur: {str(e)}")
 
+@router.get("/author/{author_name}/works")
+async def get_author_works(
+    author_name: str,
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupérer toutes les œuvres d'un auteur depuis OpenLibrary"""
+    try:
+        # 1. Récupérer les livres de l'auteur depuis la bibliothèque personnelle
+        user_books = list(books_collection.find(
+            {
+                "user_id": current_user["id"],
+                "author": {"$regex": author_name, "$options": "i"}
+            }
+        ))
+        
+        # 2. Récupérer les œuvres depuis OpenLibrary
+        params = {
+            "author": author_name,
+            "limit": limit,
+            "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,number_of_pages_median,publisher,series"
+        }
+        
+        response = requests.get("https://openlibrary.org/search.json", params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        # Grouper les livres par série et créer la structure
+        series_books = {}
+        individual_books = []
+        
+        for doc in data.get("docs", []):
+            book_title = doc.get("title", "")
+            series_info = doc.get("series", [])
+            
+            # Créer l'objet livre
+            book_data = {
+                "title": book_title,
+                "year": doc.get("first_publish_year"),
+                "isbn": doc.get("isbn", [""])[0] if doc.get("isbn") else "",
+                "cover_url": extract_cover_url(doc.get("cover_i")),
+                "publisher": ", ".join(doc.get("publisher", [])) if doc.get("publisher") else "",
+                "pages": doc.get("number_of_pages_median"),
+                "category": detect_category_from_subjects(doc.get("subject", [])),
+                "source": "openlibrary"
+            }
+            
+            # Vérifier si ce livre est dans la bibliothèque personnelle
+            matching_book = None
+            for user_book in user_books:
+                if (user_book.get("title", "").lower() == book_title.lower() or 
+                    (user_book.get("isbn") and user_book.get("isbn") == book_data.get("isbn"))):
+                    matching_book = user_book
+                    break
+            
+            if matching_book:
+                book_data["status"] = matching_book.get("status", "to_read")
+                book_data["volume_number"] = matching_book.get("volume_number")
+                book_data["in_library"] = True
+            else:
+                book_data["in_library"] = False
+            
+            if series_info:
+                # Livre fait partie d'une série
+                series_name = series_info[0] if isinstance(series_info, list) else series_info
+                if series_name not in series_books:
+                    series_books[series_name] = {
+                        "name": series_name,
+                        "books": [],
+                        "source": "openlibrary"
+                    }
+                series_books[series_name]["books"].append(book_data)
+            else:
+                # Livre individuel
+                individual_books.append(book_data)
+        
+        # Convertir les séries en liste
+        series_list = []
+        for series_name, series_data in series_books.items():
+            # Trier les livres par année
+            series_data["books"].sort(key=lambda x: x.get("year", 0) or 0)
+            series_list.append(series_data)
+        
+        # Trier les livres individuels par année (plus récents d'abord)
+        individual_books.sort(key=lambda x: x.get("year", 0) or 0, reverse=True)
+        
+        # Compter le total
+        total_books = sum(len(s["books"]) for s in series_list) + len(individual_books)
+        
+        return {
+            "found": True,
+            "author": author_name,
+            "total_books": total_books,
+            "series": series_list,
+            "individual_books": individual_books,
+            "sources": {"openlibrary": total_books, "library": len(user_books)}
+        }
+        
+    except requests.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la recherche: {str(e)}")
+
 @router.get("/recommendations")
 async def get_recommendations(
     limit: int = 10,
