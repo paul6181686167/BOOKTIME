@@ -411,6 +411,15 @@ function MainApp() {
   const handleCloseAuthorModal = () => {
     setShowAuthorModal(false);
     setSelectedAuthor(null);
+    
+    // Optionnellement, rouvrir le modal livre s'il y avait un livre sélectionné
+    // (pour une expérience utilisateur plus fluide)
+    if (booksHook.selectedBook) {
+      // Petit délai pour éviter le conflit d'animation
+      setTimeout(() => {
+        booksHook.openBookModal(booksHook.selectedBook);
+      }, 100);
+    }
   };
 
   // Gestion changement d'onglet avec analytics
