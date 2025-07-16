@@ -140,8 +140,8 @@ class WikidataService:
                     results_count=0
                 )
             
-            # Construire les séries
-            series_list = []
+            # Construire les séries (dédupliquer par ID)
+            series_dict = {}
             for binding in bindings:
                 series_id = self._extract_wikidata_id(binding.get('series', {}).get('value', ''))
                 series_name = binding.get('seriesLabel', {}).get('value', '')
@@ -151,18 +151,30 @@ class WikidataService:
                 description = binding.get('description', {}).get('value', '')
                 
                 if series_id and series_name:
-                    series = WikidataSeries(
-                        id=series_id,
-                        name=series_name,
-                        author_id="",  # Sera rempli si nécessaire
-                        author_name=author_name,
-                        genre=genre,
-                        start_date=start_date,
-                        end_date=end_date,
-                        status="terminée" if end_date else "en cours",
-                        description=description
-                    )
-                    series_list.append(series)
+                    # Si la série existe déjà, on conserve celle avec le plus d'informations
+                    if series_id in series_dict:
+                        existing = series_dict[series_id]
+                        # Prioriser les descriptions plus longues et les genres plus spécifiques
+                        if (description and len(description) > len(existing.description or '')) or \
+                           (genre and genre != existing.genre and len(genre) > len(existing.genre or '')):
+                            series_dict[series_id].description = description or existing.description
+                            series_dict[series_id].genre = genre or existing.genre
+                    else:
+                        series = WikidataSeries(
+                            id=series_id,
+                            name=series_name,
+                            author_id="",  # Sera rempli si nécessaire
+                            author_name=author_name,
+                            genre=genre,
+                            start_date=start_date,
+                            end_date=end_date,
+                            status="terminée" if end_date else "en cours",
+                            description=description
+                        )
+                        series_dict[series_id] = series
+            
+            # Convertir en liste
+            series_list = list(series_dict.values())
             
             # Créer la réponse
             response = WikidataAuthorResponse(
