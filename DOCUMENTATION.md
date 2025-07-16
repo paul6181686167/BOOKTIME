@@ -282,15 +282,34 @@ Services: 4 services RUNNING (backend, frontend, mongodb, code-server)
 
 ### Composants Principaux
 
-#### AuthorModal.js ✨ ENRICHI
+#### AuthorModal.js ✨ AMÉLIORÉ Session 87.5
 ```javascript
 // Fonctionnalités principales
-- Photo auteur OpenLibrary avec fallback
-- Biographie prose formatée
-- Métadonnées complètes (dates, œuvres)
+- Double source intelligente (Wikipedia priorité + OpenLibrary fallback)
+- Photo auteur haute qualité avec fallback
+- Biographie prose formatée complète
+- Métadonnées enrichies (dates, œuvres, spécialités)
 - Loading states et error handling
 - Design responsive grid 1/3 colonnes
-- Lien externe vers OpenLibrary
+- Liens externes dynamiques selon source
+- Extraction intelligente informations
+```
+
+#### Logique Double Source
+```javascript
+// 1. Essayer Wikipedia (priorité)
+const wikipediaResponse = await fetch(`/api/wikipedia/author/${author}`);
+if (wikipediaResponse.ok && wikipediaData.found) {
+  setAuthorInfo({...wikipediaData.author, source: 'wikipedia'});
+  return;
+}
+
+// 2. Fallback OpenLibrary
+const openlibResponse = await fetch(`/api/openlibrary/author/${author}`);
+if (openlibResponse.ok && openlibData.found) {
+  setAuthorInfo({...openlibData.author, source: 'openlibrary'});
+  return;
+}
 ```
 
 #### États React
