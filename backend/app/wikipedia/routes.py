@@ -414,3 +414,84 @@ async def test_wikipedia_author(author_name: str):
         
     except Exception as e:
         return {"error": str(e)}
+
+@router.post("/enrich-series")
+async def enrich_series_from_existing_authors(limit: int = 50):
+    """
+    🚀 Enrichissement automatique des séries via Wikipedia
+    Analyse les auteurs existants et détecte leurs séries automatiquement
+    """
+    try:
+        from .enrichment_service import wikipedia_series_service
+        
+        # Lancement du processus d'enrichissement
+        result = await wikipedia_series_service.run_enrichment_process(limit_authors=limit)
+        
+        if result['success']:
+            return {
+                "success": True,
+                "message": "Enrichissement terminé avec succès",
+                "stats": {
+                    "authors_processed": result['authors_processed'],
+                    "total_series_detected": result['total_series_detected'],
+                    "high_confidence_series": result['high_confidence_series'],
+                    "ultra_harvest_update": result['ultra_harvest_update']
+                },
+                "completed_at": result['enrichment_completed_at']
+            }
+        else:
+            return {
+                "success": False,
+                "error": result.get('error', 'Unknown error'),
+                "message": "Échec de l'enrichissement"
+            }
+            
+    except Exception as e:
+        logger.error(f"Erreur lors de l'enrichissement des séries: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur lors de l'enrichissement: {str(e)}"
+        )
+
+@router.get("/enrich-series/status")
+async def get_enrichment_status():
+    """
+    📊 Obtenir le statut de l'enrichissement Ultra Harvest
+    """
+    try:
+        from app.database import get_database
+        db = get_database()
+        
+        # Compter les séries dans Ultra Harvest
+        total_series = await db.ultra_harvest_wikipedia.count_documents({})
+        
+        # Statistiques par source
+        wikipedia_series = await db.ultra_harvest_wikipedia.count_documents({"source": "wikipedia_enrichment"})
+        
+        # Dernière mise à jour
+        latest_update = await db.ultra_harvest_wikipedia.find_one(
+            {"source": "wikipedia_enrichment"},
+            sort=[("detected_at", -1)]
+        )
+        
+        return {
+            "ultra_harvest_stats": {
+                "total_series": total_series,
+                "wikipedia_enriched": wikipedia_series,
+                "last_update": latest_update.get('detected_at') if latest_update else None
+            },
+            "enrichment_available": True,
+            "message": "Enrichissement Wikipedia disponible"
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération du statut: {str(e)}")
+        return {
+            "ultra_harvest_stats": {
+                "total_series": 0,
+                "wikipedia_enriched": 0,
+                "last_update": None
+            },
+            "enrichment_available": False,
+            "error": str(e)
+        }
