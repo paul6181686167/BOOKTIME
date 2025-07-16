@@ -610,7 +610,16 @@ const SeriesDetailModal = ({
                   {series?.name}
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 mb-2">
-                  par {series?.author}
+                  par{' '}
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onAuthorClick) onAuthorClick(series?.author);
+                    }}
+                    className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors underline"
+                  >
+                    {series?.author}
+                  </button>
                 </p>
                 <div className="flex items-center space-x-4 text-sm">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(series?.status)}`}>
