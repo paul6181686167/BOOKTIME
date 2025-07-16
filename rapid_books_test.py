@@ -8,7 +8,7 @@ import os
 from datetime import datetime
 
 # Configuration
-BACKEND_URL = "https://349fc2df-7f00-4c0a-b53e-ed8ab7c61456.preview.emergentagent.com"
+BACKEND_URL = "https://6d382a30-906c-4536-a021-414884fc848c.preview.emergentagent.com"
 JWT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1MGYxM2VhOS03MzZlLTRiYWQtYTdjZC1hNWYwZGQwNmU1OWQiLCJleHAiOjE3NTIxNTI1OTN9.55uecngVVunkozOPlbrF-jn92P_znD_8Q5ORWrDOWqE"
 
 headers = {
