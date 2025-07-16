@@ -887,6 +887,14 @@ function MainApp() {
         />
       )}
       
+      {showAuthorModal && selectedAuthor && (
+        <AuthorModal
+          author={selectedAuthor}
+          isOpen={showAuthorModal}
+          onClose={handleCloseAuthorModal}
+        />
+      )}
+      
       {showProfileModal && (
         <ProfileModal
           isOpen={showProfileModal}
