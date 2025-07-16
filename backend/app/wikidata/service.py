@@ -34,7 +34,7 @@ class WikidataService:
         self.request_delay = 0.5  # Réduit à 0.5s (était 1.0s)
         self.last_request_time = 0
         
-    async def _execute_sparql_query(self, query: str, timeout: int = 30) -> Optional[Dict]:
+    async def _execute_sparql_query(self, query: str, timeout: int = 10) -> Optional[Dict]:
         """Exécute une requête SPARQL sur Wikidata"""
         try:
             # Respecter le délai entre requêtes
