@@ -42,6 +42,8 @@ class WikidataBook(BaseModel):
     pages: Optional[int] = Field(None, description="Nombre de pages")
     isbn: Optional[str] = Field(None, description="ISBN")
     publisher: Optional[str] = Field(None, description="Éditeur")
+    description: Optional[str] = Field(None, description="Description du livre")
+    book_type: Optional[str] = Field(None, description="Type de livre")
 
 class WikidataSeries(BaseModel):
     """Série depuis Wikidata"""
