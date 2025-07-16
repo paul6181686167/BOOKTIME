@@ -1,0 +1,145 @@
+{
+  "total_series_detected": 13,
+  "high_confidence_series": 12,
+  "total_authors_processed": 30,
+  "series_detected": [
+    {
+      "name": "Harry Potter",
+      "author": "J.K. Rowling",
+      "source": "wikipedia_improved",
+      "detected_at": "2025-07-16T19:08:16.265802",
+      "confidence": 95,
+      "validation_passed": true
+    },
+    {
+      "name": "Discworld",
+      "author": "Terry Pratchett",
+      "source": "wikipedia_improved",
+      "detected_at": "2025-07-16T19:08:16.268363",
+      "confidence": 95,
+      "validation_passed": true
+    },
+    {
+      "name": "Wheel of Time",
+      "author": "Robert Jordan",
+      "source": "wikipedia_improved",
+      "detected_at": "2025-07-16T19:08:16.294245",
+      "confidence": 95,
+      "validation_passed": true
+    },
+    {
+      "name": "Wheel of Time",
+      "author": "Brandon Sanderson",
+      "source": "wikipedia_improved",
+      "detected_at": "2025-07-16T19:08:16.297693",
+      "confidence": 95,
+      "validation_passed": true
+    },
+    {
+      "name": "Mistborn",
+      "author": "Brandon Sanderson",
+      "source": "wikipedia_improved",
+      "detected_at": "2025-07-16T19:08:16.297820",
+      "confidence": 95,
+      "validation_passed": true
+    },
+    {
+      "name": "Percy Jackson",
+      "author": "Rick Riordan",
+      "source": "wikipedia_improved",
+      "detected_at": "2025-07-16T19:08:16.323196",
+      "confidence": 95,
+      "validation_passed": true
+    },
+    {
+      "name": "Percy Jackson",
+      "author": "Rick Riordan",
+      "source": "wikipedia_improved",
+      "detected_at": "2025-07-16T19:08:16.323247",
+      "confidence": 95,
+      "validation_passed": true
+    },
+    {
+      "name": "Dune",
+      "author": "Frank Herbert",
+      "source": "wikipedia_improved",
+      "detected_at": "2025-07-16T19:08:16.351985",
+      "confidence": 95,
+      "validation_passed": true
+    },
+    {
+      "name": "Earthsea",
+      "author": "Ursula K. Le Guin",
+      "source": "wikipedia_improved",
+      "detected_at": "2025-07-16T19:08:16.370740",
+      "confidence": 95,
+      "validation_passed": true
+    },
+    {
+      "name": "Wheel of Time",
+      "author": "Robert Jordan",
+      "source": "wikipedia_improved",
+      "detected_at": "2025-07-16T19:08:16.293494",
+      "confidence": 90,
+      "validation_passed": true
+    },
+    {
+      "name": "Discworld",
+      "author": "Terry Pratchett",
+      "source": "wikipedia_improved",
+      "detected_at": "2025-07-16T19:08:16.268118",
+      "confidence": 85,
+      "validation_passed": true
+    },
+    {
+      "name": "Gentleman Bastard Sequence",
+      "author": "Scott Lynch",
+      "source": "wikipedia_improved",
+      "detected_at": "2025-07-16T19:08:16.499362",
+      "confidence": 85,
+      "validation_passed": true
+    },
+    {
+      "name": "She also wrote",
+      "author": "Agatha Christie",
+      "source": "wikipedia_improved",
+      "detected_at": "2025-07-16T19:08:16.437649",
+      "confidence": 75,
+      "validation_passed": true
+    }
+  ],
+  "authors_processed": [
+    "Stephen King",
+    "J.K. Rowling",
+    "Terry Pratchett",
+    "George R.R. Martin",
+    "Robert Jordan",
+    "Brandon Sanderson",
+    "Jim Butcher",
+    "Rick Riordan",
+    "Suzanne Collins",
+    "Cassandra Clare",
+    "Frank Herbert",
+    "Isaac Asimov",
+    "Ursula K. Le Guin",
+    "Douglas Adams",
+    "Neil Gaiman",
+    "Orson Scott Card",
+    "Philip K. Dick",
+    "Arthur C. Clarke",
+    "Ray Bradbury",
+    "Agatha Christie",
+    "James S.A. Corey",
+    "Robin Hobb",
+    "Joe Abercrombie",
+    "Patrick Rothfuss",
+    "Scott Lynch",
+    "Becky Chambers",
+    "Martha Wells",
+    "Jeff VanderMeer",
+    "N.K. Jemisin",
+    "Mark Lawrence"
+  ],
+  "enrichment_completed_at": "2025-07-16T19:08:17.167738",
+  "version": "2.0"
+}
