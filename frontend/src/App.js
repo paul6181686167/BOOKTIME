@@ -417,7 +417,7 @@ function MainApp() {
     if (booksHook.selectedBook) {
       // Petit délai pour éviter le conflit d'animation
       setTimeout(() => {
-        booksHook.openBookModal(booksHook.selectedBook);
+        booksHook.setShowBookModal(true);
       }, 100);
     }
   };
