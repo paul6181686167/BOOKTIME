@@ -873,6 +873,7 @@ function MainApp() {
           onUpdate={booksHook.handleUpdateBook}
           onDelete={booksHook.handleDeleteBook}
           onAddFromOpenLibrary={handleAddFromOpenLibrary}
+          onAuthorClick={handleAuthorClick}
         />
       )}
       
