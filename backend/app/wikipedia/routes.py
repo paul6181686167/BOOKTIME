@@ -267,6 +267,130 @@ async def get_wikipedia_author_info(author_name: str):
             detail=f"Erreur lors de la récupération des informations: {str(e)}"
         )
 
+@router.get("/author/{author_name}/works")
+async def get_author_works(author_name: str, limit: int = 50):
+    """
+    Récupérer toutes les œuvres d'un auteur depuis Wikipedia et OpenLibrary
+    """
+    try:
+        all_works = {
+            "series": [],
+            "individual_books": [],
+            "total_books": 0,
+            "sources": {"wikipedia": 0, "openlibrary": 0}
+        }
+        
+        # 1. Récupérer les œuvres depuis OpenLibrary
+        import requests
+        
+        # Rechercher les livres de l'auteur sur OpenLibrary
+        ol_params = {
+            "author": author_name,
+            "limit": limit,
+            "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,number_of_pages_median,publisher,series"
+        }
+        
+        ol_response = requests.get("https://openlibrary.org/search.json", params=ol_params, timeout=10)
+        
+        if ol_response.status_code == 200:
+            ol_data = ol_response.json()
+            
+            # Grouper les livres par série
+            series_books = {}
+            individual_books = []
+            
+            for doc in ol_data.get("docs", []):
+                book_title = doc.get("title", "")
+                series_info = doc.get("series", [])
+                
+                book_data = {
+                    "title": book_title,
+                    "year": doc.get("first_publish_year"),
+                    "isbn": doc.get("isbn", [""])[0] if doc.get("isbn") else "",
+                    "cover_url": f"https://covers.openlibrary.org/b/id/{doc.get('cover_i')}-M.jpg" if doc.get("cover_i") else "",
+                    "publisher": ", ".join(doc.get("publisher", [])) if doc.get("publisher") else "",
+                    "pages": doc.get("number_of_pages_median"),
+                    "source": "openlibrary"
+                }
+                
+                if series_info:
+                    # Livre fait partie d'une série
+                    series_name = series_info[0] if isinstance(series_info, list) else series_info
+                    if series_name not in series_books:
+                        series_books[series_name] = {
+                            "name": series_name,
+                            "books": [],
+                            "source": "openlibrary"
+                        }
+                    series_books[series_name]["books"].append(book_data)
+                else:
+                    # Livre individuel
+                    individual_books.append(book_data)
+            
+            # Ajouter les séries
+            for series_name, series_data in series_books.items():
+                all_works["series"].append(series_data)
+            
+            # Ajouter les livres individuels
+            all_works["individual_books"].extend(individual_books)
+            
+            # Compter les livres OpenLibrary
+            ol_count = sum(len(s["books"]) for s in series_books.values()) + len(individual_books)
+            all_works["sources"]["openlibrary"] = ol_count
+            all_works["total_books"] += ol_count
+        
+        # 2. Enrichir avec des informations Wikipedia si disponible
+        wikipedia_data = await search_wikipedia_author(author_name)
+        if wikipedia_data:
+            extract = wikipedia_data.get("extract", "")
+            
+            # Rechercher des mentions de séries célèbres dans l'extrait
+            famous_series = []
+            series_patterns = [
+                (r'harry potter', "Harry Potter"),
+                (r'game of thrones', "Game of Thrones"),
+                (r'song of ice and fire', "A Song of Ice and Fire"),
+                (r'lord of the rings', "The Lord of the Rings"),
+                (r'chronicles of narnia', "The Chronicles of Narnia"),
+                (r'wheel of time', "The Wheel of Time"),
+                (r'foundation', "Foundation"),
+                (r'dune', "Dune"),
+                (r'discworld', "Discworld")
+            ]
+            
+            for pattern, series_name in series_patterns:
+                if re.search(pattern, extract, re.IGNORECASE):
+                    # Vérifier si cette série n'est pas déjà dans les résultats OpenLibrary
+                    existing_series = [s["name"] for s in all_works["series"]]
+                    if series_name not in existing_series:
+                        famous_series.append({
+                            "name": series_name,
+                            "books": [],
+                            "description": f"Série célèbre mentionnée dans Wikipedia",
+                            "source": "wikipedia"
+                        })
+                        all_works["sources"]["wikipedia"] += 1
+            
+            # Ajouter les séries célèbres
+            all_works["series"].extend(famous_series)
+        
+        # 3. Trier les résultats
+        all_works["series"].sort(key=lambda x: x["name"])
+        all_works["individual_books"].sort(key=lambda x: x.get("year", 0) or 0, reverse=True)
+        
+        return {
+            "found": True,
+            "author": author_name,
+            "works": all_works
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération des œuvres pour {author_name}: {str(e)}")
+        return {
+            "found": False,
+            "message": f"Erreur lors de la récupération des œuvres: {str(e)}"
+        }
+
 @router.get("/test/{author_name}")
 async def test_wikipedia_author(author_name: str):
     """
