@@ -165,7 +165,18 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
         <div className="flex items-start justify-between mb-6">
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{book.title}</h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">par {book.author}</p>
+            <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">
+              par{' '}
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onAuthorClick) onAuthorClick(book.author);
+                }}
+                className="text-lg text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors underline"
+              >
+                {book.author}
+              </button>
+            </p>
             
             {/* Catégorie et statut */}
             <div className="flex items-center space-x-3 mb-4">
