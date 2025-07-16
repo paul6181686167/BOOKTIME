@@ -394,6 +394,20 @@ function MainApp() {
     booksHook.handleItemClick(item, seriesHook);
   };
 
+  const handleAuthorClick = (author) => {
+    // Analytics pour le clic sur auteur
+    userAnalytics.trackInteraction('author_click', 'author_name', { authorName: author });
+    
+    // Ouvrir le modal auteur
+    setSelectedAuthor(author);
+    setShowAuthorModal(true);
+  };
+
+  const handleCloseAuthorModal = () => {
+    setShowAuthorModal(false);
+    setSelectedAuthor(null);
+  };
+
   // Gestion changement d'onglet avec analytics
   const handleTabChange = (newTab) => {
     // PHASE 2.4 - Analytics catégories
