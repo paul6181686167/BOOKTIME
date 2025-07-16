@@ -898,6 +898,7 @@ function MainApp() {
           onClose={seriesHook.closeSeriesModal}
           onUpdate={booksHook.loadBooks}
           onAddSeries={handleAddSeries}
+          onAuthorClick={handleAuthorClick}
         />
       )}
       
