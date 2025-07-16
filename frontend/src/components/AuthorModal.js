@@ -347,7 +347,7 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
                       >
                         <div className="flex items-center space-x-3">
                           <div className="flex-shrink-0">
-                            <CollectionIcon className="h-5 w-5 text-purple-600" />
+                            <QueueListIcon className="h-5 w-5 text-purple-600" />
                           </div>
                           <div>
                             <h4 className="font-medium text-gray-900 dark:text-white">
