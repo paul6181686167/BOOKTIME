@@ -192,8 +192,10 @@ LIMIT 1
 # Requête pour obtenir les séries populaires par genre
 GET_POPULAR_SERIES = """
 SELECT DISTINCT ?series ?seriesLabel ?author ?authorLabel ?genre ?genreLabel ?startDate ?bookCount WHERE {
-  # Séries de livres
-  ?series wdt:P31 wd:Q277759 .
+  # Séries de livres - REQUÊTE ÉLARGIE
+  ?series wdt:P31 ?seriesType .
+  FILTER(?seriesType IN (wd:Q277759, wd:Q47068459, wd:Q1667921, wd:Q614101, wd:Q53815))
+  # Q277759: série de livres, Q47068459: children's book series, Q1667921: suite romanesque, Q614101: heptalogie, Q53815: canon
   
   # Auteur
   ?series wdt:P50 ?author .
