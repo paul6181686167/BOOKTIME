@@ -11,7 +11,7 @@ import sys
 from datetime import datetime
 
 # Configuration
-BACKEND_URL = "https://e4e0f522-9eab-4462-9c12-590907147a2e.preview.emergentagent.com"
+BACKEND_URL = "https://27aef6f0-9be2-4486-a564-dbcd34faac2c.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 class SeriesMaskingAPITest:
