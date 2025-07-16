@@ -726,7 +726,9 @@ function MainApp() {
                 <button
                   onClick={() => {
                     console.log('🔮 Bouton "À venir" cliqué !');
+                    console.log('🔮 État actuel showUpcomingPanel:', showUpcomingPanel);
                     setShowUpcomingPanel(true);
+                    console.log('🔮 setShowUpcomingPanel(true) appelé');
                   }}
                   className="px-4 py-2 rounded-lg font-medium transition-colors duration-200 bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/20 dark:hover:bg-purple-800/30 dark:text-purple-300"
                 >
