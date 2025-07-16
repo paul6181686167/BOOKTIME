@@ -459,17 +459,16 @@ async def get_enrichment_status():
     📊 Obtenir le statut de l'enrichissement Ultra Harvest
     """
     try:
-        from app.database import get_database
-        db = get_database()
+        from app.database import db
         
         # Compter les séries dans Ultra Harvest
-        total_series = await db.ultra_harvest_wikipedia.count_documents({})
+        total_series = db.ultra_harvest_wikipedia.count_documents({})
         
         # Statistiques par source
-        wikipedia_series = await db.ultra_harvest_wikipedia.count_documents({"source": "wikipedia_enrichment"})
+        wikipedia_series = db.ultra_harvest_wikipedia.count_documents({"source": "wikipedia_enrichment"})
         
         # Dernière mise à jour
-        latest_update = await db.ultra_harvest_wikipedia.find_one(
+        latest_update = db.ultra_harvest_wikipedia.find_one(
             {"source": "wikipedia_enrichment"},
             sort=[("detected_at", -1)]
         )
