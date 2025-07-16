@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Détection Séries</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        .info { background-color: #d1ecf1; }
+    </style>
+</head>
+<body>
+    <h1>Test de Détection des Séries</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Simuler la base de données (extrait)
+        const SERIES_DB = {
+            romans: {
+                'harry_potter': {
+                    name: 'Harry Potter',
+                    authors: ['J.K. Rowling'],
+                    keywords: ['harry potter', 'poudlard', 'sorcier', 'hermione', 'ron', 'voldemort'],
+                    variations: ['harry potter', 'herry potter', 'harry poter']
+                }
+            },
+            mangas: {
+                'one_piece': {
+                    name: 'One Piece',
+                    authors: ['Eiichiro Oda'],
+                    keywords: ['one piece', 'luffy', 'zoro', 'sanji', 'pirates'],
+                    variations: ['one piece', 'one pece', 'onepiece']
+                }
+            },
+            bd: {
+                'asterix': {
+                    name: 'Astérix',
+                    authors: ['René Goscinny', 'Albert Uderzo'],
+                    keywords: ['astérix', 'asterix', 'obélix', 'gaulois', 'potion magique'],
+                    variations: ['astérix', 'asterix', 'astérics']
+                }
+            }
+        };
+
+        // Fonction simplifiée de détection
+        function detectSeries(title, author) {
+            const titleLower = title.toLowerCase();
+            const authorLower = author ? author.toLowerCase() : '';
+            
+            // Test patterns directs
+            const patterns = [
+                { regex: /harry\s*potter/i, name: 'Harry Potter', authors: ['j.k. rowling'] },
+                { regex: /one\s*piece/i, name: 'One Piece', authors: ['eiichiro oda'] },
+                { regex: /ast[eé]rix/i, name: 'Astérix', authors: ['rené goscinny', 'albert uderzo'] }
+            ];
+
+            for (const pattern of patterns) {
+                if (pattern.regex.test(titleLower)) {
+                    if (pattern.authors.some(a => authorLower.includes(a.toLowerCase()))) {
+                        return {
+                            detected: true,
+                            series: pattern.name,
+                            confidence: 95,
+                            method: 'pattern_match'
+                        };
+                    }
+                }
+            }
+
+            // Test base de données
+            for (const [categoryKey, category] of Object.entries(SERIES_DB)) {
+                for (const [seriesKey, series] of Object.entries(category)) {
+                    // Test nom série
+                    if (titleLower.includes(series.name.toLowerCase())) {
+                        return {
+                            detected: true,
+                            series: series.name,
+                            confidence: 90,
+                            method: 'database_name'
+                        };
+                    }
+                    
+                    // Test variations
+                    for (const variation of series.variations || []) {
+                        if (titleLower.includes(variation.toLowerCase())) {
+                            return {
+                                detected: true,
+                                series: series.name,
+                                confidence: 85,
+                                method: 'database_variation'
+                            };
+                        }
+                    }
+                    
+                    // Test mots-clés
+                    for (const keyword of series.keywords || []) {
+                        if (titleLower.includes(keyword.toLowerCase())) {
+                            return {
+                                detected: true,
+                                series: series.name,
+                                confidence: 80,
+                                method: 'database_keyword'
+                            };
+                        }
+                    }
+                }
+            }
+
+            return { detected: false, series: null, confidence: 0, method: 'none' };
+        }
+
+        // Livres de test
+        const testBooks = [
+            { title: "Harry Potter à l'école des sorciers", author: "J.K. Rowling" },
+            { title: "Harry Potter et la chambre des secrets", author: "J.K. Rowling" },
+            { title: "One Piece tome 1", author: "Eiichiro Oda" },
+            { title: "Astérix le Gaulois", author: "René Goscinny" },
+            { title: "Le Petit Prince", author: "Antoine de Saint-Exupéry" }
+        ];
+
+        // Exécuter les tests
+        const resultsDiv = document.getElementById('results');
+        
+        testBooks.forEach(book => {
+            const detection = detectSeries(book.title, book.author);
+            const div = document.createElement('div');
+            div.className = `test-result ${detection.detected ? 'success' : 'info'}`;
+            div.innerHTML = `
+                <h3>📖 ${book.title}</h3>
+                <p><strong>Auteur:</strong> ${book.author}</p>
+                <p><strong>Série détectée:</strong> ${detection.detected ? 'OUI' : 'NON'}</p>
+                ${detection.detected ? `
+                    <p><strong>Nom série:</strong> ${detection.series}</p>
+                    <p><strong>Confiance:</strong> ${detection.confidence}%</p>
+                    <p><strong>Méthode:</strong> ${detection.method}</p>
+                ` : ''}
+            `;
+            resultsDiv.appendChild(div);
+        });
+    </script>
+</body>
+</html>
