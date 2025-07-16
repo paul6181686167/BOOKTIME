@@ -277,6 +277,14 @@ async def test_wikidata_connection(author_name: str = "rowling"):
             error=str(e)
         )
 
+@router.get("/author/{author_name}/works")
+async def get_author_works(author_name: str):
+    """
+    DEPRECATED: Utiliser /author/{author_name}/series à la place
+    Récupère les séries ET les livres individuels d'un auteur depuis Wikidata
+    """
+    return await get_author_series(author_name)
+
 @router.get("/stats")
 async def get_wikidata_stats():
     """
