@@ -92,7 +92,6 @@ const SlidePanel = ({ isOpen, onClose, children }) => {
             display: 'flex',
             alignItems: 'center'
           }}>
-            <span style={{ marginRight: '8px' }}>🔮</span>
             À venir
           </h2>
           <button
