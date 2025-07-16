@@ -7,6 +7,7 @@ const BookGrid = ({
   loading, 
   onBookClick, 
   onItemClick,
+  onAuthorClick,
   showEmptyState = true 
 }) => {
   // SESSION 81.1 - DOUBLE PROTECTION : Masquage des livres individuels de série dans BookGrid
