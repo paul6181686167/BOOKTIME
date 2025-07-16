@@ -1,25 +1,27 @@
 # 📚 BOOKTIME - DOCUMENTATION COMPLÈTE
 
-## 🔄 **MISE À JOUR RÉCENTE - SESSION 87.5.1 (Juillet 2025)**
+## 🔄 **MISE À JOUR RÉCENTE - SESSION 87.8 (Juillet 2025)**
 
 ### 🎯 **État actuel confirmé**
 - **Architecture** : 50,311 fichiers (229 Python + 29,443 JavaScript)
 - **Services** : 4 services RUNNING optimaux (backend, frontend, mongodb, code-server)
-- **APIs** : 89 endpoints tous opérationnels
+- **APIs** : 91 endpoints tous opérationnels (+2 nouveaux endpoints œuvres auteurs)
 - **Niveau** : Enterprise-ready production stable
 
-### 🔧 **Corrections récentes**
-- **Session 87.5.1** : Correction erreur `CollectionIcon` → `QueueListIcon` (Héroicons)
-- **Session 87.5** : Analyse exhaustive avec mémoire complète intégrale
+### 🔧 **Améliorations récentes**
+- **Session 87.8** : Amélioration modal auteur - Affichage toutes les œuvres + nouveaux endpoints
+- **Session 87.7** : Analyse exhaustive mémoire complète + validation architecture enterprise
+- **Session 87.6** : Résolution dépendance httpcore + analyse complète
+- **Session 87.5** : Implémentation API Wikipedia pour profils auteurs enrichis
 - **Session 87.4** : Solution Wikipedia API pour comptage œuvres réaliste
 - **Session 87.3** : Profils auteurs enrichis avec photos et biographies
 
-### 📊 **Modules backend actifs (15+)**
+### 📊 **Modules backend actifs (16+ modules)**
 - `auth/` - Authentification JWT ✅
 - `books/` - Gestion livres CRUD ✅
 - `series/` - Séries intelligentes ✅
-- `openlibrary/` - Intégration Open Library + Authors ✅
-- `wikipedia/` - API Wikipedia (Session 87.4) ✅
+- `openlibrary/` - Intégration Open Library + Authors + **Works** ✅
+- `wikipedia/` - API Wikipedia + **Works** (Session 87.8) ✅
 - `stats/` - Statistiques avancées ✅
 - `export_import/` - Sauvegarde/restauration ✅
 - `monitoring/` - Performance analytics ✅
@@ -29,11 +31,12 @@
 
 ### 🎨 **Fonctionnalités validées**
 - **Gestion bibliothèque** : Romans/BD/Mangas avec catégorisation
-- **Profils auteurs enrichis** : Photos OpenLibrary + biographies
+- **Profils auteurs enrichis** : Photos OpenLibrary + biographies + **toutes les œuvres**
 - **Système séries intelligent** : Détection automatique + masquage universel
 - **Recherche unifiée** : Locale + Open Library (20M+ livres)
 - **Interface épurée** : Design professionnel sans émojis
 - **Modals harmonisés** : Largeur 1024px pour cohérence
+- **Modal auteur complet** : Triple source + séries expandables + 50+ œuvres
 
 ---
 
