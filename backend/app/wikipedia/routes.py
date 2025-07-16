@@ -86,71 +86,131 @@ def extract_author_info(wikipedia_data: dict) -> dict:
         # Biographie courte (limiter à 300 caractères)
         bio = extract[:300] + "..." if len(extract) > 300 else extract
         
-        # Extraire les dates de naissance et décès du texte
+        # Extraire les dates de naissance et décès depuis la description
         birth_date = ""
         death_date = ""
         
-        # Rechercher des patterns de dates dans l'extrait
-        date_pattern = r'(\d{1,2}\s+\w+\s+\d{4})'
-        dates = re.findall(date_pattern, extract)
+        # Extraire les dates depuis la description (format: "born 1947" ou "1947-2020")
+        if description:
+            # Pattern pour "born YYYY" ou "YYYY-YYYY"
+            born_match = re.search(r'born\s+(\d{4})', description, re.IGNORECASE)
+            if born_match:
+                birth_date = born_match.group(1)
+            
+            # Pattern pour date de décès
+            death_match = re.search(r'(\d{4})-(\d{4})', description)
+            if death_match:
+                birth_date = death_match.group(1)
+                death_date = death_match.group(2)
         
-        # Pattern pour naissance/décès
-        birth_pattern = r'born\s+(\d{1,2}\s+\w+\s+\d{4})|born\s+(\w+\s+\d{1,2},?\s+\d{4})'
-        death_pattern = r'died\s+(\d{1,2}\s+\w+\s+\d{4})|died\s+(\w+\s+\d{1,2},?\s+\d{4})'
+        # Extraire des informations plus détaillées du texte
+        birth_pattern = r'born\s+(?:on\s+)?(\d{1,2}\s+\w+\s+\d{4})|born\s+(?:on\s+)?(\w+\s+\d{1,2},?\s+\d{4})|born\s+(\d{4})'
+        death_pattern = r'died\s+(?:on\s+)?(\d{1,2}\s+\w+\s+\d{4})|died\s+(?:on\s+)?(\w+\s+\d{1,2},?\s+\d{4})|died\s+(\d{4})'
         
         birth_match = re.search(birth_pattern, extract, re.IGNORECASE)
         death_match = re.search(death_pattern, extract, re.IGNORECASE)
         
         if birth_match:
-            birth_date = birth_match.group(1) or birth_match.group(2)
+            birth_date = birth_match.group(1) or birth_match.group(2) or birth_match.group(3)
         if death_match:
-            death_date = death_match.group(1) or death_match.group(2)
+            death_date = death_match.group(1) or death_match.group(2) or death_match.group(3)
         
-        # Extraire le comptage des œuvres
+        # Extraire le comptage des œuvres avec patterns améliorés
         work_count = 0
         work_summary = ""
         
-        # Rechercher des mentions de livres/romans/œuvres
-        book_patterns = [
+        # Patterns pour identifier les œuvres
+        work_patterns = [
+            r'author\s+of\s+(\d+)\s+books?',
+            r'wrote\s+(\d+)\s+books?',
+            r'published\s+(\d+)\s+books?',
             r'(\d+)\s+novels?',
-            r'(\d+)\s+books?',
-            r'(\d+)\s+works?',
-            r'author\s+of\s+(\d+)',
-            r'wrote\s+(\d+)',
-            r'published\s+(\d+)'
+            r'(\d+)\s+published\s+works?',
+            r'written\s+(\d+)\s+books?',
+            r'(\d+)\s+books?\s+published',
+            r'over\s+(\d+)\s+books?',
+            r'more\s+than\s+(\d+)\s+books?'
         ]
         
-        for pattern in book_patterns:
+        # Recherche du comptage dans l'extrait
+        for pattern in work_patterns:
             match = re.search(pattern, extract, re.IGNORECASE)
             if match:
                 try:
                     work_count = int(match.group(1))
                     break
-                except ValueError:
+                except (ValueError, IndexError):
                     continue
         
-        # Créer un résumé des œuvres
-        if "novels" in extract.lower():
-            work_summary = f"Auteur de romans"
+        # Identifier le type d'auteur et créer un résumé
+        if "novelist" in extract.lower() or "novels" in extract.lower():
+            work_summary = "Romancier"
+        elif "poet" in extract.lower() or "poetry" in extract.lower():
+            work_summary = "Poète"
+        elif "playwright" in extract.lower() or "plays" in extract.lower():
+            work_summary = "Dramaturge"
         elif "short stories" in extract.lower():
-            work_summary = f"Auteur de nouvelles"
-        elif "poet" in extract.lower():
-            work_summary = f"Poète"
-        elif "playwright" in extract.lower():
-            work_summary = f"Dramaturge"
+            work_summary = "Auteur de nouvelles"
+        elif "fantasy" in extract.lower() and "author" in extract.lower():
+            work_summary = "Auteur de fantasy"
+        elif "horror" in extract.lower() and "author" in extract.lower():
+            work_summary = "Auteur d'horreur"
+        elif "crime" in extract.lower() and "author" in extract.lower():
+            work_summary = "Auteur de polars"
+        elif "children" in extract.lower() and "author" in extract.lower():
+            work_summary = "Auteur pour enfants"
+        elif "author" in extract.lower() or "writer" in extract.lower():
+            work_summary = "Écrivain"
         else:
-            work_summary = f"Écrivain"
+            work_summary = "Auteur"
+        
+        # Extraire des informations spéciales depuis l'extrait
+        special_info = []
+        
+        # Rechercher mentions de séries célèbres
+        if "harry potter" in extract.lower():
+            special_info.append("Créateur de Harry Potter")
+        if "game of thrones" in extract.lower() or "song of ice and fire" in extract.lower():
+            special_info.append("Créateur de Game of Thrones")
+        if "lord of the rings" in extract.lower():
+            special_info.append("Créateur du Seigneur des Anneaux")
+        
+        # Rechercher mentions de prix
+        if "nobel prize" in extract.lower():
+            special_info.append("Prix Nobel de littérature")
+        if "pulitzer" in extract.lower():
+            special_info.append("Prix Pulitzer")
+        if "hugo award" in extract.lower():
+            special_info.append("Prix Hugo")
+        
+        # Améliorer le résumé avec les informations spéciales
+        if special_info:
+            work_summary = f"{work_summary} • {' • '.join(special_info)}"
         
         # Compléter avec le comptage si disponible
         if work_count > 0:
             work_summary += f" ({work_count} œuvres)"
         
-        # Œuvre principale (essayer d'extraire du texte)
+        # Extraire l'œuvre principale (première œuvre mentionnée entre guillemets)
         top_work = ""
-        # Rechercher des titres entre guillemets
-        title_matches = re.findall(r'"([^"]+)"', extract)
+        title_matches = re.findall(r'["""]([^"""]+)["""]', extract)
         if title_matches:
-            top_work = title_matches[0]
+            # Prendre la première œuvre qui ressemble à un titre
+            for title in title_matches:
+                if len(title) > 3 and len(title) < 100:  # Filtrer les titres valides
+                    top_work = title
+                    break
+        
+        # Alternative: rechercher des titres en italique dans l'HTML
+        if not top_work:
+            extract_html = wikipedia_data.get("extract_html", "")
+            if extract_html:
+                italic_matches = re.findall(r'<i>([^<]+)</i>', extract_html)
+                if italic_matches:
+                    for title in italic_matches:
+                        if len(title) > 3 and len(title) < 100:
+                            top_work = title
+                            break
         
         return {
             "name": name,
