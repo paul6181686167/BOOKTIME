@@ -227,8 +227,10 @@ SELECT ?series ?seriesLabel ?author ?authorLabel WHERE {
   ?author rdfs:label|skos:altLabel ?authorName .
   FILTER(CONTAINS(LCASE(?authorName), "%(test_author)s"))
   
-  # Séries de livres seulement
-  ?series wdt:P31 wd:Q277759 .
+  # Séries de livres seulement - REQUÊTE ÉLARGIE
+  ?series wdt:P31 ?seriesType .
+  FILTER(?seriesType IN (wd:Q277759, wd:Q47068459, wd:Q1667921, wd:Q614101, wd:Q53815))
+  # Q277759: série de livres, Q47068459: children's book series, Q1667921: suite romanesque, Q614101: heptalogie, Q53815: canon
   ?series wdt:P50 ?author .
   
   SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en" . }
