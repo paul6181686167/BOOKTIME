@@ -1,0 +1,155 @@
+{
+  "total_series_detected": 18,
+  "total_authors_processed": 20,
+  "series_detected": [
+    {
+      "name": "six",
+      "author": "Agatha Christie",
+      "source": "wikipedia_description",
+      "detected_at": "2025-07-16T19:07:02.866177",
+      "confidence": 85
+    },
+    {
+      "name": "her 66 detective",
+      "author": "Agatha Christie",
+      "source": "wikipedia_description",
+      "detected_at": "2025-07-16T19:07:02.866757",
+      "confidence": 85
+    },
+    {
+      "name": "his horror",
+      "author": "Stephen King",
+      "source": "wikipedia_description",
+      "detected_at": "2025-07-16T19:07:02.872986",
+      "confidence": 85
+    },
+    {
+      "name": "a seven-volume fantasy",
+      "author": "J.K. Rowling",
+      "source": "wikipedia_description",
+      "detected_at": "2025-07-16T19:07:02.881064",
+      "confidence": 85
+    },
+    {
+      "name": "Discworld",
+      "author": "Terry Pratchett",
+      "source": "wikipedia_description",
+      "detected_at": "2025-07-16T19:07:02.914134",
+      "confidence": 85
+    },
+    {
+      "name": "Discworld",
+      "author": "Terry Pratchett",
+      "source": "wikipedia_description",
+      "detected_at": "2025-07-16T19:07:02.914181",
+      "confidence": 85
+    },
+    {
+      "name": "unfinished",
+      "author": "George R.R. Martin",
+      "source": "wikipedia_description",
+      "detected_at": "2025-07-16T19:07:02.922798",
+      "confidence": 85
+    },
+    {
+      "name": "two graphic",
+      "author": "Brandon Sanderson",
+      "source": "wikipedia_description",
+      "detected_at": "2025-07-16T19:07:02.936166",
+      "confidence": 85
+    },
+    {
+      "name": "finishing author Robert Jordan's high fantasy",
+      "author": "Brandon Sanderson",
+      "source": "wikipedia_description",
+      "detected_at": "2025-07-16T19:07:02.936235",
+      "confidence": 85
+    },
+    {
+      "name": "Wheel of Time",
+      "author": "Robert Jordan",
+      "source": "wikipedia_description",
+      "detected_at": "2025-07-16T19:07:02.949211",
+      "confidence": 85
+    },
+    {
+      "name": "and Cinder Spires",
+      "author": "Jim Butcher",
+      "source": "wikipedia_description",
+      "detected_at": "2025-07-16T19:07:02.964182",
+      "confidence": 85
+    },
+    {
+      "name": "young adult dystopian book",
+      "author": "Suzanne Collins",
+      "source": "wikipedia_description",
+      "detected_at": "2025-07-16T19:07:02.983930",
+      "confidence": 85
+    },
+    {
+      "name": "children's fantasy",
+      "author": "Suzanne Collins",
+      "source": "wikipedia_description",
+      "detected_at": "2025-07-16T19:07:02.983977",
+      "confidence": 85
+    },
+    {
+      "name": "She is also the author of the children's",
+      "author": "Suzanne Collins",
+      "source": "wikipedia_description",
+      "detected_at": "2025-07-16T19:07:02.984425",
+      "confidence": 85
+    },
+    {
+      "name": "her bestselling",
+      "author": "Cassandra Clare",
+      "source": "wikipedia_description",
+      "detected_at": "2025-07-16T19:07:02.998722",
+      "confidence": 85
+    },
+    {
+      "name": "her bestselling",
+      "author": "Cassandra Clare",
+      "source": "wikipedia_description",
+      "detected_at": "2025-07-16T19:07:02.998774",
+      "confidence": 85
+    },
+    {
+      "name": "Locus Fantasy Award-winning",
+      "author": "Orson Scott Card",
+      "source": "wikipedia_description",
+      "detected_at": "2025-07-16T19:07:03.026180",
+      "confidence": 85
+    },
+    {
+      "name": "and the Earthsea",
+      "author": "Ursula K. Le Guin",
+      "source": "wikipedia_description",
+      "detected_at": "2025-07-16T19:07:03.059879",
+      "confidence": 85
+    }
+  ],
+  "authors_processed": [
+    "Agatha Christie",
+    "Stephen King",
+    "J.K. Rowling",
+    "Isaac Asimov",
+    "Terry Pratchett",
+    "George R.R. Martin",
+    "Brandon Sanderson",
+    "Robert Jordan",
+    "Jim Butcher",
+    "Rick Riordan",
+    "Suzanne Collins",
+    "Cassandra Clare",
+    "Neil Gaiman",
+    "Douglas Adams",
+    "Orson Scott Card",
+    "Frank Herbert",
+    "Ursula K. Le Guin",
+    "Philip K. Dick",
+    "Arthur C. Clarke",
+    "Ray Bradbury"
+  ],
+  "enrichment_completed_at": "2025-07-16T19:07:03.086442"
+}
