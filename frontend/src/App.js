@@ -810,6 +810,7 @@ function MainApp() {
                     books={groupedBooks.to_read}
                     loading={false}
                     onItemClick={handleItemClick}
+                    onAuthorClick={handleAuthorClick}
                     showEmptyState={false}
                   />
                 </div>
