@@ -86,6 +86,6 @@ class WikidataTestResponse(BaseModel):
     success: bool = Field(..., description="Test réussi")
     query: str = Field(..., description="Requête SPARQL exécutée")
     results: List[Dict[str, Any]] = Field(default_factory=list, description="Résultats bruts")
-    processed_results: Dict[str, Any] = Field(default_factory=dict, description="Résultats traités")
+    processed_results: List[Dict[str, Any]] = Field(default_factory=list, description="Résultats traités")
     execution_time: float = Field(..., description="Temps d'exécution")
     error: Optional[str] = Field(None, description="Erreur éventuelle")
