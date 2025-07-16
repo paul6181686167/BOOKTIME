@@ -1,0 +1,106 @@
+{
+  "timestamp": "20250716_174019",
+  "summary": {
+    "total_tests": 5,
+    "successful_tests": 5,
+    "failed_tests": 5
+  },
+  "results": {
+    "wikipedia_works": {
+      "J.K. Rowling": {
+        "success": true,
+        "total_books": 50,
+        "series_count": 1,
+        "individual_count": 50,
+        "sources": {
+          "wikipedia": 1,
+          "openlibrary": 50
+        }
+      },
+      "Stephen King": {
+        "success": true,
+        "total_books": 50,
+        "series_count": 0,
+        "individual_count": 50,
+        "sources": {
+          "wikipedia": 0,
+          "openlibrary": 50
+        }
+      },
+      "Agatha Christie": {
+        "success": true,
+        "total_books": 50,
+        "series_count": 0,
+        "individual_count": 50,
+        "sources": {
+          "wikipedia": 0,
+          "openlibrary": 50
+        }
+      },
+      "George R.R. Martin": {
+        "success": true,
+        "total_books": 50,
+        "series_count": 2,
+        "individual_count": 50,
+        "sources": {
+          "wikipedia": 2,
+          "openlibrary": 50
+        }
+      },
+      "J.R.R. Tolkien": {
+        "success": true,
+        "total_books": 50,
+        "series_count": 1,
+        "individual_count": 50,
+        "sources": {
+          "wikipedia": 1,
+          "openlibrary": 50
+        }
+      }
+    },
+    "openlibrary_works": {
+      "J.K. Rowling": {
+        "success": false,
+        "reason": "Auth failed"
+      },
+      "Stephen King": {
+        "success": false,
+        "reason": "Auth failed"
+      },
+      "Agatha Christie": {
+        "success": false,
+        "reason": "Auth failed"
+      },
+      "George R.R. Martin": {
+        "success": false,
+        "reason": "Auth failed"
+      },
+      "J.R.R. Tolkien": {
+        "success": false,
+        "reason": "Auth failed"
+      }
+    },
+    "summary": {
+      "total_tests": 5,
+      "successful_tests": 5,
+      "failed_tests": 5
+    }
+  },
+  "performance": {
+    "J.K. Rowling_wikipedia": {
+      "duration": 0.6297018527984619,
+      "books": 50,
+      "success": true
+    },
+    "Stephen King_wikipedia": {
+      "duration": 0.7214436531066895,
+      "books": 50,
+      "success": true
+    },
+    "Agatha Christie_wikipedia": {
+      "duration": 0.9196171760559082,
+      "books": 50,
+      "success": true
+    }
+  }
+}
