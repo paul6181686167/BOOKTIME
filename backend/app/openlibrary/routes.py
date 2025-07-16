@@ -346,6 +346,74 @@ async def search_by_author(
     except requests.RequestException as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la recherche: {str(e)}")
 
+@router.get("/author/{author_name}")
+async def get_author_info(
+    author_name: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupérer les informations d'un auteur depuis Open Library"""
+    try:
+        # Rechercher l'auteur dans Open Library
+        search_url = f"https://openlibrary.org/search/authors.json"
+        search_params = {"q": author_name, "limit": 1}
+        
+        response = requests.get(search_url, params=search_params, timeout=10)
+        response.raise_for_status()
+        search_data = response.json()
+        
+        if not search_data.get("docs"):
+            return {"found": False, "message": "Auteur non trouvé"}
+        
+        # Récupérer les détails de l'auteur
+        author_data = search_data["docs"][0]
+        author_key = author_data.get("key", "")
+        
+        if author_key:
+            # Récupérer les informations détaillées de l'auteur
+            author_url = f"https://openlibrary.org{author_key}.json"
+            author_response = requests.get(author_url, timeout=10)
+            
+            if author_response.status_code == 200:
+                author_details = author_response.json()
+                
+                # Extraire la biographie
+                bio = ""
+                if author_details.get("bio"):
+                    if isinstance(author_details["bio"], dict):
+                        bio = author_details["bio"].get("value", "")
+                    else:
+                        bio = author_details["bio"]
+                
+                # Limiter la biographie à 300 caractères pour affichage
+                if len(bio) > 300:
+                    bio = bio[:300] + "..."
+                
+                # URL de la photo
+                photo_url = ""
+                if author_details.get("photos"):
+                    photo_id = author_details["photos"][0]
+                    photo_url = f"https://covers.openlibrary.org/a/id/{photo_id}-M.jpg"
+                
+                return {
+                    "found": True,
+                    "author": {
+                        "name": author_details.get("name", author_name),
+                        "bio": bio,
+                        "photo_url": photo_url,
+                        "birth_date": author_details.get("birth_date", ""),
+                        "death_date": author_details.get("death_date", ""),
+                        "alternate_names": author_details.get("alternate_names", []),
+                        "work_count": author_data.get("work_count", 0),
+                        "top_work": author_data.get("top_work", ""),
+                        "ol_key": author_key
+                    }
+                }
+        
+        return {"found": False, "message": "Détails de l'auteur non disponibles"}
+        
+    except requests.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération des informations de l'auteur: {str(e)}")
+
 @router.get("/recommendations")
 async def get_recommendations(
     limit: int = 10,
