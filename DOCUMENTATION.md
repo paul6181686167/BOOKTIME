@@ -106,11 +106,12 @@ Services: 4 services RUNNING (backend, frontend, mongodb, code-server)
 
 #### Backend (FastAPI)
 - **server.py** : Application principale avec point d'entrée
-- **app/main.py** : 13+ routers modulaires spécialisés
+- **app/main.py** : 16+ routers modulaires spécialisés
 - **Authentification JWT** : Système simplifié prénom/nom
 - **Modèles Pydantic** : Validation des données
 - **Intégration MongoDB** : Base de données NoSQL avec UUIDs
 - **API Open Library** : Recherche externe livres + informations auteurs
+- **API Wikipedia** : Profils auteurs enrichis avec données curées
 
 #### Frontend (React)
 - **App.js** : Composant principal (1,045 lignes)
