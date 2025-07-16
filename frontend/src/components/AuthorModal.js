@@ -5,7 +5,7 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
   if (!isOpen || !author) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1100 }}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between mb-6">
           <div className="flex-1">
