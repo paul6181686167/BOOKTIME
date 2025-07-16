@@ -132,7 +132,15 @@ const BookGrid = ({
                   {item.name}
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  {item.author}
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onAuthorClick) onAuthorClick(item.author);
+                    }}
+                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors underline"
+                  >
+                    {item.author}
+                  </button>
                 </p>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-900 dark:text-white">
