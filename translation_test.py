@@ -7,7 +7,7 @@ from datetime import datetime
 
 class TranslationAPITester:
     def __init__(self, base_url=None):
-        self.base_url = base_url or os.environ.get("REACT_APP_BACKEND_URL", "https://43fdc2c0-91dd-47f4-8760-5404bcd05926.preview.emergentagent.com")
+        self.base_url = base_url or os.environ.get("REACT_APP_BACKEND_URL", "https://1ded4fd6-1911-4ddc-b8f2-bb2a855aa5b7.preview.emergentagent.com")
         self.token = None
         self.tests_run = 0
         self.tests_passed = 0
