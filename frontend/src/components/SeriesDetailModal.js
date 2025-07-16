@@ -18,7 +18,8 @@ const SeriesDetailModal = ({
   isOpen, 
   onClose, 
   onUpdate,
-  onAddSeries
+  onAddSeries,
+  onAuthorClick
 }) => {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
