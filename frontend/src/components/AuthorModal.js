@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon, UserIcon, BookOpenIcon, CalendarIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, UserIcon, BookOpenIcon, CalendarIcon, CollectionIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 
 const AuthorModal = ({ author, isOpen, onClose }) => {
   const [authorInfo, setAuthorInfo] = useState(null);
+  const [authorBooks, setAuthorBooks] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [expandedSeries, setExpandedSeries] = useState({});
 
   // Fonction pour charger les informations de l'auteur
   const loadAuthorInfo = async () => {
@@ -15,50 +17,109 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
     
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
-      
-      // Essayer d'abord l'API Wikipedia (nouvelle source optimale)
-      const wikipediaResponse = await fetch(`${backendUrl}/api/wikipedia/author/${encodeURIComponent(author)}`);
-      
-      if (wikipediaResponse.ok) {
-        const wikipediaData = await wikipediaResponse.json();
-        if (wikipediaData.found) {
-          console.log('✅ Informations auteur récupérées depuis Wikipedia:', wikipediaData.author);
-          setAuthorInfo({
-            ...wikipediaData.author,
-            source: 'wikipedia'
-          });
-          return;
-        }
-      }
-      
-      // Fallback vers OpenLibrary si Wikipedia échoue
       const token = localStorage.getItem('token');
-      const openlibResponse = await fetch(`${backendUrl}/api/openlibrary/author/${encodeURIComponent(author)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
       
-      if (openlibResponse.ok) {
-        const openlibData = await openlibResponse.json();
-        if (openlibData.found) {
-          console.log('✅ Informations auteur récupérées depuis OpenLibrary:', openlibData.author);
-          setAuthorInfo({
-            ...openlibData.author,
-            source: 'openlibrary'
-          });
-          return;
-        }
-      }
-      
-      // Aucune source n'a fonctionné
-      setError("Informations de l'auteur non disponibles");
+      // Charger les informations de l'auteur et ses œuvres en parallèle
+      const [authorInfoPromise, authorBooksPromise] = await Promise.all([
+        loadAuthorProfile(backendUrl),
+        loadAuthorBooks(backendUrl, token)
+      ]);
       
     } catch (err) {
       console.error('Erreur lors du chargement des informations de l\'auteur:', err);
       setError("Erreur de connexion");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Charger le profil de l'auteur (Wikipedia + OpenLibrary)
+  const loadAuthorProfile = async (backendUrl) => {
+    // Essayer d'abord l'API Wikipedia (nouvelle source optimale)
+    const wikipediaResponse = await fetch(`${backendUrl}/api/wikipedia/author/${encodeURIComponent(author)}`);
+    
+    if (wikipediaResponse.ok) {
+      const wikipediaData = await wikipediaResponse.json();
+      if (wikipediaData.found) {
+        console.log('✅ Informations auteur récupérées depuis Wikipedia:', wikipediaData.author);
+        setAuthorInfo({
+          ...wikipediaData.author,
+          source: 'wikipedia'
+        });
+        return;
+      }
+    }
+    
+    // Fallback vers OpenLibrary si Wikipedia échoue
+    const token = localStorage.getItem('token');
+    const openlibResponse = await fetch(`${backendUrl}/api/openlibrary/author/${encodeURIComponent(author)}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (openlibResponse.ok) {
+      const openlibData = await openlibResponse.json();
+      if (openlibData.found) {
+        console.log('✅ Informations auteur récupérées depuis OpenLibrary:', openlibData.author);
+        setAuthorInfo({
+          ...openlibData.author,
+          source: 'openlibrary'
+        });
+        return;
+      }
+    }
+    
+    // Aucune source n'a fonctionné pour le profil
+    console.log('⚠️ Aucune information de profil trouvée pour l\'auteur');
+  };
+
+  // Charger les œuvres de l'auteur depuis la bibliothèque
+  const loadAuthorBooks = async (backendUrl, token) => {
+    try {
+      const response = await fetch(`${backendUrl}/api/authors/${encodeURIComponent(author)}/books`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const booksData = await response.json();
+        console.log('✅ Œuvres de l\'auteur récupérées:', booksData);
+        setAuthorBooks(booksData);
+      } else {
+        console.log('⚠️ Aucune œuvre trouvée dans la bibliothèque pour cet auteur');
+      }
+    } catch (err) {
+      console.error('Erreur lors du chargement des œuvres:', err);
+    }
+  };
+
+  // Fonction pour basculer l'expansion d'une série
+  const toggleSeriesExpansion = (seriesName) => {
+    setExpandedSeries(prev => ({
+      ...prev,
+      [seriesName]: !prev[seriesName]
+    }));
+  };
+
+  // Fonction pour obtenir la couleur du badge de statut
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+      case 'reading': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+      case 'to_read': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+    }
+  };
+
+  // Fonction pour obtenir le texte du statut
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'completed': return 'Terminé';
+      case 'reading': return 'En cours';
+      case 'to_read': return 'À lire';
+      default: return 'Inconnu';
     }
   };
 
@@ -73,7 +134,9 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
   useEffect(() => {
     if (!isOpen) {
       setAuthorInfo(null);
+      setAuthorBooks(null);
       setError(null);
+      setExpandedSeries({});
     }
   }, [isOpen]);
 
