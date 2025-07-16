@@ -136,6 +136,15 @@ def extract_works_from_wikipedia(wikipedia_data: dict, author_name: str) -> List
             (r'Dr\.?\s*Slump(?:\s+(?:series|saga|manga?))?', "Dr. Slump"),
             (r'One Piece(?:\s+(?:series|saga|manga?))?', "One Piece"),
             (r'Naruto(?:\s+(?:series|saga|manga?))?', "Naruto"),
+            (r'The Dark Tower(?:\s+(?:series|saga))?', "The Dark Tower"),
+            (r'It(?:\s+(?:novel|book))?', "It"),
+            (r'The Shining(?:\s+(?:novel|book))?', "The Shining"),
+            (r'Salem\'s Lot(?:\s+(?:novel|book))?', "Salem's Lot"),
+            (r'The Stand(?:\s+(?:novel|book))?', "The Stand"),
+            (r'Pet Sematary(?:\s+(?:novel|book))?', "Pet Sematary"),
+            (r'Christine(?:\s+(?:novel|book))?', "Christine"),
+            (r'Misery(?:\s+(?:novel|book))?', "Misery"),
+            (r'The Green Mile(?:\s+(?:series|saga|novels?))?', "The Green Mile"),
             
             # Patterns génériques plus stricts
             (r'(?:wrote|created|authored)\s+(?:the\s+)?([A-Z][a-zA-Z\s]+?)(?:\s+(?:series|saga|cycle))(?:\s+(?:of|with))?', None),
