@@ -72,10 +72,12 @@ Services: 4 services RUNNING (backend, frontend, mongodb, code-server)
 ├── backend/
 │   ├── server.py              # Application FastAPI principale
 │   ├── app/
-│   │   ├── main.py           # Point d'entrée avec 13+ routers
+│   │   ├── main.py           # Point d'entrée avec 16+ routers
 │   │   ├── openlibrary/      # Module OpenLibrary (Books + Authors)
 │   │   │   ├── routes.py     # Endpoints OpenLibrary
 │   │   │   └── service.py    # Services OpenLibrary
+│   │   ├── wikipedia/        # Module Wikipedia API (Session 87.5)
+│   │   │   └── routes.py     # Endpoints Wikipedia auteurs
 │   │   ├── auth/             # Module authentification
 │   │   ├── books/            # Module gestion livres
 │   │   ├── authors/          # Module gestion auteurs
