@@ -30,8 +30,8 @@ class WikidataService:
     def __init__(self):
         self.sparql_endpoint = "https://query.wikidata.org/sparql"
         self.cache = {}
-        self.cache_ttl = 3600  # 1 heure
-        self.request_delay = 1.0  # Délai entre requêtes (respecter les limites)
+        self.cache_ttl = 3600 * 3  # 3 heures (était 1 heure)
+        self.request_delay = 0.5  # Réduit à 0.5s (était 1.0s)
         self.last_request_time = 0
         
     async def _execute_sparql_query(self, query: str, timeout: int = 30) -> Optional[Dict]:
