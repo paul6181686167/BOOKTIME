@@ -96,7 +96,6 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
     } catch (error) {
       console.warn('⚠️ Erreur OpenLibrary:', error);
     }
-    }
     
     // Aucune source n'a fonctionné pour le profil
     console.log('⚠️ Aucune information de profil trouvée pour l\'auteur');
