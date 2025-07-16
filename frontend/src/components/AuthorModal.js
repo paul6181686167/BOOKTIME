@@ -102,10 +102,33 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
     console.log('⚠️ Aucune information de profil trouvée pour l\'auteur');
   };
 
-  // Charger les œuvres de l'auteur depuis Wikipedia (optimisé)
+  // Charger les œuvres de l'auteur (Wikidata → Wikipedia → Bibliothèque)
   const loadAuthorBooks = async (backendUrl, token) => {
     try {
-      // Utiliser l'endpoint Wikipedia optimisé pour toutes les œuvres
+      // 1. PRIORITÉ : Wikidata (séries structurées)
+      const wikidataSeriesResponse = await fetch(`${backendUrl}/api/wikidata/author/${encodeURIComponent(author)}/series`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (wikidataSeriesResponse.ok) {
+        const wikidataSeriesData = await wikidataSeriesResponse.json();
+        if (wikidataSeriesData.found && wikidataSeriesData.series.length > 0) {
+          console.log('✅ Séries récupérées depuis Wikidata:', wikidataSeriesData);
+          setAuthorBooks({
+            series: wikidataSeriesData.series,
+            individual_books: [],
+            total_books: wikidataSeriesData.results_count,
+            total_series: wikidataSeriesData.series.length,
+            total_individual_books: 0,
+            sources: { wikidata: wikidataSeriesData.series.length }
+          });
+          return;
+        }
+      }
+      
+      // 2. FALLBACK : Wikipedia (parsing intelligent)
       const wikipediaWorksResponse = await fetch(`${backendUrl}/api/wikipedia/author/${encodeURIComponent(author)}/works`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -128,7 +151,7 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
         }
       }
       
-      // Fallback vers l'endpoint bibliothèque personnelle
+      // 3. FALLBACK : Bibliothèque personnelle
       const response = await fetch(`${backendUrl}/api/authors/${encodeURIComponent(author)}/books`, {
         headers: {
           'Authorization': `Bearer ${token}`
