@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon, UserIcon, BookOpenIcon, CalendarIcon, CollectionIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, UserIcon, BookOpenIcon, CalendarIcon, QueueListIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 
 const AuthorModal = ({ author, isOpen, onClose }) => {
   const [authorInfo, setAuthorInfo] = useState(null);
