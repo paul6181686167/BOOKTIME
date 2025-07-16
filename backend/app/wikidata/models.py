@@ -69,6 +69,9 @@ class WikidataAuthorResponse(WikidataSearchResult):
     """Réponse pour un auteur"""
     author: Optional[WikidataAuthor] = Field(None, description="Données auteur")
     series: List[WikidataSeries] = Field(default_factory=list, description="Séries de l'auteur")
+    individual_books: List[Dict[str, Any]] = Field(default_factory=list, description="Livres individuels de l'auteur")
+    total_series: int = Field(0, description="Nombre total de séries")
+    total_individual_books: int = Field(0, description="Nombre total de livres individuels")
 
 class WikidataSeriesResponse(WikidataSearchResult):
     """Réponse pour une série"""
