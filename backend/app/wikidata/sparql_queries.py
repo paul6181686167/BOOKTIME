@@ -4,6 +4,50 @@ Requêtes structurées pour auteurs, séries et livres
 """
 
 # Requête pour obtenir les séries d'un auteur (OPTIMISÉE - Performance)
+# Requête pour trouver l'ID Wikidata d'un auteur par nom
+GET_AUTHOR_ID = """
+SELECT DISTINCT ?author ?authorLabel WHERE {
+  ?author rdfs:label|skos:altLabel ?authorName .
+  FILTER(
+    CONTAINS(LCASE(?authorName), LCASE("%(author_name)s")) ||
+    CONTAINS(LCASE(?authorName), LCASE("%(author_name_spaced)s")) ||
+    CONTAINS(LCASE(?authorName), LCASE("%(author_name_nospace)s"))
+  )
+  
+  # Vérifier que c'est bien un auteur
+  ?author wdt:P106 ?occupation .
+  FILTER(?occupation IN (wd:Q36180, wd:Q482980, wd:Q49757, wd:Q6625963, wd:Q214917, wd:Q4853732))
+  # Q36180: écrivain, Q482980: auteur, Q49757: poète, Q6625963: romancier, Q214917: dramaturge, Q4853732: nouvelliste
+  
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en" . }
+}
+LIMIT 1
+"""
+
+# Requête pour obtenir les séries d'un auteur par son ID Wikidata
+GET_AUTHOR_SERIES_BY_ID = """
+SELECT DISTINCT ?series ?seriesLabel ?genre ?genreLabel ?startDate ?endDate ?description WHERE {
+  BIND(wd:%(author_id)s AS ?author)
+  
+  # Trouve les séries de cet auteur - REQUÊTE ÉLARGIE POUR INCLURE TOUS TYPES SÉRIES
+  ?series wdt:P31 ?seriesType .     # Instance de différents types de séries
+  FILTER(?seriesType IN (wd:Q277759, wd:Q47068459, wd:Q1667921, wd:Q614101, wd:Q53815))
+  # Q277759: série de livres, Q47068459: children's book series, Q1667921: suite romanesque, Q614101: heptalogie, Q53815: canon
+  ?series wdt:P50 ?author .         # Auteur
+  
+  # Informations essentielles seulement
+  OPTIONAL { ?series wdt:P136 ?genre . }
+  OPTIONAL { ?series wdt:P571 ?startDate . }
+  OPTIONAL { ?series wdt:P582 ?endDate . }
+  OPTIONAL { ?series schema:description ?description . FILTER(LANG(?description) = "fr" || LANG(?description) = "en") }
+  
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en" . }
+}
+ORDER BY ?seriesLabel
+LIMIT 20
+"""
+
+# Requête pour obtenir les séries d'un auteur (MÉTHODE HYBRIDE)
 GET_AUTHOR_SERIES = """
 SELECT DISTINCT ?series ?seriesLabel ?genre ?genreLabel ?startDate ?endDate ?description WHERE {
   # Recherche élargie auteur par nom avec aliases et variantes
@@ -13,6 +57,10 @@ SELECT DISTINCT ?series ?seriesLabel ?genre ?genreLabel ?startDate ?endDate ?des
     CONTAINS(LCASE(?authorName), LCASE("%(author_name_spaced)s")) ||
     CONTAINS(LCASE(?authorName), LCASE("%(author_name_nospace)s"))
   )
+  
+  # Vérifier que c'est bien un auteur
+  ?author wdt:P106 ?occupation .
+  FILTER(?occupation IN (wd:Q36180, wd:Q482980, wd:Q49757, wd:Q6625963, wd:Q214917, wd:Q4853732))
   
   # Trouve les séries de cet auteur - REQUÊTE ÉLARGIE POUR INCLURE TOUS TYPES SÉRIES
   ?series wdt:P31 ?seriesType .     # Instance de différents types de séries
