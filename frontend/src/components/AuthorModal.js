@@ -74,9 +74,48 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
     console.log('⚠️ Aucune information de profil trouvée pour l\'auteur');
   };
 
-  // Charger les œuvres de l'auteur depuis la bibliothèque
+  // Charger les œuvres de l'auteur depuis Wikipedia et OpenLibrary
   const loadAuthorBooks = async (backendUrl, token) => {
     try {
+      // Essayer d'abord l'endpoint Wikipedia pour toutes les œuvres
+      const wikipediaWorksResponse = await fetch(`${backendUrl}/api/wikipedia/author/${encodeURIComponent(author)}/works`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (wikipediaWorksResponse.ok) {
+        const wikipediaWorksData = await wikipediaWorksResponse.json();
+        if (wikipediaWorksData.found) {
+          console.log('✅ Œuvres récupérées depuis Wikipedia:', wikipediaWorksData.works);
+          setAuthorBooks(wikipediaWorksData.works);
+          return;
+        }
+      }
+      
+      // Fallback vers OpenLibrary pour toutes les œuvres
+      const openlibWorksResponse = await fetch(`${backendUrl}/api/openlibrary/author/${encodeURIComponent(author)}/works`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (openlibWorksResponse.ok) {
+        const openlibWorksData = await openlibWorksResponse.json();
+        if (openlibWorksData.found) {
+          console.log('✅ Œuvres récupérées depuis OpenLibrary:', openlibWorksData);
+          setAuthorBooks({
+            series: openlibWorksData.series,
+            individual_books: openlibWorksData.individual_books,
+            total_books: openlibWorksData.total_books,
+            sources: openlibWorksData.sources,
+            fallback: true
+          });
+          return;
+        }
+      }
+      
+      // Fallback final vers l'endpoint bibliothèque personnelle
       const response = await fetch(`${backendUrl}/api/authors/${encodeURIComponent(author)}/books`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -85,10 +124,25 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
       
       if (response.ok) {
         const booksData = await response.json();
-        console.log('✅ Œuvres de l\'auteur récupérées:', booksData);
-        setAuthorBooks(booksData);
+        console.log('✅ Œuvres de l\'auteur récupérées depuis la bibliothèque:', booksData);
+        
+        // Convertir au format attendu
+        const formattedBooks = {
+          series: [],
+          individual_books: booksData.map(book => ({
+            book: book,
+            title: book.title,
+            year: book.publication_year,
+            source: 'library'
+          })),
+          total_books: booksData.length,
+          sources: { library: booksData.length },
+          fallback: true
+        };
+        
+        setAuthorBooks(formattedBooks);
       } else {
-        console.log('⚠️ Aucune œuvre trouvée dans la bibliothèque pour cet auteur');
+        console.log('⚠️ Aucune œuvre trouvée pour cet auteur');
       }
     } catch (err) {
       console.error('Erreur lors du chargement des œuvres:', err);
