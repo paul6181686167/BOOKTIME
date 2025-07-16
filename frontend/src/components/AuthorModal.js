@@ -319,15 +319,22 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
               </div>
             )}
 
-            {/* Œuvres de l'auteur dans la bibliothèque */}
+            {/* Œuvres de l'auteur depuis sources externes */}
             {authorBooks && authorBooks.total_books > 0 && (
               <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                   <CollectionIcon className="h-5 w-5 mr-2 text-green-600" />
-                  Œuvres dans votre bibliothèque
+                  {authorBooks.fallback ? "Œuvres dans votre bibliothèque" : "Œuvres de l'auteur"}
                   <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
                     ({authorBooks.total_books} livre{authorBooks.total_books > 1 ? 's' : ''})
                   </span>
+                  {authorBooks.sources && (
+                    <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
+                      {authorBooks.sources.wikipedia ? `Wikipedia: ${authorBooks.sources.wikipedia}` : ''}
+                      {authorBooks.sources.openlibrary ? ` OpenLibrary: ${authorBooks.sources.openlibrary}` : ''}
+                      {authorBooks.sources.library ? `Bibliothèque: ${authorBooks.sources.library}` : ''}
+                    </span>
+                  )}
                 </h3>
 
                 <div className="space-y-4">
@@ -347,22 +354,16 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
                               {series.name}
                             </h4>
                             <p className="text-sm text-gray-500 dark:text-gray-400">
-                              {series.total_volumes} volume{series.total_volumes > 1 ? 's' : ''} • 
-                              {series.completed_volumes} terminé{series.completed_volumes > 1 ? 's' : ''} • 
-                              {series.reading_volumes} en cours • 
-                              {series.to_read_volumes} à lire
+                              {series.description || "Série"}
+                              {series.source && (
+                                <span className="ml-2 text-xs">
+                                  • {series.source === 'wikipedia' ? 'Wikipedia' : 'OpenLibrary'}
+                                </span>
+                              )}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          {series.first_published && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {series.first_published}
-                              {series.last_published && series.last_published !== series.first_published && 
-                                ` - ${series.last_published}`
-                              }
-                            </span>
-                          )}
                           {expandedSeries[series.name] ? (
                             <ChevronUpIcon className="h-4 w-4 text-gray-400" />
                           ) : (
@@ -373,28 +374,38 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
 
                       {expandedSeries[series.name] && (
                         <div className="mt-3 space-y-2">
-                          {series.books.map((book, bookIndex) => (
-                            <div key={bookIndex} className="flex items-center justify-between py-2 px-3 bg-white dark:bg-gray-700 rounded">
-                              <div className="flex items-center space-x-3">
-                                <span className="text-sm text-gray-500 dark:text-gray-400 min-w-[2rem]">
-                                  {book.volume_number || bookIndex + 1}
-                                </span>
-                                <div>
-                                  <p className="font-medium text-gray-900 dark:text-white text-sm">
-                                    {book.title}
-                                  </p>
-                                  {book.publication_year && (
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                      {book.publication_year}
+                          {series.books && series.books.length > 0 ? (
+                            series.books.map((book, bookIndex) => (
+                              <div key={bookIndex} className="flex items-center justify-between py-2 px-3 bg-white dark:bg-gray-700 rounded">
+                                <div className="flex items-center space-x-3">
+                                  <span className="text-sm text-gray-500 dark:text-gray-400 min-w-[2rem]">
+                                    {book.volume_number || bookIndex + 1}
+                                  </span>
+                                  <div>
+                                    <p className="font-medium text-gray-900 dark:text-white text-sm">
+                                      {book.title}
                                     </p>
-                                  )}
+                                    {book.publication_year && (
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        {book.publication_year}
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
+                                {book.status && (
+                                  <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getStatusColor(book.status)}`}>
+                                    {getStatusText(book.status)}
+                                  </span>
+                                )}
                               </div>
-                              <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getStatusColor(book.status)}`}>
-                                {getStatusText(book.status)}
-                              </span>
+                            ))
+                          ) : (
+                            <div className="py-2 px-3 bg-white dark:bg-gray-700 rounded">
+                              <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+                                Série identifiée - livres détaillés disponibles sur {series.source === 'wikipedia' ? 'Wikipedia' : 'OpenLibrary'}
+                              </p>
                             </div>
-                          ))}
+                          )}
                         </div>
                       )}
                     </div>
@@ -412,17 +423,24 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
                           <div key={index} className="flex items-center justify-between py-2 px-3 bg-white dark:bg-gray-700 rounded">
                             <div>
                               <p className="font-medium text-gray-900 dark:text-white text-sm">
-                                {item.book.title}
+                                {item.book ? item.book.title : item.title}
                               </p>
-                              {item.book.publication_year && (
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                  {item.book.publication_year}
-                                </p>
-                              )}
+                              <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
+                                {(item.book ? item.book.publication_year : item.year) && (
+                                  <span>{item.book ? item.book.publication_year : item.year}</span>
+                                )}
+                                {item.source && (
+                                  <span>
+                                    • {item.source === 'wikipedia' ? 'Wikipedia' : 'OpenLibrary'}
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getStatusColor(item.book.status)}`}>
-                              {getStatusText(item.book.status)}
-                            </span>
+                            {item.book && item.book.status && (
+                              <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getStatusColor(item.book.status)}`}>
+                                {getStatusText(item.book.status)}
+                              </span>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -432,13 +450,16 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
               </div>
             )}
 
-            {/* Message si aucune œuvre dans la bibliothèque */}
+            {/* Message si aucune œuvre trouvée */}
             {authorBooks && authorBooks.total_books === 0 && (
               <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                 <div className="text-center py-8">
                   <BookOpenIcon className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
                   <p className="text-gray-500 dark:text-gray-400">
-                    Aucune œuvre de cet auteur dans votre bibliothèque
+                    Aucune œuvre trouvée pour cet auteur
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                    Nous cherchons dans Wikipedia et OpenLibrary
                   </p>
                 </div>
               </div>
