@@ -113,15 +113,17 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
       
       if (wikidataSeriesResponse.ok) {
         const wikidataSeriesData = await wikidataSeriesResponse.json();
-        if (wikidataSeriesData.found && wikidataSeriesData.series.length > 0) {
-          console.log('✅ Séries récupérées depuis Wikidata:', wikidataSeriesData);
+        if (wikidataSeriesData.found && (wikidataSeriesData.series.length > 0 || wikidataSeriesData.individual_books.length > 0)) {
+          console.log('✅ Séries et livres récupérés depuis Wikidata:', wikidataSeriesData);
           setAuthorBooks({
             series: wikidataSeriesData.series,
-            individual_books: [],
+            individual_books: wikidataSeriesData.individual_books || [],
             total_books: wikidataSeriesData.results_count,
-            total_series: wikidataSeriesData.series.length,
-            total_individual_books: 0,
-            sources: { wikidata: wikidataSeriesData.series.length }
+            total_series: wikidataSeriesData.total_series || wikidataSeriesData.series.length,
+            total_individual_books: wikidataSeriesData.total_individual_books || 0,
+            sources: { 
+              wikidata: (wikidataSeriesData.total_series || 0) + (wikidataSeriesData.total_individual_books || 0)
+            }
           });
           return;
         }
