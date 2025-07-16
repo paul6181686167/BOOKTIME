@@ -14,25 +14,46 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
     setError(null);
     
     try {
-      const token = localStorage.getItem('token');
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
       
-      const response = await fetch(`${backendUrl}/api/openlibrary/author/${encodeURIComponent(author)}`, {
+      // Essayer d'abord l'API Wikipedia (nouvelle source optimale)
+      const wikipediaResponse = await fetch(`${backendUrl}/api/wikipedia/author/${encodeURIComponent(author)}`);
+      
+      if (wikipediaResponse.ok) {
+        const wikipediaData = await wikipediaResponse.json();
+        if (wikipediaData.found) {
+          console.log('✅ Informations auteur récupérées depuis Wikipedia:', wikipediaData.author);
+          setAuthorInfo({
+            ...wikipediaData.author,
+            source: 'wikipedia'
+          });
+          return;
+        }
+      }
+      
+      // Fallback vers OpenLibrary si Wikipedia échoue
+      const token = localStorage.getItem('token');
+      const openlibResponse = await fetch(`${backendUrl}/api/openlibrary/author/${encodeURIComponent(author)}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       
-      if (response.ok) {
-        const data = await response.json();
-        if (data.found) {
-          setAuthorInfo(data.author);
-        } else {
-          setError("Informations de l'auteur non disponibles");
+      if (openlibResponse.ok) {
+        const openlibData = await openlibResponse.json();
+        if (openlibData.found) {
+          console.log('✅ Informations auteur récupérées depuis OpenLibrary:', openlibData.author);
+          setAuthorInfo({
+            ...openlibData.author,
+            source: 'openlibrary'
+          });
+          return;
         }
-      } else {
-        setError("Erreur lors du chargement des informations");
       }
+      
+      // Aucune source n'a fonctionné
+      setError("Informations de l'auteur non disponibles");
+      
     } catch (err) {
       console.error('Erreur lors du chargement des informations de l\'auteur:', err);
       setError("Erreur de connexion");
