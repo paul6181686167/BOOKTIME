@@ -19,7 +19,7 @@ from .models import (
 from .sparql_queries import (
     GET_AUTHOR_SERIES, GET_SERIES_BOOKS, GET_AUTHOR_INFO, 
     SEARCH_SERIES, GET_SERIES_INFO, SEARCH_AUTHOR_EXACT,
-    GET_POPULAR_SERIES, TEST_QUERY
+    GET_POPULAR_SERIES, TEST_QUERY, GET_AUTHOR_INDIVIDUAL_BOOKS
 )
 
 logger = logging.getLogger(__name__)
