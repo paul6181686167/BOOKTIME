@@ -67,6 +67,11 @@ export const TAB_CONFIG = [
     label: 'Romans graphiques',
     emoji: '',
     categories: [BOOK_CATEGORIES.BD, BOOK_CATEGORIES.MANGA] // Inclut les deux catégories
+  },
+  {
+    key: 'upcoming',
+    label: 'À venir',
+    emoji: '🔮'
   }
 ];
 
