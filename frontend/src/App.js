@@ -98,6 +98,7 @@ function MainApp() {
   const [showSocialModal, setShowSocialModal] = useState(false);
   const [showAdvancedRecommendationsModal, setShowAdvancedRecommendationsModal] = useState(false);
   const [showIntegrationsModal, setShowIntegrationsModal] = useState(false);
+  const [showUpcomingPanel, setShowUpcomingPanel] = useState(false);
 
   // PHASE 2.4 - Monitoring et Analytics
   const performanceMonitoring = usePerformanceMonitoring();
