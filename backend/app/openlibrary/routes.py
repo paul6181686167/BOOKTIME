@@ -369,6 +369,9 @@ async def get_author_info(
         
         if author_key:
             # Récupérer les informations détaillées de l'auteur
+            # S'assurer que l'author_key est formaté correctement
+            if not author_key.startswith("/authors/"):
+                author_key = f"/authors/{author_key}"
             author_url = f"https://openlibrary.org{author_key}.json"
             author_response = requests.get(author_url, timeout=10)
             
