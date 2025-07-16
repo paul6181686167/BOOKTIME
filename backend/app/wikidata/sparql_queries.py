@@ -3,15 +3,17 @@ Requêtes SPARQL pour Wikidata
 Requêtes structurées pour auteurs, séries et livres
 """
 
-# Requête pour obtenir les séries d'un auteur
+# Requête pour obtenir les séries d'un auteur (ÉLARGIE - Option A)
 GET_AUTHOR_SERIES = """
-SELECT DISTINCT ?series ?seriesLabel ?genre ?genreLabel ?startDate ?endDate ?status ?description WHERE {
+SELECT DISTINCT ?series ?seriesLabel ?genre ?genreLabel ?startDate ?endDate ?status ?description ?type ?typeLabel WHERE {
   # Recherche l'auteur par nom
   ?author rdfs:label ?authorLabel .
   FILTER(CONTAINS(LCASE(?authorLabel), LCASE("%(author_name)s")))
   
-  # Trouve les séries de cet auteur
-  ?series wdt:P31 wd:Q277759 .     # Instance de "série de livres"
+  # Trouve les séries de cet auteur - REQUÊTE ÉLARGIE
+  ?series wdt:P31 ?type .
+  FILTER(?type IN (wd:Q277759, wd:Q1667921, wd:Q47068459, wd:Q614101))
+  # Q277759: book series, Q1667921: novel series, Q47068459: children's book series, Q614101: heptalogy
   ?series wdt:P50 ?author .        # Auteur
   
   # Informations optionnelles
@@ -24,6 +26,35 @@ SELECT DISTINCT ?series ?seriesLabel ?genre ?genreLabel ?startDate ?endDate ?sta
   SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en" . }
 }
 ORDER BY ?seriesLabel
+LIMIT 50
+"""
+
+# Requête pour obtenir les livres individuels d'un auteur (NOUVELLE)
+GET_AUTHOR_INDIVIDUAL_BOOKS = """
+SELECT DISTINCT ?book ?bookLabel ?pubDate ?genre ?genreLabel ?type ?typeLabel ?description ?isbn ?publisher ?publisherLabel WHERE {
+  # Recherche l'auteur par nom
+  ?author rdfs:label ?authorLabel .
+  FILTER(CONTAINS(LCASE(?authorLabel), LCASE("%(author_name)s")))
+  
+  # Trouve les livres individuels de cet auteur
+  ?book wdt:P31 ?type .
+  FILTER(?type IN (wd:Q571, wd:Q7725634, wd:Q47461344, wd:Q8261))
+  # Q571: book, Q7725634: literary work, Q47461344: written work, Q8261: novel
+  ?book wdt:P50 ?author .        # Auteur
+  
+  # Exclure les livres qui font partie d'une série (pour éviter les doublons)
+  FILTER NOT EXISTS { ?book wdt:P179 ?series . }
+  
+  # Informations optionnelles
+  OPTIONAL { ?book wdt:P577 ?pubDate . }
+  OPTIONAL { ?book wdt:P136 ?genre . }
+  OPTIONAL { ?book wdt:P212 ?isbn . }
+  OPTIONAL { ?book wdt:P123 ?publisher . }
+  OPTIONAL { ?book schema:description ?description . FILTER(LANG(?description) = "fr" || LANG(?description) = "en") }
+  
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en" . }
+}
+ORDER BY DESC(?pubDate)
 LIMIT 50
 """
 
