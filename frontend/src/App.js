@@ -703,20 +703,36 @@ function MainApp() {
           {!searchHook.isSearchMode && (
             <div className="py-6">
               {/* Onglets de navigation */}
-              <div className="flex space-x-1 mb-6">
-                {TAB_CONFIG.map((tab) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => handleTabChange(tab.key)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
-                      activeTab === tab.key
-                        ? 'bg-green-600 text-white'
-                        : 'bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
+              <div className="flex justify-between items-center mb-6">
+                {/* Onglets principaux à gauche */}
+                <div className="flex space-x-1">
+                  {TAB_CONFIG.filter(tab => tab.key !== 'upcoming').map((tab) => (
+                    <button
+                      key={tab.key}
+                      onClick={() => handleTabChange(tab.key)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
+                        activeTab === tab.key
+                          ? 'bg-green-600 text-white'
+                          : 'bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+                
+                {/* Bouton "À venir" à droite */}
+                <button
+                  onClick={() => handleTabChange('upcoming')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2 ${
+                    activeTab === 'upcoming'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/20 dark:hover:bg-purple-800/30 dark:text-purple-300'
+                  }`}
+                >
+                  <span>🔮</span>
+                  <span>À venir</span>
+                </button>
               </div>
               
               {/* Statistiques avec données unifiées */}
