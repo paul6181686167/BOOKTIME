@@ -118,7 +118,7 @@ class WikidataService:
             return cached_result['data']
         
         try:
-            # Préparer les variantes du nom pour la recherche
+            # Méthode hybride : essayer d'abord avec le nom, puis avec l'ID si échec
             author_name_spaced = author_name.replace(".", ". ")  # J.K. -> J. K.
             author_name_nospace = author_name.replace(". ", ".")  # J. K. -> J.K.
             
@@ -131,6 +131,30 @@ class WikidataService:
             
             # Exécuter la requête
             result = await self._execute_sparql_query(query)
+            
+            # Si pas de résultats, essayer avec l'approche ID
+            if not result or not result.get('results', {}).get('bindings', []):
+                logger.info(f"🔄 Tentative avec recherche par ID pour {author_name}")
+                
+                # Étape 1: Trouver l'ID de l'auteur
+                author_id_query = GET_AUTHOR_ID % {
+                    "author_name": author_name,
+                    "author_name_spaced": author_name_spaced,
+                    "author_name_nospace": author_name_nospace
+                }
+                
+                author_result = await self._execute_sparql_query(author_id_query)
+                if author_result and author_result.get('results', {}).get('bindings', []):
+                    author_binding = author_result['results']['bindings'][0]
+                    author_uri = author_binding.get('author', {}).get('value', '')
+                    author_id = self._extract_wikidata_id(author_uri)
+                    
+                    if author_id:
+                        logger.info(f"✅ Auteur trouvé: {author_id}")
+                        
+                        # Étape 2: Trouver ses séries avec l'ID
+                        series_query = GET_AUTHOR_SERIES_BY_ID % {"author_id": author_id}
+                        result = await self._execute_sparql_query(series_query)
             
             if not result:
                 return WikidataAuthorResponse(
