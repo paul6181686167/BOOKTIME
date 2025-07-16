@@ -4,7 +4,7 @@ import sys
 from datetime import datetime
 
 class SearchOptimizationTester:
-    def __init__(self, base_url="https://d3150136-05e3-4aed-8ee0-5ed8965f474a.preview.emergentagent.com"):
+    def __init__(self, base_url="https://dcacf0e9-4cc1-4719-a5ae-33bb2304f17d.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
         self.tests_run = 0

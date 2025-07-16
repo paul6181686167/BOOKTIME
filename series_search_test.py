@@ -4,7 +4,7 @@ import unittest
 import time
 
 # Get the backend URL from the frontend .env file
-BACKEND_URL = "https://d3150136-05e3-4aed-8ee0-5ed8965f474a.preview.emergentagent.com"
+BACKEND_URL = "https://dcacf0e9-4cc1-4719-a5ae-33bb2304f17d.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 class BooktimeSeriesSearchTest(unittest.TestCase):

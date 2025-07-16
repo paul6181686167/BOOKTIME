@@ -12,7 +12,7 @@ import random
 from datetime import datetime
 
 # Configuration
-API_BASE_URL = "https://d3150136-05e3-4aed-8ee0-5ed8965f474a.preview.emergentagent.com/api"
+API_BASE_URL = "https://dcacf0e9-4cc1-4719-a5ae-33bb2304f17d.preview.emergentagent.com/api"
 TOKEN = None
 USER_ID = None
 
