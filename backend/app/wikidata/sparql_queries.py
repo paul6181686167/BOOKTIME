@@ -213,13 +213,16 @@ ORDER BY DESC(?bookCount)
 LIMIT 30
 """
 
-# Requête de test pour vérifier la connectivité
+# Requête de test pour vérifier la connectivité (OPTIMISÉE)
 TEST_QUERY = """
 SELECT ?series ?seriesLabel ?author ?authorLabel WHERE {
+  # Recherche élargie avec aliases
+  ?author rdfs:label|skos:altLabel ?authorName .
+  FILTER(CONTAINS(LCASE(?authorName), "%(test_author)s"))
+  
+  # Séries de livres seulement
   ?series wdt:P31 wd:Q277759 .
   ?series wdt:P50 ?author .
-  ?author rdfs:label ?authorLabel .
-  FILTER(CONTAINS(LCASE(?authorLabel), "%(test_author)s"))
   
   SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en" . }
 }
