@@ -109,7 +109,7 @@ def extract_works_from_wikipedia(wikipedia_data: dict, author_name: str) -> List
         
         # 1. Patterns pour détecter les séries principales
         series_patterns = [
-            # Patterns spécifiques par auteur
+            # Patterns spécifiques par auteur célèbre
             (r'Harry Potter(?:\s+(?:series|saga|books|novels))?', "Harry Potter"),
             (r'(?:A\s+)?Song of Ice and Fire|Game of Thrones(?:\s+(?:series|saga))?', "A Song of Ice and Fire"),
             (r'The Lord of the Rings|(?:The\s+)?Hobbit(?:\s+(?:series|saga))?', "The Lord of the Rings"),
@@ -126,10 +126,21 @@ def extract_works_from_wikipedia(wikipedia_data: dict, author_name: str) -> List
             (r'Fantastic Beasts(?:\s+(?:series|films))?', "Fantastic Beasts"),
             (r'Outlander(?:\s+(?:series|saga|novels))?', "Outlander"),
             (r'The Expanse(?:\s+(?:series|saga|novels))?', "The Expanse"),
+            (r'Asterix(?:\s+(?:series|saga|comics?))?', "Asterix"),
+            (r'Astérix(?:\s+(?:series|saga|comics?))?', "Astérix"),
+            (r'Lucky Luke(?:\s+(?:series|saga|comics?))?', "Lucky Luke"),
+            (r'Tintin(?:\s+(?:series|saga|comics?))?', "Tintin"),
+            (r'Iznogoud(?:\s+(?:series|saga|comics?))?', "Iznogoud"),
+            (r'(?:Le\s+)?Petit Nicolas(?:\s+(?:series|saga|books?))?', "Le Petit Nicolas"),
+            (r'Dragon Ball(?:\s+(?:series|saga|manga?))?', "Dragon Ball"),
+            (r'Dr\.?\s*Slump(?:\s+(?:series|saga|manga?))?', "Dr. Slump"),
+            (r'One Piece(?:\s+(?:series|saga|manga?))?', "One Piece"),
+            (r'Naruto(?:\s+(?:series|saga|manga?))?', "Naruto"),
             
-            # Patterns génériques
-            (r'([A-Z][a-zA-Z\s]+)(?:\s+(?:series|saga|cycle|novels?|books?))', None),
-            (r'(?:the\s+)?([A-Z][a-zA-Z\s]+?)(?:\s+(?:series|saga|cycle))', None)
+            # Patterns génériques plus stricts
+            (r'(?:wrote|created|authored)\s+(?:the\s+)?([A-Z][a-zA-Z\s]+?)(?:\s+(?:series|saga|cycle))(?:\s+(?:of|with))?', None),
+            (r'(?:known|famous)\s+for\s+(?:the\s+)?([A-Z][a-zA-Z\s]+?)(?:\s+(?:series|saga|cycle))', None),
+            (r'(?:creator|author)\s+of\s+(?:the\s+)?([A-Z][a-zA-Z\s]+?)(?:\s+(?:series|saga|cycle))', None)
         ]
         
         detected_series = set()
