@@ -33,41 +33,69 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
     }
   };
 
-  // Charger le profil de l'auteur (Wikipedia + OpenLibrary)
+  // Charger le profil de l'auteur (Wikidata → Wikipedia → OpenLibrary)
   const loadAuthorProfile = async (backendUrl) => {
-    // Essayer d'abord l'API Wikipedia (nouvelle source optimale)
-    const wikipediaResponse = await fetch(`${backendUrl}/api/wikipedia/author/${encodeURIComponent(author)}`);
-    
-    if (wikipediaResponse.ok) {
-      const wikipediaData = await wikipediaResponse.json();
-      if (wikipediaData.found) {
-        console.log('✅ Informations auteur récupérées depuis Wikipedia:', wikipediaData.author);
-        setAuthorInfo({
-          ...wikipediaData.author,
-          source: 'wikipedia'
-        });
-        return;
+    // 1. PRIORITÉ : Wikidata (données structurées séries)
+    try {
+      const wikidataResponse = await fetch(`${backendUrl}/api/wikidata/author/${encodeURIComponent(author)}/info`);
+      
+      if (wikidataResponse.ok) {
+        const wikidataData = await wikidataResponse.json();
+        if (wikidataData.found) {
+          console.log('✅ Informations auteur récupérées depuis Wikidata:', wikidataData.author);
+          setAuthorInfo({
+            ...wikidataData.author,
+            source: 'wikidata'
+          });
+          return;
+        }
       }
+    } catch (error) {
+      console.warn('⚠️ Erreur Wikidata, passage au fallback Wikipedia:', error);
     }
     
-    // Fallback vers OpenLibrary si Wikipedia échoue
-    const token = localStorage.getItem('token');
-    const openlibResponse = await fetch(`${backendUrl}/api/openlibrary/author/${encodeURIComponent(author)}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
+    // 2. FALLBACK : Wikipedia (biographies + parsing)
+    try {
+      const wikipediaResponse = await fetch(`${backendUrl}/api/wikipedia/author/${encodeURIComponent(author)}`);
+      
+      if (wikipediaResponse.ok) {
+        const wikipediaData = await wikipediaResponse.json();
+        if (wikipediaData.found) {
+          console.log('✅ Informations auteur récupérées depuis Wikipedia:', wikipediaData.author);
+          setAuthorInfo({
+            ...wikipediaData.author,
+            source: 'wikipedia'
+          });
+          return;
+        }
       }
-    });
+    } catch (error) {
+      console.warn('⚠️ Erreur Wikipedia, passage au fallback OpenLibrary:', error);
+    }
     
-    if (openlibResponse.ok) {
-      const openlibData = await openlibResponse.json();
-      if (openlibData.found) {
-        console.log('✅ Informations auteur récupérées depuis OpenLibrary:', openlibData.author);
-        setAuthorInfo({
-          ...openlibData.author,
-          source: 'openlibrary'
-        });
-        return;
+    // 3. FALLBACK : OpenLibrary (données basiques)
+    try {
+      const token = localStorage.getItem('token');
+      const openlibResponse = await fetch(`${backendUrl}/api/openlibrary/author/${encodeURIComponent(author)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (openlibResponse.ok) {
+        const openlibData = await openlibResponse.json();
+        if (openlibData.found) {
+          console.log('✅ Informations auteur récupérées depuis OpenLibrary:', openlibData.author);
+          setAuthorInfo({
+            ...openlibData.author,
+            source: 'openlibrary'
+          });
+          return;
+        }
       }
+    } catch (error) {
+      console.warn('⚠️ Erreur OpenLibrary:', error);
+    }
     }
     
     // Aucune source n'a fonctionné pour le profil
