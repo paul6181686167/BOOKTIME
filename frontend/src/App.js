@@ -100,6 +100,8 @@ function MainApp() {
   const [showAdvancedRecommendationsModal, setShowAdvancedRecommendationsModal] = useState(false);
   const [showIntegrationsModal, setShowIntegrationsModal] = useState(false);
   const [showUpcomingPanel, setShowUpcomingPanel] = useState(false);
+  const [showAuthorModal, setShowAuthorModal] = useState(false);
+  const [selectedAuthor, setSelectedAuthor] = useState(null);
 
   // PHASE 2.4 - Monitoring et Analytics
   const performanceMonitoring = usePerformanceMonitoring();
