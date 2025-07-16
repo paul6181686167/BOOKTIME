@@ -167,10 +167,11 @@ SELECT DISTINCT ?author ?authorLabel ?birthDate ?deathDate ?nationality ?nationa
   OPTIONAL { ?author wdt:P570 ?deathDate . }
   OPTIONAL { ?author wdt:P27 ?nationality . }
   
-  # Compter les séries
+  # Compter les séries - REQUÊTE ÉLARGIE
   {
     SELECT ?author (COUNT(DISTINCT ?series) as ?seriesCount) WHERE {
-      ?series wdt:P31 wd:Q277759 .
+      ?series wdt:P31 ?seriesType .
+      FILTER(?seriesType IN (wd:Q277759, wd:Q47068459, wd:Q1667921, wd:Q614101, wd:Q53815))
       ?series wdt:P50 ?author .
     } GROUP BY ?author
   }
