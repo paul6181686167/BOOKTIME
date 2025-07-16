@@ -29,6 +29,8 @@ from .social.routes import router as social_router
 from .recommendations.advanced_routes import router as advanced_recommendations_router
 # Import du router intégrations externes (Phase 3.5)
 from .integrations.routes import router as integrations_router
+# Import du router Wikipedia (Session 87.5)
+from .wikipedia.routes import router as wikipedia_router
 
 app = FastAPI(title="BookTime API", description="Votre bibliothèque personnelle")
 
