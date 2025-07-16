@@ -723,13 +723,12 @@ function MainApp() {
                 {/* Bouton "À venir" à droite */}
                 <button
                   onClick={() => handleTabChange('upcoming')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2 ${
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
                     activeTab === 'upcoming'
                       ? 'bg-purple-600 text-white'
                       : 'bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/20 dark:hover:bg-purple-800/30 dark:text-purple-300'
                   }`}
                 >
-                  <span>🔮</span>
                   <span>À venir</span>
                 </button>
               </div>
