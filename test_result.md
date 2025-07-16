@@ -21,7 +21,7 @@ frontend:
     implemented: true
     working: false
     file: "/app/frontend/src/App.js"
-    stuck_count: 1
+    stuck_count: 2
     priority: "high"
     needs_retesting: false
     status_history:
@@ -34,6 +34,9 @@ frontend:
       - working: false
         agent: "testing"
         comment: "PROBLÈME CRITIQUE CONFIRMÉ: La recherche par auteur ne fonctionne pas. Tests effectués avec utilisateur 'Test User' - Recherche 'rowling': 0 résultats, Recherche 'Harry Potter': 0 résultats, Recherche 'J.K. Rowling': 0 résultats. L'utilisateur avait raison de signaler que la recherche 'rowling' ne retourne pas les livres Harry Potter. Le problème semble être que l'interface principale ne se charge pas correctement après l'authentification - les termes de recherche sont saisis dans les champs de connexion au lieu de la vraie barre de recherche. Il y a probablement un problème d'authentification ou de navigation qui empêche l'accès à l'interface de recherche principale. Captures d'écran disponibles montrant le problème."
+      - working: false
+        agent: "testing"
+        comment: "PROBLÈME D'AUTHENTIFICATION CONFIRMÉ: Test avec utilisateur 'Test Series' - L'authentification ne fonctionne pas correctement. Malgré la saisie des informations de connexion (Prénom: Test, Nom: Series) et le clic sur 'Se connecter', l'utilisateur reste bloqué sur la page de connexion et n'accède jamais à l'interface principale BOOKTIME. Cependant, les logs de console montrent que le système de détection de séries est bien chargé (AutoSeriesDetector disponible, détection automatique activée, analyseur de séries chargé). Le problème principal est que l'authentification échoue, empêchant l'accès à l'interface de recherche et donc aux tests de reconnaissance des séries. Une erreur 400 est détectée dans les logs réseau. Le système de reconnaissance des séries semble techniquement fonctionnel mais inaccessible à cause du problème d'authentification."
 
   - task: "Interface principale - Page d'accueil et authentification"
     implemented: true
