@@ -348,8 +348,7 @@ async def search_by_author(
 
 @router.get("/author/{author_name}")
 async def get_author_info(
-    author_name: str,
-    current_user: dict = Depends(get_current_user)
+    author_name: str
 ):
     """Récupérer les informations d'un auteur depuis Open Library"""
     try:
