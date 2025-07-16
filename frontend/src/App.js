@@ -857,6 +857,7 @@ function MainApp() {
               books={displayedBooks}
               loading={unifiedContent.loading}
               onItemClick={handleItemClick}
+              onAuthorClick={handleAuthorClick}
               showEmptyState={true}
             />
           )}
