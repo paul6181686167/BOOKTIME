@@ -106,6 +106,13 @@ export const useAdvancedSearch = (books = []) => {
           if (book.category !== 'bd' && book.category !== 'manga') {
             return false;
           }
+        } else if (filters.category === 'upcoming') {
+          // Pour l'onglet À venir, filtrer par date de publication future
+          const now = new Date();
+          const publishDate = book.publication_year ? new Date(book.publication_year, 0, 1) : null;
+          if (!publishDate || publishDate <= now) {
+            return false;
+          }
         } else {
           // Pour les autres catégories, filtrage normal
           if (book.category !== filters.category) {
