@@ -272,7 +272,78 @@ class WikidataService:
                 results_count=0
             )
     
-    async def get_author_info(self, author_name: str) -> Optional[WikidataAuthor]:
+    async def get_author_individual_books(self, author_name: str) -> List[WikidataBook]:
+        """Récupère les livres individuels d'un auteur (pas dans une série)"""
+        start_time = time.time()
+        
+        # Vérifier le cache
+        cache_key = self._get_cache_key("author_individual_books", {"author_name": author_name})
+        cached_result = self.cache.get(cache_key)
+        
+        if cached_result and self._is_cache_valid(cached_result):
+            logger.info(f"📋 Cache hit pour livres individuels de {author_name}")
+            return cached_result['data']
+        
+        try:
+            # Préparer la requête
+            query = GET_AUTHOR_INDIVIDUAL_BOOKS % {"author_name": author_name}
+            
+            # Exécuter la requête
+            result = await self._execute_sparql_query(query)
+            
+            if not result:
+                return []
+            
+            # Traiter les résultats
+            bindings = result.get('results', {}).get('bindings', [])
+            
+            # Construire les livres
+            books_list = []
+            seen_titles = set()  # Pour éviter les doublons
+            
+            for binding in bindings:
+                book_id = self._extract_wikidata_id(binding.get('book', {}).get('value', ''))
+                title = binding.get('bookLabel', {}).get('value', '')
+                pub_date = self._parse_date(binding.get('pubDate', {}).get('value'))
+                genre = binding.get('genreLabel', {}).get('value', '')
+                book_type = binding.get('typeLabel', {}).get('value', '')
+                description = binding.get('description', {}).get('value', '')
+                isbn = binding.get('isbn', {}).get('value', '')
+                publisher = binding.get('publisherLabel', {}).get('value', '')
+                
+                # Éviter les doublons par titre
+                if book_id and title and title not in seen_titles:
+                    book = WikidataBook(
+                        id=book_id,
+                        title=title,
+                        series_id=None,  # Livre individuel, pas de série
+                        volume_number=None,
+                        publication_date=pub_date,
+                        genre=genre,
+                        pages=None,
+                        isbn=isbn,
+                        publisher=publisher,
+                        description=description[:200] if description else None,
+                        book_type=book_type
+                    )
+                    books_list.append(book)
+                    seen_titles.add(title)
+            
+            # Trier par date de publication (plus récent d'abord)
+            books_list.sort(key=lambda x: x.publication_date or "0000", reverse=True)
+            
+            # Mettre en cache
+            self.cache[cache_key] = {
+                'data': books_list,
+                'timestamp': time.time()
+            }
+            
+            logger.info(f"✅ Livres individuels trouvés pour {author_name}: {len(books_list)}")
+            return books_list
+            
+        except Exception as e:
+            logger.error(f"❌ Erreur lors de la récupération des livres individuels pour {author_name}: {str(e)}")
+            return []
         """Récupère les informations détaillées d'un auteur"""
         start_time = time.time()
         
