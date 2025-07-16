@@ -815,20 +815,12 @@ function MainApp() {
                (!groupedBooks.to_read || groupedBooks.to_read.length === 0) &&
                (!groupedBooks.completed || groupedBooks.completed.length === 0) && (
                 <div className="text-center py-12">
-                  <div className="text-6xl mb-4">
-                    {activeTab === 'upcoming' ? '🔮' : '📚'}
-                  </div>
+                  <div className="text-6xl mb-4">📚</div>
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                    {activeTab === 'upcoming' 
-                      ? 'Aucune sortie à venir' 
-                      : 'Aucun livre dans votre bibliothèque'
-                    }
+                    Aucun livre dans votre bibliothèque
                   </h3>
                   <p className="text-gray-500 dark:text-gray-400">
-                    {activeTab === 'upcoming' 
-                      ? 'Les prochaines sorties de vos auteurs et séries préférés apparaîtront ici !' 
-                      : 'Commencez par ajouter quelques livres à votre collection !'
-                    }
+                    Commencez par ajouter quelques livres à votre collection !
                   </p>
                 </div>
               )}
