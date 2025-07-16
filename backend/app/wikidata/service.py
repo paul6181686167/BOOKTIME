@@ -344,6 +344,8 @@ class WikidataService:
         except Exception as e:
             logger.error(f"❌ Erreur lors de la récupération des livres individuels pour {author_name}: {str(e)}")
             return []
+    
+    async def get_author_info(self, author_name: str) -> Optional[WikidataAuthor]:
         """Récupère les informations détaillées d'un auteur"""
         start_time = time.time()
         
