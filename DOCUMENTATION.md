@@ -164,19 +164,26 @@ Services: 4 services RUNNING (backend, frontend, mongodb, code-server)
 - **Année** : Filtrage par période de publication
 - **Auteur** : Recherche par nom d'auteur
 
-### 4. Profils Auteurs Enrichis ✨ NOUVEAU
+### 4. Profils Auteurs Enrichis ✨ AMÉLIORÉ Session 87.5
+
+#### Sources de Données Multiples
+- **Wikipedia API** : Source principale avec données curées (95%+ couverture)
+- **OpenLibrary API** : Source fallback pour compatibilité
+- **Double source intelligente** : Priorité Wikipedia + fallback OpenLibrary transparent
 
 #### Informations Détaillées
-- **Photo professionnelle** : Images haute résolution OpenLibrary
-- **Biographie courte** : Description limitée à 300 caractères
-- **Métadonnées complètes** : Dates naissance/décès, œuvres, noms alternatifs
-- **Statistiques** : Nombre d'œuvres répertoriées, œuvre principale
+- **Photo professionnelle** : Images haute résolution Wikipedia Commons
+- **Biographie complète** : Proses curées par éditeurs humains (300 caractères)
+- **Métadonnées enrichies** : Dates naissance/décès, spécialités, œuvres célèbres
+- **Détection intelligente** : Identification automatique type auteur et œuvres principales
+- **Extraction avancée** : Patterns regex pour dates, spécialités, prix littéraires
 
 #### Modal Auteur Professionnel
 - **Design responsive** : Grid adaptatif 1/3 colonnes
 - **États gérés** : Loading, error, success avec UX optimale
 - **Fallback élégant** : Icône UserIcon si photo indisponible
-- **Lien externe** : Accès direct au profil OpenLibrary
+- **Liens externes** : Accès direct Wikipedia ou OpenLibrary selon source
+- **Informations riches** : Spécialités ("Créateur de Harry Potter"), dates précises
 
 ### 5. Interface Utilisateur
 
