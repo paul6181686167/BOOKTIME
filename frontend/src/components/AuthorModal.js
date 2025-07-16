@@ -6,7 +6,7 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
 
   return (
     <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1100 }}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content-wide" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between mb-6">
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
