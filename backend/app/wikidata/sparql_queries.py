@@ -3,30 +3,27 @@ Requêtes SPARQL pour Wikidata
 Requêtes structurées pour auteurs, séries et livres
 """
 
-# Requête pour obtenir les séries d'un auteur (ÉLARGIE - Option A)
+# Requête pour obtenir les séries d'un auteur (OPTIMISÉE - Performance)
 GET_AUTHOR_SERIES = """
-SELECT DISTINCT ?series ?seriesLabel ?genre ?genreLabel ?startDate ?endDate ?status ?description ?type ?typeLabel WHERE {
-  # Recherche l'auteur par nom
-  ?author rdfs:label ?authorLabel .
-  FILTER(CONTAINS(LCASE(?authorLabel), LCASE("%(author_name)s")))
+SELECT DISTINCT ?series ?seriesLabel ?genre ?genreLabel ?startDate ?endDate ?description WHERE {
+  # Recherche élargie auteur par nom avec aliases
+  ?author rdfs:label|skos:altLabel ?authorName .
+  FILTER(CONTAINS(LCASE(?authorName), LCASE("%(author_name)s")))
   
-  # Trouve les séries de cet auteur - REQUÊTE ÉLARGIE
-  ?series wdt:P31 ?type .
-  FILTER(?type IN (wd:Q277759, wd:Q1667921, wd:Q47068459, wd:Q614101))
-  # Q277759: book series, Q1667921: novel series, Q47068459: children's book series, Q614101: heptalogy
-  ?series wdt:P50 ?author .        # Auteur
+  # Trouve les séries de cet auteur - REQUÊTE SIMPLIFIÉE
+  ?series wdt:P31 wd:Q277759 .      # Instance de série de livres (type principal)
+  ?series wdt:P50 ?author .         # Auteur
   
-  # Informations optionnelles
+  # Informations essentielles seulement
   OPTIONAL { ?series wdt:P136 ?genre . }
   OPTIONAL { ?series wdt:P571 ?startDate . }
   OPTIONAL { ?series wdt:P582 ?endDate . }
-  OPTIONAL { ?series wdt:P1476 ?status . }
   OPTIONAL { ?series schema:description ?description . FILTER(LANG(?description) = "fr" || LANG(?description) = "en") }
   
   SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en" . }
 }
 ORDER BY ?seriesLabel
-LIMIT 50
+LIMIT 20
 """
 
 # Requête pour obtenir les livres individuels d'un auteur (NOUVELLE)
