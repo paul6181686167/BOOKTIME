@@ -185,139 +185,268 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
           </div>
         )}
 
-        {authorInfo && !loading && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Photo de l'auteur */}
-            <div className="md:col-span-1">
-              <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                {authorInfo.photo_url ? (
-                  <img 
-                    src={authorInfo.photo_url} 
-                    alt={authorInfo.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      // Fallback vers icône si l'image ne charge pas
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-                <div 
-                  className={`w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white ${authorInfo.photo_url ? 'hidden' : 'flex'}`}
-                >
-                  <UserIcon className="h-20 w-20" />
+        {!loading && (
+          <div className="space-y-6">
+            {/* Informations auteur */}
+            {authorInfo && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Photo de l'auteur */}
+                <div className="md:col-span-1">
+                  <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                    {authorInfo.photo_url ? (
+                      <img 
+                        src={authorInfo.photo_url} 
+                        alt={authorInfo.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className={`w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white ${authorInfo.photo_url ? 'hidden' : 'flex'}`}
+                    >
+                      <UserIcon className="h-20 w-20" />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Informations de l'auteur */}
-            <div className="md:col-span-2 space-y-6">
-              {/* Biographie */}
-              {authorInfo.bio && (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
-                    <BookOpenIcon className="h-5 w-5 mr-2 text-green-600" />
-                    Biographie
-                  </h3>
-                  <div className="prose prose-gray dark:prose-invert max-w-none">
-                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                      {authorInfo.bio}
+                {/* Informations de l'auteur */}
+                <div className="md:col-span-2 space-y-6">
+                  {/* Biographie */}
+                  {authorInfo.bio && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+                        <BookOpenIcon className="h-5 w-5 mr-2 text-green-600" />
+                        Biographie
+                      </h3>
+                      <div className="prose prose-gray dark:prose-invert max-w-none">
+                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                          {authorInfo.bio}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Informations supplémentaires */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Dates */}
+                    {(authorInfo.birth_date || authorInfo.death_date) && (
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2 flex items-center">
+                          <CalendarIcon className="h-4 w-4 mr-1 text-gray-500" />
+                          Dates
+                        </h4>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          {authorInfo.birth_date && (
+                            <p>Né(e) : {authorInfo.birth_date}</p>
+                          )}
+                          {authorInfo.death_date && (
+                            <p>Décédé(e) : {authorInfo.death_date}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Statistiques */}
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2 flex items-center">
+                        <BookOpenIcon className="h-4 w-4 mr-1 text-gray-500" />
+                        Œuvres
+                      </h4>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {authorInfo.work_summary && (
+                          <p>{authorInfo.work_summary}</p>
+                        )}
+                        {authorInfo.work_count > 0 && (
+                          <p>{authorInfo.work_count} œuvre(s) répertoriée(s)</p>
+                        )}
+                        {authorInfo.top_work && (
+                          <p className="mt-1 text-xs">
+                            <span className="font-medium">Œuvre principale :</span> {authorInfo.top_work}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Noms alternatifs */}
+                  {authorInfo.alternate_names && authorInfo.alternate_names.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                        Autres noms
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {authorInfo.alternate_names.slice(0, 5).map((name, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded"
+                          >
+                            {name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Source */}
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Informations fournies par{' '}
+                      {authorInfo.source === 'wikipedia' ? (
+                        <a 
+                          href={authorInfo.wikipedia_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-green-600 hover:text-green-700 underline"
+                        >
+                          Wikipedia
+                        </a>
+                      ) : (
+                        <a 
+                          href={`https://openlibrary.org${authorInfo.ol_key}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-green-600 hover:text-green-700 underline"
+                        >
+                          Open Library
+                        </a>
+                      )}
                     </p>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Informations supplémentaires */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Dates */}
-                {(authorInfo.birth_date || authorInfo.death_date) && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2 flex items-center">
-                      <CalendarIcon className="h-4 w-4 mr-1 text-gray-500" />
-                      Dates
-                    </h4>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {authorInfo.birth_date && (
-                        <p>Né(e) : {authorInfo.birth_date}</p>
-                      )}
-                      {authorInfo.death_date && (
-                        <p>Décédé(e) : {authorInfo.death_date}</p>
+            {/* Œuvres de l'auteur dans la bibliothèque */}
+            {authorBooks && authorBooks.total_books > 0 && (
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                  <CollectionIcon className="h-5 w-5 mr-2 text-green-600" />
+                  Œuvres dans votre bibliothèque
+                  <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                    ({authorBooks.total_books} livre{authorBooks.total_books > 1 ? 's' : ''})
+                  </span>
+                </h3>
+
+                <div className="space-y-4">
+                  {/* Séries */}
+                  {authorBooks.series.map((series, index) => (
+                    <div key={index} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                      <div 
+                        className="flex items-center justify-between cursor-pointer"
+                        onClick={() => toggleSeriesExpansion(series.name)}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="flex-shrink-0">
+                            <CollectionIcon className="h-5 w-5 text-purple-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-gray-900 dark:text-white">
+                              {series.name}
+                            </h4>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              {series.total_volumes} volume{series.total_volumes > 1 ? 's' : ''} • 
+                              {series.completed_volumes} terminé{series.completed_volumes > 1 ? 's' : ''} • 
+                              {series.reading_volumes} en cours • 
+                              {series.to_read_volumes} à lire
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {series.first_published && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {series.first_published}
+                              {series.last_published && series.last_published !== series.first_published && 
+                                ` - ${series.last_published}`
+                              }
+                            </span>
+                          )}
+                          {expandedSeries[series.name] ? (
+                            <ChevronUpIcon className="h-4 w-4 text-gray-400" />
+                          ) : (
+                            <ChevronDownIcon className="h-4 w-4 text-gray-400" />
+                          )}
+                        </div>
+                      </div>
+
+                      {expandedSeries[series.name] && (
+                        <div className="mt-3 space-y-2">
+                          {series.books.map((book, bookIndex) => (
+                            <div key={bookIndex} className="flex items-center justify-between py-2 px-3 bg-white dark:bg-gray-700 rounded">
+                              <div className="flex items-center space-x-3">
+                                <span className="text-sm text-gray-500 dark:text-gray-400 min-w-[2rem]">
+                                  {book.volume_number || bookIndex + 1}
+                                </span>
+                                <div>
+                                  <p className="font-medium text-gray-900 dark:text-white text-sm">
+                                    {book.title}
+                                  </p>
+                                  {book.publication_year && (
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                      {book.publication_year}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getStatusColor(book.status)}`}>
+                                {getStatusText(book.status)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
-                  </div>
-                )}
+                  ))}
 
-                {/* Statistiques */}
-                <div>
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2 flex items-center">
-                    <BookOpenIcon className="h-4 w-4 mr-1 text-gray-500" />
-                    Œuvres
-                  </h4>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {authorInfo.work_summary && (
-                      <p>{authorInfo.work_summary}</p>
-                    )}
-                    {authorInfo.work_count > 0 && (
-                      <p>{authorInfo.work_count} œuvre(s) répertoriée(s)</p>
-                    )}
-                    {authorInfo.top_work && (
-                      <p className="mt-1 text-xs">
-                        <span className="font-medium">Œuvre principale :</span> {authorInfo.top_work}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Noms alternatifs */}
-              {authorInfo.alternate_names && authorInfo.alternate_names.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                    Autres noms
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {authorInfo.alternate_names.slice(0, 5).map((name, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded"
-                      >
-                        {name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Source */}
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Informations fournies par{' '}
-                  {authorInfo.source === 'wikipedia' ? (
-                    <a 
-                      href={authorInfo.wikipedia_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-green-600 hover:text-green-700 underline"
-                    >
-                      Wikipedia
-                    </a>
-                  ) : (
-                    <a 
-                      href={`https://openlibrary.org${authorInfo.ol_key}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-green-600 hover:text-green-700 underline"
-                    >
-                      Open Library
-                    </a>
+                  {/* Livres individuels */}
+                  {authorBooks.individual_books.length > 0 && (
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                      <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+                        <BookOpenIcon className="h-5 w-5 mr-2 text-blue-600" />
+                        Livres individuels
+                      </h4>
+                      <div className="space-y-2">
+                        {authorBooks.individual_books.map((item, index) => (
+                          <div key={index} className="flex items-center justify-between py-2 px-3 bg-white dark:bg-gray-700 rounded">
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white text-sm">
+                                {item.book.title}
+                              </p>
+                              {item.book.publication_year && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {item.book.publication_year}
+                                </p>
+                              )}
+                            </div>
+                            <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getStatusColor(item.book.status)}`}>
+                              {getStatusText(item.book.status)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                </p>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Message si aucune œuvre dans la bibliothèque */}
+            {authorBooks && authorBooks.total_books === 0 && (
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                <div className="text-center py-8">
+                  <BookOpenIcon className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
+                  <p className="text-gray-500 dark:text-gray-400">
+                    Aucune œuvre de cet auteur dans votre bibliothèque
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {!authorInfo && !loading && !error && (
+        {!authorInfo && !authorBooks && !loading && !error && (
           <div className="text-center py-8">
             <div className="text-6xl mb-4">👤</div>
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
