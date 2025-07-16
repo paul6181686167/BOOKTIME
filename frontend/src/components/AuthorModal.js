@@ -191,7 +191,12 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
                     Œuvres
                   </h4>
                   <div className="text-sm text-gray-600 dark:text-gray-400">
-                    <p>{authorInfo.work_count || 0} œuvre(s) répertoriée(s)</p>
+                    {authorInfo.work_summary && (
+                      <p>{authorInfo.work_summary}</p>
+                    )}
+                    {authorInfo.work_count > 0 && (
+                      <p>{authorInfo.work_count} œuvre(s) répertoriée(s)</p>
+                    )}
                     {authorInfo.top_work && (
                       <p className="mt-1 text-xs">
                         <span className="font-medium">Œuvre principale :</span> {authorInfo.top_work}
