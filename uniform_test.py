@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 
 # Get the backend URL from the frontend .env file
-BACKEND_URL = "https://18d739ca-2d8c-48d6-90a5-0263e8db2d0c.preview.emergentagent.com"
+BACKEND_URL = "https://9db1f1c3-95d8-4bb0-bed7-aa3f0a4ecd38.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 class UniformCardTest(unittest.TestCase):
