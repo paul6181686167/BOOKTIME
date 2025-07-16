@@ -660,7 +660,6 @@ function MainApp() {
                 onClick={() => window.location.href = '/recommendations'}
                 className="flex items-center space-x-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
               >
-                <span>🔮</span>
                 <span className="hidden sm:inline">Recommandations</span>
               </button>
               
