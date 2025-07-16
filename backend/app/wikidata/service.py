@@ -335,7 +335,7 @@ class WikidataService:
                         pages=None,
                         isbn=isbn,
                         publisher=publisher,
-                        description=description[:200] if description else None,
+                        description=None,  # Retiré de la requête optimisée
                         book_type=book_type
                     )
                     books_list.append(book)
