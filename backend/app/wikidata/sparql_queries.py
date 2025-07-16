@@ -105,8 +105,10 @@ LIMIT 1
 # Requête pour rechercher des séries par nom
 SEARCH_SERIES = """
 SELECT DISTINCT ?series ?seriesLabel ?author ?authorLabel ?genre ?genreLabel ?startDate ?description WHERE {
-  # Recherche série par nom
-  ?series wdt:P31 wd:Q277759 .     # Instance de "série de livres"
+  # Recherche série par nom - REQUÊTE ÉLARGIE
+  ?series wdt:P31 ?seriesType .     # Instance de différents types de séries
+  FILTER(?seriesType IN (wd:Q277759, wd:Q47068459, wd:Q1667921, wd:Q614101, wd:Q53815))
+  # Q277759: série de livres, Q47068459: children's book series, Q1667921: suite romanesque, Q614101: heptalogie, Q53815: canon
   ?series rdfs:label ?seriesLabel .
   FILTER(CONTAINS(LCASE(?seriesLabel), LCASE("%(search_term)s")))
   
