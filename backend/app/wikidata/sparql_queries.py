@@ -10,8 +10,10 @@ SELECT DISTINCT ?series ?seriesLabel ?genre ?genreLabel ?startDate ?endDate ?des
   ?author rdfs:label|skos:altLabel ?authorName .
   FILTER(CONTAINS(LCASE(?authorName), LCASE("%(author_name)s")))
   
-  # Trouve les séries de cet auteur - REQUÊTE SIMPLIFIÉE
-  ?series wdt:P31 wd:Q277759 .      # Instance de série de livres (type principal)
+  # Trouve les séries de cet auteur - REQUÊTE ÉLARGIE POUR INCLURE TOUS TYPES SÉRIES
+  ?series wdt:P31 ?seriesType .     # Instance de différents types de séries
+  FILTER(?seriesType IN (wd:Q277759, wd:Q47068459, wd:Q1667921, wd:Q614101, wd:Q53815))
+  # Q277759: série de livres, Q47068459: children's book series, Q1667921: suite romanesque, Q614101: heptalogie, Q53815: canon
   ?series wdt:P50 ?author .         # Auteur
   
   # Informations essentielles seulement
