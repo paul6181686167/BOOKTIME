@@ -933,6 +933,22 @@ function MainApp() {
       {/* Toast notifications */}
       <Toaster position="bottom-right" />
       
+      {/* Panneau coulissant "À venir" */}
+      <SlidePanel 
+        isOpen={showUpcomingPanel} 
+        onClose={() => setShowUpcomingPanel(false)}
+      >
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">🔮</div>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            Aucune sortie à venir
+          </h3>
+          <p className="text-gray-500 dark:text-gray-400">
+            Les prochaines sorties de vos auteurs et séries préférés apparaîtront ici !
+          </p>
+        </div>
+      </SlidePanel>
+      
       {/* PHASE 2.4 - Performance Widget */}
       <PerformanceWidget 
         position="bottom-right" 
