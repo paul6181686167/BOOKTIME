@@ -6,12 +6,280 @@ Récupération d'informations sur les auteurs avec données curées
 from fastapi import APIRouter, HTTPException
 import httpx
 import re
-from typing import Optional
+from typing import Optional, List, Dict
 import logging
 
 router = APIRouter(prefix="/api/wikipedia", tags=["wikipedia"])
 
 logger = logging.getLogger(__name__)
+
+async def get_wikipedia_full_content(author_name: str) -> Optional[dict]:
+    """
+    Récupérer le contenu complet d'une page Wikipedia d'auteur
+    """
+    try:
+        clean_name = author_name.strip()
+        
+        async with httpx.AsyncClient() as client:
+            # 1. Rechercher la page
+            search_url = "https://en.wikipedia.org/w/api.php"
+            search_params = {
+                "action": "query",
+                "list": "search",
+                "srsearch": clean_name,
+                "format": "json",
+                "srlimit": 3
+            }
+            
+            search_response = await client.get(search_url, params=search_params, timeout=10)
+            
+            if search_response.status_code != 200:
+                return None
+            
+            search_data = search_response.json()
+            
+            # 2. Trouver la page d'auteur
+            author_page_title = None
+            for result in search_data.get("query", {}).get("search", []):
+                title = result.get("title", "")
+                snippet = result.get("snippet", "")
+                
+                if any(keyword in snippet.lower() for keyword in ["author", "writer", "novelist", "poet", "playwright"]):
+                    author_page_title = title
+                    break
+            
+            if not author_page_title:
+                return None
+            
+            # 3. Récupérer le contenu complet
+            content_params = {
+                "action": "query",
+                "format": "json",
+                "prop": "extracts|pageimages",
+                "titles": author_page_title,
+                "exintro": False,
+                "explaintext": True,
+                "exsectionformat": "wiki",
+                "piprop": "thumbnail",
+                "pithumbsize": 300
+            }
+            
+            content_response = await client.get(search_url, params=content_params, timeout=15)
+            
+            if content_response.status_code == 200:
+                content_data = content_response.json()
+                
+                # 4. Récupérer aussi le résumé structuré
+                summary_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{author_page_title}"
+                summary_response = await client.get(summary_url, timeout=10)
+                
+                summary_data = {}
+                if summary_response.status_code == 200:
+                    summary_data = summary_response.json()
+                
+                return {
+                    "title": author_page_title,
+                    "content": content_data,
+                    "summary": summary_data
+                }
+            
+        return None
+        
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération du contenu Wikipedia pour {author_name}: {str(e)}")
+        return None
+
+def extract_works_from_wikipedia(wikipedia_data: dict, author_name: str) -> List[Dict]:
+    """
+    Extraire intelligemment les œuvres d'un auteur depuis Wikipedia
+    """
+    works = []
+    
+    try:
+        # Récupérer le contenu textuel
+        content = ""
+        pages = wikipedia_data.get("content", {}).get("query", {}).get("pages", {})
+        
+        for page_id, page_data in pages.items():
+            content = page_data.get("extract", "")
+            break
+        
+        if not content:
+            return works
+        
+        # 1. Patterns pour détecter les séries principales
+        series_patterns = [
+            # Patterns spécifiques par auteur
+            (r'Harry Potter(?:\s+(?:series|saga|books|novels))?', "Harry Potter"),
+            (r'(?:A\s+)?Song of Ice and Fire|Game of Thrones(?:\s+(?:series|saga))?', "A Song of Ice and Fire"),
+            (r'The Lord of the Rings|(?:The\s+)?Hobbit(?:\s+(?:series|saga))?', "The Lord of the Rings"),
+            (r'Foundation(?:\s+(?:series|saga|novels))?', "Foundation"),
+            (r'Dune(?:\s+(?:series|saga|novels))?', "Dune"),
+            (r'Sherlock Holmes(?:\s+(?:series|stories|novels))?', "Sherlock Holmes"),
+            (r'Hercule Poirot(?:\s+(?:series|novels|mysteries))?', "Hercule Poirot"),
+            (r'Miss Marple(?:\s+(?:series|novels|mysteries))?', "Miss Marple"),
+            (r'The Chronicles of Narnia|Narnia(?:\s+(?:series|saga))?', "The Chronicles of Narnia"),
+            (r'Discworld(?:\s+(?:series|saga|novels))?', "Discworld"),
+            (r'The Wheel of Time(?:\s+(?:series|saga))?', "The Wheel of Time"),
+            (r'The Dark Tower(?:\s+(?:series|saga))?', "The Dark Tower"),
+            (r'Cormoran Strike(?:\s+(?:series|novels))?', "Cormoran Strike"),
+            (r'Fantastic Beasts(?:\s+(?:series|films))?', "Fantastic Beasts"),
+            (r'Outlander(?:\s+(?:series|saga|novels))?', "Outlander"),
+            (r'The Expanse(?:\s+(?:series|saga|novels))?', "The Expanse"),
+            
+            # Patterns génériques
+            (r'([A-Z][a-zA-Z\s]+)(?:\s+(?:series|saga|cycle|novels?|books?))', None),
+            (r'(?:the\s+)?([A-Z][a-zA-Z\s]+?)(?:\s+(?:series|saga|cycle))', None)
+        ]
+        
+        detected_series = set()
+        
+        for pattern, series_name in series_patterns:
+            matches = re.findall(pattern, content, re.IGNORECASE)
+            
+            for match in matches:
+                if series_name:
+                    # Série prédéfinie
+                    final_name = series_name
+                else:
+                    # Série détectée dynamiquement
+                    final_name = match if isinstance(match, str) else match[0]
+                    final_name = final_name.strip()
+                
+                # Filtrer les faux positifs
+                if (len(final_name) > 3 and len(final_name) < 60 and
+                    final_name.lower() not in detected_series and
+                    not any(word in final_name.lower() for word in ["wikipedia", "citation", "reference", "source", "page", "edit"])):
+                    
+                    detected_series.add(final_name.lower())
+                    works.append({
+                        "title": final_name,
+                        "type": "series",
+                        "source": "wikipedia",
+                        "author": author_name,
+                        "confidence": 90 if series_name else 70
+                    })
+        
+        # 2. Patterns pour détecter les livres individuels
+        individual_patterns = [
+            # Livres entre guillemets avec années
+            r'["""]([^"""]{10,80})["""](?:\s*\((?:19|20)\d{2}\))?',
+            # Livres en italique
+            r'<i>([^<]{10,80})</i>',
+            # Patterns "novel" suivi du titre
+            r'(?:novel|book|work|story)\s+["""]([^"""]{10,80})["""]',
+            # Patterns "published" suivi du titre
+            r'(?:published|wrote|authored)\s+["""]([^"""]{10,80})["""]',
+            # Patterns avec années
+            r'(?:19|20)\d{2}[:\s]+["""]([^"""]{10,80})["""]'
+        ]
+        
+        detected_books = set()
+        
+        for pattern in individual_patterns:
+            matches = re.findall(pattern, content, re.IGNORECASE)
+            
+            for match in matches:
+                title = match.strip()
+                title_clean = title.lower()
+                
+                # Filtrer les faux positifs
+                if (len(title) > 10 and len(title) < 80 and
+                    title_clean not in detected_books and
+                    title_clean not in detected_series and
+                    not any(word in title_clean for word in ["wikipedia", "citation", "reference", "source", "page", "edit", "category", "file", "image"])):
+                    
+                    detected_books.add(title_clean)
+                    works.append({
+                        "title": title,
+                        "type": "individual",
+                        "source": "wikipedia",
+                        "author": author_name,
+                        "confidence": 80
+                    })
+        
+        # 3. Patterns pour détecter les années de publication
+        year_patterns = [
+            r'(?:published|wrote|authored)[^.]*?(?:19|20)(\d{2})',
+            r'(?:19|20)(\d{2})[^.]*?(?:novel|book|work)',
+            r'\((?:19|20)(\d{2})\)'
+        ]
+        
+        # Associer des années aux œuvres si possible
+        for work in works:
+            title_context = re.search(rf'{re.escape(work["title"])}.{{0,200}}', content, re.IGNORECASE)
+            if title_context:
+                context_text = title_context.group(0)
+                for year_pattern in year_patterns:
+                    year_match = re.search(year_pattern, context_text, re.IGNORECASE)
+                    if year_match:
+                        work["year"] = int(f"19{year_match.group(1)}" if int(year_match.group(1)) > 50 else f"20{year_match.group(1)}")
+                        break
+        
+        # Trier par confiance et limiter
+        works.sort(key=lambda x: x.get("confidence", 0), reverse=True)
+        
+        return works[:50]  # Limiter à 50 œuvres maximum
+        
+    except Exception as e:
+        logger.error(f"Erreur lors de l'extraction des œuvres: {str(e)}")
+        return works
+
+def organize_wikipedia_works(works: List[Dict]) -> Dict:
+    """
+    Organiser les œuvres extraites par séries et livres individuels
+    """
+    series_list = []
+    individual_books = []
+    sources = {"wikipedia": len(works)}
+    
+    try:
+        for work in works:
+            if work["type"] == "series":
+                series_list.append({
+                    "name": work["title"],
+                    "type": "series",
+                    "author": work["author"],
+                    "source": work["source"],
+                    "confidence": work.get("confidence", 0),
+                    "year": work.get("year"),
+                    "books": []  # Sera rempli plus tard si nécessaire
+                })
+            else:
+                individual_books.append({
+                    "title": work["title"],
+                    "type": "individual",
+                    "author": work["author"],
+                    "source": work["source"],
+                    "confidence": work.get("confidence", 0),
+                    "year": work.get("year")
+                })
+        
+        # Trier par année (plus récent en premier pour les livres individuels)
+        individual_books.sort(key=lambda x: x.get("year", 0) or 0, reverse=True)
+        
+        # Trier les séries par nom
+        series_list.sort(key=lambda x: x["name"])
+        
+        return {
+            "series": series_list,
+            "individual_books": individual_books,
+            "total_books": len(works),
+            "total_series": len(series_list),
+            "total_individual_books": len(individual_books),
+            "sources": sources
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur lors de l'organisation des œuvres: {str(e)}")
+        return {
+            "series": [],
+            "individual_books": [],
+            "total_books": 0,
+            "total_series": 0,
+            "total_individual_books": 0,
+            "sources": {"wikipedia": 0}
+        }
 
 async def search_wikipedia_author(author_name: str) -> Optional[dict]:
     """
