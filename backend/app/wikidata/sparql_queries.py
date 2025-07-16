@@ -6,9 +6,13 @@ Requêtes structurées pour auteurs, séries et livres
 # Requête pour obtenir les séries d'un auteur (OPTIMISÉE - Performance)
 GET_AUTHOR_SERIES = """
 SELECT DISTINCT ?series ?seriesLabel ?genre ?genreLabel ?startDate ?endDate ?description WHERE {
-  # Recherche élargie auteur par nom avec aliases
+  # Recherche élargie auteur par nom avec aliases et variantes
   ?author rdfs:label|skos:altLabel ?authorName .
-  FILTER(CONTAINS(LCASE(?authorName), LCASE("%(author_name)s")))
+  FILTER(
+    CONTAINS(LCASE(?authorName), LCASE("%(author_name)s")) ||
+    CONTAINS(LCASE(?authorName), LCASE("%(author_name_spaced)s")) ||
+    CONTAINS(LCASE(?authorName), LCASE("%(author_name_nospace)s"))
+  )
   
   # Trouve les séries de cet auteur - REQUÊTE ÉLARGIE POUR INCLURE TOUS TYPES SÉRIES
   ?series wdt:P31 ?seriesType .     # Instance de différents types de séries
