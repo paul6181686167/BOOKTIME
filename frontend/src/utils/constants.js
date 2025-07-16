@@ -71,7 +71,7 @@ export const TAB_CONFIG = [
   {
     key: 'upcoming',
     label: 'À venir',
-    emoji: '🔮'
+    emoji: ''
   }
 ];
 
