@@ -285,6 +285,48 @@ async def get_author_works(author_name: str):
     """
     return await get_author_series(author_name)
 
+@router.get("/test-individual-books/{author_name}")
+async def test_individual_books(author_name: str):
+    """
+    Test spécifique pour les livres individuels d'un auteur
+    Endpoint de développement pour déboguer les livres non-série
+    """
+    try:
+        logger.info(f"🧪 Test livres individuels pour: {author_name}")
+        
+        # Test direct des livres individuels
+        individual_books = await wikidata_service.get_author_individual_books(author_name)
+        
+        return {
+            "success": True,
+            "author": author_name,
+            "individual_books_count": len(individual_books),
+            "individual_books": [
+                {
+                    "id": book.id,
+                    "title": book.title,
+                    "publication_date": book.publication_date,
+                    "genre": book.genre,
+                    "book_type": getattr(book, 'book_type', 'unknown'),
+                    "isbn": book.isbn,
+                    "publisher": book.publisher,
+                    "description": book.description
+                }
+                for book in individual_books
+            ],
+            "query_used": "GET_AUTHOR_INDIVIDUAL_BOOKS"
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur lors du test livres individuels: {str(e)}")
+        return {
+            "success": False,
+            "author": author_name,
+            "individual_books_count": 0,
+            "individual_books": [],
+            "error": str(e)
+        }
+
 @router.get("/stats")
 async def get_wikidata_stats():
     """
