@@ -828,6 +828,7 @@ function MainApp() {
                     books={groupedBooks.completed}
                     loading={false}
                     onItemClick={handleItemClick}
+                    onAuthorClick={handleAuthorClick}
                     showEmptyState={false}
                   />
                 </div>
