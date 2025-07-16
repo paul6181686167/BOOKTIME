@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth';
 import LoginPage from './components/user/LoginPage';
 import UnifiedSearchBar from './components/UnifiedSearchBar';
 import BookDetailModal from './components/BookDetailModal';
+import AuthorModal from './components/AuthorModal';
 import SeriesCard from './components/SeriesCard';
 import SeriesDetailModal from './components/SeriesDetailModal';
 import SeriesDetailPage from './pages/SeriesDetailPage';
