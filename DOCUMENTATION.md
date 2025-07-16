@@ -211,13 +211,36 @@ Services: 4 services RUNNING (backend, frontend, mongodb, code-server)
 - `GET /api/openlibrary/search-author` : Recherche par auteur
 - `POST /api/openlibrary/import` : Import livre depuis OpenLibrary
 
-#### Authors ✨ NOUVEAU
-- `GET /api/openlibrary/author/{author_name}` : Informations auteur complètes
+#### Authors ✨ AMÉLIORÉ Session 87.5
+- `GET /api/wikipedia/author/{author_name}` : Informations auteur Wikipedia (priorité)
+- `GET /api/openlibrary/author/{author_name}` : Informations auteur OpenLibrary (fallback)
+- `GET /api/wikipedia/test/{author_name}` : Endpoint test Wikipedia avec données brutes
 
-**Exemple Réponse Author:**
+**Exemple Réponse Wikipedia Author:**
 ```json
 {
   "found": true,
+  "source": "wikipedia",
+  "author": {
+    "name": "J. K. Rowling",
+    "bio": "Joanne Rowling, known by her pen name J. K. Rowling, is a British author and philanthropist. She is the author of Harry Potter, a seven-volume fantasy novel series...",
+    "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/J._K._Rowling_2010.jpg/330px-J._K._Rowling_2010.jpg",
+    "birth_date": "1965",
+    "death_date": "",
+    "work_count": 0,
+    "work_summary": "Auteur de fantasy • Créateur de Harry Potter",
+    "top_work": "Harry Potter",
+    "description": "British author and philanthropist (born 1965)",
+    "wikipedia_url": "https://en.wikipedia.org/wiki/J._K._Rowling"
+  }
+}
+```
+
+**Exemple Réponse OpenLibrary Author:**
+```json
+{
+  "found": true,
+  "source": "openlibrary",
   "author": {
     "name": "Nom complet auteur",
     "bio": "Biographie courte (300 chars max)",
