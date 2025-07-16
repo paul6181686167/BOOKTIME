@@ -4,20 +4,26 @@ Requêtes structurées pour auteurs, séries et livres
 """
 
 # Requête pour obtenir les séries d'un auteur (OPTIMISÉE - Performance)
-# Requête pour trouver l'ID Wikidata d'un auteur par nom
+# Requête pour trouver l'ID Wikidata d'un auteur par nom (SIMPLIFIÉE)
 GET_AUTHOR_ID = """
 SELECT DISTINCT ?author ?authorLabel WHERE {
-  ?author rdfs:label|skos:altLabel ?authorName .
-  FILTER(
-    CONTAINS(LCASE(?authorName), LCASE("%(author_name)s")) ||
-    CONTAINS(LCASE(?authorName), LCASE("%(author_name_spaced)s")) ||
-    CONTAINS(LCASE(?authorName), LCASE("%(author_name_nospace)s"))
-  )
+  {
+    ?author rdfs:label "%(author_name)s"@en .
+  } UNION {
+    ?author rdfs:label "%(author_name)s"@fr .
+  } UNION {
+    ?author rdfs:label "%(author_name_spaced)s"@en .
+  } UNION {
+    ?author rdfs:label "%(author_name_spaced)s"@fr .
+  } UNION {
+    ?author rdfs:label "%(author_name_nospace)s"@en .
+  } UNION {
+    ?author rdfs:label "%(author_name_nospace)s"@fr .
+  }
   
   # Vérifier que c'est bien un auteur
   ?author wdt:P106 ?occupation .
   FILTER(?occupation IN (wd:Q36180, wd:Q482980, wd:Q49757, wd:Q6625963, wd:Q214917, wd:Q4853732))
-  # Q36180: écrivain, Q482980: auteur, Q49757: poète, Q6625963: romancier, Q214917: dramaturge, Q4853732: nouvelliste
   
   SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en" . }
 }
