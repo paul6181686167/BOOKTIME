@@ -323,7 +323,7 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
             {authorBooks && authorBooks.total_books > 0 && (
               <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                  <CollectionIcon className="h-5 w-5 mr-2 text-green-600" />
+                  <QueueListIcon className="h-5 w-5 mr-2 text-green-600" />
                   {authorBooks.fallback ? "Œuvres dans votre bibliothèque" : "Œuvres de l'auteur"}
                   <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
                     ({authorBooks.total_books} livre{authorBooks.total_books > 1 ? 's' : ''})
