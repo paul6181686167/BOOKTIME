@@ -18,6 +18,7 @@ import RecommendationPage from './components/recommendations/RecommendationPage'
 import ExportImportPage from './components/exportimport/ExportImportPage';
 import ProfileModal from './components/common/ProfileModal';
 import ExportImportModal from './components/export-import/ExportImportModal';
+import SlidePanel from './components/SlidePanel';
 
 // PHASE 3.3 - Composants Social
 import SocialModal from './components/social/SocialModal';
