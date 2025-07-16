@@ -399,7 +399,16 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       Informations fournies par{' '}
-                      {authorInfo.source === 'wikipedia' ? (
+                      {authorInfo.source === 'wikidata' ? (
+                        <a 
+                          href={`https://www.wikidata.org/wiki/${authorInfo.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-700 underline"
+                        >
+                          Wikidata
+                        </a>
+                      ) : authorInfo.source === 'wikipedia' ? (
                         <a 
                           href={authorInfo.wikipedia_url}
                           target="_blank"
