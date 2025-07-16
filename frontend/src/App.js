@@ -398,6 +398,11 @@ function MainApp() {
     // Analytics pour le clic sur auteur
     userAnalytics.trackInteraction('author_click', 'author_name', { authorName: author });
     
+    // Fermer le modal livre s'il est ouvert
+    if (booksHook.showBookModal) {
+      booksHook.closeBookModal();
+    }
+    
     // Ouvrir le modal auteur
     setSelectedAuthor(author);
     setShowAuthorModal(true);
