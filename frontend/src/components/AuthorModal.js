@@ -229,14 +229,25 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
               <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   Informations fournies par{' '}
-                  <a 
-                    href={`https://openlibrary.org${authorInfo.ol_key}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-green-600 hover:text-green-700 underline"
-                  >
-                    Open Library
-                  </a>
+                  {authorInfo.source === 'wikipedia' ? (
+                    <a 
+                      href={authorInfo.wikipedia_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-green-600 hover:text-green-700 underline"
+                    >
+                      Wikipedia
+                    </a>
+                  ) : (
+                    <a 
+                      href={`https://openlibrary.org${authorInfo.ol_key}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-green-600 hover:text-green-700 underline"
+                    >
+                      Open Library
+                    </a>
+                  )}
                 </p>
               </div>
             </div>
