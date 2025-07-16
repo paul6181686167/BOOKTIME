@@ -8,7 +8,7 @@ import aiohttp
 import re
 from datetime import datetime
 from typing import List, Dict, Optional
-from app.database import get_database
+from app.database import db
 import logging
 
 logger = logging.getLogger(__name__)
@@ -143,11 +143,9 @@ class WikipediaSeriesService:
             
         return False
     
-    async def get_existing_authors_from_db(self) -> List[str]:
+    def get_existing_authors_from_db(self) -> List[str]:
         """Récupère les auteurs existants depuis la base de données"""
         try:
-            db = get_database()
-            
             # Agrégation pour obtenir les auteurs uniques
             pipeline = [
                 {"$group": {"_id": "$author", "count": {"$sum": 1}}},
@@ -186,11 +184,9 @@ class WikipediaSeriesService:
         
         return series_found
     
-    async def save_series_to_ultra_harvest(self, series_data: List[Dict]) -> Dict:
+    def save_series_to_ultra_harvest(self, series_data: List[Dict]) -> Dict:
         """Sauvegarde les séries dans Ultra Harvest"""
         try:
-            db = get_database()
-            
             # Collection Ultra Harvest (on peut créer une collection dédiée)
             ultra_harvest_collection = db.ultra_harvest_wikipedia
             
@@ -212,7 +208,7 @@ class WikipediaSeriesService:
                 }
                 
                 # Upsert (insert ou update)
-                result = await ultra_harvest_collection.replace_one(
+                result = ultra_harvest_collection.replace_one(
                     {
                         'name': series['name'],
                         'author': series['author']
@@ -248,7 +244,7 @@ class WikipediaSeriesService:
         logger.info(f"🚀 Démarrage enrichissement automatique (limite: {limit_authors})")
         
         # Récupération des auteurs existants
-        existing_authors = await self.get_existing_authors_from_db()
+        existing_authors = self.get_existing_authors_from_db()
         if not existing_authors:
             logger.error("❌ Aucun auteur trouvé dans la base")
             return {
@@ -286,7 +282,7 @@ class WikipediaSeriesService:
         high_confidence_series = [s for s in all_series if s['confidence'] >= 85]
         
         # Sauvegarde dans Ultra Harvest
-        save_result = await self.save_series_to_ultra_harvest(high_confidence_series)
+        save_result = self.save_series_to_ultra_harvest(high_confidence_series)
         
         # Statistiques finales
         final_stats = {
