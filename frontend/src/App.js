@@ -406,7 +406,7 @@ function MainApp() {
       // Pour Romans graphiques, on utilise un filtre spécial qui sera géré dans useAdvancedSearch
       setFilters(prev => ({ ...prev, category: 'graphic_novels' }));
     } else if (activeTab === 'upcoming') {
-      // Pour l'onglet À venir, on utilise un filtre spécial
+      // Pour l'onglet À venir, on utilise un filtre spécial (mais maintenant c'est un panneau)
       setFilters(prev => ({ ...prev, category: 'upcoming' }));
     } else {
       // Pour Romans, on applique le filtre normal
