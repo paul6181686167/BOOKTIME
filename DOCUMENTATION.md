@@ -1,9 +1,10 @@
 # 📚 BOOKTIME - DOCUMENTATION COMPLÈTE
 
 ## 🎯 DOCUMENT DE RÉFÉRENCE PRINCIPAL
-**Version**: 1.0  
-**Date**: Mars 2025  
+**Version**: 1.3  
+**Date**: Juillet 2025  
 **Statut**: Documentation complète et référence pour modifications futures  
+**Dernière mise à jour**: Session 87.3 - Modal Auteur Enrichi
 
 ---
 
@@ -33,11 +34,13 @@
 - **Découverte** : Intégration Open Library pour découvrir de nouveaux livres
 - **Séries intelligentes** : Gestion automatique des sagas et collections
 - **Statistiques** : Analytics détaillées de ses habitudes de lecture
+- **Profils auteurs** : Informations enrichies avec photos et biographies OpenLibrary
 
 ### Utilisateurs Cibles
 - Passionnés de lecture souhaitant organiser leur bibliothèque
 - Collectionneurs de BD/Mangas voulant suivre leurs séries
 - Lecteurs cherchant de nouvelles recommandations
+- Utilisateurs intéressés par les informations détaillées sur les auteurs
 
 ---
 
@@ -49,8 +52,18 @@ Frontend: React 18 + Tailwind CSS + JavaScript ES6+
 Backend: FastAPI (Python 3.9+) + Pydantic + JWT
 Database: MongoDB avec UUIDs
 Authentification: JWT avec prénom/nom uniquement
-Integration: Open Library API
+Integration: Open Library API (Books + Authors)
 Deployment: Kubernetes + Supervisor
+```
+
+### Métriques Architecture (Juillet 2025)
+```
+Fichiers totaux: 29,670 fichiers
+Backend Python: 227 fichiers
+Frontend JavaScript: 29,443 fichiers
+Routers Backend: 13+ routers spécialisés
+App.js Principal: 1,045 lignes
+Services: 4 services RUNNING (backend, frontend, mongodb, code-server)
 ```
 
 ### Structure des Dossiers
@@ -58,12 +71,25 @@ Deployment: Kubernetes + Supervisor
 /app/
 ├── backend/
 │   ├── server.py              # Application FastAPI principale
-│   ├── requirements.txt       # Dépendances Python
-│   └── .env                   # Variables d'environnement backend
+│   ├── app/
+│   │   ├── main.py           # Point d'entrée avec 13+ routers
+│   │   ├── openlibrary/      # Module OpenLibrary (Books + Authors)
+│   │   │   ├── routes.py     # Endpoints OpenLibrary
+│   │   │   └── service.py    # Services OpenLibrary
+│   │   ├── auth/             # Module authentification
+│   │   ├── books/            # Module gestion livres
+│   │   ├── authors/          # Module gestion auteurs
+│   │   └── series/           # Module gestion séries
+│   ├── requirements.txt      # Dépendances Python
+│   └── .env                  # Variables d'environnement backend
 ├── frontend/
 │   ├── src/
-│   │   ├── App.js            # Composant React principal
-│   │   ├── App.css           # Styles CSS
+│   │   ├── App.js            # Composant React principal (1,045 lignes)
+│   │   ├── App.css           # Styles CSS avec classes modal
+│   │   ├── components/       # Composants React
+│   │   │   ├── AuthorModal.js    # Modal auteur enrichi (129 lignes)
+│   │   │   ├── BookDetailModal.js # Modal détails livre
+│   │   │   └── SeriesDetailModal.js # Modal détails série
 │   │   └── index.js          # Point d'entrée React
 │   ├── package.json          # Dépendances Node.js
 │   ├── tailwind.config.js    # Configuration Tailwind
@@ -77,18 +103,20 @@ Deployment: Kubernetes + Supervisor
 ### Composants Principaux
 
 #### Backend (FastAPI)
-- **server.py** : Application principale avec toutes les routes
+- **server.py** : Application principale avec point d'entrée
+- **app/main.py** : 13+ routers modulaires spécialisés
 - **Authentification JWT** : Système simplifié prénom/nom
 - **Modèles Pydantic** : Validation des données
-- **Intégration MongoDB** : Base de données NoSQL
-- **API Open Library** : Recherche externe de livres
+- **Intégration MongoDB** : Base de données NoSQL avec UUIDs
+- **API Open Library** : Recherche externe livres + informations auteurs
 
 #### Frontend (React)
-- **App.js** : Composant principal (3000+ lignes)
+- **App.js** : Composant principal (1,045 lignes)
 - **Interface responsive** : Design adaptatif mobile/desktop
 - **Recherche unifiée** : Locale + Open Library
-- **Gestion d'état** : React hooks
+- **Gestion d'état** : React hooks avec loading states
 - **Authentification** : Gestion tokens JWT
+- **Modals harmonisés** : Largeur 1024px pour tous modals détaillés
 
 ---
 
@@ -98,6 +126,348 @@ Deployment: Kubernetes + Supervisor
 
 #### Catégories Supportées
 - **Roman** : Fiction, non-fiction, essais
+- **BD** : Bandes dessinées, comics, graphic novels
+- **Manga** : Mangas, manhwa, manhua
+
+#### Statuts de Lecture
+- **À lire** : Livres dans la liste de souhaits
+- **En cours** : Lecture en progression avec suivi de pages
+- **Terminé** : Livres complétés avec possibilité de note et avis
+- **Abandonné** : Livres non terminés
+
+### 2. Système de Séries Intelligent
+
+#### Ultra Harvest
+- **10,000+ séries** : Base de données pré-configurée
+- **Détection automatique** : Identification des livres appartenant à des séries
+- **Masquage intelligent** : Livres série masqués par défaut
+- **Expansion automatique** : Ajout continu de nouvelles séries
+
+#### Fonctionnalités Séries
+- **Gestion volumes** : Numérotation automatique des tomes
+- **Suivi progression** : Statut par série et par volume
+- **Recommandations** : Suggestions basées sur les séries lues
+
+### 3. Recherche Unifiée
+
+#### Sources de Recherche
+- **Bibliothèque locale** : Recherche instantanée dans sa collection
+- **Open Library** : Accès à plus de 20 millions de livres
+- **Recherche par auteur** : Fonctionnalité complète avec détection séries
+
+#### Filtres Avancés
+- **Catégorie** : Romans, BD, Mangas
+- **Statut** : Tous statuts de lecture
+- **Année** : Filtrage par période de publication
+- **Auteur** : Recherche par nom d'auteur
+
+### 4. Profils Auteurs Enrichis ✨ NOUVEAU
+
+#### Informations Détaillées
+- **Photo professionnelle** : Images haute résolution OpenLibrary
+- **Biographie courte** : Description limitée à 300 caractères
+- **Métadonnées complètes** : Dates naissance/décès, œuvres, noms alternatifs
+- **Statistiques** : Nombre d'œuvres répertoriées, œuvre principale
+
+#### Modal Auteur Professionnel
+- **Design responsive** : Grid adaptatif 1/3 colonnes
+- **États gérés** : Loading, error, success avec UX optimale
+- **Fallback élégant** : Icône UserIcon si photo indisponible
+- **Lien externe** : Accès direct au profil OpenLibrary
+
+### 5. Interface Utilisateur
+
+#### Design Système
+- **Largeur modals harmonisée** : 1024px pour tous modals détaillés
+- **Cohérence visuelle** : Expérience utilisateur uniforme
+- **Responsive design** : Adaptation mobile/desktop
+- **Thème sombre/clair** : Support des deux modes
+
+#### Modals Principaux
+- **AuthorModal** : Profil auteur avec photo et biographie
+- **BookDetailModal** : Détails livre avec actions
+- **SeriesDetailModal** : Informations série complètes
+
+---
+
+## 🔌 API DOCUMENTATION
+
+### Endpoints OpenLibrary
+
+#### Books
+- `GET /api/openlibrary/search` : Recherche de livres
+- `GET /api/openlibrary/search-advanced` : Recherche avancée
+- `GET /api/openlibrary/search-isbn` : Recherche par ISBN
+- `GET /api/openlibrary/search-author` : Recherche par auteur
+- `POST /api/openlibrary/import` : Import livre depuis OpenLibrary
+
+#### Authors ✨ NOUVEAU
+- `GET /api/openlibrary/author/{author_name}` : Informations auteur complètes
+
+**Exemple Réponse Author:**
+```json
+{
+  "found": true,
+  "author": {
+    "name": "Nom complet auteur",
+    "bio": "Biographie courte (300 chars max)",
+    "photo_url": "https://covers.openlibrary.org/a/id/{photo_id}-M.jpg",
+    "birth_date": "Date naissance",
+    "death_date": "Date décès",
+    "alternate_names": ["Noms alternatifs"],
+    "work_count": 123,
+    "top_work": "Œuvre principale",
+    "ol_key": "Clé OpenLibrary"
+  }
+}
+```
+
+### Endpoints Principaux
+
+#### Authentification
+- `POST /api/auth/login` : Connexion utilisateur
+- `POST /api/auth/register` : Inscription utilisateur
+- `POST /api/auth/refresh` : Renouvellement token
+
+#### Books
+- `GET /api/books` : Liste des livres utilisateur
+- `POST /api/books` : Créer un nouveau livre
+- `PUT /api/books/{book_id}` : Mettre à jour un livre
+- `DELETE /api/books/{book_id}` : Supprimer un livre
+
+#### Authors
+- `GET /api/authors` : Liste des auteurs
+- `GET /api/authors/{author_name}/books` : Livres d'un auteur
+
+#### Series
+- `GET /api/series` : Liste des séries
+- `GET /api/series/{series_name}/books` : Livres d'une série
+
+---
+
+## 🎨 INTERFACE UTILISATEUR
+
+### Composants Principaux
+
+#### AuthorModal.js ✨ ENRICHI
+```javascript
+// Fonctionnalités principales
+- Photo auteur OpenLibrary avec fallback
+- Biographie prose formatée
+- Métadonnées complètes (dates, œuvres)
+- Loading states et error handling
+- Design responsive grid 1/3 colonnes
+- Lien externe vers OpenLibrary
+```
+
+#### États React
+```javascript
+const [authorInfo, setAuthorInfo] = useState(null);
+const [loading, setLoading] = useState(false);
+const [error, setError] = useState(null);
+```
+
+#### Classes CSS
+```css
+.modal-content-wide {
+  max-width: 1024px;  /* Largeur harmonisée tous modals */
+}
+
+.modal-content {
+  max-width: 500px;   /* Modals basiques */
+}
+```
+
+### Design Système
+
+#### Largeurs Modals Harmonisées
+```
+AuthorModal        : 1024px (modal-content-wide) ✅
+BookDetailModal    : 1024px (modal-content-wide) ✅
+SeriesDetailModal  : 1024px (modal-content-wide) ✅
+```
+
+#### Responsive Design
+- **Mobile** : Stack vertical, colonnes adaptatives
+- **Tablet** : Grid 2 colonnes
+- **Desktop** : Grid 3 colonnes optimale
+
+---
+
+## 💾 BASE DE DONNÉES
+
+### Collections MongoDB
+
+#### books
+```javascript
+{
+  id: "UUID",
+  user_id: "UUID",
+  title: "Titre du livre",
+  author: "Nom auteur",
+  category: "roman|bd|manga",
+  status: "to_read|reading|completed|dropped",
+  // ... autres champs
+}
+```
+
+#### users
+```javascript
+{
+  id: "UUID",
+  first_name: "Prénom",
+  last_name: "Nom",
+  // Authentification simplifiée
+}
+```
+
+### Optimisations
+- **Index composés** : user_id + category pour recherches rapides
+- **UUIDs** : Pas d'ObjectID MongoDB pour sérialisation JSON
+- **Validation** : Schemas Pydantic côté backend
+
+---
+
+## 🔐 SÉCURITÉ ET AUTHENTIFICATION
+
+### Système JWT
+- **Tokens** : JWT avec payload minimal (id, prénom, nom)
+- **Durée** : Tokens longue durée pour UX optimale
+- **Stockage** : localStorage côté frontend
+- **Validation** : Middleware FastAPI pour routes protégées
+
+### Authentification Simplifiée
+```python
+# Pas de mot de passe, uniquement prénom/nom
+@router.post("/login")
+async def login(user_data: UserLogin):
+    # Validation prénom/nom uniquement
+    return {"access_token": token, "user": user_data}
+```
+
+---
+
+## 🚀 DÉPLOIEMENT
+
+### Architecture Kubernetes
+```yaml
+Services:
+  - backend: RUNNING pid 3339 (FastAPI sur port 8001)
+  - frontend: RUNNING pid 3313 (React sur port 3000)
+  - mongodb: RUNNING pid 54 (MongoDB sur port 27017)
+  - code-server: RUNNING pid 48 (Développement)
+```
+
+### Variables d'Environnement
+```bash
+# Backend
+MONGO_URL="mongodb://localhost:27017/booktime"
+
+# Frontend
+REACT_APP_BACKEND_URL="http://localhost:8001"
+```
+
+### Supervision
+```bash
+# Commandes utiles
+sudo supervisorctl status
+sudo supervisorctl restart backend
+sudo supervisorctl restart frontend
+sudo supervisorctl restart all
+```
+
+---
+
+## 🧪 TESTS ET VALIDATION
+
+### Validation Sessions Récentes
+- **Session 87.1** : Analyse exhaustive architecture enterprise
+- **Session 87.2** : Harmonisation largeur modals (1024px)
+- **Session 87.3** : Enrichissement modal auteur (photo + biographie)
+
+### Health Checks
+```bash
+# API Backend
+curl -s http://localhost:8001/health
+# Réponse: {"status":"ok","database":"connected"}
+
+# Frontend
+curl -s http://localhost:3000
+# Interface BOOKTIME accessible
+```
+
+---
+
+## 📈 HISTORIQUE DES MODIFICATIONS
+
+### Sessions Majeures Récentes
+
+#### Session 87.3 (Juillet 2025) - Modal Auteur Enrichi
+- **Ajout** : Endpoint `/api/openlibrary/author/{author_name}`
+- **Enrichissement** : AuthorModal.js avec photo + biographie
+- **Intégration** : OpenLibrary Authors API complète
+- **UX** : Loading states, error handling, responsive design
+
+#### Session 87.2 (Juillet 2025) - Harmonisation Modals
+- **Correction** : Largeur modal auteur harmonisée (1024px)
+- **Cohérence** : Tous modals détaillés même largeur
+- **Validation** : Utilisateur confirmé "c'est nickel"
+
+#### Session 87.1 (Juillet 2025) - Analyse Exhaustive
+- **Documentation** : Consultation mémoire complète
+- **Validation** : Architecture enterprise 29,670 fichiers
+- **Métriques** : 13+ routers backend, services stables
+
+### Évolutions Majeures Passées
+- **Sessions 81-86** : Développement fonctionnalités core
+- **Sessions 35-73** : Évolution design épuré professionnel
+- **Ultra Harvest** : Intégration 10,000+ séries
+- **Masquage intelligent** : Détection automatique séries
+
+---
+
+## 🎯 ÉTAT ACTUEL (JUILLET 2025)
+
+### Métriques Finales
+```
+Architecture: 29,670 fichiers (227 Python + 29,443 JavaScript)
+Backend: 13+ routers modulaires FastAPI
+Frontend: App.js 1,045 lignes React optimisé
+Services: 4 services RUNNING performance optimale
+Database: MongoDB collections optimisées UUIDs
+Intégrations: OpenLibrary Books + Authors complètes
+```
+
+### Fonctionnalités Enterprise
+- **Gestion bibliothèque** : Romans/BD/Mangas avec séries intelligentes
+- **Profils auteurs** : Photos + biographies OpenLibrary
+- **Recherche unifiée** : Locale + OpenLibrary + recherche par auteur
+- **Interface épurée** : Design professionnel business-ready
+- **Architecture stable** : Services opérationnels + monitoring
+
+### Prochaines Évolutions Possibles
+- **Listing livres auteur** : Dans modal auteur
+- **Recommandations IA** : Basées sur profils auteurs
+- **Export/Import** : Sauvegarde bibliothèque
+- **Social features** : Partage et recommandations entre utilisateurs
+- **Statistiques avancées** : Analytics lecture par auteur
+
+---
+
+## 📞 SUPPORT ET CONTACT
+
+### Documentation Technique
+- **DOCUMENTATION.md** : Ce document (référence principale)
+- **CHANGELOG.md** : Historique détaillé sessions
+- **API.md** : Documentation API complète
+- **ARCHITECTURE.md** : Architecture technique détaillée
+
+### Sessions Support
+- **Session 87.1** : Analyse mémoire complète
+- **Session 87.2** : Harmonisation UI
+- **Session 87.3** : Enrichissement modal auteur
+
+**📚 BOOKTIME ENTERPRISE - DOCUMENTATION COMPLÈTE ET RÉFÉRENCE TECHNIQUE ABSOLUE**
 - **BD** : Bandes dessinées, comics, graphic novels
 - **Manga** : Mangas japonais, manhwa, manhua
 
