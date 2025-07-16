@@ -11,7 +11,7 @@ from datetime import datetime
 import time
 
 class PhaseB3BackendTester:
-    def __init__(self, base_url="https://637d4469-7291-4b2a-87d6-f5863d434c99.preview.emergentagent.com"):
+    def __init__(self, base_url="https://43fdc2c0-91dd-47f4-8760-5404bcd05926.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
         self.user_id = None

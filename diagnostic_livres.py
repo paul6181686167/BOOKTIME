@@ -9,7 +9,7 @@ import json
 import sys
 
 # Configuration
-BACKEND_URL = "https://637d4469-7291-4b2a-87d6-f5863d434c99.preview.emergentagent.com"
+BACKEND_URL = "https://43fdc2c0-91dd-47f4-8760-5404bcd05926.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 def get_token():
