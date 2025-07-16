@@ -119,8 +119,9 @@ class WikidataService:
         
         try:
             # Méthode hybride : essayer d'abord avec le nom, puis avec l'ID si échec
-            author_name_spaced = author_name.replace(".", ". ")  # J.K. -> J. K.
-            author_name_nospace = author_name.replace(". ", ".")  # J. K. -> J.K.
+            # Préparer les variantes du nom (corriger le problème des espaces doubles)
+            author_name_spaced = author_name.replace(".", ". ").replace("  ", " ")  # J.K. -> J. K. (éviter espaces doubles)
+            author_name_nospace = author_name.replace(". ", ".").replace(" ", "")  # J. K. -> J.K. (sans espaces)
             
             # Préparer la requête avec les variantes
             query = GET_AUTHOR_SERIES % {
