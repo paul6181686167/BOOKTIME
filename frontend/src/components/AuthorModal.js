@@ -444,6 +444,7 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
                   </span>
                   {authorBooks.sources && (
                     <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
+                      {authorBooks.sources.wikidata ? `Wikidata: ${authorBooks.sources.wikidata}` : ''}
                       {authorBooks.sources.wikipedia ? `Wikipedia: ${authorBooks.sources.wikipedia}` : ''}
                       {authorBooks.sources.openlibrary ? ` OpenLibrary: ${authorBooks.sources.openlibrary}` : ''}
                       {authorBooks.sources.library ? `Bibliothèque: ${authorBooks.sources.library}` : ''}
