@@ -1,10 +1,10 @@
 # 📚 BOOKTIME - DOCUMENTATION COMPLÈTE
 
 ## 🎯 DOCUMENT DE RÉFÉRENCE PRINCIPAL
-**Version**: 1.3  
+**Version**: 1.4  
 **Date**: Juillet 2025  
 **Statut**: Documentation complète et référence pour modifications futures  
-**Dernière mise à jour**: Session 87.3 - Modal Auteur Enrichi
+**Dernière mise à jour**: Session 87.5 - Implémentation API Wikipedia pour Profils Auteurs Enrichis
 
 ---
 
