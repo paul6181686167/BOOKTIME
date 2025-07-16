@@ -26,33 +26,30 @@ ORDER BY ?seriesLabel
 LIMIT 20
 """
 
-# Requête pour obtenir les livres individuels d'un auteur (NOUVELLE)
+# Requête pour obtenir les livres individuels d'un auteur (OPTIMISÉE - Performance)
 GET_AUTHOR_INDIVIDUAL_BOOKS = """
-SELECT DISTINCT ?book ?bookLabel ?pubDate ?genre ?genreLabel ?type ?typeLabel ?description ?isbn ?publisher ?publisherLabel WHERE {
-  # Recherche l'auteur par nom
-  ?author rdfs:label ?authorLabel .
-  FILTER(CONTAINS(LCASE(?authorLabel), LCASE("%(author_name)s")))
+SELECT DISTINCT ?book ?bookLabel ?pubDate ?genre ?genreLabel ?type ?typeLabel ?isbn ?publisher ?publisherLabel WHERE {
+  # Recherche élargie auteur par nom avec aliases
+  ?author rdfs:label|skos:altLabel ?authorName .
+  FILTER(CONTAINS(LCASE(?authorName), LCASE("%(author_name)s")))
   
-  # Trouve les livres individuels de cet auteur
-  ?book wdt:P31 ?type .
-  FILTER(?type IN (wd:Q571, wd:Q7725634, wd:Q47461344, wd:Q8261))
-  # Q571: book, Q7725634: literary work, Q47461344: written work, Q8261: novel
-  ?book wdt:P50 ?author .        # Auteur
+  # Trouve les livres individuels - REQUÊTE SIMPLIFIÉE
+  ?book wdt:P31 wd:Q571 .          # Instance de livre (type principal)
+  ?book wdt:P50 ?author .          # Auteur
   
-  # Exclure les livres qui font partie d'une série (pour éviter les doublons)
+  # Exclure les livres de série (optimisé)
   FILTER NOT EXISTS { ?book wdt:P179 ?series . }
   
-  # Informations optionnelles
+  # Informations essentielles seulement
   OPTIONAL { ?book wdt:P577 ?pubDate . }
   OPTIONAL { ?book wdt:P136 ?genre . }
   OPTIONAL { ?book wdt:P212 ?isbn . }
   OPTIONAL { ?book wdt:P123 ?publisher . }
-  OPTIONAL { ?book schema:description ?description . FILTER(LANG(?description) = "fr" || LANG(?description) = "en") }
   
   SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en" . }
 }
 ORDER BY DESC(?pubDate)
-LIMIT 50
+LIMIT 20
 """
 
 # Requête pour obtenir les livres d'une série
