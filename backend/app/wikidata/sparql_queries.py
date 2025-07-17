@@ -86,12 +86,23 @@ ORDER BY ?seriesLabel
 LIMIT 20
 """
 
-# Requête pour obtenir les livres individuels d'un auteur (SIMPLIFIÉE - Pour debug)
+# Requête pour obtenir les livres individuels d'un auteur (CORRIGÉE - Test direct validé)
 GET_AUTHOR_INDIVIDUAL_BOOKS = """
-SELECT DISTINCT ?book ?bookLabel ?pubDate ?type ?typeLabel WHERE {
-  # Recherche simple par nom d'auteur
-  ?author rdfs:label ?authorName .
-  FILTER(CONTAINS(LCASE(?authorName), LCASE("%(author_name)s")))
+SELECT DISTINCT ?book ?bookLabel ?pubDate ?type ?typeLabel ?isbn ?publisher ?publisherLabel WHERE {
+  # Recherche auteur avec variantes exactes
+  {
+    ?author rdfs:label "%(author_name)s"@en .
+  } UNION {
+    ?author rdfs:label "%(author_name)s"@fr .
+  } UNION {
+    ?author rdfs:label "%(author_name_spaced)s"@en .
+  } UNION {
+    ?author rdfs:label "%(author_name_spaced)s"@fr .
+  } UNION {
+    ?author rdfs:label "%(author_name_nospace)s"@en .
+  } UNION {
+    ?author rdfs:label "%(author_name_nospace)s"@fr .
+  }
   
   # Vérifier que c'est bien un auteur
   ?author wdt:P106 ?occupation .
@@ -109,11 +120,13 @@ SELECT DISTINCT ?book ?bookLabel ?pubDate ?type ?typeLabel WHERE {
   
   # Informations essentielles
   OPTIONAL { ?book wdt:P577 ?pubDate . }
+  OPTIONAL { ?book wdt:P212 ?isbn . }
+  OPTIONAL { ?book wdt:P123 ?publisher . }
   
   SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en" . }
 }
 ORDER BY DESC(?pubDate)
-LIMIT 10
+LIMIT 15
 """
 
 # Requête pour obtenir les livres d'une série
