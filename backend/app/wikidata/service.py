@@ -331,8 +331,16 @@ class WikidataService:
             return cached_result['data']
         
         try:
-            # Préparer la requête
-            query = GET_AUTHOR_INDIVIDUAL_BOOKS % {"author_name": author_name}
+            # Préparer les variantes du nom (comme dans get_author_series)
+            author_name_spaced = author_name.replace(".", ". ").replace("  ", " ")
+            author_name_nospace = author_name.replace(". ", ".").replace(" ", "")
+            
+            # Préparer la requête avec les variantes
+            query = GET_AUTHOR_INDIVIDUAL_BOOKS % {
+                "author_name": author_name,
+                "author_name_spaced": author_name_spaced,
+                "author_name_nospace": author_name_nospace
+            }
             
             # Exécuter la requête
             result = await self._execute_sparql_query(query)
