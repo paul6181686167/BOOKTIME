@@ -105,17 +105,17 @@ Frontend: React 18 + Tailwind CSS + JavaScript ES6+
 Backend: FastAPI (Python 3.9+) + Pydantic + JWT
 Database: MongoDB avec UUIDs
 Authentification: JWT avec prénom/nom uniquement
-Integration: Open Library API (Books + Authors)
+Integration: Open Library API (Books + Authors) + Wikipedia API + Wikidata SPARQL
 Deployment: Kubernetes + Supervisor
 ```
 
 ### Métriques Architecture (Juillet 2025)
 ```
-Fichiers totaux: 50,302 fichiers
-Backend Python: 227 fichiers
-Frontend JavaScript: 29,437 fichiers
-Routers Backend: 16+ routers spécialisés
-App.js Principal: 1,045 lignes
+Fichiers totaux: 29,677 fichiers
+Backend Python: 239 fichiers
+Frontend JavaScript: 29,438 fichiers
+Routers Backend: 19+ routers spécialisés
+App.js Principal: 1,044 lignes
 Services: 4 services RUNNING (backend, frontend, mongodb, code-server)
 ```
 
@@ -125,21 +125,32 @@ Services: 4 services RUNNING (backend, frontend, mongodb, code-server)
 ├── backend/
 │   ├── server.py              # Application FastAPI principale
 │   ├── app/
-│   │   ├── main.py           # Point d'entrée avec 16+ routers
+│   │   ├── main.py           # Point d'entrée avec 19+ routers
 │   │   ├── openlibrary/      # Module OpenLibrary (Books + Authors)
 │   │   │   ├── routes.py     # Endpoints OpenLibrary
 │   │   │   └── service.py    # Services OpenLibrary
 │   │   ├── wikipedia/        # Module Wikipedia API (Session 87.5)
 │   │   │   └── routes.py     # Endpoints Wikipedia auteurs
+│   │   ├── wikidata/         # Module Wikidata API (Session 87.12-87.20)
+│   │   │   ├── routes.py     # Endpoints Wikidata (16 endpoints)
+│   │   │   ├── service.py    # WikidataService avec cache
+│   │   │   ├── sparql_queries.py # Requêtes SPARQL (16 requêtes)
+│   │   │   └── models.py     # Modèles Pydantic Wikidata
 │   │   ├── auth/             # Module authentification
 │   │   ├── books/            # Module gestion livres
 │   │   ├── authors/          # Module gestion auteurs
-│   │   └── series/           # Module gestion séries
+│   │   ├── series/           # Module gestion séries
+│   │   ├── recommendations/  # Module recommandations IA
+│   │   ├── social/           # Module fonctionnalités sociales
+│   │   ├── monitoring/       # Module analytics performance
+│   │   ├── export_import/    # Module sauvegarde/restauration
+│   │   ├── integrations/     # Module intégrations externes
+│   │   └── routers/          # Routers optimisés
 │   ├── requirements.txt      # Dépendances Python
 │   └── .env                  # Variables d'environnement backend
 ├── frontend/
 │   ├── src/
-│   │   ├── App.js            # Composant React principal (1,045 lignes)
+│   │   ├── App.js            # Composant React principal (1,044 lignes)
 │   │   ├── App.css           # Styles CSS avec classes modal
 │   │   ├── components/       # Composants React
 │   │   │   ├── AuthorModal.js    # Modal auteur enrichi (129 lignes)
@@ -159,15 +170,16 @@ Services: 4 services RUNNING (backend, frontend, mongodb, code-server)
 
 #### Backend (FastAPI)
 - **server.py** : Application principale avec point d'entrée
-- **app/main.py** : 16+ routers modulaires spécialisés
+- **app/main.py** : 19+ routers modulaires spécialisés
 - **Authentification JWT** : Système simplifié prénom/nom
 - **Modèles Pydantic** : Validation des données
 - **Intégration MongoDB** : Base de données NoSQL avec UUIDs
 - **API Open Library** : Recherche externe livres + informations auteurs
 - **API Wikipedia** : Profils auteurs enrichis avec données curées
+- **API Wikidata** : Séries + livres individuels avec requêtes SPARQL
 
 #### Frontend (React)
-- **App.js** : Composant principal (1,045 lignes)
+- **App.js** : Composant principal (1,044 lignes)
 - **Interface responsive** : Design adaptatif mobile/desktop
 - **Recherche unifiée** : Locale + Open Library
 - **Gestion d'état** : React hooks avec loading states
