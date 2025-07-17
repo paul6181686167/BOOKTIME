@@ -342,6 +342,10 @@ class WikidataService:
                 "author_name_nospace": author_name_nospace
             }
             
+            # LOG TEMPORAIRE POUR DÉBOGUER
+            logger.info(f"🔍 Requête SPARQL générée pour {author_name}:")
+            logger.info(f"📝 Query: {query[:500]}...")
+            
             # Exécuter la requête
             result = await self._execute_sparql_query(query)
             
