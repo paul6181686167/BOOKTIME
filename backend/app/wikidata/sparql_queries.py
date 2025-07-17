@@ -89,9 +89,13 @@ LIMIT 20
 # Requête pour obtenir les livres individuels d'un auteur (OPTIMISÉE - Performance)
 GET_AUTHOR_INDIVIDUAL_BOOKS = """
 SELECT DISTINCT ?book ?bookLabel ?pubDate ?genre ?genreLabel ?type ?typeLabel ?isbn ?publisher ?publisherLabel WHERE {
-  # Recherche élargie auteur par nom avec aliases
+  # Recherche élargie auteur par nom avec aliases et variantes
   ?author rdfs:label|skos:altLabel ?authorName .
-  FILTER(regex(?authorName, "%(author_name)s", "i"))
+  FILTER(
+    CONTAINS(LCASE(?authorName), LCASE("%(author_name)s")) ||
+    CONTAINS(LCASE(?authorName), LCASE("%(author_name_spaced)s")) ||
+    CONTAINS(LCASE(?authorName), LCASE("%(author_name_nospace)s"))
+  )
   
   # Trouve les livres individuels - SOLUTION UTILISATEUR VALIDÉE
   ?book wdt:P50 ?author .          # Auteur
