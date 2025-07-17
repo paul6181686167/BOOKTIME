@@ -93,19 +93,17 @@ SELECT DISTINCT ?book ?bookLabel ?pubDate ?genre ?genreLabel ?type ?typeLabel ?i
   ?author rdfs:label|skos:altLabel ?authorName .
   FILTER(CONTAINS(LCASE(?authorName), LCASE("%(author_name)s")))
   
-  # Trouve les livres individuels - REQUÊTE OPTIMISÉE
+  # Trouve les livres individuels - SOLUTION UTILISATEUR ADAPTÉE
   ?book wdt:P50 ?author .          # Auteur
   
-  # Types d'œuvres élargis
-  {
-    ?book wdt:P31 wd:Q7725634 .  # œuvre littéraire
-  } UNION {
-    ?book wdt:P31 wd:Q571 .      # livre
-  } UNION {
-    ?book wdt:P31 wd:Q47461344 . # œuvre écrite
-  } UNION {
-    ?book wdt:P31 wd:Q8261 .     # roman
-  }
+  # Types d'œuvres élargis - SOLUTION EXACTE DE L'UTILISATEUR
+  { ?book wdt:P31 wd:Q7725634 . }  # œuvre littéraire
+  UNION
+  { ?book wdt:P31 wd:Q571 . }      # livre
+  UNION
+  { ?book wdt:P31 wd:Q47461344 . } # œuvre écrite
+  UNION
+  { ?book wdt:P31 wd:Q8261 . }     # roman
   
   # Exclure les livres de série
   FILTER NOT EXISTS { ?book wdt:P179 ?series . }
