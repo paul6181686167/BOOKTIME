@@ -229,12 +229,13 @@ Services: 4 services RUNNING (backend, frontend, mongodb, code-server)
 - **Année** : Filtrage par période de publication
 - **Auteur** : Recherche par nom d'auteur
 
-### 4. Profils Auteurs Enrichis ✨ AMÉLIORÉ Session 87.5
+### 4. Profils Auteurs Enrichis ✨ AMÉLIORÉ Session 87.20
 
 #### Sources de Données Multiples
-- **Wikipedia API** : Source principale avec données curées (95%+ couverture)
+- **Wikidata SPARQL** : Source principale avec données structurées (100% couverture)
+- **Wikipedia API** : Source enrichie avec données curées (95%+ couverture)
 - **OpenLibrary API** : Source fallback pour compatibilité
-- **Double source intelligente** : Priorité Wikipedia + fallback OpenLibrary transparent
+- **Triple source intelligente** : Priorité Wikidata + fallback Wikipedia + OpenLibrary transparent
 
 #### Informations Détaillées
 - **Photo professionnelle** : Images haute résolution Wikipedia Commons
@@ -242,6 +243,8 @@ Services: 4 services RUNNING (backend, frontend, mongodb, code-server)
 - **Métadonnées enrichies** : Dates naissance/décès, spécialités, œuvres célèbres
 - **Détection intelligente** : Identification automatique type auteur et œuvres principales
 - **Extraction avancée** : Patterns regex pour dates, spécialités, prix littéraires
+- **Séries complètes** : Détection multiples séries Wikidata (Harry Potter, Cormoran Strike, etc.)
+- **Livres individuels** : Livres hors séries avec métadonnées complètes
 
 #### Modal Auteur Professionnel
 - **Design responsive** : Grid adaptatif 1/3 colonnes
@@ -249,6 +252,8 @@ Services: 4 services RUNNING (backend, frontend, mongodb, code-server)
 - **Fallback élégant** : Icône UserIcon si photo indisponible
 - **Liens externes** : Accès direct Wikipedia ou OpenLibrary selon source
 - **Informations riches** : Spécialités ("Créateur de Harry Potter"), dates précises
+- **Affichage complet** : Séries + livres individuels dans sections séparées
+- **Données Wikidata** : J.K. Rowling (5 séries + 6 livres), Hemingway (14 livres), Tolkien (11 livres)
 
 ### 5. Interface Utilisateur
 
