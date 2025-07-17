@@ -93,17 +93,12 @@ SELECT DISTINCT ?book ?bookLabel ?pubDate ?genre ?genreLabel ?type ?typeLabel ?i
   ?author rdfs:label|skos:altLabel ?authorName .
   FILTER(CONTAINS(LCASE(?authorName), LCASE("%(author_name)s")))
   
-  # Trouve les livres individuels - SOLUTION UTILISATEUR ADAPTÉE
+  # Trouve les livres individuels - SOLUTION UTILISATEUR VALIDÉE
   ?book wdt:P50 ?author .          # Auteur
+  ?book wdt:P31 ?type .
   
   # Types d'œuvres élargis - SOLUTION EXACTE DE L'UTILISATEUR
-  { ?book wdt:P31 wd:Q7725634 . }  # œuvre littéraire
-  UNION
-  { ?book wdt:P31 wd:Q571 . }      # livre
-  UNION
-  { ?book wdt:P31 wd:Q47461344 . } # œuvre écrite
-  UNION
-  { ?book wdt:P31 wd:Q8261 . }     # roman
+  FILTER(?type IN (wd:Q7725634, wd:Q571, wd:Q47461344, wd:Q8261))
   
   # Exclure les livres de série
   FILTER NOT EXISTS { ?book wdt:P179 ?series . }
@@ -113,7 +108,6 @@ SELECT DISTINCT ?book ?bookLabel ?pubDate ?genre ?genreLabel ?type ?typeLabel ?i
   OPTIONAL { ?book wdt:P136 ?genre . }
   OPTIONAL { ?book wdt:P212 ?isbn . }
   OPTIONAL { ?book wdt:P123 ?publisher . }
-  OPTIONAL { ?book wdt:P31 ?type . }
   
   SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en" . }
 }
