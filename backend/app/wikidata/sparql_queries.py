@@ -91,7 +91,7 @@ GET_AUTHOR_INDIVIDUAL_BOOKS = """
 SELECT DISTINCT ?book ?bookLabel ?pubDate ?genre ?genreLabel ?type ?typeLabel ?isbn ?publisher ?publisherLabel WHERE {
   # Recherche élargie auteur par nom avec aliases
   ?author rdfs:label|skos:altLabel ?authorName .
-  FILTER(CONTAINS(LCASE(?authorName), LCASE("%(author_name)s")))
+  FILTER(regex(?authorName, "%(author_name)s", "i"))
   
   # Trouve les livres individuels - SOLUTION UTILISATEUR VALIDÉE
   ?book wdt:P50 ?author .          # Auteur
