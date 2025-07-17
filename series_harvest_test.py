@@ -33,7 +33,7 @@ class SeriesHarvestTest:
         response = requests.post(f"{API_URL}/auth/register", json=self.test_user_data)
         if response.status_code == 200:
             user_data = response.json()
-            self.token = user_data["token"]
+            self.token = user_data["access_token"]  # Fixed: use access_token instead of token
             self.headers['Authorization'] = f'Bearer {self.token}'
             print("✅ Authentication successful")
             return True
