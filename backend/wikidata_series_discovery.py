@@ -180,7 +180,7 @@ class WikidataSeriesDiscovery:
                     new_series = self.extract_new_series(wikidata_series, author_name)
                     self.new_series.extend(new_series)
                     
-                    logger.info(f"✅ {author_name}: {len(wikidata_series)} séries totales, {len(new_series)} nouvelles")
+                    logger.info(f"✅ {author_name}: {len(wikidata_series)} séries totales, {len(new_series)} nouvelles - Total découvert: {len(self.new_series)}")
                 else:
                     logger.info(f"⚠️ {author_name}: Aucune série trouvée")
                     
