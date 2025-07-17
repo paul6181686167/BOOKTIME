@@ -281,10 +281,63 @@ Services: 4 services RUNNING (backend, frontend, mongodb, code-server)
 - `GET /api/openlibrary/search-author` : Recherche par auteur
 - `POST /api/openlibrary/import` : Import livre depuis OpenLibrary
 
-#### Authors ✨ AMÉLIORÉ Session 87.5
-- `GET /api/wikipedia/author/{author_name}` : Informations auteur Wikipedia (priorité)
+#### Authors ✨ AMÉLIORÉ Session 87.20
+- `GET /api/wikidata/author/{author_name}/series` : Informations auteur Wikidata complètes (séries + livres individuels)
+- `GET /api/wikidata/test-individual-books/{author_name}` : Test livres individuels Wikidata
+- `GET /api/wikipedia/author/{author_name}` : Informations auteur Wikipedia (enrichi)
 - `GET /api/openlibrary/author/{author_name}` : Informations auteur OpenLibrary (fallback)
 - `GET /api/wikipedia/test/{author_name}` : Endpoint test Wikipedia avec données brutes
+
+#### Wikidata API ✨ NOUVEAU Session 87.20
+- `GET /api/wikidata/author/{author_name}/series` : Séries + livres individuels complets
+- `GET /api/wikidata/test-individual-books/{author_name}` : Test livres individuels
+- `GET /api/wikidata/test-connection` : Test connectivité SPARQL
+- `GET /api/wikidata/search-series/{search_term}` : Recherche séries
+- Et 12 autres endpoints Wikidata spécialisés
+
+**Exemple Réponse Wikidata Author Complète:**
+```json
+{
+  "found": true,
+  "source": "wikidata",
+  "query_time": 11.26,
+  "results_count": 11,
+  "series": [
+    {
+      "id": "Q8337",
+      "name": "Harry Potter",
+      "author_name": "J.K. Rowling",
+      "genre": "roman de développement",
+      "status": "en cours",
+      "description": "suite romanesque fantastique de sept tomes"
+    },
+    {
+      "id": "Q18417290",
+      "name": "Cormoran Strike",
+      "author_name": "J.K. Rowling",
+      "genre": "littérature policière",
+      "status": "en cours",
+      "description": "Série de romans policiers"
+    }
+  ],
+  "individual_books": [
+    {
+      "title": "Jack et la Grande Aventure du Cochon de Noël",
+      "publication_date": "2021-10-12",
+      "book_type": "œuvre littéraire",
+      "source": "wikidata"
+    },
+    {
+      "title": "Une place à prendre",
+      "publication_date": "2012-09-27",
+      "book_type": "œuvre littéraire",
+      "source": "wikidata"
+    }
+  ],
+  "total_series": 5,
+  "total_individual_books": 6
+}
+```
 
 **Exemple Réponse Wikipedia Author:**
 ```json
