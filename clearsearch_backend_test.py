@@ -12,7 +12,7 @@ import time
 
 class ClearSearchValidationTest:
     def __init__(self):
-        self.backend_url = "https://6d382a30-906c-4536-a021-414884fc848c.preview.emergentagent.com"
+        self.backend_url = "https://51d6347d-3606-4423-979e-5c3325a7830b.preview.emergentagent.com"
         self.token = None
         self.user_id = None
         self.test_timestamp = datetime.now().strftime('%H%M%S%f')
