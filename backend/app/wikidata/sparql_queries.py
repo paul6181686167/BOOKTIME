@@ -88,29 +88,24 @@ LIMIT 20
 
 # Requête pour obtenir les livres individuels d'un auteur (OPTIMISÉE - Performance)
 GET_AUTHOR_INDIVIDUAL_BOOKS = """
-SELECT DISTINCT ?book ?bookLabel ?pubDate ?genre ?genreLabel ?type ?typeLabel ?isbn ?publisher ?publisherLabel WHERE {
-  # Recherche élargie auteur par nom avec aliases
-  ?author rdfs:label|skos:altLabel ?authorName .
-  FILTER(CONTAINS(LCASE(?authorName), LCASE("%(author_name)s")))
+SELECT DISTINCT ?book ?bookLabel ?pubDate WHERE {
+  # Recherche J.K. Rowling directement
+  ?author rdfs:label "J. K. Rowling"@en .
   
-  # Trouve les livres individuels - REQUÊTE ÉLARGIE POUR TOUS TYPES D'ŒUVRES
-  ?book wdt:P50 ?author .          # Auteur
-  ?book wdt:P31 ?type .
-  FILTER(?type IN (wd:Q7725634, wd:Q571, wd:Q47461344, wd:Q8261))  # œuvre littéraire, livre, œuvre écrite, roman
+  # Trouve les livres individuels
+  ?book wdt:P50 ?author .
+  ?book wdt:P31 wd:Q7725634 .  # œuvre littéraire
   
-  # Exclure les livres de série (optimisé)
+  # Exclure les livres de série
   FILTER NOT EXISTS { ?book wdt:P179 ?series . }
   
-  # Informations essentielles seulement
+  # Date de publication
   OPTIONAL { ?book wdt:P577 ?pubDate . }
-  OPTIONAL { ?book wdt:P136 ?genre . }
-  OPTIONAL { ?book wdt:P212 ?isbn . }
-  OPTIONAL { ?book wdt:P123 ?publisher . }
   
   SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en" . }
 }
 ORDER BY DESC(?pubDate)
-LIMIT 20
+LIMIT 10
 """
 
 # Requête pour obtenir les livres d'une série
