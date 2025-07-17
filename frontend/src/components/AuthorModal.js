@@ -469,6 +469,14 @@ const AuthorModal = ({ author, isOpen, onClose }) => {
                             <h4 className="font-medium text-gray-900 dark:text-white">
                               {series.name}
                             </h4>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              {series.description || "Série"}
+                              {series.source && (
+                                <span className="ml-2 text-xs">
+                                  • {series.source === 'wikipedia' ? 'Wikipedia' : 'OpenLibrary'}
+                                </span>
+                              )}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
