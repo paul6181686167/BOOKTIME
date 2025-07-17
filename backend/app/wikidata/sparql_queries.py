@@ -94,9 +94,9 @@ SELECT DISTINCT ?book ?bookLabel ?pubDate ?genre ?genreLabel ?type ?typeLabel ?i
   FILTER(CONTAINS(LCASE(?authorName), LCASE("%(author_name)s")))
   
   # Trouve les livres individuels - REQUÊTE ÉLARGIE POUR TOUS TYPES D'ŒUVRES
+  ?book wdt:P50 ?author .          # Auteur
   ?book wdt:P31 ?type .
   FILTER(?type IN (wd:Q7725634, wd:Q571, wd:Q47461344, wd:Q8261))  # œuvre littéraire, livre, œuvre écrite, roman
-  ?book wdt:P50 ?author .          # Auteur
   
   # Exclure les livres de série (optimisé)
   FILTER NOT EXISTS { ?book wdt:P179 ?series . }
