@@ -11,7 +11,7 @@ from datetime import datetime
 import time
 
 class BookTimeMiniFilesTester:
-    def __init__(self, base_url="https://51d6347d-3606-4423-979e-5c3325a7830b.preview.emergentagent.com"):
+    def __init__(self, base_url="https://7cba8eb9-d655-49db-ac49-a03497169697.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
         self.tests_run = 0
