@@ -1,0 +1,463 @@
+{
+  "discovery_info": {
+    "total_existing_series": 9012,
+    "total_new_series_found": 48,
+    "processed_authors": [
+      "Agatha Christie",
+      "Ursula K. Le Guin",
+      "Ray Bradbury",
+      "Stephen King",
+      "George R.R. Martin",
+      "Philip K. Dick",
+      "Neil Gaiman",
+      "Arthur C. Clarke",
+      "Shakespeare",
+      "Dickens",
+      "Brandon Sanderson",
+      "Terry Pratchett",
+      "Tolkien",
+      "Robin Hobb",
+      "Frank Herbert",
+      "J.K. Rowling",
+      "Isaac Asimov",
+      "Hemingway",
+      "Douglas Adams",
+      "Orwell"
+    ],
+    "discovery_date": "2025-01-17"
+  },
+  "new_series": [
+    {
+      "name": "Fantastic Beasts: The Original Screenplays",
+      "author": "J.K. Rowling",
+      "wikidata_id": "Q107631343",
+      "genre": "fantasy",
+      "status": "en cours",
+      "description": "series of screenplays by J.K. Rowling",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Pottermore Presents",
+      "author": "J.K. Rowling",
+      "wikidata_id": "Q107627310",
+      "genre": "fantasy",
+      "status": "en cours",
+      "description": "series of fantasy novels by J. K. Rowling",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Cormoran Strike",
+      "author": "J.K. Rowling",
+      "wikidata_id": "Q18417290",
+      "genre": "littérature policière",
+      "status": "en cours",
+      "description": "Série de romans policiers de J. K. Rowling",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "La Bibliothèque de Poudlard",
+      "author": "J.K. Rowling",
+      "wikidata_id": "Q107626078",
+      "genre": "fantasy",
+      "status": "en cours",
+      "description": "book series by J. K. Rowling",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "La Tour sombre",
+      "author": "Stephen King",
+      "wikidata_id": "Q280898",
+      "genre": "littérature occidentale",
+      "status": "en cours",
+      "description": "série de romans de Stephen King",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Q51853186",
+      "author": "Agatha Christie",
+      "wikidata_id": "Q51853186",
+      "genre": "",
+      "status": "en cours",
+      "description": "",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "canon of Hercule Poirot",
+      "author": "Agatha Christie",
+      "wikidata_id": "Q122441953",
+      "genre": "",
+      "status": "en cours",
+      "description": "group of novels, short stories and one play written by Agatha Christie",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Foundation Trilogy",
+      "author": "Isaac Asimov",
+      "wikidata_id": "Q20899148",
+      "genre": "science-fiction",
+      "status": "en cours",
+      "description": "first three books in the Foundation series by Isaac Asimov",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Isaac's Universe",
+      "author": "Isaac Asimov",
+      "wikidata_id": "Q17144870",
+      "genre": "science-fiction",
+      "status": "en cours",
+      "description": "book by Isaac Asimov",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Cycle de David Starr",
+      "author": "Isaac Asimov",
+      "wikidata_id": "Q898113",
+      "genre": "science-fiction",
+      "status": "en cours",
+      "description": "novel series by Isaac Asimov",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Cycle de Fondation",
+      "author": "Isaac Asimov",
+      "wikidata_id": "Q1564644",
+      "genre": "science-fiction",
+      "status": "en cours",
+      "description": "série de livre de science-fiction d'Isaac Asimov",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Cycle des veufs noirs",
+      "author": "Isaac Asimov",
+      "wikidata_id": "Q798399",
+      "genre": "littérature policière",
+      "status": "en cours",
+      "description": "série de nouvelles policières d'Isaac Asimov",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Ankh-Morpork City Watch series",
+      "author": "Terry Pratchett",
+      "wikidata_id": "Q122929150",
+      "genre": "fantasy",
+      "status": "en cours",
+      "description": "",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Discworld Diary",
+      "author": "Terry Pratchett",
+      "wikidata_id": "Q4051051",
+      "genre": "",
+      "status": "en cours",
+      "description": "Themed diaries by Terry Pratchett",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Johnny Maxwell trilogy",
+      "author": "Terry Pratchett",
+      "wikidata_id": "Q19885702",
+      "genre": "",
+      "status": "en cours",
+      "description": "series of books by Terry Pratchett",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "La Longue Terre",
+      "author": "Terry Pratchett",
+      "wikidata_id": "Q25222016",
+      "genre": "science-fiction",
+      "status": "en cours",
+      "description": "série de roman de science fiction de Terry Pratchett et Stephen Baxter",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "La Science du Disque-monde",
+      "author": "Terry Pratchett",
+      "wikidata_id": "Q111366960",
+      "genre": "",
+      "status": "en cours",
+      "description": "Discworld books subseries",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Le Grand Livre des gnomes",
+      "author": "Terry Pratchett",
+      "wikidata_id": "Q2746767",
+      "genre": "fantasy",
+      "status": "en cours",
+      "description": "série de livres",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Livres du Disque-monde",
+      "author": "Terry Pratchett",
+      "wikidata_id": "Q3257270",
+      "genre": "fantasy humoristique",
+      "status": "en cours",
+      "description": "fantasy book series by Terry Pratchett",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Tales of Dunk and Egg",
+      "author": "George R.R. Martin",
+      "wikidata_id": "Q2975594",
+      "genre": "fantasy",
+      "status": "en cours",
+      "description": "series of novellas by George R. R. Martin",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Thousand Worlds",
+      "author": "George R.R. Martin",
+      "wikidata_id": "Q18649517",
+      "genre": "",
+      "status": "en cours",
+      "description": "",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "American Gods",
+      "author": "Neil Gaiman",
+      "wikidata_id": "Q133505136",
+      "genre": "",
+      "status": "en cours",
+      "description": "novel series by Neil Gaiman",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Infinity Blade",
+      "author": "Brandon Sanderson",
+      "wikidata_id": "Q133462728",
+      "genre": "",
+      "status": "en cours",
+      "description": "series of novellas by Brandon Sanderson",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Legion series",
+      "author": "Brandon Sanderson",
+      "wikidata_id": "Q16386649",
+      "genre": "",
+      "status": "en cours",
+      "description": "series of novellas by Brandon Sanderson",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Rithmatist series",
+      "author": "Brandon Sanderson",
+      "wikidata_id": "Q17029562",
+      "genre": "",
+      "status": "en cours",
+      "description": "young adult fantasy series by Brandon Sanderson",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Texas Reckoners",
+      "author": "Brandon Sanderson",
+      "wikidata_id": "Q133504586",
+      "genre": "",
+      "status": "en cours",
+      "description": "novel series by Brandon Sanderson and Steven Bohls",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "The Reckoners",
+      "author": "Brandon Sanderson",
+      "wikidata_id": "Q17066197",
+      "genre": "",
+      "status": "en cours",
+      "description": "novel series by Brandon Sanderson",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Wax and Wayne",
+      "author": "Brandon Sanderson",
+      "wikidata_id": "Q133505261",
+      "genre": "fantasy",
+      "status": "en cours",
+      "description": "Mistborn novel subseries by Brandon Sanderson",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Alcatraz",
+      "author": "Brandon Sanderson",
+      "wikidata_id": "Q26833762",
+      "genre": "",
+      "status": "en cours",
+      "description": "série littéraire de Brandon Sanderson",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Fils-des-brumes",
+      "author": "Brandon Sanderson",
+      "wikidata_id": "Q268100",
+      "genre": "high fantasy",
+      "status": "en cours",
+      "description": "novel series by Brandon Sanderson",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "La Roue du temps",
+      "author": "Brandon Sanderson",
+      "wikidata_id": "Q4470",
+      "genre": "high fantasy",
+      "status": "en cours",
+      "description": "série de romans de fantasy écrite par Robert Jordan",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Les Archives de Roshar",
+      "author": "Brandon Sanderson",
+      "wikidata_id": "Q7766706",
+      "genre": "editorial fiction",
+      "status": "en cours",
+      "description": "série de livres par Brandon Sanderson",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Cycle du Prophète Blanc",
+      "author": "Robin Hobb",
+      "wikidata_id": "Q2113889",
+      "genre": "",
+      "status": "en cours",
+      "description": "trilogy of fantasy novels by Robin Hobb",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Ki et Vandien",
+      "author": "Robin Hobb",
+      "wikidata_id": "Q3196288",
+      "genre": "",
+      "status": "en cours",
+      "description": "book by Margaret Lindholm",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Le Soldat chamane",
+      "author": "Robin Hobb",
+      "wikidata_id": "Q2511839",
+      "genre": "fantasy",
+      "status": "en cours",
+      "description": "série de romans de Robin Hobb",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Les Cités des Anciens",
+      "author": "Robin Hobb",
+      "wikidata_id": "Q2197634",
+      "genre": "fantasy",
+      "status": "en cours",
+      "description": "quartet of fantasy novels by Robin Hobb",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Chronique des rivages de l'Ouest",
+      "author": "Ursula K. Le Guin",
+      "wikidata_id": "Q2357503",
+      "genre": "",
+      "status": "en cours",
+      "description": "book series by Ursula K. Le Guin",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Cycle de Terremer",
+      "author": "Ursula K. Le Guin",
+      "wikidata_id": "Q116546",
+      "genre": "high fantasy",
+      "status": "en cours",
+      "description": "fantasy fiction series by Ursula K. Le Guin, including 5 novels 1968 to 2001 among other publications",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Cycle de l'Ékumen",
+      "author": "Ursula K. Le Guin",
+      "wikidata_id": "Q2328396",
+      "genre": "science-fiction",
+      "status": "en cours",
+      "description": "science fiction series by Ursula K. Le Guin, including 7 novels 1966 to 2000 among other publications",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Cycle des chats volants",
+      "author": "Ursula K. Le Guin",
+      "wikidata_id": "Q7721753",
+      "genre": "fiction pour enfants",
+      "status": "en cours",
+      "description": "series of children's fantasy stories and illustrated books, 1988 to 1999",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "La Trilogie divine",
+      "author": "Philip K. Dick",
+      "wikidata_id": "Q6497260",
+      "genre": "fiction philosophique",
+      "status": "en cours",
+      "description": "romans de science-fiction écrits par Philip K. Dick",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "L'Odyssée du Temps",
+      "author": "Arthur C. Clarke",
+      "wikidata_id": "Q4660139",
+      "genre": "",
+      "status": "en cours",
+      "description": "Science fiction novel series",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Odyssées de l'espace",
+      "author": "Arthur C. Clarke",
+      "wikidata_id": "Q1198588",
+      "genre": "science-fiction",
+      "status": "en cours",
+      "description": "science fiction media franchise",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Rama",
+      "author": "Arthur C. Clarke",
+      "wikidata_id": "Q62388951",
+      "genre": "",
+      "status": "en cours",
+      "description": "novel series by Arthur C. Clarke & Gentry Lee",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Dune",
+      "author": "Frank Herbert",
+      "wikidata_id": "Q6095696",
+      "genre": "science-fiction",
+      "status": "en cours",
+      "description": "série de romans de Frank Herbert débutant le cycle de Dune",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "cycle de Dune",
+      "author": "Frank Herbert",
+      "wikidata_id": "Q18010882",
+      "genre": "science-fiction",
+      "status": "en cours",
+      "description": "ensemble des séries de romans de l'univers de Dune écrits par Frank Herbert, Brian Herbert et Kevin J. Anderson",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "deuxième trilogie de Dune",
+      "author": "Frank Herbert",
+      "wikidata_id": "Q1265599",
+      "genre": "science-fiction",
+      "status": "en cours",
+      "description": "Three books by Frank Herbert",
+      "source": "wikidata_discovery"
+    },
+    {
+      "name": "Le Guide du voyageur galactique",
+      "author": "Douglas Adams",
+      "wikidata_id": "Q25169",
+      "genre": "science-fiction humoristique",
+      "status": "en cours",
+      "description": "1979–1992 series of five books by Douglas Adams",
+      "source": "wikidata_discovery"
+    }
+  ]
+}
