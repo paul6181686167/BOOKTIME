@@ -214,7 +214,7 @@ class SeriesHarvestTest:
             try:
                 start_time = time.time()
                 response = requests.get(
-                    f"{API_URL}/series/detection",
+                    f"{API_URL}/series/detect",
                     params={"title": test["title"]},
                     headers=self.headers,
                     timeout=15
@@ -223,17 +223,23 @@ class SeriesHarvestTest:
                 
                 if response.status_code == 200:
                     data = response.json()
-                    detected = data.get("detected", False)
-                    series_name = data.get("series_name", "")
-                    confidence = data.get("confidence", 0)
+                    detected_series = data.get("detected_series", [])
                     
                     print(f"✅ Detection '{test['title']}': {response_time:.0f}ms")
-                    print(f"   Detected: {detected}, Series: {series_name}, Confidence: {confidence}")
+                    print(f"   Found {len(detected_series)} potential series matches")
                     
-                    if detected and confidence > 100:
-                        print(f"   ✅ High confidence detection")
+                    if detected_series:
+                        best_match = detected_series[0]
+                        series_name = best_match.get("series_name", "")
+                        confidence = best_match.get("confidence", 0)
+                        print(f"   Best match: {series_name} (confidence: {confidence})")
+                        
+                        if confidence > 100:
+                            print(f"   ✅ High confidence detection")
+                        else:
+                            print(f"   ⚠️  Low confidence detection")
                     else:
-                        print(f"   ⚠️  Low confidence or not detected")
+                        print(f"   ⚠️  No series detected")
                         
                 else:
                     print(f"❌ Detection '{test['title']}' failed: {response.status_code}")
