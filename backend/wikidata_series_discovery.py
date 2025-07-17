@@ -186,8 +186,8 @@ class WikidataSeriesDiscovery:
                     
                 self.processed_authors.add(author_name)
                 
-                # Pause entre les requêtes
-                await asyncio.sleep(0.5)
+                # Pause entre les requêtes (réduite pour traiter plus d'auteurs)
+                await asyncio.sleep(0.2)
     
     def save_results(self) -> None:
         """Sauvegarder les résultats dans wikidata_new_series_discovery.json"""
