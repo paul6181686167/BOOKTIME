@@ -18,7 +18,7 @@ services:
       - key: RAILWAY_MONGODB_MOCK
         value: "false"
       - key: MONGO_URL
-        value: "mongodb+srv://berruyerpaul222_db_user:%2AJZ0kDRsJgD3Hag1I1q3@booktime-prod.wnnbmls.mongodb.net/?appName=booktime-prod&retryWrites=true&w=majority&authSource=admin"
+        value: "mongodb+srv://berruyerpaul222_db_user:TggFAId06ZwWKEPC@booktime-prod.wnnbmls.mongodb.net/?retryWrites=true&w=majority"
       - key: SECRET_KEY
         generateValue: true  # ← Render génère automatiquement une clé sécurisée
       - key: CORS_ORIGINS
