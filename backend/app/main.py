@@ -59,15 +59,18 @@ def get_cors_origins() -> List[str]:
         "http://127.0.0.1:3000",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        # Vercel deployments
         "https://booktime-sg59-git-main-paul6181686167s-projects.vercel.app",
+        "https://1571571761761571.vercel.app",
+        "https://1571571761761571-git-main-paul6181686167s-projects.vercel.app",
         "https://changelog-reader-9.preview.emergentagent.com",
     ]
-    
-    # Ajouter origins depuis variable environnement si définie
+
+    # Accepter tous les sous-domaines *.vercel.app de paul6181686167
     env_origins = os.environ.get("CORS_ORIGINS", "")
     if env_origins:
         cors_origins.extend([origin.strip() for origin in env_origins.split(",")])
-    
+
     return cors_origins
 
 app.add_middleware(
