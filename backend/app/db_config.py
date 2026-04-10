@@ -32,117 +32,61 @@ class Database:
         return cls._instance
     
     def _initialize(self):
-        """Initialise la connexion MongoDB avec support Railway Mock"""
+        """Initialise la connexion MongoDB - lit MONGO_URL depuis os.environ au runtime"""
         import os
-        from pathlib import Path
-        from dotenv import load_dotenv
-        _env = Path(__file__).resolve().parent.parent / ".env"
-        load_dotenv(_env)
-        
+
+        # Lire MONGO_URL depuis os.environ au moment de la connexion (pas depuis config.py)
+        # Cela permet à start_render.py d'injecter la bonne URL avant l'import de l'app
+        mongo_url = os.environ.get("MONGO_URL", "mongodb://localhost:27017/booktime")
+        db_name = os.environ.get("DATABASE_NAME", DATABASE_NAME)
+
+        print(f"[DB] MONGO_URL utilisee: {mongo_url[:60]}...")
+        print(f"[DB] RAILWAY_MONGODB_MOCK={os.environ.get('RAILWAY_MONGODB_MOCK', 'non defini')}")
+
         if os.environ.get("RAILWAY_MONGODB_MOCK", "").lower() == "true":
             print("[MOCK] MODE MOCK ACTIVE - Pas de connexion MongoDB reelle")
-            print("[MOCK] Application demarree en mode local")
             self._client = _MockClient()
             self._db = _MockDb()
             return
-        
+
         try:
-            import ssl
-            
-            # Tentative 1: Configuration simple MongoDB Atlas
+            # Tentative 1 : connexion simple (cas normal Atlas)
             try:
-                self._client = MongoClient(MONGO_URL)
+                self._client = MongoClient(
+                    mongo_url,
+                    serverSelectionTimeoutMS=20000,
+                    connectTimeoutMS=20000,
+                )
                 self._client.admin.command('ping')
-                self._db = self._client[DATABASE_NAME]
-                print(f"[OK] Connected to MongoDB (simple): {DATABASE_NAME}")
+                self._db = self._client[db_name]
+                print(f"[OK] Connected to MongoDB: {db_name}")
                 return
             except Exception as e1:
-                print(f"[WARN] Simple config failed: {e1}")
-            
-            # Tentative 2: Configuration avec timeouts
+                print(f"[WARN] Tentative 1 echouee: {e1}")
+
+            # Tentative 2 : avec tlsAllowInvalidCertificates
             try:
                 self._client = MongoClient(
-                    MONGO_URL,
-                    serverSelectionTimeoutMS=30000,
-                    connectTimeoutMS=30000
+                    mongo_url,
+                    serverSelectionTimeoutMS=20000,
+                    connectTimeoutMS=20000,
+                    tlsAllowInvalidCertificates=True,
                 )
                 self._client.admin.command('ping')
-                self._db = self._client[DATABASE_NAME]
-                print(f"[OK] Connected to MongoDB (with timeouts): {DATABASE_NAME}")
+                self._db = self._client[db_name]
+                print(f"[OK] Connected to MongoDB (TLS relaxed): {db_name}")
                 return
             except Exception as e2:
-                print(f"[WARN] Timeout config failed: {e2}")
-            
-            # Tentative 3: SSL Python bypass (Railway)
-            try:
-                self._client = MongoClient(
-                    MONGO_URL,
-                    serverSelectionTimeoutMS=30000,
-                    connectTimeoutMS=30000,
-                    ssl_cert_reqs=ssl.CERT_NONE,
-                    ssl_match_hostname=False,
-                    tlsAllowInvalidCertificates=True
-                )
-                self._client.admin.command('ping')
-                self._db = self._client[DATABASE_NAME]
-                print(f"[OK] Connected to MongoDB (SSL bypass): {DATABASE_NAME}")
-                return
-            except Exception as e3:
-                print(f"[WARN] SSL bypass failed: {e3}")
-            
-            # Tentative 4: Connection string modifiée (Railway SSL bypass)
-            if "mongodb+srv://" in MONGO_URL:
-                if "?" in MONGO_URL:
-                    modified_url = f"{MONGO_URL}&tlsAllowInvalidCertificates=true"
-                else:
-                    modified_url = f"{MONGO_URL}?tlsAllowInvalidCertificates=true"
-            else:
-                modified_url = MONGO_URL
-                
-            self._client = MongoClient(
-                modified_url,
-                serverSelectionTimeoutMS=30000,
-                connectTimeoutMS=30000
-            )
-            
-            # Test de connexion
-            self._client.admin.command('ping')
-            self._db = self._client[DATABASE_NAME]
-            print(f"[OK] Connected to MongoDB (URL SSL modifiee): {DATABASE_NAME}")
-            
+                print(f"[WARN] Tentative 2 echouee: {e2}")
+
         except Exception as e:
-            print(f"[ERR] Error connecting to MongoDB: {e}")
-            print(f"[INFO] MONGO_URL configured: {MONGO_URL[:50]}...")
-            
-            # Dernier recours : sans SSL
-            try:
-                print("[INFO] Tentative derniere chance sans SSL...")
-                if "mongodb+srv://" in MONGO_URL:
-                    no_ssl_url = MONGO_URL.replace("mongodb+srv://", "mongodb://")
-                    if "?" in no_ssl_url:
-                        no_ssl_url = f"{no_ssl_url}&ssl=false"
-                    else:
-                        no_ssl_url = f"{no_ssl_url}?ssl=false"
-                else:
-                    no_ssl_url = MONGO_URL
-                    
-                self._client = MongoClient(
-                    no_ssl_url,
-                    serverSelectionTimeoutMS=30000,
-                    connectTimeoutMS=30000
-                )
-                
-                self._client.admin.command('ping')
-                self._db = self._client[DATABASE_NAME]
-                print(f"[OK] Connected to MongoDB (sans SSL): {DATABASE_NAME}")
-                
-            except Exception as final_e:
-                print(f"[ERR] Echec final: {final_e}")
-                print("[MOCK] ACTIVATION MODE MOCK pour permettre demarrage")
-                import os
-                os.environ["RAILWAY_MONGODB_MOCK"] = "true"
-                self._client = _MockClient()
-                self._db = _MockDb()
+            print(f"[ERR] Erreur connexion MongoDB: {e}")
+
+        # Fallback : mode mock
+        print("[MOCK] ACTIVATION MODE MOCK - impossible de joindre MongoDB")
+        os.environ["RAILWAY_MONGODB_MOCK"] = "true"
+        self._client = _MockClient()
+        self._db = _MockDb()
     
     @property
     def client(self):
