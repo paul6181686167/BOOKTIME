@@ -22,4 +22,4 @@ services:
       - key: SECRET_KEY
         generateValue: true  # ← Render génère automatiquement une clé sécurisée
       - key: CORS_ORIGINS
-        value: "https://booktime.vercel.app,https://booktime-sg59-git-main-paul6181686167s-projects.vercel.app,http://localhost:3000"
+        value: "https://booktime.vercel.app,https://booktime-sg59-git-main-paul6181686167s-projects.vercel.app,http://localhost:3000,https://booktime-uo15.onrender.com"

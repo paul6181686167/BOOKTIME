@@ -43,7 +43,7 @@
     }
   ],
   "env": {
-    "REACT_APP_BACKEND_URL": "https://booktime-backend.onrender.com",
+    "REACT_APP_BACKEND_URL": "https://booktime-uo15.onrender.com",
     "REACT_APP_ENVIRONMENT": "production"
   }
 }
