@@ -3,15 +3,6 @@
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-function catalogPath(bookId) {
-  if (!bookId) return null;
-  if (bookId.startsWith('jikan_') || bookId.startsWith('gbooks_')) {
-    return `/catalogue/${bookId}`;
-  }
-  const stripped = bookId.startsWith('/') ? bookId.slice(1) : bookId;
-  return `/catalogue/${stripped}`;
-}
 import { toast } from 'react-hot-toast';
 import {
   SparklesIcon,
@@ -25,9 +16,17 @@ import {
   CheckIcon,
   ClockIcon,
 } from '@heroicons/react/24/outline';
-
 import { recommendationService } from '../../services/recommendationService';
 import { API_BASE_URL } from '../../config/environment';
+
+function catalogPath(bookId) {
+  if (!bookId) return null;
+  if (bookId.startsWith('jikan_') || bookId.startsWith('gbooks_')) {
+    return `/catalogue/${bookId}`;
+  }
+  const stripped = bookId.startsWith('/') ? bookId.slice(1) : bookId;
+  return `/catalogue/${stripped}`;
+}
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
