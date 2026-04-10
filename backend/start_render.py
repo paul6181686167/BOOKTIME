@@ -14,10 +14,14 @@ def main():
 
     print(f"[BOOKTIME] Demarrage backend - env={env} port={port}")
 
-    # Vérification rapide des variables critiques
+    # Injecter MONGO_URL si absente (fallback hardcodé pour Render)
     if not os.environ.get("MONGO_URL"):
-        print("[BOOKTIME] ERREUR: MONGO_URL non definie - verifie les variables Render")
-        sys.exit(1)
+        print("[BOOKTIME] MONGO_URL absente - utilisation URL par defaut")
+        os.environ["MONGO_URL"] = (
+            "mongodb+srv://berruyerpaul222_db_user:TggFAId06ZwWKEPC"
+            "@booktime-prod.wnnbmls.mongodb.net/"
+            "?retryWrites=true&w=majority"
+        )
 
     # S'assurer que le mode mock est desactive
     os.environ["RAILWAY_MONGODB_MOCK"] = "false"
