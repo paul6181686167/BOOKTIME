@@ -1,0 +1,1621 @@
+[
+  {
+    "name": "Harry Potter",
+    "authors": [
+      "J.K. Rowling"
+    ],
+    "category": "roman",
+    "volumes": 7,
+    "keywords": [
+      "harry",
+      "potter",
+      "wizard",
+      "hogwarts",
+      "magic"
+    ],
+    "variations": [
+      "Harry Potter",
+      "HP",
+      "Potter"
+    ],
+    "first_published": 1997,
+    "status": "completed",
+    "description": "Série de romans fantastiques",
+    "subjects": [
+      "fantasy",
+      "wizards",
+      "magic",
+      "children"
+    ],
+    "languages": [
+      "en",
+      "fr"
+    ],
+    "translations": {
+      "en": "Harry Potter",
+      "fr": "Harry Potter"
+    },
+    "source": "manual"
+  },
+  {
+    "name": "One Piece",
+    "authors": [
+      "Eiichiro Oda"
+    ],
+    "category": "manga",
+    "volumes": 105,
+    "keywords": [
+      "one",
+      "piece",
+      "luffy",
+      "pirates",
+      "treasure"
+    ],
+    "variations": [
+      "One Piece",
+      "OP",
+      "Wan Pīsu"
+    ],
+    "first_published": 1997,
+    "status": "ongoing",
+    "description": "Manga d'aventure et de pirates",
+    "subjects": [
+      "manga",
+      "pirates",
+      "adventure",
+      "shonen"
+    ],
+    "languages": [
+      "ja",
+      "fr",
+      "en"
+    ],
+    "translations": {
+      "en": "One Piece",
+      "fr": "One Piece",
+      "ja": "ワンピース"
+    },
+    "source": "manual"
+  },
+  {
+    "name": "Astérix",
+    "authors": [
+      "René Goscinny",
+      "Albert Uderzo"
+    ],
+    "category": "bd",
+    "volumes": 39,
+    "keywords": [
+      "asterix",
+      "obelix",
+      "gaulois",
+      "roman",
+      "comic"
+    ],
+    "variations": [
+      "Astérix",
+      "Asterix",
+      "Astérix le Gaulois"
+    ],
+    "first_published": 1959,
+    "status": "ongoing",
+    "description": "Série de bande dessinée française",
+    "subjects": [
+      "comic",
+      "french",
+      "historical",
+      "humor"
+    ],
+    "languages": [
+      "fr",
+      "en"
+    ],
+    "translations": {
+      "en": "Asterix",
+      "fr": "Astérix"
+    },
+    "source": "manual"
+  },
+  {
+    "name": "The Adventures of Sherlock Holmes [12 stories]",
+    "authors": [
+      "Arthur Conan Doyle"
+    ],
+    "category": "roman",
+    "volumes": 1,
+    "keywords": [
+      "sherlock",
+      "stories",
+      "holmes",
+      "adventures"
+    ],
+    "variations": [
+      "the The Adventures of Sherlock Holmes [12 stories]",
+      "The The Adventures of Sherlock Holmes [12 stories]",
+      "The Adv of Sherlock Holmes [12 stories]",
+      "THE ADVENTURES OF SHERLOCK HOLMES [12 STORIES]",
+      "le The Adventures of Sherlock Holmes [12 stories]",
+      "la The Adventures of Sherlock Holmes [12 stories]",
+      "La The Adventures of Sherlock Holmes [12 stories]",
+      "les The Adventures of Sherlock Holmes [12 stories]",
+      "des The Adventures of Sherlock Holmes [12 stories]",
+      "A The Adventures of Sherlock Holmes [12 stories]",
+      "The Adventures Of Sherlock Holmes [12 Stories]",
+      "Le The Adventures of Sherlock Holmes [12 stories]",
+      "a The Adventures of Sherlock Holmes [12 stories]",
+      "Une The Adventures of Sherlock Holmes [12 stories]",
+      "Adventures of Sherlock Holmes [12 stories]",
+      "an The Adventures of Sherlock Holmes [12 stories]",
+      "the adventures of sherlock holmes [12 stories]",
+      "The Adventures of Sherlock Holmes [12 stories]",
+      "The Adventures  Sherlock Holmes [12 stories]",
+      "une The Adventures of Sherlock Holmes [12 stories]",
+      "Des The Adventures of Sherlock Holmes [12 stories]",
+      "un The Adventures of Sherlock Holmes [12 stories]",
+      "An The Adventures of Sherlock Holmes [12 stories]",
+      "Les The Adventures of Sherlock Holmes [12 stories]",
+      "Un The Adventures of Sherlock Holmes [12 stories]"
+    ],
+    "first_published": 1892,
+    "status": "ongoing",
+    "source": "open_library_search",
+    "ol_key": "/works/OL262421W",
+    "description": "",
+    "subjects": [],
+    "languages": [
+      "gle",
+      "eng",
+      "cat",
+      "tur",
+      "dut",
+      "srp",
+      "por",
+      "mon",
+      "fre",
+      "spa",
+      "jpn",
+      "pol",
+      "chi",
+      "gre",
+      "ger",
+      "may",
+      "rus"
+    ],
+    "translations": {
+      "en": "The Adventures of Sherlock Holmes [12 stories]",
+      "fr": "The Adventures of Sherlock Holmes [12 stories]"
+    }
+  },
+  {
+    "name": "The Complete Life and Adventures of Santa Claus",
+    "authors": [
+      "L. Frank Baum"
+    ],
+    "category": "roman",
+    "volumes": 1,
+    "keywords": [
+      "life",
+      "complete",
+      "adventures"
+    ],
+    "variations": [
+      "the The Complete Life and Adventures of Santa Claus",
+      "la The Complete Life and Adventures of Santa Claus",
+      "le The Complete Life and Adventures of Santa Claus",
+      "Des The Complete Life and Adventures of Santa Claus",
+      "a The Complete Life and Adventures of Santa Claus",
+      "the complete life and adventures of santa claus",
+      "THE COMPLETE LIFE AND ADVENTURES OF SANTA CLAUS",
+      "Complete Life and Adventures of Santa Claus",
+      "Les The Complete Life and Adventures of Santa Claus",
+      "une The Complete Life and Adventures of Santa Claus",
+      "les The Complete Life and Adventures of Santa Claus",
+      "La The Complete Life and Adventures of Santa Claus",
+      "The The Complete Life and Adventures of Santa Claus",
+      "The Complete Life and Adventures  Santa Claus",
+      "A The Complete Life and Adventures of Santa Claus",
+      "An The Complete Life and Adventures of Santa Claus",
+      "des The Complete Life and Adventures of Santa Claus",
+      "The Complete Life & Adventures of Santa Claus",
+      "The Complete Life and Adv of Santa Claus",
+      "Un The Complete Life and Adventures of Santa Claus",
+      "The Complete Life And Adventures Of Santa Claus",
+      "an The Complete Life and Adventures of Santa Claus",
+      "Le The Complete Life and Adventures of Santa Claus",
+      "The Complete Life and Adventures of Santa Claus",
+      "Une The Complete Life and Adventures of Santa Claus",
+      "un The Complete Life and Adventures of Santa Claus"
+    ],
+    "first_published": 1902,
+    "status": "ongoing",
+    "source": "open_library_search",
+    "ol_key": "/works/OL262358W",
+    "description": "",
+    "subjects": [],
+    "languages": [
+      "fre",
+      "eng"
+    ],
+    "translations": {
+      "en": "The Complete Life and Adventures of Santa Claus",
+      "fr": "The Complete Life and Adventures of Santa Claus"
+    }
+  },
+  {
+    "name": "Adventures of Huckleberry Finn",
+    "authors": [
+      "Mark Twain"
+    ],
+    "category": "roman",
+    "volumes": 1,
+    "keywords": [
+      "huckleberry",
+      "finn",
+      "adventures"
+    ],
+    "variations": [
+      "Adventures of Huckleberry Finn",
+      "a Adventures of Huckleberry Finn",
+      "an Adventures of Huckleberry Finn",
+      "un Adventures of Huckleberry Finn",
+      "les Adventures of Huckleberry Finn",
+      "A Adventures of Huckleberry Finn",
+      "the Adventures of Huckleberry Finn",
+      "Adventures  Huckleberry Finn",
+      "la Adventures of Huckleberry Finn",
+      "Le Adventures of Huckleberry Finn",
+      "des Adventures of Huckleberry Finn",
+      "adventures of huckleberry finn",
+      "le Adventures of Huckleberry Finn",
+      "La Adventures of Huckleberry Finn",
+      "ADVENTURES OF HUCKLEBERRY FINN",
+      "Des Adventures of Huckleberry Finn",
+      "Les Adventures of Huckleberry Finn",
+      "Adventures Of Huckleberry Finn",
+      "Un Adventures of Huckleberry Finn",
+      "Une Adventures of Huckleberry Finn",
+      "The Adventures of Huckleberry Finn",
+      "An Adventures of Huckleberry Finn",
+      "une Adventures of Huckleberry Finn",
+      "Adv of Huckleberry Finn"
+    ],
+    "first_published": 1876,
+    "status": "ongoing",
+    "source": "open_library_search",
+    "ol_key": "/works/OL53908W",
+    "description": "",
+    "subjects": [],
+    "languages": [
+      "kor",
+      "ara",
+      "eng",
+      "arm",
+      "por",
+      "alb",
+      "jpn",
+      "pol",
+      "ind",
+      "tel",
+      "vie",
+      "ang",
+      "hin",
+      "per",
+      "ger",
+      "rus",
+      "rum",
+      "ita",
+      "dut",
+      "spa",
+      "fre",
+      "chi",
+      "fin"
+    ],
+    "translations": {
+      "en": "Adventures of Huckleberry Finn",
+      "fr": "Adventures of Huckleberry Finn"
+    }
+  },
+  {
+    "name": "The Adventures of Tom Sawyer",
+    "authors": [
+      "Mark Twain"
+    ],
+    "category": "roman",
+    "volumes": 1,
+    "keywords": [
+      "sawyer",
+      "tom",
+      "adventures"
+    ],
+    "variations": [
+      "The Adventures Of Tom Sawyer",
+      "les The Adventures of Tom Sawyer",
+      "une The Adventures of Tom Sawyer",
+      "La The Adventures of Tom Sawyer",
+      "Des The Adventures of Tom Sawyer",
+      "An The Adventures of Tom Sawyer",
+      "des The Adventures of Tom Sawyer",
+      "the The Adventures of Tom Sawyer",
+      "le The Adventures of Tom Sawyer",
+      "A The Adventures of Tom Sawyer",
+      "Les The Adventures of Tom Sawyer",
+      "The Adventures of Tom Sawyer",
+      "Le The Adventures of Tom Sawyer",
+      "la The Adventures of Tom Sawyer",
+      "The Adventures  Tom Sawyer",
+      "an The Adventures of Tom Sawyer",
+      "Une The Adventures of Tom Sawyer",
+      "Un The Adventures of Tom Sawyer",
+      "The The Adventures of Tom Sawyer",
+      "a The Adventures of Tom Sawyer",
+      "un The Adventures of Tom Sawyer",
+      "The Adv of Tom Sawyer",
+      "the adventures of tom sawyer",
+      "Adventures of Tom Sawyer",
+      "THE ADVENTURES OF TOM SAWYER"
+    ],
+    "first_published": 1817,
+    "status": "ongoing",
+    "source": "open_library_search",
+    "ol_key": "/works/OL53919W",
+    "description": "",
+    "subjects": [],
+    "languages": [
+      "heb",
+      "afr",
+      "vie",
+      "ita",
+      "spa",
+      "ben",
+      "dut",
+      "yid",
+      "und",
+      "rus",
+      "fre",
+      "eng",
+      "urd",
+      "por",
+      "mul",
+      "jpn",
+      "pol",
+      "mal",
+      "ger",
+      "cze",
+      "chi",
+      "per",
+      "fin"
+    ],
+    "translations": {
+      "en": "The Adventures of Tom Sawyer",
+      "fr": "The Adventures of Tom Sawyer"
+    }
+  },
+  {
+    "name": "Alice's Adventures in Wonderland",
+    "authors": [
+      "Lewis Carroll"
+    ],
+    "category": "roman",
+    "volumes": 1,
+    "keywords": [
+      "alice",
+      "wonderland",
+      "adventures"
+    ],
+    "variations": [
+      "The Alice's Adventures in Wonderland",
+      "le Alice's Adventures in Wonderland",
+      "Alice's Adventures in Wonderland",
+      "les Alice's Adventures in Wonderland",
+      "des Alice's Adventures in Wonderland",
+      "Des Alice's Adventures in Wonderland",
+      "Alice's Adventures in Wonderl&",
+      "un Alice's Adventures in Wonderland",
+      "ALICE'S ADVENTURES IN WONDERLAND",
+      "la Alice's Adventures in Wonderland",
+      "an Alice's Adventures in Wonderland",
+      "La Alice's Adventures in Wonderland",
+      "Une Alice's Adventures in Wonderland",
+      "Le Alice's Adventures in Wonderland",
+      "A Alice's Adventures in Wonderland",
+      "Les Alice's Adventures in Wonderland",
+      "a Alice's Adventures in Wonderland",
+      "Alice's Adv in Wonderland",
+      "une Alice's Adventures in Wonderland",
+      "alice's adventures in wonderland",
+      "Un Alice's Adventures in Wonderland",
+      "Alice'S Adventures In Wonderland",
+      "An Alice's Adventures in Wonderland",
+      "the Alice's Adventures in Wonderland"
+    ],
+    "first_published": 1865,
+    "status": "ongoing",
+    "source": "open_library_search",
+    "ol_key": "/works/OL138052W",
+    "description": "",
+    "subjects": [],
+    "languages": [
+      "swe",
+      "guj",
+      "kir",
+      "kor",
+      "bul",
+      "ara",
+      "cor",
+      "gre",
+      "sco",
+      "cat",
+      "und",
+      "eng",
+      "kaz",
+      "por",
+      "haw",
+      "dan",
+      "syr",
+      "swa",
+      "crp",
+      "jpn",
+      "pol",
+      "ceb",
+      "tel",
+      "lat",
+      "bel",
+      "hrv",
+      "fry",
+      "lad",
+      "ger",
+      "alt",
+      "rus",
+      "yid",
+      "heb",
+      "ita",
+      "dut",
+      "tur",
+      "spa",
+      "orm",
+      "bre",
+      "hun",
+      "gle",
+      "slo",
+      "srp",
+      "fre",
+      "wel",
+      "ukr",
+      "chi",
+      "fin",
+      "epo",
+      "lav",
+      "cze"
+    ],
+    "translations": {
+      "en": "Alice's Adventures in Wonderland",
+      "fr": "Alice's Adventures in Wonderland"
+    }
+  },
+  {
+    "name": "Alice's Adventures in Wonderland / Through the Looking Glass",
+    "authors": [
+      "Lewis Carroll"
+    ],
+    "category": "roman",
+    "volumes": 1,
+    "keywords": [
+      "alice",
+      "through",
+      "adventures",
+      "wonderland"
+    ],
+    "variations": [
+      "an Alice's Adventures in Wonderland / Through the Looking Glass",
+      "des Alice's Adventures in Wonderland / Through the Looking Glass",
+      "Un Alice's Adventures in Wonderland / Through the Looking Glass",
+      "A Alice's Adventures in Wonderland / Through the Looking Glass",
+      "alice's adventures in wonderland / through the looking glass",
+      "Le Alice's Adventures in Wonderland / Through the Looking Glass",
+      "Alice's Adventures in Wonderl& / Through the Looking Glass",
+      "les Alice's Adventures in Wonderland / Through the Looking Glass",
+      "une Alice's Adventures in Wonderland / Through the Looking Glass",
+      "Alice'S Adventures In Wonderland / Through The Looking Glass",
+      "a Alice's Adventures in Wonderland / Through the Looking Glass",
+      "Les Alice's Adventures in Wonderland / Through the Looking Glass",
+      "Des Alice's Adventures in Wonderland / Through the Looking Glass",
+      "la Alice's Adventures in Wonderland / Through the Looking Glass",
+      "Alice's Adventures in Wonderland / Through  Looking Glass",
+      "un Alice's Adventures in Wonderland / Through the Looking Glass",
+      "La Alice's Adventures in Wonderland / Through the Looking Glass",
+      "ALICE'S ADVENTURES IN WONDERLAND / THROUGH THE LOOKING GLASS",
+      "Une Alice's Adventures in Wonderland / Through the Looking Glass",
+      "Alice's Adv in Wonderland / Through the Looking Glass",
+      "An Alice's Adventures in Wonderland / Through the Looking Glass",
+      "le Alice's Adventures in Wonderland / Through the Looking Glass",
+      "The Alice's Adventures in Wonderland / Through the Looking Glass",
+      "the Alice's Adventures in Wonderland / Through the Looking Glass",
+      "Alice's Adventures in Wonderland / Through the Looking Glass"
+    ],
+    "first_published": 1889,
+    "status": "ongoing",
+    "source": "open_library_search",
+    "ol_key": "/works/OL151411W",
+    "description": "",
+    "subjects": [],
+    "languages": [
+      "por",
+      "und",
+      "rus",
+      "pol",
+      "ger",
+      "ita",
+      "eng",
+      "chi",
+      "fre",
+      "spa",
+      "rum"
+    ],
+    "translations": {
+      "en": "Alice's Adventures in Wonderland / Through the Looking Glass",
+      "fr": "Alice's Adventures in Wonderland / Through the Looking Glass"
+    }
+  },
+  {
+    "name": "Alice's",
+    "authors": [
+      "Lewis Carroll"
+    ],
+    "category": "roman",
+    "volumes": 2,
+    "keywords": [
+      "alice's",
+      "alice's series",
+      "alice's saga",
+      "the alice's",
+      "lewis"
+    ],
+    "variations": [
+      "Alice's",
+      "The Alice's",
+      "Alice's Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080052",
+    "subjects": [
+      "adventure and adventurers, fiction",
+      "JUVENILE FICTION",
+      "adventure travel",
+      "adventure and adventurers",
+      "classics",
+      "animals",
+      "Alice (fictitious character : carroll), fiction",
+      "adventure stories",
+      "Fiction, fantasy, general",
+      "British and irish fiction (fictional works by one author)"
+    ]
+  },
+  {
+    "name": "'king Zéus",
+    "authors": [
+      "Steve Albert"
+    ],
+    "category": "roman",
+    "volumes": 8,
+    "keywords": [
+      "'king zéus",
+      "'king zéus series",
+      "'king zéus saga",
+      "the 'king zéus",
+      "steve"
+    ],
+    "variations": [
+      "'king Zéus",
+      "The 'king Zéus",
+      "'king Zéus Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080070",
+    "subjects": []
+  },
+  {
+    "name": "Phönixakademie - Sammelband",
+    "authors": [
+      "I. Bow"
+    ],
+    "category": "roman",
+    "volumes": 4,
+    "keywords": [
+      "phönixakademie - sammelband",
+      "phönixakademie - sammelband series",
+      "phönixakademie - sammelband saga",
+      "the phönixakademie - sammelband",
+      "i."
+    ],
+    "variations": [
+      "Phönixakademie - Sammelband",
+      "The Phönixakademie - Sammelband",
+      "Phönixakademie - Sammelband Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080079",
+    "subjects": []
+  },
+  {
+    "name": "Freaked Out Horror (series",
+    "authors": [
+      "Tom Raimbault"
+    ],
+    "category": "roman",
+    "volumes": 5,
+    "keywords": [
+      "freaked out horror (series",
+      "freaked out horror (series series",
+      "freaked out horror (series saga",
+      "the freaked out horror (series",
+      "tom"
+    ],
+    "variations": [
+      "Freaked Out Horror (series",
+      "The Freaked Out Horror (series",
+      "Freaked Out Horror (series Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080086",
+    "subjects": []
+  },
+  {
+    "name": "Dorian Hunter",
+    "authors": [
+      "Neal Davenport"
+    ],
+    "category": "roman",
+    "volumes": 17,
+    "keywords": [
+      "dorian hunter",
+      "dorian hunter series",
+      "dorian hunter saga",
+      "the dorian hunter",
+      "neal"
+    ],
+    "variations": [
+      "Dorian Hunter",
+      "The Dorian Hunter",
+      "Dorian Hunter Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080093",
+    "subjects": []
+  },
+  {
+    "name": "Final Truth, Truth Thriller",
+    "authors": [
+      "Mariah Stewart"
+    ],
+    "category": "roman",
+    "volumes": 2,
+    "keywords": [
+      "final truth, truth thriller",
+      "final truth, truth thriller series",
+      "final truth, truth thriller saga",
+      "the final truth, truth thriller",
+      "mariah"
+    ],
+    "variations": [
+      "Final Truth, Truth Thriller",
+      "The Final Truth, Truth Thriller",
+      "Final Truth, Truth Thriller Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080099",
+    "subjects": []
+  },
+  {
+    "name": "Wicked Lovely Desert",
+    "authors": [
+      "Melissa Marr"
+    ],
+    "category": "manga",
+    "volumes": 4,
+    "keywords": [
+      "wicked lovely desert",
+      "wicked lovely desert series",
+      "wicked lovely desert saga",
+      "the wicked lovely desert",
+      "melissa"
+    ],
+    "variations": [
+      "Wicked Lovely Desert",
+      "The Wicked Lovely Desert",
+      "Wicked Lovely Desert Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080108",
+    "subjects": [
+      "Graphic novels",
+      "Fairies",
+      "Comic books, strips"
+    ]
+  },
+  {
+    "name": "Spirit",
+    "authors": [
+      "Quality Comics"
+    ],
+    "category": "roman",
+    "volumes": 5,
+    "keywords": [
+      "spirit",
+      "spirit series",
+      "spirit saga",
+      "the spirit",
+      "quality"
+    ],
+    "variations": [
+      "Spirit",
+      "The Spirit",
+      "Spirit Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080119",
+    "subjects": []
+  },
+  {
+    "name": "Mushoku Tensei (Light Novel) Vol.",
+    "authors": [
+      "理不尽な孫の手"
+    ],
+    "category": "roman",
+    "volumes": 19,
+    "keywords": [
+      "mushoku tensei (light novel) vol.",
+      "mushoku tensei (light novel) vol. series",
+      "mushoku tensei (light novel) vol. saga",
+      "the mushoku tensei (light novel) vol.",
+      "理不尽な孫の手"
+    ],
+    "variations": [
+      "Mushoku Tensei (Light Novel) Vol.",
+      "The Mushoku Tensei (Light Novel) Vol.",
+      "Mushoku Tensei (Light Novel) Vol. Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080128",
+    "subjects": []
+  },
+  {
+    "name": "Web of Mystery Collection",
+    "authors": [
+      "Ace Books"
+    ],
+    "category": "roman",
+    "volumes": 1,
+    "keywords": [
+      "web of mystery collection",
+      "web of mystery collection series",
+      "web of mystery collection saga",
+      "the web of mystery collection",
+      "ace"
+    ],
+    "variations": [
+      "Web of Mystery Collection",
+      "The Web of Mystery Collection",
+      "Web of Mystery Collection Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080135",
+    "subjects": []
+  },
+  {
+    "name": "Web of Mystery",
+    "authors": [
+      "Kari Therrian"
+    ],
+    "category": "roman",
+    "volumes": 12,
+    "keywords": [
+      "web of mystery",
+      "web of mystery series",
+      "web of mystery saga",
+      "the web of mystery",
+      "kari"
+    ],
+    "variations": [
+      "Web of Mystery",
+      "The Web of Mystery",
+      "Web of Mystery Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080143",
+    "subjects": []
+  },
+  {
+    "name": "Around the World in",
+    "authors": [
+      "Jules Verne"
+    ],
+    "category": "roman",
+    "volumes": 80,
+    "keywords": [
+      "around the world in",
+      "around the world in series",
+      "around the world in saga",
+      "the around the world in",
+      "jules"
+    ],
+    "variations": [
+      "Around the World in",
+      "The Around the World in",
+      "Around the World in Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080153",
+    "subjects": [
+      "Fiction, action & adventure",
+      "Voyages and travels, fiction",
+      "Continental european fiction (fictional works by one author)",
+      "Adventure and adventurers, fiction",
+      "Children's fiction"
+    ]
+  },
+  {
+    "name": "Muchachas",
+    "authors": [
+      "Katherine Pancol"
+    ],
+    "category": "roman",
+    "volumes": 3,
+    "keywords": [
+      "muchachas",
+      "muchachas series",
+      "muchachas saga",
+      "the muchachas",
+      "katherine"
+    ],
+    "variations": [
+      "Muchachas",
+      "The Muchachas",
+      "Muchachas Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080160",
+    "subjects": []
+  },
+  {
+    "name": "Buddha,",
+    "authors": [
+      "Osamu Tezuka"
+    ],
+    "category": "manga",
+    "volumes": 7,
+    "keywords": [
+      "buddha,",
+      "buddha, series",
+      "buddha, saga",
+      "the buddha,",
+      "osamu"
+    ],
+    "variations": [
+      "Buddha,",
+      "The Buddha,",
+      "Buddha, Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080167",
+    "subjects": [
+      "Comics & graphic novels, manga, general",
+      "Comics & graphic novels, manga, fantasy"
+    ]
+  },
+  {
+    "name": "Dragon Ball Z, Vol.",
+    "authors": [
+      "Akira Toriyama"
+    ],
+    "category": "manga",
+    "volumes": 7,
+    "keywords": [
+      "dragon ball z, vol.",
+      "dragon ball z, vol. series",
+      "dragon ball z, vol. saga",
+      "the dragon ball z, vol.",
+      "akira"
+    ],
+    "variations": [
+      "Dragon Ball Z, Vol.",
+      "The Dragon Ball Z, Vol.",
+      "Dragon Ball Z, Vol. Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080176",
+    "subjects": [
+      "Graphic novels",
+      "Fiction",
+      "Fantasy comic books, strips",
+      "Martial artists",
+      "Comics & graphic novels, general",
+      "Comics & graphic novels, manga, fantasy",
+      "Extraterrestrial beings",
+      "Juvenile fiction",
+      "Quests (Expeditions)"
+    ]
+  },
+  {
+    "name": "Dragon Ball Z,",
+    "authors": [
+      "Akira Toriyama"
+    ],
+    "category": "manga",
+    "volumes": 21,
+    "keywords": [
+      "dragon ball z,",
+      "dragon ball z, series",
+      "dragon ball z, saga",
+      "the dragon ball z,",
+      "akira"
+    ],
+    "variations": [
+      "Dragon Ball Z,",
+      "The Dragon Ball Z,",
+      "Dragon Ball Z, Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080197",
+    "subjects": [
+      "Graphic novels",
+      "Fiction",
+      "Comic books, strips",
+      "Martial arts fiction",
+      "Martial artists",
+      "Comics & graphic novels, general",
+      "Children's fiction",
+      "Translations into English",
+      "Juvenile fiction",
+      "Quests (Expeditions)"
+    ]
+  },
+  {
+    "name": "Dragon Ball, Vol.",
+    "authors": [
+      "Akira Toriyama"
+    ],
+    "category": "manga",
+    "volumes": 11,
+    "keywords": [
+      "dragon ball, vol.",
+      "dragon ball, vol. series",
+      "dragon ball, vol. saga",
+      "the dragon ball, vol.",
+      "akira"
+    ],
+    "variations": [
+      "Dragon Ball, Vol.",
+      "The Dragon Ball, Vol.",
+      "Dragon Ball, Vol. Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080206",
+    "subjects": [
+      "Fiction",
+      "Martial artists",
+      "Children's fiction",
+      "Comics & graphic novels, manga, fantasy",
+      "Dragón ball vol5",
+      "Juvenile fiction",
+      "Quests (Expeditions)"
+    ]
+  },
+  {
+    "name": "Star Wars - Thrawn",
+    "authors": [
+      "Timothy Zahn"
+    ],
+    "category": "roman",
+    "volumes": 2,
+    "keywords": [
+      "star wars - thrawn",
+      "star wars - thrawn series",
+      "star wars - thrawn saga",
+      "the star wars - thrawn",
+      "timothy"
+    ],
+    "variations": [
+      "Star Wars - Thrawn",
+      "The Star Wars - Thrawn",
+      "Star Wars - Thrawn Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080217",
+    "subjects": [
+      "Fiction",
+      "Princess Leia (Fictitious character)",
+      "Star Wars fiction",
+      "the thrawn trilogy",
+      "Han Solo (Fictitious character)",
+      "timothy zahn",
+      "star wars",
+      "Science fiction",
+      "Luke Skywalker (Fictitious character)"
+    ]
+  },
+  {
+    "name": "Star Trek",
+    "authors": [
+      "James Blish"
+    ],
+    "category": "roman",
+    "volumes": 8,
+    "keywords": [
+      "star trek",
+      "star trek series",
+      "star trek saga",
+      "the star trek",
+      "james"
+    ],
+    "variations": [
+      "Star Trek",
+      "The Star Trek",
+      "Star Trek Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080228",
+    "subjects": [
+      "Fiction, science fiction, general",
+      "Fiction",
+      "American Science fiction",
+      "English Short stories",
+      "Nouvelles anglaises",
+      "Star Trek fiction",
+      "collectionID:STnov",
+      "Children's stories",
+      "Science fiction",
+      "Star trek (Television program)"
+    ]
+  },
+  {
+    "name": "Pokemon",
+    "authors": [
+      "Hidenori Kusaka"
+    ],
+    "category": "manga",
+    "volumes": 2,
+    "keywords": [
+      "pokemon",
+      "pokemon series",
+      "pokemon saga",
+      "the pokemon",
+      "hidenori"
+    ],
+    "variations": [
+      "Pokemon",
+      "The Pokemon",
+      "Pokemon Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080235",
+    "subjects": [
+      "Comic books, strips",
+      "Pokémon (Fictitious characters)",
+      "Mythical Animals",
+      "Juvenile fiction",
+      "Pokémon (Game)"
+    ]
+  },
+  {
+    "name": "Pokemon Adventures,",
+    "authors": [
+      "Hidenori Kusaka"
+    ],
+    "category": "manga",
+    "volumes": 3,
+    "keywords": [
+      "pokemon adventures,",
+      "pokemon adventures, series",
+      "pokemon adventures, saga",
+      "the pokemon adventures,",
+      "hidenori"
+    ],
+    "variations": [
+      "Pokemon Adventures,",
+      "The Pokemon Adventures,",
+      "Pokemon Adventures, Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080244",
+    "subjects": [
+      "Pokemon (Game)",
+      "Fiction",
+      "Comic books, strips",
+      "Pokémon (Fictitious characters)",
+      "Cartoons and comics",
+      "Pokémon (Game)",
+      "Pokemon (Fictitious characters)"
+    ]
+  },
+  {
+    "name": "Untitled Jack Ryan",
+    "authors": [
+      "Marc Cameron"
+    ],
+    "category": "roman",
+    "volumes": 22,
+    "keywords": [
+      "untitled jack ryan",
+      "untitled jack ryan series",
+      "untitled jack ryan saga",
+      "the untitled jack ryan",
+      "marc"
+    ],
+    "variations": [
+      "Untitled Jack Ryan",
+      "The Untitled Jack Ryan",
+      "Untitled Jack Ryan Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080274",
+    "subjects": []
+  },
+  {
+    "name": "Dragon Ball,",
+    "authors": [
+      "Akira Toriyama"
+    ],
+    "category": "roman",
+    "volumes": 12,
+    "keywords": [
+      "dragon ball,",
+      "dragon ball, series",
+      "dragon ball, saga",
+      "the dragon ball,",
+      "akira"
+    ],
+    "variations": [
+      "Dragon Ball,",
+      "The Dragon Ball,",
+      "Dragon Ball, Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080282",
+    "subjects": []
+  },
+  {
+    "name": "Naruto, Vol.",
+    "authors": [
+      "Masashi Kishimoto"
+    ],
+    "category": "manga",
+    "volumes": 2,
+    "keywords": [
+      "naruto, vol.",
+      "naruto, vol. series",
+      "naruto, vol. saga",
+      "the naruto, vol.",
+      "masashi"
+    ],
+    "variations": [
+      "Naruto, Vol.",
+      "The Naruto, Vol.",
+      "Naruto, Vol. Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080290",
+    "subjects": [
+      "Graphic novels",
+      "Fiction",
+      "Comic books, strips",
+      "Ninja",
+      "Pariahs"
+    ]
+  },
+  {
+    "name": "Death Note, Vol.",
+    "authors": [
+      "Tsugumi Ohba"
+    ],
+    "category": "manga",
+    "volumes": 12,
+    "keywords": [
+      "death note, vol.",
+      "death note, vol. series",
+      "death note, vol. saga",
+      "the death note, vol.",
+      "tsugumi"
+    ],
+    "variations": [
+      "Death Note, Vol.",
+      "The Death Note, Vol.",
+      "Death Note, Vol. Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080298",
+    "subjects": [
+      "series:death_note",
+      "Death",
+      "Fiction",
+      "Comic books, strips",
+      "high school students",
+      "gods",
+      "Students",
+      "United States",
+      "Good and evil",
+      "Criminals"
+    ]
+  },
+  {
+    "name": "Steeplejack:",
+    "authors": [
+      "A. J. Hartley"
+    ],
+    "category": "roman",
+    "volumes": 1,
+    "keywords": [
+      "steeplejack:",
+      "steeplejack: series",
+      "steeplejack: saga",
+      "the steeplejack:",
+      "a."
+    ],
+    "variations": [
+      "Steeplejack:",
+      "The Steeplejack:",
+      "Steeplejack: Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080308",
+    "subjects": [
+      "Fantasy fiction",
+      "South africa, fiction",
+      "Mystery and detective stories",
+      "Adventure and adventurers, fiction",
+      "Children's fiction"
+    ]
+  },
+  {
+    "name": "Vigor Mortis",
+    "authors": [
+      "Natalie Maher"
+    ],
+    "category": "roman",
+    "volumes": 3,
+    "keywords": [
+      "vigor mortis",
+      "vigor mortis series",
+      "vigor mortis saga",
+      "the vigor mortis",
+      "natalie"
+    ],
+    "variations": [
+      "Vigor Mortis",
+      "The Vigor Mortis",
+      "Vigor Mortis Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080316",
+    "subjects": [
+      "Body Horror",
+      "Magic",
+      "Fantasy",
+      "Multiple Perspectives"
+    ]
+  },
+  {
+    "name": "Liz and Beth Vol.",
+    "authors": [
+      "G. Levis"
+    ],
+    "category": "manga",
+    "volumes": 3,
+    "keywords": [
+      "liz and beth vol.",
+      "liz and beth vol. series",
+      "liz and beth vol. saga",
+      "the liz and beth vol.",
+      "g."
+    ],
+    "variations": [
+      "Liz and Beth Vol.",
+      "The Liz and Beth Vol.",
+      "Liz and Beth Vol. Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080324",
+    "subjects": [
+      "Comic books, strips",
+      "Franco-Belgian comic books, strips",
+      "Erotic comic books, strips",
+      "Lesbians",
+      "Translations into English"
+    ]
+  },
+  {
+    "name": "Les Tuniques Bleues,",
+    "authors": [
+      "Raoul Cauvin"
+    ],
+    "category": "manga",
+    "volumes": 42,
+    "keywords": [
+      "les tuniques bleues,",
+      "les tuniques bleues, series",
+      "les tuniques bleues, saga",
+      "the les tuniques bleues,",
+      "raoul"
+    ],
+    "variations": [
+      "Les Tuniques Bleues,",
+      "The Les Tuniques Bleues,",
+      "Les Tuniques Bleues, Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080330",
+    "subjects": [
+      "Funny military comic books, strips",
+      "Franco-Belgian comic books, strips",
+      "series:les_tuniques_bleues",
+      "Western comic books, strips"
+    ]
+  },
+  {
+    "name": "Les Tuniques Bleues,",
+    "authors": [
+      "Willy Lambil"
+    ],
+    "category": "manga",
+    "volumes": 33,
+    "keywords": [
+      "les tuniques bleues,",
+      "les tuniques bleues, series",
+      "les tuniques bleues, saga",
+      "the les tuniques bleues,",
+      "willy"
+    ],
+    "variations": [
+      "Les Tuniques Bleues,",
+      "The Les Tuniques Bleues,",
+      "Les Tuniques Bleues, Series"
+    ],
+    "exclusions": [
+      "anthology",
+      "collection",
+      "best of",
+      "complete works"
+    ],
+    "source": "open_library_mega_expansion",
+    "confidence_score": 85,
+    "auto_generated": true,
+    "detection_date": "2025-07-12T01:25:23.080345",
+    "subjects": [
+      "Funny military comic books, strips",
+      "Franco-Belgian comic books, strips",
+      "series:les_tuniques_bleues",
+      "Western comic books, strips"
+    ]
+  }
+]

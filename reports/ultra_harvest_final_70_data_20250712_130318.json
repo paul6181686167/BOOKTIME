@@ -1,0 +1,10 @@
+{
+  "timestamp": "2025-07-12T13:03:18.393686",
+  "total_series": 8305,
+  "expansion_method": "ultra_harvest_100k_confidence_70",
+  "new_series_today": 8296,
+  "confidence_threshold": 70,
+  "report_file": "/app/reports/ultra_harvest_final_70_report_20250712_130318.txt",
+  "database_file": "/app/backend/data/extended_series_database.json",
+  "backup_created": true
+}

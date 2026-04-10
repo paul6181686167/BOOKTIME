@@ -1,0 +1,318 @@
+{
+  "timestamp": "2025-07-12T10:52:55.114934",
+  "operation": "ultra_harvest_integration_permissive",
+  "validation_stats": {
+    "total_candidates": 9176,
+    "single_book_accepted": 6035,
+    "multi_book_high_conf": 1660,
+    "multi_book_low_conf": 41,
+    "rejected_short_name": 10,
+    "rejected_low_conf_single": 1430
+  },
+  "duplicates_found": 2179,
+  "new_series_added": 5557,
+  "duplicate_samples": [
+    {
+      "new_name": "(Rin,",
+      "existing_name": "(Rin,",
+      "new_confidence": 95,
+      "new_volumes": 2,
+      "existing_volumes": 2,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "1776 Season 1",
+      "existing_name": "1776 Season 1",
+      "new_confidence": 100,
+      "new_volumes": 9,
+      "existing_volumes": 9,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "2005 48 CFR",
+      "existing_name": "2005 48 CFR",
+      "new_confidence": 95,
+      "new_volumes": 2,
+      "existing_volumes": 2,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "2009 48 CFR",
+      "existing_name": "2009 48 CFR",
+      "new_confidence": 95,
+      "new_volumes": 2,
+      "existing_volumes": 2,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "2022 California Existing Building Code, Title 24,",
+      "existing_name": "2022 California Existing Building Code, Title 24,",
+      "new_confidence": 100,
+      "new_volumes": 2,
+      "existing_volumes": 2,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "20th Century Boys",
+      "existing_name": "20th Century Boys",
+      "new_confidence": 100,
+      "new_volumes": 2,
+      "existing_volumes": 2,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "20th Century Boys Perfect Edition T02",
+      "existing_name": "20th Century Boys Perfect Edition T02",
+      "new_confidence": 70,
+      "new_volumes": 2,
+      "existing_volumes": 2,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "20th Century Boys Perfect Edition T04",
+      "existing_name": "20th Century Boys Perfect Edition T04",
+      "new_confidence": 70,
+      "new_volumes": 2,
+      "existing_volumes": 2,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "21 CFR",
+      "existing_name": "21 CFR",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 3,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "21 CFR",
+      "existing_name": "21 CFR",
+      "new_confidence": 100,
+      "new_volumes": 3,
+      "existing_volumes": 3,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "21 CFR",
+      "existing_name": "21 CFR",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 3,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "21 CFR",
+      "existing_name": "21 CFR",
+      "new_confidence": 85,
+      "new_volumes": 1,
+      "existing_volumes": 3,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "33 1/3 Greatest Hits,",
+      "existing_name": "33 1/3 Greatest Hits,",
+      "new_confidence": 100,
+      "new_volumes": 5,
+      "existing_volumes": 5,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "52 First Dates -",
+      "existing_name": "52 First Dates -",
+      "new_confidence": 95,
+      "new_volumes": 2,
+      "existing_volumes": 2,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "52 First Dates -",
+      "existing_name": "52 First Dates -",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 2,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "52 First Dates :",
+      "existing_name": "52 First Dates :",
+      "new_confidence": 95,
+      "new_volumes": 2,
+      "existing_volumes": 2,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "@Ellie -",
+      "existing_name": "@Ellie -",
+      "new_confidence": 95,
+      "new_volumes": 4,
+      "existing_volumes": 2,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "A Covenant of Love (The Appomattox Saga",
+      "existing_name": "A Covenant of Love (The Appomattox Saga",
+      "new_confidence": 100,
+      "new_volumes": 2,
+      "existing_volumes": 2,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "ADVENTURE SHORT STORIES",
+      "existing_name": "ADVENTURE SHORT STORIES",
+      "new_confidence": 95,
+      "new_volumes": 1,
+      "existing_volumes": 2,
+      "new_source": "ultra_harvest_100k_permissive"
+    },
+    {
+      "new_name": "AGATHA CHRISTIE",
+      "existing_name": "Agatha Christie",
+      "new_confidence": 100,
+      "new_volumes": 1,
+      "existing_volumes": 3,
+      "new_source": "ultra_harvest_100k_permissive"
+    }
+  ],
+  "new_series_samples": [
+    {
+      "name": "&#120028;&#120016;&#120029;&#120019;&#120016;&#120027;&#120016; &#120017;&#120024;&#120033;&#120019;&#120034; &#120018;&#120030;&#120027;&#120030;&#120033;&#120024;&#120029;&#120022; &#120017;&#120030;&#120030;&#120026;",
+      "category": "roman",
+      "volumes": 1,
+      "confidence": 90,
+      "reason": "single_book_high_confidence"
+    },
+    {
+      "name": "&#43457;&#3898; &#120028;&#120016;&#120029;&#120019;&#120016;&#120027;&#120016; &#120017;&#120024;&#120033;&#120019;&#120034; &#120018;&#120030;&#120027;&#120030;&#120033;&#120024;&#120029;&#120022; &#120017;&#120030;&#120030;&#120026; for Adult&#3899;",
+      "category": "roman",
+      "volumes": 1,
+      "confidence": 90,
+      "reason": "single_book_high_confidence"
+    },
+    {
+      "name": "&Nu;aruto &",
+      "category": "roman",
+      "volumes": 1,
+      "confidence": 80,
+      "reason": "single_book_high_confidence"
+    },
+    {
+      "name": "(Airhead",
+      "category": "roman",
+      "volumes": 1,
+      "confidence": 100,
+      "reason": "single_book_high_confidence"
+    },
+    {
+      "name": "(Publications,",
+      "category": "manga",
+      "volumes": 1,
+      "confidence": 95,
+      "reason": "single_book_high_confidence"
+    },
+    {
+      "name": "(WCS)Statics",
+      "category": "roman",
+      "volumes": 1,
+      "confidence": 100,
+      "reason": "single_book_high_confidence"
+    },
+    {
+      "name": "1 Chronicles, Chapters 7",
+      "category": "roman",
+      "volumes": 1,
+      "confidence": 95,
+      "reason": "single_book_high_confidence"
+    },
+    {
+      "name": "1 Corinthians Book II",
+      "category": "roman",
+      "volumes": 1,
+      "confidence": 90,
+      "reason": "single_book_high_confidence"
+    },
+    {
+      "name": "1 Corinthians Book III",
+      "category": "roman",
+      "volumes": 1,
+      "confidence": 90,
+      "reason": "single_book_high_confidence"
+    },
+    {
+      "name": "1 Kings,",
+      "category": "roman",
+      "volumes": 1,
+      "confidence": 95,
+      "reason": "single_book_high_confidence"
+    },
+    {
+      "name": "1 Kings, Chapters 7",
+      "category": "roman",
+      "volumes": 1,
+      "confidence": 95,
+      "reason": "single_book_high_confidence"
+    },
+    {
+      "name": "1 Samuel,",
+      "category": "roman",
+      "volumes": 1,
+      "confidence": 100,
+      "reason": "single_book_high_confidence"
+    },
+    {
+      "name": "1001 Quotes of Game of Thrones",
+      "category": "roman",
+      "volumes": 1,
+      "confidence": 90,
+      "reason": "single_book_high_confidence"
+    },
+    {
+      "name": "1001 TV",
+      "category": "roman",
+      "volumes": 1,
+      "confidence": 80,
+      "reason": "single_book_high_confidence"
+    },
+    {
+      "name": "150 Slow Cook and Crockpot Food Recipe Cookbook",
+      "category": "roman",
+      "volumes": 1,
+      "confidence": 95,
+      "reason": "single_book_high_confidence"
+    },
+    {
+      "name": "1940s",
+      "category": "roman",
+      "volumes": 1,
+      "confidence": 80,
+      "reason": "single_book_high_confidence"
+    },
+    {
+      "name": "1958 edition encyclopedia americana",
+      "category": "roman",
+      "volumes": 1,
+      "confidence": 95,
+      "reason": "single_book_high_confidence"
+    },
+    {
+      "name": "1984,",
+      "category": "manga",
+      "volumes": 1,
+      "confidence": 95,
+      "reason": "single_book_high_confidence"
+    },
+    {
+      "name": "1988 technical digest series,",
+      "category": "roman",
+      "volumes": 1,
+      "confidence": 100,
+      "reason": "single_book_high_confidence"
+    },
+    {
+      "name": "2 Chronicles, Chapters 10",
+      "category": "roman",
+      "volumes": 1,
+      "confidence": 95,
+      "reason": "single_book_high_confidence"
+    }
+  ]
+}

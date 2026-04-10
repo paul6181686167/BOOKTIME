@@ -1,0 +1,78 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Environment - NE JAMAIS committer .env (secrets)
+.env
+.env.local
+.env.production
+.env.development.local
+.env.test.local
+!.env.example
+
+# Build outputs
+build/
+dist/
+.next/
+.vercel/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+tmp/
+temp/
+
+# Données catalogue volumineuses (> 100 MB → refusées par GitHub)
+# Regénérer avec : python backend/scripts/seed_catalog.py
+backend/data/catalog_cache.json
+
+# Backups automatiques des scripts de seed (inutiles en prod)
+backend/data/backup_before_*.json
+backend/data/*_backup_*.json
+
+# Fichier de debug temporaire
+backend/check_covers.py
+
+# Test outputs
+test-results/
+coverage/
+
+# Docker
+.dockerignore
+
+# Backup files
+*.bak
+*.backup
+*~-e

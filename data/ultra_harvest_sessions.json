@@ -1,0 +1,158 @@
+{
+  "sessions": [
+    {
+      "timestamp": "2025-07-12T10:09:05.757143",
+      "session_stats": {
+        "start_time": "2025-07-12 10:08:48.663394",
+        "books_processed": 1048,
+        "new_books_analyzed": 1048,
+        "series_detected": 3,
+        "api_calls_made": 10,
+        "strategies_completed": 1,
+        "current_strategy": "volume_patterns_advanced",
+        "estimated_completion": "2025-07-12 10:09:04.967016",
+        "last_checkpoint": "2025-07-12 10:08:48.663398"
+      },
+      "database_stats": {
+        "total_analyzed": 1048,
+        "series_found": 273,
+        "strategies_used": 1,
+        "avg_processing_time_ms": 0.02194656488549618,
+        "last_analysis": "2025-07-12T10:09:05.743332",
+        "detection_rate": 26.049618320610683
+      }
+    },
+    {
+      "timestamp": "2025-07-12T10:23:52.476076",
+      "session_stats": {
+        "start_time": "2025-07-12 10:10:55.389303",
+        "books_processed": 43190,
+        "new_books_analyzed": 43190,
+        "series_detected": 790,
+        "api_calls_made": 927,
+        "strategies_completed": 15,
+        "current_strategy": "obscure_patterns_mining",
+        "estimated_completion": "2025-07-12 10:40:54.126585",
+        "last_checkpoint": "2025-07-12 10:23:50.553733"
+      },
+      "database_stats": {
+        "total_analyzed": 44238,
+        "series_found": 14180,
+        "strategies_used": 15,
+        "avg_processing_time_ms": 0.04774176047741761,
+        "last_analysis": "2025-07-12T10:23:52.259184",
+        "detection_rate": 32.053890320538905
+      }
+    },
+    {
+      "timestamp": "2025-07-12T10:44:25.278679",
+      "session_stats": {
+        "start_time": "2025-07-12 10:31:46.988859",
+        "books_processed": 44238,
+        "new_books_analyzed": 44238,
+        "series_detected": 0,
+        "api_calls_made": 927,
+        "strategies_completed": 15,
+        "current_strategy": "obscure_patterns_mining",
+        "estimated_completion": "2025-07-12 11:00:21.051384",
+        "last_checkpoint": "2025-07-12 10:44:24.158793"
+      },
+      "database_stats": {
+        "total_analyzed": 44238,
+        "series_found": 14180,
+        "strategies_used": 15,
+        "avg_processing_time_ms": 0.0473348704733487,
+        "last_analysis": "2025-07-12T10:44:25.250576",
+        "detection_rate": 32.053890320538905
+      }
+    },
+    {
+      "timestamp": "2025-07-12T11:05:28.015567",
+      "session_stats": {
+        "start_time": "2025-07-12 11:05:25.172335",
+        "books_processed": 150,
+        "new_books_analyzed": 150,
+        "series_detected": 0,
+        "api_calls_made": 1,
+        "strategies_completed": 1,
+        "current_strategy": "volume_patterns_advanced",
+        "estimated_completion": "2025-07-12 11:05:26.119188",
+        "last_checkpoint": "2025-07-12 11:05:25.172337"
+      },
+      "database_stats": {
+        "total_analyzed": 150,
+        "series_found": 7,
+        "strategies_used": 1,
+        "avg_processing_time_ms": 0.02666666666666667,
+        "last_analysis": "2025-07-12T11:05:28.004127",
+        "detection_rate": 4.666666666666667
+      }
+    },
+    {
+      "timestamp": "2025-07-12T11:45:32.993514",
+      "session_stats": {
+        "start_time": "2025-07-12 11:33:11.809168",
+        "books_processed": 42909,
+        "new_books_analyzed": 42909,
+        "series_detected": 0,
+        "api_calls_made": 869,
+        "strategies_completed": 14,
+        "current_strategy": "obscure_patterns_mining",
+        "estimated_completion": "2025-07-12 12:01:59.097129",
+        "last_checkpoint": "2025-07-12 11:45:32.016131"
+      },
+      "database_stats": {
+        "total_analyzed": 42909,
+        "series_found": 13903,
+        "strategies_used": 14,
+        "avg_processing_time_ms": 0.05117807452981892,
+        "last_analysis": "2025-07-12T11:45:32.963626",
+        "detection_rate": 32.40112796849146
+      }
+    },
+    {
+      "timestamp": "2025-07-12T12:36:05.886512",
+      "session_stats": {
+        "start_time": "2025-07-12 12:22:29.276414",
+        "books_processed": 42909,
+        "new_books_analyzed": 42909,
+        "series_detected": 0,
+        "api_calls_made": 869,
+        "strategies_completed": 14,
+        "current_strategy": "obscure_patterns_mining",
+        "estimated_completion": "2025-07-12 12:54:12.338746",
+        "last_checkpoint": "2025-07-12 12:36:04.533392"
+      },
+      "database_stats": {
+        "total_analyzed": 42909,
+        "series_found": 13903,
+        "strategies_used": 14,
+        "avg_processing_time_ms": 0.04434967023235219,
+        "last_analysis": "2025-07-12T12:36:05.854390",
+        "detection_rate": 32.40112796849146
+      }
+    },
+    {
+      "timestamp": "2025-07-13T20:44:13.107571",
+      "session_stats": {
+        "start_time": "2025-07-13 20:33:22.925362",
+        "books_processed": 11163,
+        "new_books_analyzed": 11163,
+        "series_detected": 0,
+        "api_calls_made": 869,
+        "strategies_completed": 14,
+        "current_strategy": "obscure_patterns_mining",
+        "estimated_completion": "2025-07-13 21:21:55.041601",
+        "last_checkpoint": "2025-07-13 20:44:11.601815"
+      },
+      "database_stats": {
+        "total_analyzed": 42908,
+        "series_found": 13903,
+        "strategies_used": 14,
+        "avg_processing_time_ms": 0.04232310990957397,
+        "last_analysis": "2025-07-13T20:44:13.078471",
+        "detection_rate": 32.40188309872285
+      }
+    }
+  ]
+}

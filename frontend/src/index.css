@@ -1,0 +1,297 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Mode sombre pour la scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: #374151;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #6b7280;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* CORRECTION: Transitions spécifiques optimisées */
+.transition-smooth {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.transition-colors {
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+/* Custom animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Stagger animation pour les grilles de cards */
+@keyframes cardAppear {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+.book-card-stagger {
+  animation: cardAppear 0.35s ease-out both;
+}
+
+/* Micro-bounce sur les boutons au clic */
+@keyframes btnBounce {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(0.88); }
+  65%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.btn-bounce {
+  animation: btnBounce 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Loading bar en haut de page */
+@keyframes loadingBar {
+  0%   { width: 0%; opacity: 1; }
+  70%  { width: 85%; opacity: 1; }
+  100% { width: 100%; opacity: 0; }
+}
+
+.top-loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #16a34a, #22d3ee, #16a34a);
+  background-size: 200%;
+  animation: loadingBar 1.2s ease-out forwards, shimmer 1s linear infinite;
+  z-index: 9999;
+  border-radius: 0 2px 2px 0;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+/* Compteurs animés */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.stat-number {
+  animation: countUp 0.5s ease-out both;
+}
+
+/* Barre de progression lecture sur cards */
+@keyframes progressSlide {
+  from { width: 0%; }
+}
+
+.reading-progress-bar {
+  animation: progressSlide 0.6s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+/* Spring animation pour les barres de séries */
+@keyframes springGrow {
+  0%   { transform: scaleX(0); }
+  60%  { transform: scaleX(1.04); }
+  80%  { transform: scaleX(0.98); }
+  100% { transform: scaleX(1); }
+}
+
+.series-progress-spring {
+  transform-origin: left;
+  animation: springGrow 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Transition douce entre sections */
+@keyframes sectionFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.section-appear {
+  animation: sectionFadeIn 0.4s ease-out both;
+}
+
+/* Animation d'apparition des modals améliorée */
+@keyframes modalSlideIn {
+  from { opacity: 0; transform: translateY(-24px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+.modal-animate {
+  animation: modalSlideIn 0.3s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+
+/* Pulse doux sur badge "En cours" */
+@keyframes softPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.4); }
+  50%       { box-shadow: 0 0 0 4px rgba(59,130,246,0); }
+}
+
+.badge-reading-pulse {
+  animation: softPulse 2s ease-in-out infinite;
+}
+
+/* ─── Feedback visuel global sur tous les boutons ──────────────────────────── */
+
+/* Effet press immédiat (avant même la réponse API) */
+button:not(:disabled),
+[role="button"]:not(:disabled) {
+  transition: transform 0.08s ease, opacity 0.08s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+button:not(:disabled):active,
+[role="button"]:not(:disabled):active {
+  transform: scale(0.93) !important;
+  opacity: 0.82;
+}
+
+/* Anneau de focus accessible */
+button:not(:disabled):focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Effet ripple CSS (pseudo-élément) */
+@keyframes ripple {
+  0%   { transform: scale(0); opacity: 0.5; }
+  100% { transform: scale(4); opacity: 0; }
+}
+
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255,255,255,0.35) 0%, transparent 70%);
+  border-radius: inherit;
+  opacity: 0;
+  transform: scale(0);
+  pointer-events: none;
+}
+
+.btn-ripple:active::after {
+  animation: ripple 0.4s ease-out forwards;
+}
+
+/* Spinner inline réutilisable */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.btn-spinner {
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+
+/* État "succès" bouton (flash vert) */
+@keyframes btnSuccess {
+  0%   { background-color: inherit; }
+  20%  { background-color: #16a34a; color: white; transform: scale(1.04); }
+  100% { background-color: inherit; }
+}
+
+.btn-success-flash {
+  animation: btnSuccess 0.7s ease-out forwards;
+}
+
+/* Réduire animations si l'utilisateur le préfère */
+@media (prefers-reduced-motion: reduce) {
+  .book-card-stagger,
+  .btn-bounce,
+  .reading-progress-bar,
+  .series-progress-spring,
+  .section-appear,
+  .modal-animate,
+  .badge-reading-pulse,
+  .btn-ripple::after,
+  .btn-spinner,
+  button:not(:disabled):active,
+  [role="button"]:not(:disabled):active {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* Book card hover effects */
+.book-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.book-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Status badges */
+.status-badge {
+  @apply px-3 py-1 rounded-full text-xs font-medium transition-colors;
+}
+
+.status-to-read {
+  @apply bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300;
+}
+
+.status-reading {
+  @apply bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300;
+}
+
+.status-completed {
+  @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300;
+}
+
+/* Category colors */
+.category-roman {
+  @apply border-l-4 border-book-roman;
+}
+
+.category-bd {
+  @apply border-l-4 border-book-bd;
+}
+
+.category-manga {
+  @apply border-l-4 border-book-manga;
+}

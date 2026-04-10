@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Modal Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        .modal {
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            width: 100%;
+            max-width: 28rem;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header {
+            flex-shrink: 0;
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .modal-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+        .modal-footer {
+            flex-shrink: 0;
+            padding: 1rem;
+            border-top: 1px solid #e5e7eb;
+        }
+        .hidden {
+            display: none;
+        }
+        .dark-mode .modal {
+            background-color: #1f2937;
+            color: white;
+        }
+        .dark-mode .modal-header,
+        .dark-mode .modal-footer {
+            border-color: #374151;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8">Profile Modal Test</h1>
+        
+        <div class="flex space-x-4 mb-8">
+            <button id="openModalBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Open Profile Modal</button>
+            <button id="toggleDarkMode" class="px-4 py-2 bg-gray-800 text-white rounded-lg">Toggle Dark Mode</button>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="font-bold mb-2">Test Instructions</h2>
+                <ol class="list-decimal pl-5 space-y-2">
+                    <li>Click "Open Profile Modal" to test the modal</li>
+                    <li>Check if the modal height is appropriate (not full screen)</li>
+                    <li>Try clicking the X button to close</li>
+                    <li>Reopen and try clicking outside to close</li>
+                    <li>Test scrolling if content is long</li>
+                    <li>Toggle dark mode to test appearance</li>
+                    <li>Resize window to test responsive behavior</li>
+                </ol>
+            </div>
+            
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="font-bold mb-2">Modal Features</h2>
+                <ul class="list-disc pl-5 space-y-2">
+                    <li>Close button (X) in top-right</li>
+                    <li>Click outside to close</li>
+                    <li>Scrollable content area</li>
+                    <li>Fixed header and footer</li>
+                    <li>Responsive design</li>
+                    <li>Dark mode support</li>
+                </ul>
+            </div>
+            
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="font-bold mb-2">Test Results</h2>
+                <div id="testResults" class="space-y-2">
+                    <p>No tests run yet</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal-backdrop hidden">
+        <div class="modal">
+            <!-- Header -->
+            <div class="modal-header">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold">Profil</h2>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Jean Dupont</p>
+                    </div>
+                    <button id="closeModalBtn" class="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" title="Fermer le profil">
+                        ✕
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Content -->
+            <div class="modal-content">
+                <!-- Statistics -->
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-3 flex items-center">
+                        📊 Mes Statistiques
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        <!-- Stats principales -->
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
+                                <div class="text-lg font-bold text-blue-600 dark:text-blue-400">
+                                    21
+                                </div>
+                                <div class="text-xs text-blue-600 dark:text-blue-400">Total</div>
+                            </div>
+                            <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
+                                <div class="text-lg font-bold text-green-600 dark:text-green-400">
+                                    12
+                                </div>
+                                <div class="text-xs text-green-600 dark:text-green-400">Terminés</div>
+                            </div>
+                            <div class="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 text-center">
+                                <div class="text-lg font-bold text-orange-600 dark:text-orange-400">
+                                    3
+                                </div>
+                                <div class="text-xs text-orange-600 dark:text-orange-400">En cours</div>
+                            </div>
+                        </div>
+
+                        <!-- Stats par catégorie -->
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <h4 class="font-medium text-gray-900 dark:text-white text-sm mb-2">Catégories :</h4>
+                            <div class="grid grid-cols-3 gap-2 text-xs">
+                                <div class="text-center">
+                                    <div class="font-medium text-gray-900 dark:text-white">
+                                        7
+                                    </div>
+                                    <div class="text-gray-600 dark:text-gray-400">Romans</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="font-medium text-gray-900 dark:text-white">
+                                        5
+                                    </div>
+                                    <div class="text-gray-600 dark:text-gray-400">BD</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="font-medium text-gray-900 dark:text-white">
+                                        9
+                                    </div>
+                                    <div class="text-gray-600 dark:text-gray-400">Mangas</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stats additionnelles -->
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div class="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                <span class="text-gray-700 dark:text-gray-300">👥 Auteurs</span>
+                                <span class="font-medium text-gray-900 dark:text-white">
+                                    8
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                <span class="text-gray-700 dark:text-gray-300">📖 Sagas</span>
+                                <span class="font-medium text-gray-900 dark:text-white">
+                                    5
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Settings -->
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-3 flex items-center">
+                        ⚙️ Paramètres
+                    </h3>
+                    
+                    <!-- Dark mode -->
+                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <div>
+                            <span class="font-medium text-gray-900 dark:text-white text-sm">Mode sombre</span>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">
+                                Basculer entre thème clair et sombre
+                            </p>
+                        </div>
+                        <button id="darkModeToggle" class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 bg-gray-200">
+                            <span class="inline-block h-3 w-3 transform rounded-full bg-white transition-transform translate-x-1"></span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Extra content to test scrolling -->
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-3">📚 Activité récente</h3>
+                    
+                    <div class="space-y-3">
+                        <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <div class="font-medium">Harry Potter et la Chambre des Secrets</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Terminé le 15 juin 2025</div>
+                        </div>
+                        
+                        <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <div class="font-medium">One Piece - Tome 42</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">En cours - page 56/208</div>
+                        </div>
+                        
+                        <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <div class="font-medium">Le Seigneur des Anneaux</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Ajouté le 10 juin 2025</div>
+                        </div>
+                        
+                        <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <div class="font-medium">Astérix et Obélix</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Terminé le 5 juin 2025</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="modal-footer">
+                <button id="logoutBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm">
+                    Se déconnecter
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // DOM Elements
+        const openModalBtn = document.getElementById('openModalBtn');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const profileModal = document.getElementById('profileModal');
+        const toggleDarkModeBtn = document.getElementById('toggleDarkMode');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const testResults = document.getElementById('testResults');
+        
+        // State
+        let isDarkMode = false;
+        
+        // Functions
+        function openModal() {
+            profileModal.classList.remove('hidden');
+            logTestResult('Modal opened', true);
+        }
+        
+        function closeModal() {
+            profileModal.classList.add('hidden');
+            logTestResult('Modal closed', true);
+        }
+        
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+                darkModeToggle.classList.add('bg-blue-600');
+                darkModeToggle.classList.remove('bg-gray-200');
+                darkModeToggle.querySelector('span').classList.add('translate-x-5');
+                darkModeToggle.querySelector('span').classList.remove('translate-x-1');
+                logTestResult('Dark mode enabled', true);
+            } else {
+                document.body.classList.remove('dark-mode');
+                darkModeToggle.classList.remove('bg-blue-600');
+                darkModeToggle.classList.add('bg-gray-200');
+                darkModeToggle.querySelector('span').classList.remove('translate-x-5');
+                darkModeToggle.querySelector('span').classList.add('translate-x-1');
+                logTestResult('Dark mode disabled', true);
+            }
+        }
+        
+        function logTestResult(message, success) {
+            const resultElement = document.createElement('p');
+            resultElement.classList.add(success ? 'text-green-600' : 'text-red-600');
+            resultElement.textContent = `${success ? '✅' : '❌'} ${message}`;
+            
+            if (testResults.querySelector('p')?.textContent === 'No tests run yet') {
+                testResults.innerHTML = '';
+            }
+            
+            testResults.appendChild(resultElement);
+        }
+        
+        // Event Listeners
+        openModalBtn.addEventListener('click', openModal);
+        closeModalBtn.addEventListener('click', closeModal);
+        toggleDarkModeBtn.addEventListener('click', toggleDarkMode);
+        darkModeToggle.addEventListener('click', toggleDarkMode);
+        logoutBtn.addEventListener('click', () => logTestResult('Logout button clicked', true));
+        
+        // Close modal when clicking outside
+        profileModal.addEventListener('click', (e) => {
+            if (e.target === profileModal) {
+                closeModal();
+                logTestResult('Modal closed by clicking outside', true);
+            }
+        });
+        
+        // Check modal height on load
+        window.addEventListener('load', () => {
+            const modalElement = profileModal.querySelector('.modal');
+            const modalHeight = modalElement.offsetHeight;
+            const viewportHeight = window.innerHeight;
+            
+            if (modalHeight < viewportHeight) {
+                logTestResult(`Modal height (${modalHeight}px) is less than viewport height (${viewportHeight}px)`, true);
+            } else {
+                logTestResult(`Modal height (${modalHeight}px) is equal to or greater than viewport height (${viewportHeight}px)`, false);
+            }
+        });
+        
+        // Check scrolling
+        window.addEventListener('load', () => {
+            const contentArea = profileModal.querySelector('.modal-content');
+            const scrollHeight = contentArea.scrollHeight;
+            const clientHeight = contentArea.clientHeight;
+            
+            if (scrollHeight > clientHeight) {
+                logTestResult(`Content is scrollable (scroll height: ${scrollHeight}px, visible height: ${clientHeight}px)`, true);
+            } else {
+                logTestResult(`Content is not scrollable (scroll height: ${scrollHeight}px, visible height: ${clientHeight}px)`, false);
+            }
+        });
+    </script>
+</body>
+</html>

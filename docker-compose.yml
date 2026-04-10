@@ -1,0 +1,67 @@
+# Docker Compose pour développement local BOOKTIME
+version: '3.8'
+
+services:
+  # Base de données MongoDB
+  mongodb:
+    image: mongo:7
+    container_name: booktime-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: booktime
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - booktime-network
+
+  # Backend FastAPI
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: booktime-backend
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - MONGO_URL=mongodb://admin:password@mongodb:27017/booktime?authSource=admin
+      - SECRET_KEY=development-secret-key-change-in-production
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+    depends_on:
+      - mongodb
+    networks:
+      - booktime-network
+    volumes:
+      - ./backend:/app
+    command: uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+
+  # Frontend React (pour build de production)
+  frontend:
+    image: node:18-alpine
+    container_name: booktime-frontend
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_BACKEND_URL=http://localhost:8001
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: sh -c "yarn install && yarn start"
+    networks:
+      - booktime-network
+    depends_on:
+      - backend
+
+volumes:
+  mongodb_data:
+
+networks:
+  booktime-network:
+    driver: bridge

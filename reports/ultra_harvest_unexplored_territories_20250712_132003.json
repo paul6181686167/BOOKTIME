@@ -1,0 +1,50 @@
+{
+  "session": "81.26 - Ultra Harvest Territoires Inexplorés",
+  "timestamp": "2025-07-12T13:20:03.119424",
+  "execution_time": "0:01:21.120070",
+  "statistics": {
+    "books_analyzed": 2527,
+    "api_calls": 100,
+    "new_series_found": 5,
+    "discovery_rate": 0.19786307874950534
+  },
+  "discoveries": [
+    {
+      "name": "Famous Five Adventure",
+      "volume": "6",
+      "confidence": 80,
+      "detection_method": "unexplored_patterns",
+      "original_title": "Famous five adventure game book 6"
+    },
+    {
+      "name": "The Famous Five Adventure",
+      "volume": "1",
+      "confidence": 80,
+      "detection_method": "unexplored_patterns",
+      "original_title": "The Famous Five Adventure Game Book 1"
+    },
+    {
+      "name": "Phr Certification",
+      "volume": "2015",
+      "confidence": 70,
+      "detection_method": "unexplored_patterns",
+      "original_title": "PHR Certification Study Guide 2015-2016"
+    },
+    {
+      "name": "Police Test",
+      "volume": "2020",
+      "confidence": 70,
+      "detection_method": "unexplored_patterns",
+      "original_title": "Police Test Study Guide 2020 And 2021"
+    },
+    {
+      "name": "Guided Mindfulness",
+      "volume": "2",
+      "confidence": 70,
+      "detection_method": "unexplored_patterns",
+      "original_title": "Guided Mindfulness Meditation Series 2"
+    }
+  ],
+  "territories_explored": 20,
+  "confidence_threshold": 70
+}

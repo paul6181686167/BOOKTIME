@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: booktime-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python start_render.py
+    plan: free
+
+    # Variables d'environnement
+    # Les valeurs "sync: false" doivent être saisies manuellement
+    # dans le dashboard Render (Settings > Environment)
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+      - key: ENVIRONMENT
+        value: production
+      - key: RAILWAY_MONGODB_MOCK
+        value: "false"
+      - key: MONGO_URL
+        sync: false          # ← à saisir dans le dashboard Render
+      - key: SECRET_KEY
+        generateValue: true  # ← Render génère automatiquement une clé sécurisée
+      - key: CORS_ORIGINS
+        value: "https://booktime.vercel.app,https://booktime-sg59-git-main-paul6181686167s-projects.vercel.app,http://localhost:3000"
