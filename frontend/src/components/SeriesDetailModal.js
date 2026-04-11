@@ -6,7 +6,8 @@ import {
   PlusIcon,
   MagnifyingGlassIcon,
   ExclamationTriangleIcon,
-  SparklesIcon
+  SparklesIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { bookService } from '../services/bookService';
 import { EXTENDED_SERIES_DATABASE } from '../utils/seriesDatabaseExtended';
@@ -669,8 +670,16 @@ const SeriesDetailModal = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 md:p-4">
       <div className="modal-content-wide shadow-2xl overflow-hidden w-full md:w-auto">
         
+        {/* Barre mobile avec bouton fermeture */}
+        <div className="flex items-center justify-between px-4 pt-3 pb-2 md:hidden border-b border-gray-100 dark:border-gray-800">
+          <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Série</span>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
         {/* Header */}
-        <div className="border-b border-gray-200 dark:border-gray-700 p-6">
+        <div className="border-b border-gray-200 dark:border-gray-700 p-4 sm:p-6">
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-4">
               {/* Image de couverture ou icône de série */}

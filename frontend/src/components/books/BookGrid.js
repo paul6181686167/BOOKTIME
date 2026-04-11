@@ -81,7 +81,7 @@ const BookGrid = ({
         >
           {item.isSeriesCard ? (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
-              <div className="aspect-[2/1] sm:aspect-[2/1] aspect-[3/2] bg-gray-100 dark:bg-gray-700 flex items-center justify-center relative overflow-hidden">
+              <div className="aspect-[3/2] sm:aspect-[2/1] bg-gray-100 dark:bg-gray-700 flex items-center justify-center relative overflow-hidden">
                 {item.cover_url ? (
                   <>
                     <img 
@@ -122,29 +122,21 @@ const BookGrid = ({
                   </div>
                 )}
               </div>
-              <div className="p-2 sm:p-4">
-                <h3 className="font-semibold text-gray-900 dark:text-white text-xs sm:text-sm line-clamp-1 sm:line-clamp-2 mb-1">
+              <div className="p-1.5 sm:p-3">
+                <h3 className="font-semibold text-gray-900 dark:text-white text-[11px] sm:text-sm line-clamp-1 leading-tight mb-0.5">
                   {item.name}
                 </h3>
-                <p className="text-[10px] sm:text-sm text-gray-600 dark:text-gray-400 mb-1 sm:mb-2 hidden sm:block">
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (onAuthorClick) onAuthorClick(item.author);
-                    }}
-                    className="text-[10px] sm:text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors underline"
-                  >
-                    {item.author}
-                  </button>
+                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-1 hidden sm:block line-clamp-1">
+                  {item.author}
                 </p>
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] sm:text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <span className="text-[10px] sm:text-xs font-medium text-gray-600 dark:text-gray-400">
                     {item.completedBooks}/{item.totalBooks} <span className="hidden sm:inline">tomes</span>
                   </span>
-                  <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                  <div className="w-10 sm:w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-1 sm:h-2 overflow-hidden">
                     <div 
                       key={`${item.id}-${item.completedBooks}`}
-                      className="bg-green-500 h-2 rounded-full series-progress-spring"
+                      className="bg-green-500 h-full rounded-full series-progress-spring"
                       style={{ width: `${item.progressPercent}%` }}
                     />
                   </div>

@@ -540,11 +540,14 @@ function MainApp() {
       setShowMobileSearch(true);
     } else if (tab === 'recommendations') {
       window.location.href = '/recommendations';
-    } else if (tab === 'discover') {
-      setShowUpcomingPanel(false);
-      if (searchHook.isSearchMode) searchHook.clearSearch?.();
+    } else if (tab === 'upcoming') {
+      setShowUpcomingPanel(true);
     } else if (tab === 'profile') {
       setShowProfileModal(true);
+      // Revenir à home après fermeture
+      setTimeout(() => setMobileTab('home'), 100);
+    } else if (tab === 'home') {
+      if (searchHook.isSearchMode) searchHook.clearSearch?.();
     }
   };
 
@@ -830,29 +833,19 @@ function MainApp() {
           </div>
 
           {/* Mobile header */}
-          <div className="flex md:hidden justify-between items-center h-14">
+          <div className="flex md:hidden justify-between items-center h-12">
             <div className="flex items-center gap-2">
               <span className="text-xl">🐝</span>
-              <h1 className="text-lg font-bold text-gray-900 dark:text-white">BOOKTIME</h1>
+              <h1 className="text-base font-bold text-gray-900 dark:text-white">BOOKTIME</h1>
             </div>
-            <div className="flex items-center gap-2">
-              {/* Bouton recherche mobile */}
-              <button
-                onClick={() => { setShowMobileSearch(true); setMobileTab('search'); }}
-                className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
-              {/* Avatar profil mobile */}
-              <button
-                onClick={() => setShowProfileModal(true)}
-                className="w-8 h-8 bg-green-600 hover:bg-green-700 text-white font-bold rounded-full text-sm transition-colors duration-200 flex items-center justify-center"
-              >
-                {user?.email?.[0]?.toUpperCase() || '?'}
-              </button>
-            </div>
+            <button
+              onClick={() => { setShowMobileSearch(true); setMobileTab('search'); }}
+              className="p-2 text-gray-500 dark:text-gray-400"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
           </div>
         </div>
       </header>
@@ -903,13 +896,10 @@ function MainApp() {
                   ))}
                 </div>
                 
-                {/* Bouton "À venir" à droite */}
+                {/* Bouton "À venir" — desktop uniquement (mobile = bottom nav) */}
                 <button
-                  onClick={() => {
-                    setShowUpcomingPanel(true);
-                    console.log('🔮 setShowUpcomingPanel(true) appelé');
-                  }}
-                  className="px-4 py-2 rounded-lg font-medium transition-colors duration-200 bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/20 dark:hover:bg-purple-800/30 dark:text-purple-300"
+                  onClick={() => setShowUpcomingPanel(true)}
+                  className="hidden md:flex px-4 py-2 rounded-lg font-medium transition-colors duration-200 bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/20 dark:hover:bg-purple-800/30 dark:text-purple-300"
                 >
                   <span>À venir</span>
                 </button>

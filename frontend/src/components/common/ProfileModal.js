@@ -171,6 +171,10 @@ function ProfileModal({ isOpen, onClose }) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-white dark:bg-gray-800 md:rounded-2xl shadow-2xl w-full md:max-w-lg max-h-[92dvh] md:max-h-[90vh] flex flex-col modal-animate" style={{ borderRadius: '20px 20px 0 0' }}>
+        {/* Poignée mobile */}
+        <div className="md:hidden flex justify-center pt-2.5 pb-1 flex-shrink-0">
+          <div className="w-9 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
+        </div>
         {/* Header */}
         <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">

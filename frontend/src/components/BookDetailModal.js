@@ -234,6 +234,13 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content-wide modal-animate w-full md:w-auto" onClick={(e) => e.stopPropagation()}>
+        {/* Bouton fermeture — visible sur mobile ET desktop */}
+        <div className="flex items-center justify-between px-4 pt-4 pb-2 md:hidden">
+          <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Détail</span>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{book.title}</h2>
