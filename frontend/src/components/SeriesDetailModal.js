@@ -32,8 +32,15 @@ const SeriesDetailModal = ({
   const [missingAnalysis, setMissingAnalysis] = useState(null);
   const [isSeriesOwned, setIsSeriesOwned] = useState(false);
   const [seriesStatus, setSeriesStatus] = useState('to_read');
-  const [readTomes, setReadTomes] = useState(new Set()); // ← AJOUT: État des tomes lus/non lus
-  const [missingPreviousWarning, setMissingPreviousWarning] = useState(null); // ← AJOUT: Avertissement tomes précédents manquants
+  // tomeStatuses : { "1": { status: "non_lu"|"en_cours"|"lu", currentPage: null|number }, ... }
+  const [tomeStatuses, setTomeStatuses] = useState({});
+  // Rétrocompatibilité : readTomes dérivé de tomeStatuses
+  const readTomes = new Set(
+    Object.entries(tomeStatuses)
+      .filter(([, v]) => v.status === 'lu')
+      .map(([k]) => Number(k))
+  );
+  const [missingPreviousWarning, setMissingPreviousWarning] = useState(null);
 
   // ✅ NOUVELLE FONCTION : Charger les préférences de lecture depuis la base de données
   const loadReadingPreferences = async (seriesName) => {
@@ -49,11 +56,16 @@ const SeriesDetailModal = ({
       
       if (response.ok) {
         const data = await response.json();
-        console.log('📚 Préférences de lecture chargées:', data);
-        return new Set(data.read_tomes || []);
+        // Reconstituer tomeStatuses depuis tome_statuses (nouveau) ou read_tomes (legacy)
+        if (data.tome_statuses && Object.keys(data.tome_statuses).length > 0) {
+          return data.tome_statuses;
+        }
+        // Fallback legacy : read_tomes → statut "lu"
+        const legacy = {};
+        (data.read_tomes || []).forEach(n => { legacy[String(n)] = { status: 'lu', currentPage: null }; });
+        return legacy;
       } else {
-        console.log('ℹ️ Aucune préférence trouvée, initialisation vide');
-        return new Set();
+        return {};
       }
     } catch (error) {
       console.error('❌ Erreur lors du chargement des préférences:', error);
@@ -75,7 +87,10 @@ const SeriesDetailModal = ({
         },
         body: JSON.stringify({
           series_name: seriesName,
-          read_tomes: [...readTomes]
+          read_tomes: Object.entries(tomeStatuses)
+            .filter(([, v]) => v.status === 'lu')
+            .map(([k]) => Number(k)),
+          tome_statuses: tomeStatuses
         })
       });
       
@@ -96,19 +111,16 @@ const SeriesDetailModal = ({
   // ✅ NOUVELLE FONCTION : Charger les préférences pour la série courante
   const loadReadingPreferencesForSeries = async () => {
     if (!enrichedSeries?.name) return;
-    
     try {
-      const preferences = await loadReadingPreferences(enrichedSeries.name);
-      setReadTomes(preferences);
-      console.log('📚 Préférences chargées pour', enrichedSeries.name, ':', preferences.size, 'tomes');
-      
-      // ✅ NOUVEAU : Calculer et mettre à jour le statut de la série au chargement
-      await calculateAndUpdateSeriesStatus(preferences);
-      
+      const statuses = await loadReadingPreferences(enrichedSeries.name);
+      setTomeStatuses(statuses || {});
+      const readSet = new Set(
+        Object.entries(statuses || {}).filter(([,v]) => v.status === 'lu').map(([k]) => Number(k))
+      );
+      await calculateAndUpdateSeriesStatus(readSet);
     } catch (error) {
       console.error('❌ Erreur chargement préférences:', error);
-      // Fallback : initialiser vide en cas d'erreur
-      setReadTomes(new Set());
+      setTomeStatuses({});
     }
   };
 
@@ -244,57 +256,52 @@ const SeriesDetailModal = ({
     }
   };
 
-  // Fonction pour basculer l'état lu/non lu d'un tome avec sauvegarde en base de données
-  const handleTomeReadToggle = async (tomeNumber) => {
-    const newReadTomes = new Set(readTomes);
-    
-    if (newReadTomes.has(tomeNumber)) {
-      // Décocher le tome
-      newReadTomes.delete(tomeNumber);
-      setMissingPreviousWarning(null); // Effacer l'avertissement si on décoche
-    } else {
-      // Cocher le tome
-      newReadTomes.add(tomeNumber);
-      
-      // ✅ LOGIQUE SUGGESTION : Vérifier si des tomes précédents manquent
-      if (tomeNumber > 1) {
-        const missingPrevious = [];
-        for (let i = 1; i < tomeNumber; i++) {
-          if (!newReadTomes.has(i)) {
-            missingPrevious.push(i);
-          }
-        }
-        
-        if (missingPrevious.length > 0) {
-          setMissingPreviousWarning({
-            currentTome: tomeNumber,
-            missingTomes: missingPrevious
-          });
-        } else {
-          setMissingPreviousWarning(null);
-        }
+  // Changer le statut d'un tome (non_lu | en_cours | lu) + page optionnelle
+  const handleTomeStatusChange = async (tomeNumber, newStatus, currentPage = null) => {
+    const newStatuses = {
+      ...tomeStatuses,
+      [String(tomeNumber)]: { status: newStatus, currentPage }
+    };
+    setTomeStatuses(newStatuses);
+
+    // Suggestion tomes précédents si on marque "lu"
+    if (newStatus === 'lu' && tomeNumber > 1) {
+      const missingPrevious = [];
+      for (let i = 1; i < tomeNumber; i++) {
+        if ((newStatuses[String(i)]?.status || 'non_lu') === 'non_lu') missingPrevious.push(i);
+      }
+      if (missingPrevious.length > 0) {
+        setMissingPreviousWarning({ currentTome: tomeNumber, missingTomes: missingPrevious });
       } else {
         setMissingPreviousWarning(null);
       }
-    }
-    
-    // Mettre à jour l'état local immédiatement
-    setReadTomes(newReadTomes);
-    
-    // ✅ PERSISTANCE : Sauvegarder en base de données
-    if (enrichedSeries?.name) {
-      const saved = await saveReadingPreferences(enrichedSeries.name, newReadTomes);
-      if (saved) {
-        if (onUpdate) onUpdate();
-      } else {
-        console.warn('⚠️ Échec de la sauvegarde, état local maintenu');
-        // Note: On garde l'état local même si la sauvegarde échoue
-        // L'utilisateur peut réessayer et ça sera sauvegardé
-      }
+    } else {
+      setMissingPreviousWarning(null);
     }
 
-    // ✅ NOUVEAU : Calculer et mettre à jour automatiquement le statut de la série
-    await calculateAndUpdateSeriesStatus(newReadTomes);
+    // Calculer et mettre à jour le statut de la série
+    const newReadSet = new Set(
+      Object.entries(newStatuses).filter(([,v]) => v.status === 'lu').map(([k]) => Number(k))
+    );
+    // Statut : en_cours si au moins 1 tome lu ou en cours
+    const hasInProgress = Object.values(newStatuses).some(v => v.status === 'en_cours');
+    const hasRead = newReadSet.size > 0;
+    const totalTomes = enrichedSeries?.volumes || olBooks.length || (series?.books?.length) || 0;
+    let autoStatus = 'to_read';
+    if (hasInProgress || (hasRead && newReadSet.size < totalTomes)) autoStatus = 'reading';
+    else if (hasRead && totalTomes > 0 && newReadSet.size >= totalTomes) autoStatus = 'completed';
+    setSeriesStatus(autoStatus);
+
+    if (enrichedSeries?.name) {
+      await saveReadingPreferences(enrichedSeries.name, newStatuses);
+      if (onUpdate) onUpdate();
+    }
+  };
+
+  // Rétrocompatibilité pour handleTomeReadToggle (utilisé dans handleCheckPreviousTomes)
+  const handleTomeReadToggle = async (tomeNumber) => {
+    const current = tomeStatuses[String(tomeNumber)]?.status || 'non_lu';
+    await handleTomeStatusChange(tomeNumber, current === 'lu' ? 'non_lu' : 'lu');
   };
 
   // Fonction pour cocher automatiquement tous les tomes précédents avec sauvegarde
@@ -310,21 +317,11 @@ const SeriesDetailModal = ({
     // Mettre à jour l'état local
     setReadTomes(newReadTomes);
     
-    // ✅ PERSISTANCE : Sauvegarder en base de données
     if (enrichedSeries?.name) {
-      const saved = await saveReadingPreferences(enrichedSeries.name, newReadTomes);
-      if (saved && onUpdate) {
-        onUpdate();
-      } else if (!saved) {
-        console.warn('⚠️ Échec de la sauvegarde, état local maintenu');
-      }
+      await saveReadingPreferences(enrichedSeries.name, tomeStatuses);
+      if (onUpdate) onUpdate();
     }
-    
-    // Effacer l'avertissement
     setMissingPreviousWarning(null);
-
-    // ✅ NOUVEAU : Calculer et mettre à jour automatiquement le statut de la série
-    await calculateAndUpdateSeriesStatus(newReadTomes);
   };
 
   // Enrichir les données de série au chargement
@@ -517,6 +514,7 @@ const SeriesDetailModal = ({
       loadSeriesBooks();
       loadReadingPreferencesForSeries();
       setMissingPreviousWarning(null);
+      setTomeStatuses({});
       setOlBooks([]);
       // Charger les tomes OL pour les séries hors base statique
       if (!enrichedSeries?.referenceFound) {
@@ -903,14 +901,16 @@ const SeriesDetailModal = ({
                         tomeNumber={tomeNumber}
                         tomeTitle={tomeTitle}
                         seriesData={enrichedSeries}
-                        isRead={isRead}
+                        tomeStatus={tomeStatuses[String(tomeNumber)]?.status || 'non_lu'}
+                        currentPage={tomeStatuses[String(tomeNumber)]?.currentPage || null}
+                        onStatusChange={handleTomeStatusChange}
                         onToggleRead={handleTomeReadToggle}
                       />
                     );
                   });
                 }
 
-                // Source : Wikidata ou OL → construire un enrichedSeries synthétique et utiliser TomeDropdown
+                // Source : Wikidata ou OL → construire un enrichedSeries synthétique
                 const booksToShow = olBooks.length > 0 ? olBooks : (series.books || []);
                 const syntheticVolumeTitles = {};
                 booksToShow.forEach((b, i) => {
@@ -925,14 +925,15 @@ const SeriesDetailModal = ({
                 return booksToShow.map((book, index) => {
                   const tomeNumber = book.volume_number || (index + 1);
                   const tomeTitle = syntheticVolumeTitles[tomeNumber] || book.title;
-                  const isRead = readTomes.has(tomeNumber);
                   return (
                     <TomeDropdown
                       key={tomeNumber}
                       tomeNumber={tomeNumber}
                       tomeTitle={tomeTitle}
                       seriesData={syntheticSeries}
-                      isRead={isRead}
+                      tomeStatus={tomeStatuses[String(tomeNumber)]?.status || 'non_lu'}
+                      currentPage={tomeStatuses[String(tomeNumber)]?.currentPage || null}
+                      onStatusChange={handleTomeStatusChange}
                       onToggleRead={handleTomeReadToggle}
                     />
                   );

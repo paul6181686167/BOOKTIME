@@ -516,16 +516,17 @@ async def get_series_reading_preferences(
             "series_name": series_name
         }, {"_id": 0})
         
-        if preferences and "read_tomes" in preferences:
+        if preferences:
             return {
                 "series_name": series_name,
-                "read_tomes": preferences["read_tomes"]
+                "read_tomes": preferences.get("read_tomes", []),
+                "tome_statuses": preferences.get("tome_statuses", {})
             }
         else:
-            # Aucune préférence trouvée, retourner liste vide
             return {
                 "series_name": series_name,
-                "read_tomes": []
+                "read_tomes": [],
+                "tome_statuses": {}
             }
             
     except Exception as e:
@@ -540,11 +541,19 @@ async def save_series_reading_preferences(
     Sauvegarder les préférences de lecture d'une série pour l'utilisateur connecté
     """
     try:
-        # Préparer les données à sauvegarder
+        # Construire read_tomes depuis tome_statuses si fourni (rétrocompatibilité)
+        read_tomes = preferences.read_tomes or []
+        tome_statuses_raw = {}
+        if preferences.tome_statuses:
+            tome_statuses_raw = {k: v.dict() for k, v in preferences.tome_statuses.items()}
+            # Recalculer read_tomes depuis tome_statuses
+            read_tomes = [int(k) for k, v in preferences.tome_statuses.items() if v.status == "lu"]
+
         preference_data = {
             "user_id": current_user["id"],
             "series_name": preferences.series_name,
-            "read_tomes": preferences.read_tomes,
+            "read_tomes": read_tomes,
+            "tome_statuses": tome_statuses_raw,
             "updated_at": datetime.utcnow().isoformat()
         }
         

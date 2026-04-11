@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 class VolumeData(BaseModel):
     volume_number: int
@@ -19,10 +19,16 @@ class SeriesLibraryCreate(BaseModel):
     publisher: str = ""
     series_status: str = "to_read"
 
-# ✅ NOUVEAU MODÈLE : Préférences de lecture des tomes par série
+class TomeStatus(BaseModel):
+    """Statut d'un tome individuel."""
+    status: str = "non_lu"   # "non_lu" | "en_cours" | "lu"
+    current_page: Optional[int] = None
+
 class SeriesReadingPreferences(BaseModel):
     series_name: str
-    read_tomes: List[int]  # Liste des numéros de tomes marqués comme lus
-    
+    read_tomes: List[int] = []          # Rétrocompatibilité
+    tome_statuses: Optional[Dict[str, TomeStatus]] = None  # {"1": {status, current_page}, ...}
+
 class SeriesReadingPreferencesUpdate(BaseModel):
-    read_tomes: List[int]  # Liste des numéros de tomes marqués comme lus
+    read_tomes: List[int] = []
+    tome_statuses: Optional[Dict[str, TomeStatus]] = None
