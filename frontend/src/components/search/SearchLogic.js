@@ -17,6 +17,22 @@ import { calculateRelevanceScore, getRelevanceLevel } from './RelevanceEngine';
 import { AutoSeriesDetector } from '../../hooks/useAutoSeriesDetection';
 import SeriesDetector from '../../utils/seriesDetector';
 import { API_BASE_URL } from '../../config/environment';
+import { EXTENDED_SERIES_DATABASE } from '../../utils/seriesDatabaseExtended';
+
+// Index plat : titre de tome (lowercase) → { seriesKey, seriesData, volumeNumber }
+const buildVolumeTitleIndex = () => {
+  const index = {};
+  for (const category of Object.values(EXTENDED_SERIES_DATABASE)) {
+    for (const [key, s] of Object.entries(category)) {
+      if (!s.volume_titles) continue;
+      for (const [num, title] of Object.entries(s.volume_titles)) {
+        index[title.toLowerCase().trim()] = { seriesKey: key, seriesData: s, volumeNumber: Number(num) };
+      }
+    }
+  }
+  return index;
+};
+const VOLUME_TITLE_INDEX = buildVolumeTitleIndex();
 
 // FONCTION PRINCIPALE DE RECHERCHE OPEN LIBRARY
 export const searchOpenLibrary = async (query, {
@@ -146,21 +162,56 @@ export const searchOpenLibrary = async (query, {
         });
       });
 
-      // ── 4. Séries de la base statique (legacy) ──────────────────────────
+      // ── 4. Regroupement des livres orphelins par la base statique ────────
+      // Si un titre correspond exactement à un volume d'une série connue → carte série
+      const staticFromOrphans = {};
+      enriched.forEach(book => {
+        if (olSeriesBookIds.has(book.ol_key)) return;
+        const match = VOLUME_TITLE_INDEX[book.title?.toLowerCase().trim()];
+        if (!match) return;
+        const { seriesKey, seriesData } = match;
+        if (!staticFromOrphans[seriesKey]) {
+          staticFromOrphans[seriesKey] = {
+            isSeriesCard: true,
+            id: `series_static_${seriesKey}`,
+            name: seriesData.name,
+            author: book.author,
+            category: seriesData.category || book.category,
+            cover_url: book.cover_url || null,
+            totalBooks: seriesData.volumes || 1,
+            books: [],
+            description: seriesData.description || '',
+            relevanceScore: 95000,
+            fromStaticDB: true,
+          };
+        }
+        staticFromOrphans[seriesKey].books.push(book);
+        olSeriesBookIds.add(book.ol_key);
+      });
+
+      // ── 5. Séries de la base statique (legacy query-based) ──────────────
       const staticSeriesCards = generateSeriesCardsForSearch(query, data.books);
 
-      // ── 5. Livres individuels (hors séries détectées) ────────────────────
+      // ── 6. Livres individuels (hors séries détectées) ────────────────────
       const standaloneBooks = enriched.filter(b => !olSeriesBookIds.has(b.ol_key));
 
-      // ── 6. Fusion + tri : séries d'abord, puis livres ───────────────────
-      // Dédoublonner les cartes séries (OL prime sur statique)
+      // ── 7. Fusion + tri : séries d'abord, puis livres ───────────────────
       const allSeriesNames = new Set(olSeriesCards.map(c => c.name.toLowerCase()));
+
+      // Cartes depuis la base statique (orphelins reconnus)
+      const orphanSeriesCards = Object.values(staticFromOrphans).filter(
+        c => !allSeriesNames.has(c.name.toLowerCase())
+      );
+      orphanSeriesCards.forEach(c => allSeriesNames.add(c.name.toLowerCase()));
+
+      // Cartes legacy (query-based) — dédoublonner
       const dedupedStatic = staticSeriesCards.filter(
         c => !allSeriesNames.has((c.name || '').toLowerCase())
       );
 
       const finalResults = [
         ...olSeriesCards,
+        ...orphanSeriesCards,
         ...dedupedStatic,
         ...standaloneBooks,
       ];
