@@ -53,75 +53,98 @@ export const searchOpenLibrary = async (query, {
 
     if (response.ok) {
       const data = await response.json();
-      
-      // Générer automatiquement les cartes séries basées sur le terme de recherche
-      const seriesCards = generateSeriesCardsForSearch(query, data.books).map(card => ({
-        ...card
-      }));
-      
-      // AJOUT DES BADGES CATÉGORIE : Marquer les livres avec leur catégorie et badge
-      const resultsWithOwnership = data.books.map(book => {
-        const isOwned = detectBookOwnership(book, books);
-        
-        // BADGES CATÉGORIE AUTOMATIQUES : Ajouter badge selon la catégorie détectée
+
+      // ── 1. Dédoublonnage par ol_key ──────────────────────────────────────
+      const seen = new Set();
+      const uniqueBooks = (data.books || []).filter(b => {
+        if (!b.ol_key || seen.has(b.ol_key)) return false;
+        seen.add(b.ol_key);
+        return true;
+      });
+
+      // ── 2. Enrichir chaque livre (ownership + badge) ─────────────────────
+      const enriched = uniqueBooks.map(book => {
         const categoryBadge = getCategoryBadgeFromBook(book);
-        
         return {
           ...book,
           isFromOpenLibrary: true,
-          isOwned: isOwned,
+          isOwned: detectBookOwnership(book, books),
           id: `ol_${book.ol_key}`,
-          // Badge catégorie pour affichage visuel
-          categoryBadge: categoryBadge,
-          // S'assurer que la catégorie est bien définie pour le placement intelligent
-          category: book.category || categoryBadge.key || 'roman' // Défaut roman si non détecté
+          categoryBadge,
+          category: book.category || categoryBadge.key || 'roman',
         };
       });
 
-      // 🔒 MASQUAGE UNIVERSEL INTELLIGENT : Utiliser détection automatique en temps réel
-      const filteredResults = resultsWithOwnership.filter(book => {
-        // Vérifier d'abord le champ saga existant (méthode rapide)
-        const belongsToSeries = !!(book.saga && book.saga.trim());
-        
-        if (belongsToSeries) {
-          console.log(`🔒 [MASQUAGE UNIVERSEL] Livre "${book.title}" appartenant à la série "${book.saga}" - MASQUÉ des résultats`);
-          return false; // Masquer le livre
-        }
-        
-        // Utiliser la détection intelligente pour les livres sans champ saga
-        const detection = SeriesDetector.detectBookSeries(book);
-        
-        if (detection.belongsToSeries && detection.confidence >= 70) {
-          console.log(`🔒 [MASQUAGE INTELLIGENT] Livre "${book.title}" détecté série "${detection.seriesName}" (${detection.confidence}% confiance) - MASQUÉ des résultats`);
-          return false; // Masquer le livre détecté comme série
-        }
-        
-        return true; // Livre standalone, affiché
+      // ── 3. Détection de séries depuis les résultats OL ───────────────────
+      // Stratégie : plusieurs livres du même auteur = série probable
+      const authorGroups = {};
+      enriched.forEach(book => {
+        if (!book.author) return;
+        const key = book.author.toLowerCase().trim();
+        if (!authorGroups[key]) authorGroups[key] = { author: book.author, books: [], category: book.category };
+        authorGroups[key].books.push(book);
       });
-      
-      // ALGORITHME DE TRI PRIORITAIRE OPTIMISÉ : Garantir fiches séries EN PREMIER avec scores 100000+
-      const allResults = [...seriesCards, ...filteredResults];
-      
-      // TRI FINAL AVEC PRIORITÉ ABSOLUE DES SÉRIES selon les consignes du CHANGELOG
-      // 1) Séries officielles (100000+) par pertinence
-      // 2) Séries bibliothèque (90000+) par pertinence  
-      // 3) Livres Open Library très pertinents (scores variables)
-      // 4) Livres bibliothèque utilisateur (scores variables)
-      const sortedResults = SearchOptimizer.applySuperiorSeriesPrioritySort(allResults);
-      
-      console.log('🎯 PRIORITÉ SÉRIES - Tri final appliqué:');
-      sortedResults.slice(0, 5).forEach((item, index) => {
-        console.log(`${index + 1}. ${item.isSeriesCard ? '📚 SÉRIE' : '📖 LIVRE'}: ${item.title || item.name} - Score: ${item.relevanceScore || item.confidence || 0}`);
+
+      const olSeriesCards = [];
+      const olSeriesBookIds = new Set(); // livres déjà dans une carte série
+
+      Object.values(authorGroups).forEach(group => {
+        if (group.books.length < 2) return; // besoin d'au moins 2 livres
+
+        // Trouver le nom de la série : mots du query présents dans les titres
+        const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length >= 3);
+        const seriesName = queryWords.length > 0
+          ? query.trim()   // utilise le terme de recherche tel quel
+          : group.author;
+
+        // Vérifier qu'au moins 2 livres correspondent au query
+        const matchingBooks = group.books.filter(b =>
+          queryWords.some(w => b.title.toLowerCase().includes(w))
+        );
+        if (matchingBooks.length < 2) return;
+
+        matchingBooks.forEach(b => olSeriesBookIds.add(b.ol_key));
+
+        olSeriesCards.push({
+          isSeriesCard: true,
+          id: `series_ol_${seriesName.toLowerCase().replace(/\s+/g, '_')}`,
+          name: seriesName,
+          author: group.author,
+          category: group.category,
+          cover_url: matchingBooks.find(b => b.cover_url)?.cover_url || null,
+          totalBooks: matchingBooks.length,
+          books: matchingBooks,
+          description: `Série de ${matchingBooks.length} livres de ${group.author}`,
+          relevanceScore: 100000,
+          fromOpenLibrary: true,
+        });
       });
-      
-      // Afficher les statistiques de masquage
-      const totalBooks = data.books.length;
-      const maskedBooks = totalBooks - filteredResults.length;
-      console.log(`🔒 [MASQUAGE UNIVERSEL] ${maskedBooks} livre(s) masqué(s) sur ${totalBooks} (appartenant à des séries)`);
-      
-      // Stocker les résultats triés avec priorité absolue aux fiches séries
-      setOpenLibraryResults(sortedResults);
-      toast.success(`${filteredResults.length} livres trouvés${seriesCards.length > 0 ? ` + ${seriesCards.length} série(s) détectée(s) EN PREMIER` : ''}${maskedBooks > 0 ? ` (${maskedBooks} livre(s) de série masqué(s))` : ''}`);
+
+      // ── 4. Séries de la base statique (legacy) ──────────────────────────
+      const staticSeriesCards = generateSeriesCardsForSearch(query, data.books);
+
+      // ── 5. Livres individuels (hors séries détectées) ────────────────────
+      const standaloneBooks = enriched.filter(b => !olSeriesBookIds.has(b.ol_key));
+
+      // ── 6. Fusion + tri : séries d'abord, puis livres ───────────────────
+      // Dédoublonner les cartes séries (OL prime sur statique)
+      const allSeriesNames = new Set(olSeriesCards.map(c => c.name.toLowerCase()));
+      const dedupedStatic = staticSeriesCards.filter(
+        c => !allSeriesNames.has((c.name || '').toLowerCase())
+      );
+
+      const finalResults = [
+        ...olSeriesCards,
+        ...dedupedStatic,
+        ...standaloneBooks,
+      ];
+
+      setOpenLibraryResults(finalResults);
+      toast.success(
+        `${standaloneBooks.length} livre(s)` +
+        (olSeriesCards.length > 0 ? ` + ${olSeriesCards.length} série(s) détectée(s)` : '') +
+        ` trouvé(s)`
+      );
     } else {
       toast.error('Erreur lors de la recherche Open Library');
     }
