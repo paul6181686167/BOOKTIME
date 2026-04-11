@@ -1,1 +1,1 @@
-577ff96
+Si tu vois ce fichier à jour après un push sur GitHub, Vercel a bien déployé le dossier frontend. Compare avec la page Commits du dépôt BOOKTIME (branche main).
