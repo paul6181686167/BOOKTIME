@@ -132,17 +132,33 @@ const SeriesDetailModal = ({
       if (referenceData) break;
     }
     
-    // Enrichir avec les données de référence si trouvées
     if (referenceData) {
       return {
         ...series,
         volumes: referenceData.volumes,
-        volume_titles: referenceData.volume_titles, // ← AJOUT: Inclure les vrais noms des tomes
-        volume_details: referenceData.volume_details, // ← AJOUT: Détails par tome pour mini-fiches
+        volume_titles: referenceData.volume_titles,
+        volume_details: referenceData.volume_details,
         description: referenceData.description,
         first_published: referenceData.first_published,
         status: referenceData.status,
         referenceFound: true
+      };
+    }
+    
+    // Fallback : utiliser series.books (résultats OL ou Wikidata) pour déduire les volumes
+    const fallbackBooks = series.books || [];
+    if (fallbackBooks.length > 0) {
+      const volumeTitles = {};
+      fallbackBooks.forEach((b, i) => {
+        const num = b.volume_number || (i + 1);
+        volumeTitles[num] = b.title || `${series.name} - Tome ${num}`;
+      });
+      return {
+        ...series,
+        volumes: fallbackBooks.length,
+        volume_titles: volumeTitles,
+        referenceFound: false,
+        fromFallbackBooks: true,
       };
     }
     
@@ -650,7 +666,7 @@ const SeriesDetailModal = ({
                     {getStatusLabel(series?.status)}
                   </span>
                   <span className="text-gray-500 dark:text-gray-400">
-                    📚 {books.length} tome(s)
+                    📚 {enrichedSeries?.volumes || books.length || (series?.books?.length) || 0} tome(s)
                   </span>
                   <span className="text-gray-500 dark:text-gray-400">
                     🏆 {series?.completion_percentage || 0}% complété
@@ -819,23 +835,61 @@ const SeriesDetailModal = ({
           
           {enrichedSeries?.volumes && enrichedSeries.volumes > 0 ? (
             <div className="space-y-1">
-              {Array.from({ length: enrichedSeries.volumes }, (_, index) => {
-                const tomeNumber = index + 1;
-                // Utiliser le titre spécifique s'il existe, sinon titre générique
-                const tomeTitle = enrichedSeries.volume_titles?.[tomeNumber] || `${enrichedSeries.name} - Tome ${tomeNumber}`;
-                const isRead = readTomes.has(tomeNumber);
-                
-                return (
-                  <TomeDropdown
-                    key={tomeNumber}
-                    tomeNumber={tomeNumber}
-                    tomeTitle={tomeTitle}
-                    seriesData={enrichedSeries}
-                    isRead={isRead}
-                    onToggleRead={handleTomeReadToggle}
-                  />
-                );
-              })}
+              {enrichedSeries.fromFallbackBooks
+                /* Affichage enrichi depuis OL/Wikidata : couverture + titre + année */
+                ? (series.books || []).map((book, index) => {
+                    const tomeNumber = book.volume_number || (index + 1);
+                    const isRead = readTomes.has(tomeNumber);
+                    return (
+                      <div
+                        key={tomeNumber}
+                        className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                          isRead
+                            ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
+                            : 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-750'
+                        }`}
+                        onClick={() => handleTomeReadToggle(tomeNumber)}
+                      >
+                        {book.cover_url ? (
+                          <img src={book.cover_url} alt={book.title} className="w-8 h-12 object-cover rounded flex-shrink-0" />
+                        ) : (
+                          <div className="w-8 h-12 bg-purple-100 dark:bg-purple-900/30 rounded flex items-center justify-center flex-shrink-0 text-xs text-purple-600 font-bold">
+                            {tomeNumber}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{book.title}</p>
+                          {book.first_publish_year && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{book.first_publish_year}</p>
+                          )}
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
+                          isRead
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                        }`}>
+                          {isRead ? '✓ Lu' : 'Non lu'}
+                        </span>
+                      </div>
+                    );
+                  })
+                /* Affichage standard via EXTENDED_SERIES_DATABASE */
+                : Array.from({ length: enrichedSeries.volumes }, (_, index) => {
+                    const tomeNumber = index + 1;
+                    const tomeTitle = enrichedSeries.volume_titles?.[tomeNumber] || `${enrichedSeries.name} - Tome ${tomeNumber}`;
+                    const isRead = readTomes.has(tomeNumber);
+                    return (
+                      <TomeDropdown
+                        key={tomeNumber}
+                        tomeNumber={tomeNumber}
+                        tomeTitle={tomeTitle}
+                        seriesData={enrichedSeries}
+                        isRead={isRead}
+                        onToggleRead={handleTomeReadToggle}
+                      />
+                    );
+                  })
+              }
             </div>
           ) : (
             <p className="text-sm text-gray-500 dark:text-gray-400 italic">
