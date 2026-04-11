@@ -20,24 +20,24 @@ const PerformanceWidget = ({ position = 'bottom-right', isVisible = true }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
 
-  // Démarrage automatique du monitoring
+  // Démarrage du monitoring uniquement si le widget est affiché (évite alertes mémoire fantômes)
   useEffect(() => {
+    if (!isVisible) return undefined;
     if (!isMonitoring) {
       startMonitoring();
     }
-
     return () => {
       if (isMonitoring) {
         stopMonitoring();
       }
     };
-  }, []);
+  }, [isVisible, isMonitoring, startMonitoring, stopMonitoring]);
 
-  // Surveillance des métriques critiques
   useEffect(() => {
+    if (!isVisible) return;
     const hasIssues = metrics.memoryUsage > 80 || metrics.responseTime > 3000 || metrics.errorCount > 0;
     setShowAlert(hasIssues);
-  }, [metrics.memoryUsage, metrics.responseTime, metrics.errorCount]);
+  }, [isVisible, metrics.memoryUsage, metrics.responseTime, metrics.errorCount]);
 
   if (!isVisible) return null;
 

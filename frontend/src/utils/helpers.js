@@ -310,3 +310,50 @@ export const isValidUrl = (url) => {
 export const classNames = (...classes) => {
   return classes.filter(Boolean).join(' ');
 };
+
+/**
+ * URL de couverture Open Library à partir d'un livre / document (ol_key, isbn, cover_i).
+ * @param {object} entity
+ * @returns {string|null}
+ */
+export const resolveOpenLibraryCoverUrl = (entity) => {
+  if (!entity || typeof entity !== 'object') return null;
+  const u = entity.cover_url;
+  if (u && String(u).trim() && !String(u).includes('undefined')) {
+    return String(u).trim();
+  }
+  if (entity.cover_i != null && Number.isFinite(Number(entity.cover_i))) {
+    return `https://covers.openlibrary.org/b/id/${Number(entity.cover_i)}-M.jpg`;
+  }
+  let raw = entity.ol_key || entity.open_library_key || entity.work_key || entity.openlibrary_key || '';
+  if (!raw && typeof entity.id === 'string' && entity.id.startsWith('ol_')) {
+    raw = entity.id.replace(/^ol_/, '/works/');
+  }
+  raw = String(raw);
+  const m = raw.match(/(OL\d+W)/i);
+  if (m) {
+    return `https://covers.openlibrary.org/b/olid/${m[1]}-M.jpg?default=false`;
+  }
+  let isbn = entity.isbn || entity.isbn13 || entity.isbn10;
+  if (Array.isArray(isbn)) isbn = isbn[0];
+  isbn = String(isbn || '').replace(/[^0-9X]/gi, '');
+  if (isbn.length >= 10) {
+    return `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`;
+  }
+  return null;
+};
+
+/** Couverture pour une carte grille (livre ou série avec books[]). */
+export const resolveCoverForGridItem = (item) => {
+  if (!item) return null;
+  if (item.isSeriesCard) {
+    const direct = resolveOpenLibraryCoverUrl({ ...item, cover_url: item.cover_url });
+    if (direct) return direct;
+    for (const b of item.books || []) {
+      const c = resolveOpenLibraryCoverUrl(b);
+      if (c) return c;
+    }
+    return null;
+  }
+  return resolveOpenLibraryCoverUrl(item);
+};

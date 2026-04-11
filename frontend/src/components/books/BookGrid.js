@@ -1,5 +1,6 @@
 import React from 'react';
 import BookActions from './BookActions';
+import { resolveCoverForGridItem } from '../../utils/helpers';
 
 const BookGrid = ({ 
   books, 
@@ -68,7 +69,9 @@ const BookGrid = ({
 
   return (
     <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 sm:gap-5 p-2 sm:p-6">
-      {displayedBooks.map((item, index) => (
+      {displayedBooks.map((item, index) => {
+        const coverSrc = resolveCoverForGridItem(item);
+        return (
         <div
           key={item.id}
           className={`
@@ -80,34 +83,35 @@ const BookGrid = ({
           onClick={() => onItemClick ? onItemClick(item) : onBookClick(item)}
         >
           {item.isSeriesCard ? (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
-              <div className="aspect-[3/2] sm:aspect-[2/1] bg-gray-100 dark:bg-gray-700 flex items-center justify-center relative overflow-hidden">
-                {item.cover_url ? (
+            <div className="bg-white dark:bg-gray-800 rounded-md sm:rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+              <div className="aspect-[5/2] sm:aspect-[2/1] max-h-[4.25rem] sm:max-h-none bg-gray-100 dark:bg-gray-700 flex items-center justify-center relative overflow-hidden">
+                {coverSrc ? (
                   <>
                     <img 
-                      src={item.cover_url} 
+                      src={coverSrc} 
                       alt={item.name}
-                      className="w-full h-full object-cover"
+                      className="h-full w-full object-cover"
                       onError={(e) => {
                         e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
+                        const fb = e.target.nextElementSibling;
+                        if (fb) fb.classList.remove('hidden');
                       }}
                     />
-                    <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600 items-center justify-center hidden">
-                      <div className="text-white text-center">
-                        <div className="text-4xl mb-2">📚</div>
-                        <div className="text-sm font-medium">Série</div>
+                    <div className="hidden h-full w-full items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600">
+                      <div className="text-center text-white">
+                        <div className="text-2xl sm:text-4xl">📚</div>
+                        <div className="text-[10px] font-medium sm:text-sm">Série</div>
                       </div>
                     </div>
-                    <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white text-xs font-medium px-2 py-1 rounded">
+                    <div className="absolute left-1 top-1 rounded bg-black/70 px-1 py-0.5 text-[9px] font-medium text-white sm:left-2 sm:top-2 sm:px-2 sm:py-1 sm:text-xs">
                       📚 Série
                     </div>
                   </>
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                    <div className="text-white text-center">
-                      <div className="text-4xl mb-2">📚</div>
-                      <div className="text-sm font-medium">Série</div>
+                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600">
+                    <div className="text-center text-white">
+                      <div className="text-2xl sm:text-4xl">📚</div>
+                      <div className="text-[10px] font-medium sm:text-sm">Série</div>
                     </div>
                   </div>
                 )}
@@ -122,8 +126,8 @@ const BookGrid = ({
                   </div>
                 )}
               </div>
-              <div className="p-1.5 sm:p-3">
-                <h3 className="font-semibold text-gray-900 dark:text-white text-[11px] sm:text-sm line-clamp-1 leading-tight mb-0.5">
+              <div className="p-1 sm:p-3">
+                <h3 className="font-semibold text-gray-900 dark:text-white text-[10px] sm:text-sm line-clamp-2 leading-tight mb-0.5 sm:line-clamp-1">
                   {item.name}
                 </h3>
                 <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-1 hidden sm:block line-clamp-1">
@@ -145,14 +149,22 @@ const BookGrid = ({
             </div>
           ) : (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 relative">
-              {/* Couverture */}
-              <div className="aspect-[3/4] bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                {item.cover_url ? (
-                  <img 
-                    src={item.cover_url} 
-                    alt={item.title}
-                    className="w-full h-full object-cover"
-                  />
+              {/* Couverture (Open Library en secours si pas d’URL) */}
+              <div className="aspect-[3/4] bg-gray-100 dark:bg-gray-700 flex items-center justify-center relative">
+                {coverSrc ? (
+                  <>
+                    <img 
+                      src={coverSrc} 
+                      alt={item.title}
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        const fb = e.target.nextElementSibling;
+                        if (fb) fb.classList.remove('hidden');
+                      }}
+                    />
+                    <div className="hidden absolute inset-0 flex items-center justify-center text-2xl text-gray-400 sm:text-4xl">📖</div>
+                  </>
                 ) : (
                   <div className="text-gray-400 text-2xl sm:text-4xl">📖</div>
                 )}
@@ -208,7 +220,8 @@ const BookGrid = ({
             </div>
           )}
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

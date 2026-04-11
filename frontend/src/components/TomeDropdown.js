@@ -61,29 +61,28 @@ const TomeDropdown = ({ tomeNumber, tomeTitle, seriesData, tomeStatus = 'non_lu'
 
   return (
     <div className="border-l-2 border-gray-200 dark:border-gray-600 ml-1 sm:ml-4">
-      {/* Mobile : pile verticale · Desktop : une ligne */}
-      <div className="flex flex-col gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
-          <span className="text-xs font-semibold text-purple-600 dark:text-purple-400 sm:w-[4.5rem] sm:flex-shrink-0">
+      {/* Mobile : titre complet puis toggle en dessous · Desktop : une ligne */}
+      <div className="flex flex-col gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+          <span className="shrink-0 text-xs font-semibold text-purple-600 dark:text-purple-400 sm:w-[4.5rem]">
             Tome {tomeNumber}
           </span>
-          <span className={`text-sm leading-snug break-words sm:line-clamp-2 sm:min-w-0 ${isRead ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>
+          <span className={`min-w-0 text-sm leading-snug break-words sm:line-clamp-2 ${isRead ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>
             {tomeTitle}
           </span>
           {isInProgress && currentPage && (
-            <span className="text-xs text-blue-500 dark:text-blue-400 sm:ml-auto sm:flex-shrink-0">p.{currentPage}</span>
+            <span className="shrink-0 text-xs text-blue-500 dark:text-blue-400 sm:ml-auto">p.{currentPage}</span>
           )}
         </div>
 
-        <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:flex-shrink-0 sm:justify-end">
-          {/* Sélecteur 3 états — grille 3 colonnes sur mobile */}
-          <div className="grid flex-1 grid-cols-3 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600 text-[10px] font-medium leading-tight sm:flex sm:flex-none sm:text-xs sm:leading-normal sm:rounded-lg">
+        <div className="flex w-full shrink-0 items-stretch gap-2 sm:w-auto sm:items-center sm:justify-end">
+          <div className="grid min-h-[2.5rem] flex-1 grid-cols-3 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600 text-[10px] font-medium leading-tight sm:flex sm:h-auto sm:min-h-0 sm:flex-none sm:text-xs sm:leading-normal">
             {(['non_lu', 'en_cours', 'lu']).map((s) => (
               <button
                 key={s}
                 type="button"
                 onClick={() => handleStatusChange(s)}
-                className={`px-0.5 py-2.5 sm:px-2 sm:py-1 transition-colors ${
+                className={`flex items-center justify-center px-0.5 py-2 sm:px-2 sm:py-1 transition-colors ${
                   tomeStatus === s
                     ? s === 'lu' ? 'bg-green-600 text-white'
                       : s === 'en_cours' ? 'bg-blue-600 text-white'
@@ -96,7 +95,7 @@ const TomeDropdown = ({ tomeNumber, tomeTitle, seriesData, tomeStatus = 'non_lu'
             ))}
           </div>
 
-          <button type="button" onClick={() => setIsOpen(!isOpen)} className="shrink-0 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+          <button type="button" onClick={() => setIsOpen(!isOpen)} className="flex w-10 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 sm:w-auto sm:border-0 sm:bg-transparent">
             {isOpen ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
           </button>
         </div>

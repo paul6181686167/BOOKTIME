@@ -1,14 +1,12 @@
 import React from 'react';
 import {
   HomeIcon,
-  MagnifyingGlassIcon,
   BookOpenIcon,
   UserCircleIcon,
   CalendarDaysIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
-  MagnifyingGlassIcon as SearchIconSolid,
   BookOpenIcon as BookIconSolid,
   UserCircleIcon as UserIconSolid,
   CalendarDaysIcon as CalendarIconSolid,
@@ -16,7 +14,6 @@ import {
 
 const NAV_ITEMS = [
   { id: 'home',            label: 'Biblio',      Icon: HomeIcon,          IconActive: HomeIconSolid },
-  { id: 'search',          label: 'Recherche',   Icon: MagnifyingGlassIcon, IconActive: SearchIconSolid },
   { id: 'upcoming',        label: 'À venir',     Icon: CalendarDaysIcon,  IconActive: CalendarIconSolid },
   { id: 'recommendations', label: 'Pour toi',    Icon: BookOpenIcon,      IconActive: BookIconSolid },
   { id: 'profile',         label: 'Profil',      Icon: UserCircleIcon,    IconActive: UserIconSolid },
@@ -32,6 +29,7 @@ const MobileBottomNav = ({ activeTab, onTabChange }) => {
           return (
             <button
               key={id}
+              type="button"
               onClick={() => onTabChange(id)}
               className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 ${
                 isActive

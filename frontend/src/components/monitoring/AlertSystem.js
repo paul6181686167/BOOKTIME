@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { toast } from 'react-hot-toast';
 
 /**
  * PHASE 2.4 - MONITORING ET ANALYTICS
@@ -52,32 +51,11 @@ const AlertSystem = ({
     setAlerts(prev => [...prev, alert]);
     setAlertHistory(prev => [...prev, alert]);
 
-    // Notification toast selon la sévérité
-    const toastConfig = {
-      duration: severity === SEVERITY_LEVELS.CRITICAL ? 10000 : 5000,
-      style: {
-        background: getSeverityColor(severity),
-        color: 'white',
-      },
-    };
-
-    toast(`⚠️ ${message}`, toastConfig);
-
+    // Pas de toast utilisateur (trop intrusif sur mobile / prod) — log dev uniquement
     console.warn(`🚨 ALERT [${severity.toUpperCase()}] ${type}: ${message}`, details);
 
     return alert;
   }, []);
-
-  // Couleur selon la sévérité
-  const getSeverityColor = (severity) => {
-    switch (severity) {
-      case SEVERITY_LEVELS.LOW: return '#3b82f6';      // Bleu
-      case SEVERITY_LEVELS.MEDIUM: return '#f59e0b';   // Orange
-      case SEVERITY_LEVELS.HIGH: return '#ef4444';     // Rouge
-      case SEVERITY_LEVELS.CRITICAL: return '#7c2d12'; // Rouge foncé
-      default: return '#6b7280';                       // Gris
-    }
-  };
 
   // Surveillance de l'utilisation mémoire
   const checkMemoryUsage = useCallback(() => {

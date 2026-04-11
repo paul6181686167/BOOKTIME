@@ -188,7 +188,7 @@ function MainApp() {
   // PHASE 2.4 - Monitoring et Analytics
   const performanceMonitoring = usePerformanceMonitoring();
   const userAnalytics = useUserAnalytics();
-  const alertSystem = AlertSystem({ isActive: true });
+  const alertSystem = AlertSystem({ isActive: false });
 
   // Gestionnaire d'événements pour l'export/import
   useEffect(() => {
@@ -536,9 +536,7 @@ function MainApp() {
 
   const handleMobileTabChange = (tab) => {
     setMobileTab(tab);
-    if (tab === 'search') {
-      setShowMobileSearch(true);
-    } else if (tab === 'recommendations') {
+    if (tab === 'recommendations') {
       window.location.href = '/recommendations';
     } else if (tab === 'upcoming') {
       setShowUpcomingPanel(true);
@@ -839,7 +837,7 @@ function MainApp() {
               <h1 className="text-base font-bold text-gray-900 dark:text-white">BOOKTIME</h1>
             </div>
             <button
-              onClick={() => { setShowMobileSearch(true); setMobileTab('search'); }}
+              onClick={() => setShowMobileSearch(true)}
               className="p-2 text-gray-500 dark:text-gray-400"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1167,10 +1165,7 @@ function MainApp() {
       />
       
       {/* PHASE 2.4 - Performance Widget */}
-      <PerformanceWidget 
-        position="bottom-right" 
-        isVisible={process.env.NODE_ENV === 'development'} 
-      />
+      <PerformanceWidget position="bottom-right" isVisible={false} />
 
       {/* Navigation mobile bas d'écran */}
       <MobileBottomNav
