@@ -76,38 +76,64 @@ export const searchOpenLibrary = async (query, {
       });
 
       // ── 3. Détection de séries depuis les résultats OL ───────────────────
-      // Stratégie : plusieurs livres du même auteur = série probable
-      const authorGroups = {};
+      // Stratégie 1 (priorité) : champ `saga` renvoyé par Open Library
+      // Stratégie 2 (fallback) : plusieurs livres du même auteur avec mots du query
+
+      const olSeriesCards = [];
+      const olSeriesBookIds = new Set();
+
+      // -- Stratégie 1 : grouper par champ saga (source OL fiable) --
+      const sagaGroups = {};
       enriched.forEach(book => {
+        if (!book.saga) return;
+        // Normaliser le nom de saga pour regrouper "Red Rising #1" et "Red Rising #2"
+        const key = book.saga.toLowerCase().trim();
+        if (!sagaGroups[key]) sagaGroups[key] = { name: book.saga, author: book.author, books: [], category: book.category };
+        sagaGroups[key].books.push(book);
+      });
+
+      Object.values(sagaGroups).forEach(group => {
+        if (group.books.length < 1) return; // même 1 livre suffit si OL le dit dans une série
+        group.books.forEach(b => olSeriesBookIds.add(b.ol_key));
+        olSeriesCards.push({
+          isSeriesCard: true,
+          id: `series_ol_${group.name.toLowerCase().replace(/\s+/g, '_')}`,
+          name: group.name,
+          author: group.author,
+          category: group.category,
+          cover_url: group.books.find(b => b.cover_url)?.cover_url || null,
+          totalBooks: group.books.length,
+          books: group.books,
+          description: `Série de ${group.books.length} livre(s) de ${group.author}`,
+          relevanceScore: 100000,
+          fromOpenLibrary: true,
+        });
+      });
+
+      // -- Stratégie 2 (fallback) : auteur + mots du query pour les livres sans saga --
+      const noSagaBooks = enriched.filter(b => !olSeriesBookIds.has(b.ol_key));
+      const authorGroups = {};
+      noSagaBooks.forEach(book => {
         if (!book.author) return;
         const key = book.author.toLowerCase().trim();
         if (!authorGroups[key]) authorGroups[key] = { author: book.author, books: [], category: book.category };
         authorGroups[key].books.push(book);
       });
 
-      const olSeriesCards = [];
-      const olSeriesBookIds = new Set(); // livres déjà dans une carte série
-
+      const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length >= 3);
       Object.values(authorGroups).forEach(group => {
-        if (group.books.length < 2) return; // besoin d'au moins 2 livres
-
-        // Trouver le nom de la série : mots du query présents dans les titres
-        const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length >= 3);
-        const seriesName = queryWords.length > 0
-          ? query.trim()   // utilise le terme de recherche tel quel
-          : group.author;
-
-        // Vérifier qu'au moins 2 livres correspondent au query
-        const matchingBooks = group.books.filter(b =>
-          queryWords.some(w => b.title.toLowerCase().includes(w))
-        );
+        if (group.books.length < 2) return;
+        const matchingBooks = queryWords.length > 0
+          ? group.books.filter(b => queryWords.some(w => b.title.toLowerCase().includes(w)))
+          : group.books;
         if (matchingBooks.length < 2) return;
 
+        const seriesName = queryWords.length > 0 ? query.trim() : group.author;
         matchingBooks.forEach(b => olSeriesBookIds.add(b.ol_key));
 
         olSeriesCards.push({
           isSeriesCard: true,
-          id: `series_ol_${seriesName.toLowerCase().replace(/\s+/g, '_')}`,
+          id: `series_author_${seriesName.toLowerCase().replace(/\s+/g, '_')}`,
           name: seriesName,
           author: group.author,
           category: group.category,
@@ -115,7 +141,7 @@ export const searchOpenLibrary = async (query, {
           totalBooks: matchingBooks.length,
           books: matchingBooks,
           description: `Série de ${matchingBooks.length} livres de ${group.author}`,
-          relevanceScore: 100000,
+          relevanceScore: 90000,
           fromOpenLibrary: true,
         });
       });

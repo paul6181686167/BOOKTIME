@@ -3,7 +3,7 @@ import { XMarkIcon, UserIcon, BookOpenIcon, CalendarIcon, QueueListIcon, Chevron
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { API_BASE_URL } from '../config/environment';
 
-const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook }) => {
+const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpenSeries, onAddSeries }) => {
   const [authorInfo, setAuthorInfo] = useState(null);
   const [authorBooks, setAuthorBooks] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -531,29 +531,54 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook }) => 
                 </h3>
 
                 <div className="space-y-4">
-                  {/* Séries */}
-                  {authorBooks.series.map((series, index) => (
+                  {/* Séries — dédupliquées par nom normalisé */}
+                  {(() => {
+                    const normalize = (name) =>
+                      (name || '').toLowerCase()
+                        .replace(/\b(trilogy|tetralogy|series|saga|cycle|duology|quartet)\b/g, '')
+                        .replace(/\s+/g, ' ').trim();
+                    const seen = new Map();
+                    authorBooks.series.forEach((s) => {
+                      const key = normalize(s.name);
+                      const existing = seen.get(key);
+                      if (!existing || (s.books?.length || 0) > (existing.books?.length || 0)) {
+                        seen.set(key, s);
+                      }
+                    });
+                    return Array.from(seen.values());
+                  })().map((series, index) => (
                     <div key={index} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                      <div 
-                        className="flex items-center justify-between cursor-pointer"
-                        onClick={() => toggleSeriesExpansion(series.name)}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="flex-shrink-0">
-                            <QueueListIcon className="h-5 w-5 text-purple-600" />
-                          </div>
-                          <div>
-                            <h4 className="font-medium text-gray-900 dark:text-white">
-                              {series.name}
-                            </h4>
-                          </div>
+                      <div className="flex items-center justify-between">
+                        <div
+                          className="flex items-center space-x-3 flex-1 cursor-pointer"
+                          onClick={() => toggleSeriesExpansion(series.name)}
+                        >
+                          <QueueListIcon className="h-5 w-5 text-purple-600 flex-shrink-0" />
+                          <h4 className="font-medium text-gray-900 dark:text-white">
+                            {series.name}
+                          </h4>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          {expandedSeries[series.name] ? (
-                            <ChevronUpIcon className="h-4 w-4 text-gray-400" />
-                          ) : (
-                            <ChevronDownIcon className="h-4 w-4 text-gray-400" />
+                        <div className="flex items-center gap-2 ml-2">
+                          {onOpenSeries && (
+                            <button
+                              onClick={() => onOpenSeries({ name: series.name, author, books: series.books || [] })}
+                              className="text-xs px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
+                            >
+                              Voir →
+                            </button>
                           )}
+                          {onAddSeries && (
+                            <button
+                              onClick={() => onAddSeries({ name: series.name, author, books: series.books || [] })}
+                              className="text-xs px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
+                            >
+                              + Ajouter
+                            </button>
+                          )}
+                          {expandedSeries[series.name]
+                            ? <ChevronUpIcon className="h-4 w-4 text-gray-400 cursor-pointer" onClick={() => toggleSeriesExpansion(series.name)} />
+                            : <ChevronDownIcon className="h-4 w-4 text-gray-400 cursor-pointer" onClick={() => toggleSeriesExpansion(series.name)} />
+                          }
                         </div>
                       </div>
 
@@ -567,13 +592,9 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook }) => 
                                     {book.volume_number || bookIndex + 1}
                                   </span>
                                   <div>
-                                    <p className="font-medium text-gray-900 dark:text-white text-sm">
-                                      {book.title}
-                                    </p>
+                                    <p className="font-medium text-gray-900 dark:text-white text-sm">{book.title}</p>
                                     {book.publication_year && (
-                                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        {book.publication_year}
-                                      </p>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">{book.publication_year}</p>
                                     )}
                                   </div>
                                 </div>
@@ -587,7 +608,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook }) => 
                           ) : (
                             <div className="py-2 px-3 bg-white dark:bg-gray-700 rounded">
                               <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-                                Série identifiée - livres détaillés disponibles sur {series.source === 'wikipedia' ? 'Wikipedia' : 'OpenLibrary'}
+                                Série identifiée — livres disponibles sur {series.source === 'wikipedia' ? 'Wikipedia' : 'OpenLibrary'}
                               </p>
                             </div>
                           )}

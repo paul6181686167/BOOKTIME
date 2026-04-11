@@ -58,7 +58,7 @@ async def search_open_library(
         params = {
             "q": q,
             "limit": limit,
-            "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,number_of_pages_median,publisher,language"
+            "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,number_of_pages_median,publisher,language,series"
         }
         
         # Construire la requête avec filtres
@@ -91,6 +91,15 @@ async def search_open_library(
             if max_pages and doc.get("number_of_pages_median", float('inf')) > max_pages:
                 continue
             
+            raw_series = doc.get("series", [])
+            series_name = ""
+            if raw_series:
+                s = raw_series[0] if isinstance(raw_series, list) else raw_series
+                # Nettoyer le numéro de tome éventuel ("Red Rising #1" → "Red Rising")
+                import re as _re
+                vol_match = _re.search(r'\s*[#,]\s*\d+', s)
+                series_name = s[:vol_match.start()].strip() if vol_match else s.strip()
+
             book = {
                 "ol_key": doc.get("key", ""),
                 "title": doc.get("title", ""),
@@ -99,9 +108,10 @@ async def search_open_library(
                 "cover_url": extract_cover_url(doc.get("cover_i")),
                 "first_publish_year": doc.get("first_publish_year"),
                 "isbn": doc.get("isbn", [""])[0] if doc.get("isbn") else "",
-                "subjects": doc.get("subject", [])[:5],  # Premiers 5 sujets
+                "subjects": doc.get("subject", [])[:5],
                 "number_of_pages": doc.get("number_of_pages_median"),
-                "publisher": ", ".join(doc.get("publisher", [])) if doc.get("publisher") else ""
+                "publisher": ", ".join(doc.get("publisher", [])) if doc.get("publisher") else "",
+                "saga": series_name,
             }
             books.append(book)
         

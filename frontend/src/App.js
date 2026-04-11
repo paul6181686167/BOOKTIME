@@ -1024,6 +1024,14 @@ function MainApp() {
           onClose={handleCloseAuthorModal}
           userBooks={unifiedContent.books || []}
           onAddBook={async (bookData) => { await BookActions.addBook(bookData); await unifiedContent.refreshAfterAdd('books'); }}
+          onOpenSeries={(series) => {
+            seriesHook.setSelectedSeries(series);
+            seriesHook.setShowSeriesModal(true);
+          }}
+          onAddSeries={async (series) => {
+            await seriesHook.handleAddSeriesToLibrary(series);
+            await unifiedContent.refreshAfterAdd('series');
+          }}
         />
       )}
       
