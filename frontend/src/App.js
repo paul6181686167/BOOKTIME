@@ -37,8 +37,6 @@ import IntegrationsModal from './components/integrations/IntegrationsModal';
 // PHASE 2.4 - Monitoring et Analytics
 import ErrorBoundary from './components/monitoring/ErrorBoundary';
 import PerformanceWidget from './components/monitoring/PerformanceWidget';
-import AlertSystem from './components/monitoring/AlertSystem';
-
 // Service imports
 import { bookService } from './services/bookService';
 import * as seriesLibraryService from './services/seriesLibraryService';
@@ -188,7 +186,6 @@ function MainApp() {
   // PHASE 2.4 - Monitoring et Analytics
   const performanceMonitoring = usePerformanceMonitoring();
   const userAnalytics = useUserAnalytics();
-  const alertSystem = AlertSystem({ isActive: false });
 
   // Gestionnaire d'événements pour l'export/import
   useEffect(() => {
@@ -238,13 +235,17 @@ function MainApp() {
     };
   }, []);
 
-  // Démarrage automatique du monitoring
+  // Monitoring perf : dev uniquement (évite alertes / charge inutiles en prod)
   useEffect(() => {
-    performanceMonitoring.startMonitoring();
+    if (process.env.NODE_ENV === 'development') {
+      performanceMonitoring.startMonitoring();
+    }
     userAnalytics.startTracking();
-    
+
     return () => {
-      performanceMonitoring.stopMonitoring();
+      if (process.env.NODE_ENV === 'development') {
+        performanceMonitoring.stopMonitoring();
+      }
       userAnalytics.stopTracking();
     };
   }, []);
@@ -356,8 +357,7 @@ function MainApp() {
     const searchTime = Date.now() - searchStartTime;
     const resultCount = searchHook.openLibraryResults?.length || 0;
     performanceMonitoring.measureSearchPerformance(query, resultCount, searchTime);
-    alertSystem.checkSearchPerformance(searchTime, resultCount);
-    
+
     // Mise à jour analytics
     userAnalytics.trackSearch(query, resultCount, activeTab, 'openlibrary');
   };
@@ -414,8 +414,7 @@ function MainApp() {
       // Mesure performance API
       const apiTime = Date.now() - apiStartTime;
       performanceMonitoring.measureApiResponse('add_from_openlibrary', apiStartTime, true);
-      alertSystem.checkResponseTime('add_from_openlibrary', apiTime);
-      
+
       // Analytics
       userAnalytics.trackBookInteraction('add_from_openlibrary', {
         title: openLibraryBook.title,
@@ -458,8 +457,7 @@ function MainApp() {
       // Mesure performance API
       const apiTime = Date.now() - apiStartTime;
       performanceMonitoring.measureApiResponse('add_series_seriesactions', apiStartTime, true);
-      alertSystem.checkResponseTime('add_series_seriesactions', apiTime);
-      
+
       // Analytics
       userAnalytics.trackSeriesInteraction('add_to_library_seriesactions', {
         name: series.name,

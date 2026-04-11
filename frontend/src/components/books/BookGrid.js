@@ -75,7 +75,7 @@ const BookGrid = ({
         <div
           key={item.id}
           className={`
-            ${item.isSeriesCard ? 'col-span-3 sm:col-span-2' : 'col-span-1'} 
+            col-span-1
             group cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-lg
             book-card-stagger
           `}
@@ -83,8 +83,8 @@ const BookGrid = ({
           onClick={() => onItemClick ? onItemClick(item) : onBookClick(item)}
         >
           {item.isSeriesCard ? (
-            <div className="bg-white dark:bg-gray-800 rounded-md sm:rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
-              <div className="aspect-[5/2] sm:aspect-[2/1] max-h-[4.25rem] sm:max-h-none bg-gray-100 dark:bg-gray-700 flex items-center justify-center relative overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 relative">
+              <div className="aspect-[3/4] bg-gray-100 dark:bg-gray-700 flex items-center justify-center relative overflow-hidden">
                 {coverSrc ? (
                   <>
                     <img 
@@ -126,14 +126,14 @@ const BookGrid = ({
                   </div>
                 )}
               </div>
-              <div className="p-1 sm:p-3">
-                <h3 className="font-semibold text-gray-900 dark:text-white text-[10px] sm:text-sm line-clamp-2 leading-tight mb-0.5 sm:line-clamp-1">
+              <div className="p-1.5 sm:p-3">
+                <h3 className="font-medium text-gray-900 dark:text-white text-[11px] sm:text-sm line-clamp-2 leading-tight">
                   {item.name}
                 </h3>
-                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-1 hidden sm:block line-clamp-1">
+                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1 hidden sm:block">
                   {item.author}
                 </p>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mt-1">
                   <span className="text-[10px] sm:text-xs font-medium text-gray-600 dark:text-gray-400">
                     {item.completedBooks}/{item.totalBooks} <span className="hidden sm:inline">tomes</span>
                   </span>
