@@ -279,9 +279,10 @@ export const useUnifiedContent = () => {
     const { 
       forceRefresh = false, 
       maxRetries = 3, 
-      retryDelay = 1000,
+      retryDelay: initialRetryDelay = 1000,
       expectNewItem = true 
     } = options;
+    let retryDelay = initialRetryDelay;
     
     console.log(`🔄 [PHASE C.2] Rafraîchissement optimisé type: ${type}, forceRefresh: ${forceRefresh}`);
     

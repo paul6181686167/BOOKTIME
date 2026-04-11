@@ -106,7 +106,7 @@ async def get_all_books(
     status: Optional[str] = None,
     author: Optional[str] = None,
     saga: Optional[str] = None,
-    limit: int = Query(20, ge=1, le=100, description="Nombre d'éléments par page"),
+    limit: int = Query(20, ge=1, le=1000, description="Nombre d'éléments par page"),
     offset: int = Query(0, ge=0, description="Décalage pour la pagination"),
     sort_by: str = Query("date_added", description="Champ de tri"),
     sort_order: str = Query("desc", pattern="^(asc|desc)$", description="Ordre de tri"),
