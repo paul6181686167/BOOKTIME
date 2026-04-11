@@ -126,10 +126,20 @@ async def global_exception_handler(request: Request, exc: Exception):
 async def read_root():
     return {"message": "BookTime API - Version modulaire avec authentification"}
 
+@app.get("/ping")
+@app.get("/api/ping")
+async def ping():
+    """
+    Réveil Render / monitoring HTTP sans toucher la base.
+    Utiliser cette URL dans UptimeRobot (pas /health) : réponse 200 immédiate même au cold start.
+    """
+    return {"ok": True, "ts": datetime.utcnow().isoformat()}
+
+
 @app.get("/health")
 @app.get("/api/health")
 async def health():
-    """Health check endpoint pour monitoring Railway/Cloud - Support Mock Mode"""
+    """Health check complet (MongoDB) — pour diagnostics, pas pour ping fréquent."""
     import os
     
     # Vérifier mode mock Railway
