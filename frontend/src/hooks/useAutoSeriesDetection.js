@@ -5,7 +5,7 @@ export class AutoSeriesDetector {
   constructor() {
     this.apiBase = process.env.REACT_APP_BACKEND_URL || '';
     this.enabled = true;
-    this.minConfidence = 120;
+    this.minConfidence = 70;
   }
 
   // 🎯 Détection automatique lors de l'ajout d'un livre
@@ -57,9 +57,10 @@ export class AutoSeriesDetector {
   // 🔍 Détection de série
   async detectSeries(bookData) {
     const token = localStorage.getItem('token');
-    const query = encodeURIComponent(`${bookData.title} ${bookData.author}`);
-    
-    const response = await fetch(`${this.apiBase}/api/series/detect?q=${query}`, {
+    const params = new URLSearchParams({ title: bookData.title || '' });
+    if (bookData.author) params.append('author', bookData.author);
+
+    const response = await fetch(`${this.apiBase}/api/series/detect?${params}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -69,8 +70,20 @@ export class AutoSeriesDetector {
     if (!response.ok) {
       throw new Error(`Erreur API détection: ${response.status}`);
     }
-    
-    return await response.json();
+
+    const data = await response.json();
+    // Normaliser la réponse backend → format attendu par detectAndEnhanceBook
+    const best = data.detected_series?.[0];
+    if (best) {
+      return {
+        found: true,
+        series_name: best.series_name,
+        confidence: best.confidence,
+        series_info: { volume_number: best.volume_number || null },
+        match_reasons: [`confiance: ${best.confidence}`]
+      };
+    }
+    return { found: false, confidence: 0, series_name: null, match_reasons: [] };
   }
 
   // 📢 Notification utilisateur
