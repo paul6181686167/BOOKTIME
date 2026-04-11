@@ -505,7 +505,6 @@ const SeriesDetailModal = ({
       if (series.isOwnedSeries || series.isLibrarySeries) {
         setIsSeriesOwned(true);
       } else {
-        // Série issue de la recherche : vérifier d'abord dans la bibliothèque séries
         const inLibrary = (userSeriesLibrary || []).some(
           s => (s.series_name || s.name || '').toLowerCase().trim() === (series.name || '').toLowerCase().trim()
         );
@@ -516,9 +515,13 @@ const SeriesDetailModal = ({
         }
       }
       loadSeriesBooks();
-      // ✅ PERSISTANCE : Charger les préférences depuis la base de données au lieu de réinitialiser
       loadReadingPreferencesForSeries();
-      setMissingPreviousWarning(null); // ← AJOUT: Réinitialiser l'avertissement à chaque ouverture
+      setMissingPreviousWarning(null);
+      setOlBooks([]);
+      // Charger les tomes OL pour les séries hors base statique
+      if (!enrichedSeries?.referenceFound) {
+        loadOLSeriesBooks();
+      }
     }
   }, [isOpen, series, userSeriesLibrary]);
 
@@ -527,13 +530,33 @@ const SeriesDetailModal = ({
     
     try {
       setLoading(true);
+      // Charger les livres depuis la bibliothèque perso
       const booksData = await bookService.getBooksBySaga(series.name);
       setBooks(booksData.sort((a, b) => (a.volume_number || 0) - (b.volume_number || 0)));
     } catch (error) {
       console.error('Erreur lors du chargement des livres de la série:', error);
-      toast.error('Erreur lors du chargement des livres');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Charger les tomes complets depuis OL quand la série vient du fallback (pas dans la base statique)
+  const [olBooks, setOlBooks] = useState([]);
+  const loadOLSeriesBooks = async () => {
+    if (!series?.name) return;
+    try {
+      const token = localStorage.getItem('token');
+      const params = new URLSearchParams({ name: series.name, limit: '20' });
+      if (series.author) params.append('author', series.author);
+      const res = await fetch(`${API_BASE_URL}/api/openlibrary/series-books?${params}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setOlBooks(data.books || []);
+      }
+    } catch (e) {
+      console.warn('OL series-books fetch failed:', e);
     }
   };
 
@@ -666,7 +689,7 @@ const SeriesDetailModal = ({
                     {getStatusLabel(series?.status)}
                   </span>
                   <span className="text-gray-500 dark:text-gray-400">
-                    📚 {enrichedSeries?.volumes || books.length || (series?.books?.length) || 0} tome(s)
+                    📚 {enrichedSeries?.volumes || olBooks.length || books.length || (series?.books?.length) || 0} tome(s)
                   </span>
                   <span className="text-gray-500 dark:text-gray-400">
                     🏆 {series?.completion_percentage || 0}% complété
@@ -833,11 +856,11 @@ const SeriesDetailModal = ({
         <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Liste des tomes</h3>
           
-          {enrichedSeries?.volumes && enrichedSeries.volumes > 0 ? (
+          {(enrichedSeries?.volumes && enrichedSeries.volumes > 0) || olBooks.length > 0 ? (
             <div className="space-y-1">
-              {enrichedSeries.fromFallbackBooks
-                /* Affichage enrichi depuis OL/Wikidata : couverture + titre + année */
-                ? (series.books || []).map((book, index) => {
+              {(enrichedSeries.fromFallbackBooks || olBooks.length > 0)
+                /* Affichage enrichi depuis OL : couverture + titre + année */
+                ? (olBooks.length > 0 ? olBooks : series.books || []).map((book, index) => {
                     const tomeNumber = book.volume_number || (index + 1);
                     const isRead = readTomes.has(tomeNumber);
                     return (

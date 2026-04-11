@@ -129,6 +129,103 @@ async def search_open_library(
     except requests.RequestException as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la recherche: {str(e)}")
 
+
+@router.get("/series-books")
+async def get_series_books(
+    name: str,
+    author: Optional[str] = None,
+    limit: int = 20,
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupère tous les volumes d'une série depuis Open Library."""
+    import re as _re
+
+    def normalize(s):
+        return _re.sub(r'\s+', ' ', (s or '').lower().strip())
+
+    name_norm = normalize(name)
+    # Mots significatifs du nom de série (longueur ≥ 3)
+    name_words = [w for w in name_norm.split() if len(w) >= 3]
+
+    try:
+        # Requête 1 : chercher le nom exact de la série
+        query = f'"{name}"'
+        if author:
+            query += f' author:"{author}"'
+
+        params = {
+            "q": query,
+            "limit": limit,
+            "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,number_of_pages_median,series"
+        }
+        resp = requests.get("https://openlibrary.org/search.json", params=params, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        docs = data.get("docs", [])
+
+        # Requête 2 (fallback) : si peu de résultats, chercher sans guillemets
+        if len(docs) < 3:
+            params2 = dict(params)
+            params2["q"] = f"{name}" + (f' author:"{author}"' if author else "")
+            resp2 = requests.get("https://openlibrary.org/search.json", params=params2, timeout=10)
+            if resp2.ok:
+                docs2 = resp2.json().get("docs", [])
+                seen_keys = {d.get("key") for d in docs}
+                for d in docs2:
+                    if d.get("key") not in seen_keys:
+                        docs.append(d)
+                        seen_keys.add(d.get("key"))
+
+        # Filtrer : garder les livres dont le titre contient des mots-clés de la série
+        def is_relevant(doc):
+            title_norm = normalize(doc.get("title", ""))
+            series_field = doc.get("series", [])
+            series_str = normalize(series_field[0] if series_field else "")
+            # Appartient à la série si : series field match OU titre contient les mots clés
+            if series_str and any(w in series_str for w in name_words):
+                return True
+            if name_words and all(w in title_norm for w in name_words[:2]):
+                return True
+            return False
+
+        relevant = [d for d in docs if is_relevant(d)]
+        if not relevant:
+            relevant = docs  # garder tout si rien ne passe le filtre
+
+        books = []
+        seen = set()
+        for doc in relevant:
+            key = doc.get("key", "")
+            if key in seen:
+                continue
+            seen.add(key)
+
+            raw_series = doc.get("series", [])
+            series_name = ""
+            if raw_series:
+                s = raw_series[0] if isinstance(raw_series, list) else raw_series
+                vol_match = _re.search(r'\s*[#,]\s*\d+', s)
+                series_name = s[:vol_match.start()].strip() if vol_match else s.strip()
+
+            books.append({
+                "ol_key": key,
+                "title": doc.get("title", ""),
+                "author": ", ".join(doc.get("author_name", [])) if doc.get("author_name") else (author or ""),
+                "cover_url": extract_cover_url(doc.get("cover_i")),
+                "first_publish_year": doc.get("first_publish_year"),
+                "saga": series_name or name,
+                "category": detect_category_from_subjects(doc.get("subject", [])),
+            })
+
+        # Trier par année de publication
+        books.sort(key=lambda b: b.get("first_publish_year") or 9999)
+
+        return {"books": books, "series_name": name, "total": len(books)}
+
+    except requests.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Erreur OL: {str(e)}")
+
+
 @router.post("/import")
 async def import_from_open_library(
     import_data: dict,
