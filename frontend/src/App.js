@@ -17,6 +17,7 @@ import SeriesDetailModal from './components/SeriesDetailModal';
 import SeriesDetailPage from './pages/SeriesDetailPage';
 import RecommendationPage from './components/recommendations/RecommendationPage';
 import OpenLibraryBookPage from './pages/OpenLibraryBookPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import ExportImportPage from './components/exportimport/ExportImportPage';
 import ProfileModal from './components/common/ProfileModal';
 import ExportImportModal from './components/export-import/ExportImportModal';
@@ -156,6 +157,7 @@ function AppContent() {
   return (
     <Routes>
       <Route path="/" element={<MainApp />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/series/:seriesName" element={<SeriesDetailPage />} />
       <Route path="/recommendations" element={<RecommendationPage />} />
       <Route path="/export-import" element={<ExportImportPage />} />
@@ -1125,6 +1127,7 @@ function App() {
           <ErrorBoundary>
             <Routes>
               <Route path="/" element={<AppWithAuth />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/recommendations" element={<RecommendationPage />} />
               <Route path="/series/:seriesId" element={<SeriesDetailPage />} />
               <Route path="/catalogue/*" element={<OpenLibraryBookPage />} />

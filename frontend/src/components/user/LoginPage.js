@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
+import { API_BASE_URL } from '../../config/environment';
 
 // Login Page Component
 function LoginPage() {
   const { login, register } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
   const loadingStartRef = useRef(null);
 
   // Réveil automatique du backend Render (free tier s'endort après 15 min)
@@ -79,10 +81,30 @@ function LoginPage() {
   };
 
   const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!forgotEmail) return;
+    setForgotLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      if (res.ok) {
+        setForgotSent(true);
+      } else {
+        const d = await res.json();
+        toast.error(d.detail || 'Erreur lors de l\'envoi');
+      }
+    } catch {
+      toast.error('Erreur réseau. Réessaie dans un instant.');
+    } finally {
+      setForgotLoading(false);
+    }
   };
 
   return (
@@ -168,9 +190,74 @@ function LoginPage() {
             >
               {loading ? 'Chargement...' : (isLogin ? 'Se connecter' : 'Créer un compte')}
             </button>
+
+            {isLogin && (
+              <button
+                type="button"
+                onClick={() => { setShowForgot(true); setForgotSent(false); setForgotEmail(''); }}
+                className="w-full text-sm text-green-600 dark:text-green-400 hover:underline text-center mt-1"
+              >
+                Mot de passe oublié ?
+              </button>
+            )}
           </form>
         </div>
       </div>
+
+      {/* Modal mot de passe oublié */}
+      {showForgot && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-md">
+            {forgotSent ? (
+              <div className="text-center">
+                <div className="text-4xl mb-4">📧</div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Email envoyé !</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Si <strong>{forgotEmail}</strong> est associé à un compte, tu recevras un lien de réinitialisation dans quelques minutes.
+                </p>
+                <button
+                  onClick={() => setShowForgot(false)}
+                  className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-medium"
+                >
+                  Fermer
+                </button>
+              </div>
+            ) : (
+              <>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Mot de passe oublié</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm">
+                  Saisis ton adresse email. Tu recevras un lien pour réinitialiser ton mot de passe (valable 1 heure).
+                </p>
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={e => setForgotEmail(e.target.value)}
+                    placeholder="vous@exemple.com"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    required
+                    autoFocus
+                  />
+                  <button
+                    type="submit"
+                    disabled={forgotLoading || !forgotEmail}
+                    className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-medium disabled:opacity-50"
+                  >
+                    {forgotLoading ? 'Envoi en cours…' : 'Envoyer le lien'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgot(false)}
+                    className="w-full text-gray-500 dark:text-gray-400 py-2 text-sm hover:underline"
+                  >
+                    Annuler
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
