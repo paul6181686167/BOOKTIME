@@ -13,13 +13,31 @@ function LoginPage() {
   });
   const loadingStartRef = useRef(null);
 
+  // Réveil automatique du backend Render (free tier s'endort après 15 min)
+  useEffect(() => {
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+    fetch(`${backendUrl}/health`, { method: 'GET', signal: AbortSignal.timeout(30000) })
+      .then(r => r.json())
+      .then(d => {
+        if (d.database !== 'connected') {
+          toast('Connexion en cours…', { icon: '⏳', duration: 4000 });
+        }
+      })
+      .catch(() => {
+        // Render en cours de réveil — on réessaie silencieusement dans 10s
+        setTimeout(() => {
+          fetch(`${backendUrl}/health`, { method: 'GET', signal: AbortSignal.timeout(30000) }).catch(() => {});
+        }, 10000);
+      });
+  }, []);
+
   useEffect(() => {
     if (!loading) return;
     loadingStartRef.current = Date.now();
     const id = setInterval(() => {
-      if (loadingStartRef.current && Date.now() - loadingStartRef.current > 12000) {
+      if (loadingStartRef.current && Date.now() - loadingStartRef.current > 30000) {
         setLoading(false);
-        toast.error('Délai dépassé. Vérifiez que le backend est démarré.');
+        toast.error('Le serveur met du temps à démarrer. Réessaie dans 30 secondes.');
       }
     }, 1000);
     return () => clearInterval(id);
