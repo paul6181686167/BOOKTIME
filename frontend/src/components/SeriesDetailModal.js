@@ -660,25 +660,27 @@ const SeriesDetailModal = ({
             </div>
             
             <div className="flex items-center space-x-2">
-              {/* Bouton Ajouter fonctionnel (même style que BookDetailModal) */}
-              {!isSeriesOwned && onAddSeries && (
+              {/* Bouton Ajouter à la bibliothèque */}
+              {onAddSeries && (
                 <button
                   onClick={async () => {
+                    if (isSeriesOwned) return;
                     try {
-                      console.log('🟢 Clic sur ajouter série:', series);
                       await onAddSeries(series);
-                      // CORRECTION: Attendre un peu puis re-vérifier si la série est possédée
-                      setTimeout(() => {
-                        checkIfSeriesOwned();
-                      }, 1000);
+                      setTimeout(() => { checkIfSeriesOwned(); }, 1000);
                     } catch (error) {
                       console.error('❌ Erreur lors de l\'ajout de la série:', error);
                     }
                   }}
-                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors flex items-center space-x-2"
+                  disabled={isSeriesOwned}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center space-x-2 ${
+                    isSeriesOwned
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 cursor-default'
+                      : 'text-white bg-green-600 hover:bg-green-700 active:bg-green-800 cursor-pointer'
+                  }`}
                 >
-                  <span>+</span>
-                  <span>Ajouter à ma bibliothèque</span>
+                  <span>{isSeriesOwned ? '✓' : '+'}</span>
+                  <span>{isSeriesOwned ? 'Dans ma bibliothèque' : 'Ajouter à ma bibliothèque'}</span>
                 </button>
               )}
               

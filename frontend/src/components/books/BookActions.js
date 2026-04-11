@@ -90,7 +90,7 @@ const BookActions = {
       readingBooks: 0, // Calculé selon logique série
       toReadBooks: (series.total_volumes || 0) - (series.volumes?.filter(v => v.is_read).length || 0),
       volumes: series.volumes || [],
-      cover_url: series.cover_image_url,
+      cover_url: series.cover_image_url || series.cover_url || null,
       // Données pour tri et affichage
       title: series.series_name,
       saga: series.series_name,
@@ -182,6 +182,11 @@ const BookActions = {
         
         seriesGroups[seriesKey].books.push(book);
         seriesGroups[seriesKey].totalBooks += 1;
+
+        // Prendre la première couverture disponible parmi tous les livres du groupe
+        if (!seriesGroups[seriesKey].cover_url && book.cover_url) {
+          seriesGroups[seriesKey].cover_url = book.cover_url;
+        }
         
         // 🔍 NOUVEAU: Ajouter l'auteur à la liste si pas déjà présent
         if (book.author && !seriesGroups[seriesKey].authors.includes(book.author)) {
@@ -362,6 +367,19 @@ const BookActions = {
     } catch (error) {
       console.error('Erreur lors de la mise à jour du livre:', error);
       toast.error('Erreur lors de la mise à jour du livre');
+    }
+  },
+
+  // Fonction pour ajouter un livre à la bibliothèque
+  async addBook(bookData) {
+    try {
+      const result = await bookService.createBook(bookData);
+      toast.success(`"${bookData.title || 'Livre'}" ajouté à la bibliothèque !`);
+      return result;
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout du livre:', error);
+      toast.error('Impossible d\'ajouter le livre. Réessaie dans un instant.');
+      throw error;
     }
   },
 
