@@ -60,6 +60,8 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     original_language: book.original_language || 'français',
     available_translations: book.available_translations || [],
     reading_language: book.reading_language || 'français',
+    saga: book.saga || '',
+    volume_number: book.volume_number || '',
   });
   const [pageInput, setPageInput] = useState(book.current_page || 0);
   const [isLoading, setIsLoading] = useState(false);
@@ -78,6 +80,8 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
       original_language: book.original_language || 'français',
       available_translations: book.available_translations || [],
       reading_language: book.reading_language || 'français',
+      saga: book.saga || '',
+      volume_number: book.volume_number || '',
     });
     setPageInput(book.current_page || 0);
   }, [book]);
@@ -587,6 +591,44 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                 </div>
               </div>
             )}
+
+            {/* Série / Saga */}
+            {isEditing ? (
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Série (optionnel)
+                  </label>
+                  <input
+                    type="text"
+                    value={editData.saga}
+                    onChange={(e) => setEditData(prev => ({ ...prev, saga: e.target.value }))}
+                    placeholder="ex: Harry Potter, One Piece…"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-booktime-500 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Tome n°
+                  </label>
+                  <input
+                    type="number"
+                    value={editData.volume_number}
+                    onChange={(e) => setEditData(prev => ({ ...prev, volume_number: e.target.value }))}
+                    placeholder="1"
+                    min="1"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-booktime-500 text-sm"
+                  />
+                </div>
+              </div>
+            ) : book.saga ? (
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Série</h3>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 rounded-full text-sm font-medium">
+                  📚 {book.saga}{book.volume_number ? ` — Tome ${book.volume_number}` : ''}
+                </span>
+              </div>
+            ) : null}
 
             {/* Statut */}
             {isEditing ? (
