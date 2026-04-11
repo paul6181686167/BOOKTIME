@@ -670,20 +670,20 @@ const SeriesDetailModal = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 md:p-4">
       <div className="modal-content-wide shadow-2xl overflow-hidden w-full md:w-auto">
         
-        {/* Barre mobile avec bouton fermeture */}
-        <div className="flex items-center justify-between px-4 pt-3 pb-2 md:hidden border-b border-gray-100 dark:border-gray-800">
+        {/* Barre mobile sticky : fermeture toujours visible */}
+        <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 md:hidden border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Série</span>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
-            <XMarkIcon className="w-5 h-5" />
+          <button type="button" onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+            <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
 
         {/* Header */}
-        <div className="border-b border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center space-x-4">
+        <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-4 sm:p-6">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
+            <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">
               {/* Image de couverture ou icône de série */}
-              <div className="w-16 h-20 rounded-lg flex items-center justify-center shadow-md overflow-hidden">
+              <div className="h-20 w-14 shrink-0 rounded-lg shadow-md overflow-hidden sm:w-16">
                 {series.cover_url ? (
                   <img 
                     src={series.cover_url} 
@@ -703,66 +703,70 @@ const SeriesDetailModal = ({
                 </div>
               </div>
               
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1 break-words">
                   {series?.name}
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-2">
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-2">
                   par{' '}
                   <button 
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       if (onAuthorClick) onAuthorClick(series?.author);
                     }}
-                    className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors underline"
+                    className="text-left text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors underline"
                   >
                     {series?.author}
                   </button>
                 </p>
-                <div className="flex items-center space-x-4 text-sm">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(series?.status)}`}>
+                <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+                  <span className={`px-2 py-1 rounded-full font-medium ${getStatusBadge(series?.status)}`}>
                     {getStatusLabel(series?.status)}
                   </span>
-                  <span className="text-gray-500 dark:text-gray-400">
+                  <span className="text-gray-500 dark:text-gray-400 whitespace-nowrap">
                     📚 {enrichedSeries?.volumes || olBooks.length || books.length || (series?.books?.length) || 0} tome(s)
                   </span>
-                  <span className="text-gray-500 dark:text-gray-400">
-                    🏆 {series?.completion_percentage || 0}% complété
+                  <span className="text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                    🏆 {series?.completion_percentage || 0}%
                   </span>
                 </div>
               </div>
             </div>
             
-            <div className="flex items-center space-x-2">
-              {/* Bouton Ajouter à la bibliothèque */}
+            <div className="flex w-full flex-col gap-2 md:w-auto md:shrink-0 md:items-end">
+              {/* Bouton Ajouter — pleine largeur sur mobile */}
               {onAddSeries && (
                 <button
+                  type="button"
                   onClick={async () => {
                     if (isSeriesOwned) return;
                     try {
                       await onAddSeries(series);
                       setTimeout(() => { checkIfSeriesOwned(); }, 1000);
                     } catch (error) {
-                      console.error('❌ Erreur lors de l\'ajout de la série:', error);
+                      console.error('Erreur lors de l\'ajout de la série:', error);
                     }
                   }}
                   disabled={isSeriesOwned}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center space-x-2 ${
+                  className={`w-full md:w-auto px-4 py-3 md:py-2 text-sm font-medium rounded-xl md:rounded-md transition-colors flex items-center justify-center gap-2 ${
                     isSeriesOwned
                       ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 cursor-default'
                       : 'text-white bg-green-600 hover:bg-green-700 active:bg-green-800 cursor-pointer'
                   }`}
                 >
                   <span>{isSeriesOwned ? '✓' : '+'}</span>
-                  <span>{isSeriesOwned ? 'Dans ma bibliothèque' : 'Ajouter à ma bibliothèque'}</span>
+                  <span className="truncate">{isSeriesOwned ? 'Dans ma bibliothèque' : 'Ajouter à ma bibliothèque'}</span>
                 </button>
               )}
               
               <button
+                type="button"
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl"
+                className="hidden md:block p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                aria-label="Fermer"
               >
-                ✕
+                <span className="text-xl leading-none">✕</span>
               </button>
             </div>
           </div>
@@ -770,7 +774,7 @@ const SeriesDetailModal = ({
 
         {/* Section Résumé de la série */}
         {enrichedSeries?.description && (
-          <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+          <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-4 sm:px-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
               <BookOpenIcon className="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" />
               Résumé de la série
@@ -784,27 +788,22 @@ const SeriesDetailModal = ({
         )}
 
         {/* Boutons rapides de changement de statut - MÊME EMPLACEMENT QUE DANS BookDetailModal */}
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center mb-2">
+        <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-4 sm:px-6">
+          <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:flex-wrap">
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Changer le statut rapidement :</h3>
-            {/* Indicateur de debug */}
-            <span className="ml-2 text-xs text-gray-500">
+            <span className="text-xs text-gray-500 sm:ml-2">
               (Série possédée: {isSeriesOwned ? '✅' : '❌'})
             </span>
           </div>
-          <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 w-fit">
+          <div className="flex w-full max-w-md overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600 sm:w-fit">
             {statusOptions.map((option) => (
               <button
                 key={option.value}
+                type="button"
                 onClick={() => {
-                  console.log('🖱️ CLIC BOUTON STATUT:', {
-                    option: option.value,
-                    isSeriesOwned,
-                    seriesName: series?.name
-                  });
                   handleQuickStatusChange(option.value);
                 }}
-                className={`px-4 py-2 text-sm font-medium transition-all flex items-center space-x-2 ${
+                className={`flex flex-1 items-center justify-center gap-1 px-2 py-2.5 text-xs font-medium transition-all sm:space-x-2 sm:px-4 sm:py-2 sm:text-sm ${
                   seriesStatus === option.value
                     ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
                     : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
@@ -825,8 +824,8 @@ const SeriesDetailModal = ({
         </div>
 
         {/* Actions Bar */}
-        <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6 sm:py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center space-x-3">
               {selectedTomes.size > 0 && (
                 <div className="flex items-center space-x-2">
@@ -843,8 +842,9 @@ const SeriesDetailModal = ({
               )}
             </div>
             
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-end gap-2 self-end sm:self-auto">
               <button
+                type="button"
                 onClick={handleAnalyzeMissing}
                 disabled={analyzing}
                 className="p-2 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-full transition-colors"
@@ -858,6 +858,7 @@ const SeriesDetailModal = ({
               </button>
               
               <button
+                type="button"
                 onClick={handleAutoComplete}
                 disabled={autoCompleting}
                 className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
@@ -875,7 +876,7 @@ const SeriesDetailModal = ({
 
         {/* Missing Volumes Analysis */}
         {missingAnalysis && missingAnalysis.missing_volumes.length > 0 && (
-          <div className="bg-orange-50 dark:bg-orange-900/20 border-b border-orange-200 dark:border-orange-800 px-6 py-3">
+          <div className="border-b border-orange-200 bg-orange-50 px-4 py-3 dark:border-orange-800 dark:bg-orange-900/20 sm:px-6">
             <div className="flex items-center space-x-2 text-orange-800 dark:text-orange-300">
               <ExclamationTriangleIcon className="w-4 h-4" />
               <span className="text-sm font-medium">
@@ -888,8 +889,17 @@ const SeriesDetailModal = ({
         )}
 
         {/* Liste des tomes avec mini-fiches dropdown */}
-        <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Liste des tomes</h3>
+        <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-4 sm:px-6">
+          <div className="sticky top-0 z-10 -mx-4 mb-3 flex items-center justify-between border-b border-gray-100 bg-white px-4 py-2 dark:border-gray-800 dark:bg-gray-800 sm:static sm:mx-0 sm:mb-3 sm:border-0 sm:bg-transparent sm:p-0 dark:sm:bg-transparent">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white sm:text-lg">Liste des tomes</h3>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300 sm:hidden"
+            >
+              Fermer
+            </button>
+          </div>
           
           {(enrichedSeries?.volumes && enrichedSeries.volumes > 0) || olBooks.length > 0 ? (
             <div className="space-y-1">

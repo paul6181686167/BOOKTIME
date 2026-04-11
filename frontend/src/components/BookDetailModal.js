@@ -234,17 +234,18 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content-wide modal-animate w-full md:w-auto" onClick={(e) => e.stopPropagation()}>
-        {/* Bouton fermeture — visible sur mobile ET desktop */}
-        <div className="flex items-center justify-between px-4 pt-4 pb-2 md:hidden">
+        {/* Barre mobile sticky : fermeture toujours visible */}
+        <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 md:hidden border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Détail</span>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
-            <XMarkIcon className="w-5 h-5" />
+          <button type="button" onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+            <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{book.title}</h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">
+        <div className="px-4 md:px-0 pt-2 md:pt-0">
+        <div className="flex flex-col gap-4 mb-4 md:flex-row md:items-start md:justify-between md:gap-6">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2 break-words">{book.title}</h2>
+            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 mb-4">
               par{' '}
               <button 
                 onClick={(e) => {
@@ -392,13 +393,13 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             </div>
           </div>
           
-          <div className="flex items-center space-x-2">
-            {/* Bouton Ajouter pour les livres Open Library */}
+          <div className="flex w-full flex-col gap-2 shrink-0 md:w-auto md:items-end">
+            {/* Bouton Ajouter pour les livres Open Library — pleine largeur sur mobile */}
             {book.isFromOpenLibrary && !book.isOwned && onAddFromOpenLibrary && (
               <button
                 onClick={handleAddFromOpenLibrary}
                 disabled={isAdding || addDone}
-                className={`btn-ripple px-4 py-2 text-sm font-semibold text-white rounded-lg transition-all flex items-center gap-2 min-w-[180px] justify-center ${
+                className={`btn-ripple w-full md:w-auto md:min-w-[180px] px-4 py-3 md:py-2 text-sm font-semibold text-white rounded-xl md:rounded-lg transition-all flex items-center justify-center gap-2 ${
                   addDone
                     ? 'bg-green-500 cursor-default'
                     : isAdding
@@ -429,6 +430,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               </button>
             )}
             
+            <div className="flex flex-row flex-wrap items-center justify-end gap-1 md:gap-2">
             {/* Boutons pour les livres locaux ou possédés */}
             {(!book.isFromOpenLibrary || book.isOwned) && (
               <>
@@ -460,11 +462,14 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             )}
             
             <button
+              type="button"
               onClick={onClose}
-              className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className="hidden md:block p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              aria-label="Fermer"
             >
               <XMarkIcon className="h-6 w-6" />
             </button>
+            </div>
           </div>
         </div>
 
@@ -833,6 +838,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             </button>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

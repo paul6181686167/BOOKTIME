@@ -31,7 +31,13 @@ export const LANGUAGES = [
 ];
 
 export const getLanguageByCode = (code) => {
-  return LANGUAGES.find(lang => lang.code === code) || { code, name: code, flag: '🌍' };
+  if (code == null || code === '') {
+    return { code: '', name: 'Non renseigné', flag: '🌍' };
+  }
+  const found = LANGUAGES.find(lang => lang.code === code);
+  if (found) return found;
+  const s = String(code);
+  return { code: s, name: s, flag: '🌍' };
 };
 
 export const getLanguageName = (code) => {
