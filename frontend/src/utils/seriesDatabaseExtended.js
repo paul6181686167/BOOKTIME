@@ -130,6 +130,56 @@ export const EXTENDED_SERIES_DATABASE = {
         de: 'Der Herr der Ringe'
       }
     },
+    'red_rising': {
+      name: 'Red Rising',
+      authors: ['Pierce Brown'],
+      category: 'roman',
+      volumes: 3,
+      volume_titles: {
+        1: 'Red Rising',
+        2: 'Golden Son',
+        3: 'Morning Star'
+      },
+      volume_details: {
+        1: { pages: 382, published_year: 2014, description: "Darrow, un mineur rouge de Mars, découvre le terrible secret de la société de castes qui l'opprime et infiltre la classe dirigeante dorée.", publisher: 'Del Rey Books' },
+        2: { pages: 442, published_year: 2015, description: "Darrow s'infiltre parmi les Ors les plus puissants de la Société pour la détruire de l'intérieur.", publisher: 'Del Rey Books' },
+        3: { pages: 518, published_year: 2016, description: "La révolution éclate à travers tout le système solaire. Darrow mène la guerre finale contre la Société.", publisher: 'Del Rey Books' }
+      },
+      description: 'Trilogie de science-fiction de Pierce Brown dans un système solaire colonisé régi par une société de castes par couleurs.',
+      first_published: '2014',
+      status: 'completed',
+      keywords: ['red rising', 'darrow', 'pierce brown', 'mars', 'golds', 'reds', 'society', 'howler'],
+      variations: ['red rising', 'red rising trilogy', 'trilogie red rising', 'red rising saga'],
+      exclusions: ['iron gold', 'dark age', 'light bringer', 'red god'],
+      wikipedia_url: 'https://en.wikipedia.org/wiki/Red_Rising',
+      translations: { en: 'Red Rising', fr: 'Red Rising' }
+    },
+    'iron_gold': {
+      name: 'Iron Gold',
+      authors: ['Pierce Brown'],
+      category: 'roman',
+      volumes: 4,
+      volume_titles: {
+        1: 'Iron Gold',
+        2: 'Dark Age',
+        3: 'Light Bringer',
+        4: 'Red God'
+      },
+      volume_details: {
+        1: { pages: 624, published_year: 2018, description: "Dix ans après la révolution, Darrow défie le Sénat de la République pour sauver ses alliés sur Mercure.", publisher: 'Hodder & Stoughton' },
+        2: { pages: 800, published_year: 2019, description: "La République est au bord de l'effondrement. Darrow est pris au piège sur Mercure.", publisher: 'Hodder & Stoughton' },
+        3: { pages: 688, published_year: 2023, description: "Lysander au Soleil, Lyria sur Mercure — le destin du système solaire se joue sur plusieurs fronts.", publisher: 'Hodder & Stoughton' },
+        4: { pages: null, published_year: null, description: "Le tome final de la tétralogie Iron Gold.", publisher: 'Hodder & Stoughton' }
+      },
+      description: 'Tétralogie de Pierce Brown, suite directe de la trilogie Red Rising, dix ans après la révolution.',
+      first_published: '2018',
+      status: 'ongoing',
+      keywords: ['iron gold', 'pierce brown', 'darrow', 'dark age', 'light bringer', 'red god', 'lysander'],
+      variations: ['iron gold', 'iron gold tetralogy', 'tétralogie iron gold', 'iron gold saga', 'red rising iron gold'],
+      exclusions: ['red rising', 'golden son', 'morning star'],
+      wikipedia_url: 'https://en.wikipedia.org/wiki/Red_Rising',
+      translations: { en: 'Iron Gold', fr: 'Iron Gold' }
+    },
     'game_of_thrones': {
       name: 'Le Trône de Fer',
       authors: ['George R.R. Martin'],
