@@ -52,10 +52,10 @@ const DiscoverCard = ({ book, onAdd, alreadyOwned }) => {
   const isAdded = added || alreadyOwned;
 
   return (
-    <div className="flex flex-col bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow duration-200 group">
+    <div className="flex flex-col w-full bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow duration-200 group">
       {/* Couverture cliquable */}
       <div
-        className={`relative h-44 bg-gray-100 dark:bg-gray-700 overflow-hidden flex items-center justify-center ${path ? 'cursor-pointer' : ''}`}
+        className={`relative h-40 sm:h-44 bg-gray-100 dark:bg-gray-700 overflow-hidden flex items-center justify-center ${path ? 'cursor-pointer' : ''}`}
         onClick={() => path && navigate(path)}
         title={path ? 'Voir la fiche' : ''}
       >
@@ -226,21 +226,22 @@ const DiscoverSection = ({ activeCategory = 'roman', userBooks = [], onBookAdded
       </div>
 
       {isLoading && books.length === 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="rounded-xl bg-gray-100 dark:bg-gray-800 h-64 animate-pulse" />
+        <div className="flex gap-3 overflow-x-auto scrollbar-hide sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 sm:gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="flex-shrink-0 w-36 sm:w-auto rounded-xl bg-gray-100 dark:bg-gray-800 h-56 sm:h-64 animate-pulse" />
           ))}
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 sm:gap-4 sm:pb-0">
             {books.map((book, i) => (
-              <DiscoverCard
-                key={`${book.ol_key}-${i}`}
-                book={book}
-                onAdd={handleAdd}
-                alreadyOwned={isOwned(book)}
-              />
+              <div key={`${book.ol_key}-${i}`} className="flex-shrink-0 w-36 sm:w-auto">
+                <DiscoverCard
+                  book={book}
+                  onAdd={handleAdd}
+                  alreadyOwned={isOwned(book)}
+                />
+              </div>
             ))}
           </div>
 

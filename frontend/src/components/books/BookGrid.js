@@ -40,7 +40,7 @@ const BookGrid = ({
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 p-6">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-6 p-3 sm:p-6">
         {Array.from({ length: 12 }).map((_, index) => (
           <div key={index} className="animate-pulse">
             <div className="bg-gray-200 dark:bg-gray-700 rounded-lg aspect-[3/4] mb-3"></div>
@@ -67,12 +67,12 @@ const BookGrid = ({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 p-6">
+    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-6 p-3 sm:p-6">
       {displayedBooks.map((item, index) => (
         <div
           key={item.id}
           className={`
-            ${item.isSeriesCard ? 'col-span-1 sm:col-span-2' : 'col-span-1'} 
+            ${item.isSeriesCard ? 'col-span-2 sm:col-span-2' : 'col-span-1'} 
             group cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-lg
             book-card-stagger
           `}

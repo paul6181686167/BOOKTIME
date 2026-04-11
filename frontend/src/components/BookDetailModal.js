@@ -232,8 +232,8 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content-wide modal-animate" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay flex items-end md:items-center" onClick={onClose}>
+      <div className="modal-content-wide modal-animate w-full md:w-auto rounded-t-2xl md:rounded-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{book.title}</h2>

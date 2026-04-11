@@ -289,3 +289,68 @@ input:checked + .theme-slider:before {
 .transition-theme {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE – PWA styles
+   ═══════════════════════════════════════════════════════ */
+
+/* Safe area pour les téléphones avec notch / home bar */
+.safe-area-top    { padding-top: env(safe-area-inset-top); }
+.safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+/* Modals full-screen sur mobile */
+@media (max-width: 767px) {
+  .modal-content,
+  .modal-content-wide {
+    border-radius: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    padding: 0;
+    margin: 0;
+    animation: mobileSlideUp 0.25s ease-out;
+  }
+
+  @keyframes mobileSlideUp {
+    from { transform: translateY(100%); opacity: 0.8; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  /* Overlay sans padding sur mobile */
+  .fixed.inset-0.bg-black {
+    padding: 0 !important;
+    align-items: flex-end;
+  }
+}
+
+/* Scroll snap horizontal pour les grilles de découverte mobile */
+.mobile-scroll-x {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 12px;
+  padding-bottom: 4px;
+}
+.mobile-scroll-x::-webkit-scrollbar { display: none; }
+.mobile-scroll-x > * {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+/* Meilleur tap highlight */
+button, [role="button"], a {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Grille livres mobile : 2 colonnes */
+@media (max-width: 639px) {
+  .book-grid-mobile {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+    padding: 12px !important;
+  }
+}

@@ -308,17 +308,14 @@ const SeriesDetailModal = ({
   const handleCheckPreviousTomes = async () => {
     if (!missingPreviousWarning) return;
     
-    const newReadTomes = new Set(readTomes);
-    // Ajouter tous les tomes manquants
+    const newStatuses = { ...tomeStatuses };
     missingPreviousWarning.missingTomes.forEach(tomeNumber => {
-      newReadTomes.add(tomeNumber);
+      newStatuses[String(tomeNumber)] = { status: 'lu', currentPage: null };
     });
-    
-    // Mettre à jour l'état local
-    setReadTomes(newReadTomes);
+    setTomeStatuses(newStatuses);
     
     if (enrichedSeries?.name) {
-      await saveReadingPreferences(enrichedSeries.name, tomeStatuses);
+      await saveReadingPreferences(enrichedSeries.name, newStatuses);
       if (onUpdate) onUpdate();
     }
     setMissingPreviousWarning(null);
@@ -669,8 +666,8 @@ const SeriesDetailModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="modal-content-wide shadow-2xl overflow-hidden">>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 md:p-4">
+      <div className="modal-content-wide shadow-2xl overflow-hidden w-full md:w-auto rounded-t-2xl md:rounded-xl">
         
         {/* Header */}
         <div className="border-b border-gray-200 dark:border-gray-700 p-6">

@@ -74,14 +74,14 @@ const BookCard = ({ book, onBookClick }) => {
       </div>
 
       {/* Contenu */}
-      <div className="p-4">
-        <div className="flex items-start justify-between mb-2">
-          <h3 className="font-semibold text-gray-900 dark:text-white text-sm leading-tight line-clamp-2 flex-1">
+      <div className="p-2 sm:p-4">
+        <div className="flex items-start justify-between mb-1 sm:mb-2">
+          <h3 className="font-semibold text-gray-900 dark:text-white text-xs sm:text-sm leading-tight line-clamp-2 flex-1">
             {book.title}
           </h3>
         </div>
 
-        <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 line-clamp-1">
+        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 sm:mb-3 line-clamp-1">
           {book.author}
         </p>
 

@@ -75,6 +75,8 @@ import SeriesActions from './components/series/SeriesActions';
 import BookActions from './components/books/BookActions';
 import BookGrid from './components/books/BookGrid';
 import SeriesDetector from './utils/seriesDetector';
+import MobileBottomNav from './components/MobileBottomNav';
+import MobileSearchOverlay from './components/MobileSearchOverlay';
 
 import './App.css';
 import './styles/optimized.css';
@@ -179,6 +181,9 @@ function MainApp() {
   const [showUpcomingPanel, setShowUpcomingPanel] = useState(false);
   const [showAuthorModal, setShowAuthorModal] = useState(false);
   const [selectedAuthor, setSelectedAuthor] = useState(null);
+  // Mobile states
+  const [mobileTab, setMobileTab] = useState('home');
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   // PHASE 2.4 - Monitoring et Analytics
   const performanceMonitoring = usePerformanceMonitoring();
@@ -529,6 +534,20 @@ function MainApp() {
     localStorage.setItem('booktime_active_tab', newTab);
   };
 
+  const handleMobileTabChange = (tab) => {
+    setMobileTab(tab);
+    if (tab === 'search') {
+      setShowMobileSearch(true);
+    } else if (tab === 'recommendations') {
+      window.location.href = '/recommendations';
+    } else if (tab === 'discover') {
+      setShowUpcomingPanel(false);
+      if (searchHook.isSearchMode) searchHook.clearSearch?.();
+    } else if (tab === 'profile') {
+      setShowProfileModal(true);
+    }
+  };
+
   // CORRECTION RCA - Synchronisation activeTab avec filters.category - MISE À JOUR SESSION 75
   useEffect(() => {
     // Nouvelle logique pour gérer le regroupement BD + Manga = Romans graphiques
@@ -756,10 +775,23 @@ function MainApp() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+      {/* Mobile: overlay de recherche */}
+      <MobileSearchOverlay
+        isOpen={showMobileSearch}
+        onClose={() => { setShowMobileSearch(false); setMobileTab('home'); }}
+        searchTerm={searchHook.lastSearchTerm || ''}
+        onSearchChange={searchHook.handleSearchTermChange}
+        onSearch={(term) => {
+          searchHook.handleSearchTermChange(term);
+          searchOpenLibrary(term);
+        }}
+      />
+
+      {/* Header desktop + mobile compact */}
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          {/* Desktop header */}
+          <div className="hidden md:flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex-shrink-0 flex items-center">
               <span className="text-2xl">🐝</span>
@@ -785,7 +817,7 @@ function MainApp() {
                 onClick={() => window.location.href = '/recommendations'}
                 className="flex items-center space-x-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
               >
-                <span className="hidden sm:inline">Recommandations</span>
+                <span>Recommandations</span>
               </button>
               
               <button
@@ -796,28 +828,54 @@ function MainApp() {
               </button>
             </div>
           </div>
+
+          {/* Mobile header */}
+          <div className="flex md:hidden justify-between items-center h-14">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🐝</span>
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white">BOOKTIME</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Bouton recherche mobile */}
+              <button
+                onClick={() => { setShowMobileSearch(true); setMobileTab('search'); }}
+                className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+              {/* Avatar profil mobile */}
+              <button
+                onClick={() => setShowProfileModal(true)}
+                className="w-8 h-8 bg-green-600 hover:bg-green-700 text-white font-bold rounded-full text-sm transition-colors duration-200 flex items-center justify-center"
+              >
+                {user?.email?.[0]?.toUpperCase() || '?'}
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto">
+      <main className="max-w-7xl mx-auto pb-16 md:pb-0">
         <div className="px-4 sm:px-6 lg:px-8">
           {/* Mode recherche */}
           {searchHook.isSearchMode && (
-            <div className="py-6">
-              <div className="flex items-center justify-between mb-6">
+            <div className="py-3 sm:py-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                     Résultats pour "{searchHook.lastSearchTerm}"
                   </h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                     {displayedBooks.length} résultat(s) trouvé(s)
                   </p>
                 </div>
                 <button
                   onClick={backToLibrary}
-                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors duration-200"
+                  className="self-start sm:self-auto px-3 sm:px-4 py-1.5 sm:py-2 text-sm bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors duration-200"
                 >
-                  ← Retour à ma bibliothèque
+                  ← Retour
                 </button>
               </div>
             </div>
@@ -825,16 +883,16 @@ function MainApp() {
           
           {/* Mode bibliothèque */}
           {!searchHook.isSearchMode && (
-            <div className="py-6">
+            <div className="py-3 sm:py-6">
               {/* Onglets de navigation */}
-              <div className="flex justify-between items-center mb-6">
-                {/* Onglets principaux à gauche */}
-                <div className="flex space-x-1">
+              <div className="flex justify-between items-center mb-4 sm:mb-6">
+                {/* Onglets principaux : scroll horizontal sur mobile */}
+                <div className="flex space-x-1 overflow-x-auto scrollbar-hide mobile-scroll-x pb-1 sm:pb-0 flex-1 mr-2">
                   {TAB_CONFIG.filter(tab => tab.key !== 'upcoming').map((tab) => (
                     <button
                       key={tab.key}
                       onClick={() => handleTabChange(tab.key)}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
+                      className={`flex-shrink-0 px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors duration-200 text-sm sm:text-base ${
                         activeTab === tab.key
                           ? 'bg-green-600 text-white'
                           : 'bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300'
@@ -848,8 +906,6 @@ function MainApp() {
                 {/* Bouton "À venir" à droite */}
                 <button
                   onClick={() => {
-                    console.log('🔮 Bouton "À venir" cliqué !');
-                    console.log('🔮 État actuel showUpcomingPanel:', showUpcomingPanel);
                     setShowUpcomingPanel(true);
                     console.log('🔮 setShowUpcomingPanel(true) appelé');
                   }}
@@ -866,7 +922,7 @@ function MainApp() {
                 const toRead    = (groupedBooks.to_read   || []).length;
                 const total     = completed + reading + toRead;
                 return (
-                  <div className="flex flex-wrap gap-3 mb-6">
+                  <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
                     {[
                       { value: total,     label: 'Total',    color: 'text-gray-700 dark:text-gray-200',     bg: 'bg-white dark:bg-gray-800',           border: 'border-gray-200 dark:border-gray-700'  },
                       { value: completed, label: 'Terminés', color: 'text-green-600 dark:text-green-400',   bg: 'bg-green-50 dark:bg-green-900/20',    border: 'border-green-200 dark:border-green-800' },
@@ -886,12 +942,12 @@ function MainApp() {
           
           {/* Affichage par sections de statut - MODIFICATION ORGANISATIONNELLE */}
           {!searchHook.isSearchMode && (
-            <div className="space-y-8">
+            <div className="space-y-6 sm:space-y-8">
               {/* Section EN COURS */}
               {groupedBooks.reading && groupedBooks.reading.length > 0 && (
                 <div className="section-appear">
-                  <div className="flex items-center mb-4 flex-wrap gap-2">
-                    <h2 className="text-xl font-semibold text-yellow-600 dark:text-yellow-400">
+                  <div className="flex items-center mb-3 sm:mb-4 flex-wrap gap-2">
+                    <h2 className="text-base sm:text-xl font-semibold text-yellow-600 dark:text-yellow-400">
                       📖 En cours ({groupedBooks.reading.length})
                     </h2>
                     <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} />
@@ -1105,7 +1161,13 @@ function MainApp() {
       )}
       
       {/* Toast notifications */}
-      <Toaster position="bottom-right" />
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          style: { marginBottom: 'calc(4rem + env(safe-area-inset-bottom))' }
+        }}
+        containerStyle={{ bottom: 0 }}
+      />
       
       {/* Panneau "À venir" */}
       <UpcomingPanel
@@ -1118,6 +1180,12 @@ function MainApp() {
       <PerformanceWidget 
         position="bottom-right" 
         isVisible={process.env.NODE_ENV === 'development'} 
+      />
+
+      {/* Navigation mobile bas d'écran */}
+      <MobileBottomNav
+        activeTab={mobileTab}
+        onTabChange={handleMobileTabChange}
       />
     </div>
   );
