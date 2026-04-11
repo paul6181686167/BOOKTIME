@@ -296,8 +296,8 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
   if (!isOpen || !author) return null;
 
   return (
-    <div className="modal-overlay flex items-end md:items-center" onClick={onClose} style={{ zIndex: 1100 }}>
-      <div className="modal-content-wide w-full md:w-auto rounded-t-2xl md:rounded-xl" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1100 }}>
+      <div className="modal-content-wide w-full md:w-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between mb-6">
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">

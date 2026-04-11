@@ -19,6 +19,14 @@
   backdrop-filter: blur(4px);
 }
 
+@media (max-width: 767px) {
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+    backdrop-filter: blur(2px);
+  }
+}
+
 .dark .modal-overlay {
   background-color: rgba(0, 0, 0, 0.8);
 }
@@ -298,29 +306,36 @@ input:checked + .theme-slider:before {
 .safe-area-top    { padding-top: env(safe-area-inset-top); }
 .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
 
-/* Modals full-screen sur mobile */
+/* Modals bottom-sheet sur mobile */
 @media (max-width: 767px) {
   .modal-content,
   .modal-content-wide {
-    border-radius: 0;
+    border-radius: 20px 20px 0 0;
     width: 100%;
     max-width: 100%;
-    height: 100dvh;
-    max-height: 100dvh;
+    height: 92dvh;
+    max-height: 92dvh;
     padding: 0;
     margin: 0;
-    animation: mobileSlideUp 0.25s ease-out;
+    animation: mobileSlideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  /* Poignée visuelle */
+  .modal-content::before,
+  .modal-content-wide::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: #d1d5db;
+    border-radius: 2px;
+    margin: 10px auto 0;
+    flex-shrink: 0;
   }
 
   @keyframes mobileSlideUp {
-    from { transform: translateY(100%); opacity: 0.8; }
-    to   { transform: translateY(0);    opacity: 1; }
-  }
-
-  /* Overlay sans padding sur mobile */
-  .fixed.inset-0.bg-black {
-    padding: 0 !important;
-    align-items: flex-end;
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
   }
 }
 
