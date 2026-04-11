@@ -2,6 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { XMarkIcon, UserIcon, BookOpenIcon, CalendarIcon, QueueListIcon, ChevronDownIcon, ChevronUpIcon, StarIcon, TrophyIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { API_BASE_URL } from '../config/environment';
+import { EXTENDED_SERIES_DATABASE } from '../utils/seriesDatabaseExtended';
+
+// Cherche une série dans la base statique par nom (insensible à la casse)
+const findSeriesInDB = (name) => {
+  if (!name) return null;
+  const nameLower = name.toLowerCase().trim();
+  for (const category of Object.values(EXTENDED_SERIES_DATABASE)) {
+    for (const s of Object.values(category)) {
+      if (
+        s.name.toLowerCase() === nameLower ||
+        s.variations?.some(v => v.toLowerCase() === nameLower)
+      ) return s;
+    }
+  }
+  return null;
+};
 
 const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpenSeries, onAddSeries }) => {
   const [authorInfo, setAuthorInfo] = useState(null);
@@ -530,8 +546,8 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
                   )}
                 </h3>
 
-                <div className="space-y-4">
-                  {/* Séries — dédupliquées par nom normalisé */}
+                <div className="space-y-3">
+                  {/* Séries — dédupliquées + enrichies depuis la base statique */}
                   {(() => {
                     const normalize = (name) =>
                       (name || '').toLowerCase()
@@ -546,76 +562,144 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
                       }
                     });
                     return Array.from(seen.values());
-                  })().map((series, index) => (
-                    <div key={index} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div
-                          className="flex items-center space-x-3 flex-1 cursor-pointer"
-                          onClick={() => toggleSeriesExpansion(series.name)}
-                        >
-                          <QueueListIcon className="h-5 w-5 text-purple-600 flex-shrink-0" />
-                          <h4 className="font-medium text-gray-900 dark:text-white">
-                            {series.name}
-                          </h4>
-                        </div>
-                        <div className="flex items-center gap-2 ml-2">
-                          {onOpenSeries && (
-                            <button
-                              onClick={() => onOpenSeries({ name: series.name, author, books: series.books || [] })}
-                              className="text-xs px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
-                            >
-                              Voir →
-                            </button>
-                          )}
-                          {onAddSeries && (
-                            <button
-                              onClick={() => onAddSeries({ name: series.name, author, books: series.books || [] })}
-                              className="text-xs px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
-                            >
-                              + Ajouter
-                            </button>
-                          )}
-                          {expandedSeries[series.name]
-                            ? <ChevronUpIcon className="h-4 w-4 text-gray-400 cursor-pointer" onClick={() => toggleSeriesExpansion(series.name)} />
-                            : <ChevronDownIcon className="h-4 w-4 text-gray-400 cursor-pointer" onClick={() => toggleSeriesExpansion(series.name)} />
-                          }
-                        </div>
-                      </div>
+                  })().map((series, index) => {
+                    const db = findSeriesInDB(series.name);
+                    const volumes = db?.volumes || series.books?.length || null;
+                    const status = db?.status;
+                    const firstYear = db?.first_published || series.books?.[0]?.publication_year;
+                    const lastYear = db?.volume_details
+                      ? Object.values(db.volume_details).map(d => d.published_year).filter(Boolean).sort().reverse()[0]
+                      : null;
+                    const description = db?.description || series.description || null;
+                    const coverUrl = series.cover_url || series.books?.find(b => b.cover_url)?.cover_url || null;
 
-                      {expandedSeries[series.name] && (
-                        <div className="mt-3 space-y-2">
-                          {series.books && series.books.length > 0 ? (
-                            series.books.map((book, bookIndex) => (
-                              <div key={bookIndex} className="flex items-center justify-between py-2 px-3 bg-white dark:bg-gray-700 rounded">
-                                <div className="flex items-center space-x-3">
-                                  <span className="text-sm text-gray-500 dark:text-gray-400 min-w-[2rem]">
-                                    {book.volume_number || bookIndex + 1}
-                                  </span>
-                                  <div>
-                                    <p className="font-medium text-gray-900 dark:text-white text-sm">{book.title}</p>
-                                    {book.publication_year && (
-                                      <p className="text-xs text-gray-500 dark:text-gray-400">{book.publication_year}</p>
-                                    )}
-                                  </div>
-                                </div>
-                                {book.status && (
-                                  <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getStatusColor(book.status)}`}>
-                                    {getStatusText(book.status)}
-                                  </span>
+                    // Titres des tomes : depuis la base statique ou les livres Wikidata
+                    const volumeTitles = db?.volume_titles || (() => {
+                      const map = {};
+                      (series.books || []).forEach((b, i) => { map[b.volume_number || i + 1] = b.title; });
+                      return Object.keys(map).length ? map : null;
+                    })();
+
+                    return (
+                      <div key={index} className="bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        {/* En-tête de la carte série */}
+                        <div className="flex items-start gap-3 p-4">
+                          {/* Couverture ou icône */}
+                          <div className="flex-shrink-0 w-12 h-16 rounded overflow-hidden bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                            {coverUrl
+                              ? <img src={coverUrl} alt={series.name} className="w-full h-full object-cover" />
+                              : <QueueListIcon className="h-6 w-6 text-purple-500" />
+                            }
+                          </div>
+
+                          {/* Infos principales */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="font-semibold text-gray-900 dark:text-white text-sm leading-tight">
+                                {series.name}
+                              </h4>
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                {onOpenSeries && (
+                                  <button
+                                    onClick={() => onOpenSeries({ name: series.name, author, books: series.books || [] })}
+                                    className="text-xs px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
+                                  >
+                                    Voir →
+                                  </button>
                                 )}
+                                {onAddSeries && (
+                                  <button
+                                    onClick={() => onAddSeries({ name: series.name, author, books: series.books || [] })}
+                                    className="text-xs px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
+                                  >
+                                    + Ajouter
+                                  </button>
+                                )}
+                                <button onClick={() => toggleSeriesExpansion(series.name)}>
+                                  {expandedSeries[series.name]
+                                    ? <ChevronUpIcon className="h-4 w-4 text-gray-400" />
+                                    : <ChevronDownIcon className="h-4 w-4 text-gray-400" />}
+                                </button>
                               </div>
-                            ))
-                          ) : (
-                            <div className="py-2 px-3 bg-white dark:bg-gray-700 rounded">
-                              <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-                                Série identifiée — livres disponibles sur {series.source === 'wikipedia' ? 'Wikipedia' : 'OpenLibrary'}
-                              </p>
                             </div>
-                          )}
+
+                            {/* Badges : tomes + statut + années */}
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                              {volumes && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-xs rounded-full font-medium">
+                                  📚 {volumes} tome{volumes > 1 ? 's' : ''}
+                                </span>
+                              )}
+                              {status && (
+                                <span className={`inline-flex items-center px-2 py-0.5 text-xs rounded-full font-medium ${
+                                  status === 'completed'
+                                    ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
+                                    : 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300'
+                                }`}>
+                                  {status === 'completed' ? '✓ Terminée' : '⏳ En cours'}
+                                </span>
+                              )}
+                              {firstYear && (
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  {firstYear}{lastYear && lastYear !== firstYear ? ` – ${lastYear}` : ''}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Description courte */}
+                            {description && (
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1.5 line-clamp-2 leading-relaxed">
+                                {description}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  ))}
+
+                        {/* Liste des tomes (expansion) */}
+                        {expandedSeries[series.name] && (
+                          <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 space-y-1 bg-white dark:bg-gray-900/30">
+                            {volumeTitles ? (
+                              Object.entries(volumeTitles)
+                                .sort(([a], [b]) => Number(a) - Number(b))
+                                .map(([num, title]) => {
+                                  const detail = db?.volume_details?.[num];
+                                  const inLib = isBookInLibrary(title);
+                                  return (
+                                    <div key={num} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <span className="text-xs font-semibold text-purple-600 dark:text-purple-400 w-12 flex-shrink-0">
+                                          Tome {num}
+                                        </span>
+                                        <div className="min-w-0">
+                                          <p className="text-sm text-gray-900 dark:text-white truncate">{title}</p>
+                                          {detail?.published_year && (
+                                            <p className="text-xs text-gray-400">{detail.published_year}</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                      {inLib ? (
+                                        <span className="text-xs text-green-600 dark:text-green-400 flex-shrink-0 ml-2">✓</span>
+                                      ) : onAddBook ? (
+                                        <button
+                                          onClick={() => onAddBook({ title, author })}
+                                          className="text-xs px-2 py-0.5 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors flex-shrink-0 ml-2"
+                                        >
+                                          + Ajouter
+                                        </button>
+                                      ) : null}
+                                    </div>
+                                  );
+                                })
+                            ) : (
+                              <p className="text-xs text-gray-400 italic py-1">
+                                Détails des tomes disponibles en ouvrant la série
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
 
                   {/* Livres individuels */}
                   {authorBooks.individual_books.length > 0 && (
