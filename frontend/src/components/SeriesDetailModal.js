@@ -540,23 +540,54 @@ const SeriesDetailModal = ({
     }
   };
 
-  // Charger les tomes complets depuis OL quand la série vient du fallback (pas dans la base statique)
+  // Charger les tomes depuis Wikidata (priorité) puis OL (fallback)
   const [olBooks, setOlBooks] = useState([]);
   const loadOLSeriesBooks = async () => {
     if (!series?.name) return;
     try {
       const token = localStorage.getItem('token');
-      const params = new URLSearchParams({ name: series.name, limit: '20' });
-      if (series.author) params.append('author', series.author);
-      const res = await fetch(`${API_BASE_URL}/api/openlibrary/series-books?${params}`, {
+
+      // ── Priorité 1 : Wikidata (données structurées, ordre garanti) ──
+      const wdParams = new URLSearchParams({ name: series.name });
+      if (series.author) wdParams.append('author', series.author);
+      const wdRes = await fetch(`${API_BASE_URL}/api/wikidata/series/by-name/volumes?${wdParams}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (res.ok) {
-        const data = await res.json();
-        setOlBooks(data.books || []);
+      if (wdRes.ok) {
+        const wdData = await wdRes.json();
+        if (wdData.found && wdData.volumes?.length > 0) {
+          // Convertir au format interne { title, volume_number, first_publish_year, cover_url }
+          const vols = wdData.volumes.map((v, i) => ({
+            title: v.title,
+            volume_number: v.volume_number || (i + 1),
+            first_publish_year: v.publication_year,
+            cover_url: null,
+            ol_key: null,
+          }));
+          setOlBooks(vols);
+          return;
+        }
+      }
+
+      // ── Fallback 2 : Open Library ──
+      const olParams = new URLSearchParams({ name: series.name, limit: '20' });
+      if (series.author) olParams.append('author', series.author);
+      const olRes = await fetch(`${API_BASE_URL}/api/openlibrary/series-books?${olParams}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (olRes.ok) {
+        const olData = await olRes.json();
+        // Filtrer les coffrets / collections (titres trop longs ou contenant "box set", "collection", "vol. 1-")
+        const clean = (olData.books || []).filter(b => {
+          const t = (b.title || '').toLowerCase();
+          return !t.includes('box set') && !t.includes('collection') &&
+                 !t.includes('omnibus') && !t.includes('vol. 1-') &&
+                 t.length < 80;
+        });
+        setOlBooks(clean);
       }
     } catch (e) {
-      console.warn('OL series-books fetch failed:', e);
+      console.warn('Series books fetch failed:', e);
     }
   };
 
@@ -858,46 +889,11 @@ const SeriesDetailModal = ({
           
           {(enrichedSeries?.volumes && enrichedSeries.volumes > 0) || olBooks.length > 0 ? (
             <div className="space-y-1">
-              {(enrichedSeries.fromFallbackBooks || olBooks.length > 0)
-                /* Affichage enrichi depuis OL : couverture + titre + année */
-                ? (olBooks.length > 0 ? olBooks : series.books || []).map((book, index) => {
-                    const tomeNumber = book.volume_number || (index + 1);
-                    const isRead = readTomes.has(tomeNumber);
-                    return (
-                      <div
-                        key={tomeNumber}
-                        className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                          isRead
-                            ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
-                            : 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-750'
-                        }`}
-                        onClick={() => handleTomeReadToggle(tomeNumber)}
-                      >
-                        {book.cover_url ? (
-                          <img src={book.cover_url} alt={book.title} className="w-8 h-12 object-cover rounded flex-shrink-0" />
-                        ) : (
-                          <div className="w-8 h-12 bg-purple-100 dark:bg-purple-900/30 rounded flex items-center justify-center flex-shrink-0 text-xs text-purple-600 font-bold">
-                            {tomeNumber}
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{book.title}</p>
-                          {book.first_publish_year && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{book.first_publish_year}</p>
-                          )}
-                        </div>
-                        <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
-                          isRead
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                            : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
-                        }`}>
-                          {isRead ? '✓ Lu' : 'Non lu'}
-                        </span>
-                      </div>
-                    );
-                  })
-                /* Affichage standard via EXTENDED_SERIES_DATABASE */
-                : Array.from({ length: enrichedSeries.volumes }, (_, index) => {
+              {(() => {
+                // Construire la liste finale : préférence enrichedSeries (base statique) > olBooks (Wikidata/OL)
+                if (enrichedSeries?.volumes > 0 && !enrichedSeries.fromFallbackBooks) {
+                  // Source : EXTENDED_SERIES_DATABASE → style TomeDropdown exact comme Harry Potter
+                  return Array.from({ length: enrichedSeries.volumes }, (_, index) => {
                     const tomeNumber = index + 1;
                     const tomeTitle = enrichedSeries.volume_titles?.[tomeNumber] || `${enrichedSeries.name} - Tome ${tomeNumber}`;
                     const isRead = readTomes.has(tomeNumber);
@@ -911,8 +907,37 @@ const SeriesDetailModal = ({
                         onToggleRead={handleTomeReadToggle}
                       />
                     );
-                  })
-              }
+                  });
+                }
+
+                // Source : Wikidata ou OL → construire un enrichedSeries synthétique et utiliser TomeDropdown
+                const booksToShow = olBooks.length > 0 ? olBooks : (series.books || []);
+                const syntheticVolumeTitles = {};
+                booksToShow.forEach((b, i) => {
+                  const num = b.volume_number || (i + 1);
+                  syntheticVolumeTitles[num] = b.title || `${series.name} - Tome ${num}`;
+                });
+                const syntheticSeries = {
+                  ...enrichedSeries,
+                  volumes: booksToShow.length,
+                  volume_titles: syntheticVolumeTitles,
+                };
+                return booksToShow.map((book, index) => {
+                  const tomeNumber = book.volume_number || (index + 1);
+                  const tomeTitle = syntheticVolumeTitles[tomeNumber] || book.title;
+                  const isRead = readTomes.has(tomeNumber);
+                  return (
+                    <TomeDropdown
+                      key={tomeNumber}
+                      tomeNumber={tomeNumber}
+                      tomeTitle={tomeTitle}
+                      seriesData={syntheticSeries}
+                      isRead={isRead}
+                      onToggleRead={handleTomeReadToggle}
+                    />
+                  );
+                });
+              })()}
             </div>
           ) : (
             <p className="text-sm text-gray-500 dark:text-gray-400 italic">

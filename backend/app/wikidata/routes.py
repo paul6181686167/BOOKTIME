@@ -82,6 +82,66 @@ async def get_author_series(author_name: str):
             detail=f"Erreur lors de la récupération des œuvres: {str(e)}"
         )
 
+@router.get("/series/by-name/volumes")
+async def get_series_volumes_by_name(
+    name: str,
+    author: Optional[str] = None
+):
+    """
+    Recherche une série par son nom puis retourne ses volumes ordonnés.
+    Cherche dans Wikidata : nom → ID → tomes.
+    """
+    try:
+        logger.info(f"🔍 Recherche volumes série par nom: '{name}' auteur='{author}'")
+
+        # Étape 1 : rechercher la série par nom
+        search_result = await wikidata_service.search_series(name, limit=10)
+
+        if not search_result.found or not search_result.series:
+            return {"found": False, "series_name": name, "volumes": [], "total": 0}
+
+        # Choisir la meilleure correspondance (exact en priorité, sinon première)
+        name_lower = name.lower().strip()
+        best = None
+        for s in search_result.series:
+            if s.name.lower().strip() == name_lower:
+                best = s
+                break
+            # Correspondance auteur si fourni
+            if author and s.author_name and author.lower() in s.author_name.lower():
+                best = s
+        if not best:
+            best = search_result.series[0]
+
+        logger.info(f"✅ Série trouvée: '{best.name}' ID={best.id}")
+
+        # Étape 2 : récupérer les volumes via l'ID Wikidata
+        books_result = await wikidata_service.get_series_books(best.id)
+
+        volumes = []
+        for b in (books_result.books or []):
+            volumes.append({
+                "title": b.title,
+                "volume_number": b.volume_number,
+                "publication_year": b.publication_date[:4] if b.publication_date else None,
+                "isbn": b.isbn,
+            })
+
+        return {
+            "found": len(volumes) > 0,
+            "series_name": best.name,
+            "series_id": best.id,
+            "author": best.author_name,
+            "description": best.description,
+            "volumes": volumes,
+            "total": len(volumes)
+        }
+
+    except Exception as e:
+        logger.error(f"❌ Erreur get_series_volumes_by_name: {e}")
+        return {"found": False, "series_name": name, "volumes": [], "total": 0}
+
+
 @router.get("/series/{series_id}/books", response_model=WikidataSeriesResponse)
 async def get_series_books(series_id: str):
     """
