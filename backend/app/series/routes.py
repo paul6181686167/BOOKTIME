@@ -215,18 +215,58 @@ async def detect_series(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Détecter si un livre appartient à une série connue.
-    Utilise series_database.py (40+ séries) avec correspondance normalisée.
+    Détecter si un livre appartient à une série connue
     """
-    from .series_database import detect_series_from_database
     if not title or len(title.strip()) < 2:
         return {"detected_series": [], "book_info": {"title": title, "author": author}}
-
-    results = detect_series_from_database(title, author or "")
-
+    
+    # Récupérer les séries populaires
+    popular_response = await get_popular_series(None, "fr", 1000, current_user)
+    all_series = popular_response["series"]
+    
+    detected_series = []
+    title_lower = title.lower()
+    author_lower = author.lower() if author else ""
+    
+    for series in all_series:
+        confidence = 0
+        
+        # Vérifier le nom de la série
+        if series["name"].lower() in title_lower:
+            confidence += 80
+        
+        # Vérifier les mots-clés
+        matching_keywords = sum(1 for keyword in series["keywords"] if keyword in title_lower)
+        confidence += matching_keywords * 20
+        
+        # Vérifier l'auteur
+        if author_lower and any(author_name.lower() in author_lower for author_name in series["authors"]):
+            confidence += 50
+        
+        # Vérifier les variations
+        if any(variation.lower() in title_lower for variation in series["variations"]):
+            confidence += 60
+        
+        # Seuil de confiance
+        if confidence >= 40:
+            detected_series.append({
+                "series_name": series["name"],
+                "confidence": confidence,
+                "authors": series["authors"],
+                "category": series["category"],
+                "volumes": series["volumes"],
+                "description": series["description"]
+            })
+    
+    # Trier par confiance
+    detected_series.sort(key=lambda x: x["confidence"], reverse=True)
+    
     return {
-        "detected_series": results[:5],
-        "book_info": {"title": title, "author": author}
+        "detected_series": detected_series[:5],  # Top 5
+        "book_info": {
+            "title": title,
+            "author": author
+        }
     }
 
 @router.post("/complete")

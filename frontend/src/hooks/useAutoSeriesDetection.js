@@ -1,69 +1,78 @@
 // 🔄 DÉTECTION AUTOMATIQUE À L'AJOUT DE LIVRES
-import { API_BASE_URL } from '../config/environment';
-import { SeriesDetector } from '../utils/seriesDetector';
+// Intégration dans le processus d'ajout pour détecter automatiquement les séries
 
 export class AutoSeriesDetector {
   constructor() {
-    this.apiBase = API_BASE_URL;
+    this.apiBase = process.env.REACT_APP_BACKEND_URL || '';
     this.enabled = true;
     this.minConfidence = 70;
   }
 
   // 🎯 Détection automatique lors de l'ajout d'un livre
   async detectAndEnhanceBook(bookData) {
-    if (!this.enabled) return bookData;
+    if (!this.enabled) {
+      return bookData;
+    }
+
+    console.log('🔍 Détection automatique série pour:', bookData.title);
 
     try {
-      // 1. Saga déjà connue (ex: champ OL series) → priorité absolue
+      // 1. Vérifier si le livre a déjà une saga
       if (bookData.saga && bookData.saga.trim()) {
+        console.log('📚 Saga déjà définie:', bookData.saga);
         return bookData;
       }
 
-      // 2. Détection locale via EXTENDED_SERIES_DATABASE (100+ séries, sans appel réseau)
-      const localResult = SeriesDetector.detectBookSeries(bookData);
-      if (localResult.belongsToSeries && localResult.confidence >= this.minConfidence) {
-        return {
-          ...bookData,
-          saga: localResult.seriesName,
-          volume_number: localResult.volumeNumber || null,
-          auto_detected_series: true,
-          detection_confidence: localResult.confidence,
-          detection_method: localResult.method,
-        };
-      }
-
-      // 3. Fallback : appel backend /detect (séries inconnues localement)
+      // 2. Détecter la série
       const detection = await this.detectSeries(bookData);
+      
       if (detection.found && detection.confidence >= this.minConfidence) {
-        return {
+        console.log(`✅ Série détectée: "${detection.series_name}" (confiance: ${detection.confidence})`);
+        
+        // 3. Enrichir les données du livre
+        const enhancedBook = {
           ...bookData,
           saga: detection.series_name,
           volume_number: detection.series_info?.volume_number || null,
           auto_detected_series: true,
           detection_confidence: detection.confidence,
-          detection_method: 'backend_api',
+          detection_reasons: detection.match_reasons
         };
+
+        // 4. Notification utilisateur
+        this.notifySeriesDetected(enhancedBook, detection);
+        
+        return enhancedBook;
+      } else {
+        console.log(`📖 Livre standalone (confiance: ${detection.confidence})`);
+        return bookData;
       }
 
-      return bookData;
     } catch (error) {
-      console.error('Erreur détection automatique série:', error);
-      return bookData;
+      console.error('❌ Erreur détection automatique:', error);
+      return bookData; // Retour aux données originales en cas d'erreur
     }
   }
 
-  // 🔍 Appel backend /detect (fallback)
+  // 🔍 Détection de série
   async detectSeries(bookData) {
     const token = localStorage.getItem('token');
     const params = new URLSearchParams({ title: bookData.title || '' });
     if (bookData.author) params.append('author', bookData.author);
 
     const response = await fetch(`${this.apiBase}/api/series/detect?${params}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
-    if (!response.ok) throw new Error(`Erreur API détection: ${response.status}`);
+    
+    if (!response.ok) {
+      throw new Error(`Erreur API détection: ${response.status}`);
+    }
 
     const data = await response.json();
+    // Normaliser la réponse backend → format attendu par detectAndEnhanceBook
     const best = data.detected_series?.[0];
     if (best) {
       return {

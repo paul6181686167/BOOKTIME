@@ -226,8 +226,53 @@ export class SearchOptimizer {
         }
       }
       
-      // Note : groupement par auteur supprimé — créait de fausses cartes série
-      // (ex. chercher "Stephen King" → carte "Livres de Stephen King" au lieu des vrais livres)
+      // 🆕 2. DÉTECTION PAR AUTEUR - CORRECTION PRINCIPALE
+      if (book.author && book.author.trim()) {
+        const authorKey = FuzzyMatcher.normalizeString(book.author);
+        const queryNormalized = FuzzyMatcher.normalizeString(query);
+        
+        // Vérifier si la requête correspond à cet auteur
+        const authorMatch = FuzzyMatcher.fuzzyMatch(queryNormalized, authorKey);
+        
+        if (authorMatch >= 60) { // Seuil pour correspondance auteur
+          // Créer une clé unique pour cette série d'auteur
+          const authorSeriesKey = `${authorKey}_author_series`;
+          
+          if (!potentialSeries[authorSeriesKey]) {
+            // Déterminer le nom de la série basé sur l'auteur
+            const seriesName = book.saga && book.saga.trim() ? book.saga : `Livres de ${book.author}`;
+            
+            potentialSeries[authorSeriesKey] = {
+              series: {
+                name: seriesName,
+                authors: [book.author],
+                category: book.category,
+                volumes: 1,
+                description: `Série de ${book.author} incluant "${book.title}"`,
+                first_published: book.publication_year || 'Inconnue',
+                status: 'user_library',
+                keywords: [book.author.toLowerCase()],
+                variations: [book.author.toLowerCase()],
+                exclusions: []
+              },
+              confidence: 90000 + authorMatch, // Score 90000+ pour bibliothèque utilisateur
+              match_reasons: ['user_library_author'],
+              matchType: 'user_library_author_match',
+              originalScore: authorMatch,
+              matchDetails: `Série de ${book.author} (${authorMatch}% de correspondance)`
+            };
+          } else {
+            // Améliorer les données de la série existante
+            potentialSeries[authorSeriesKey].confidence += 5;
+            potentialSeries[authorSeriesKey].series.volumes += 1;
+            
+            // Mettre à jour le nom de la série si on a une saga
+            if (book.saga && book.saga.trim() && !potentialSeries[authorSeriesKey].series.name.includes(book.saga)) {
+              potentialSeries[authorSeriesKey].series.name = book.saga;
+            }
+          }
+        }
+      }
     });
     
     return Object.values(potentialSeries)
