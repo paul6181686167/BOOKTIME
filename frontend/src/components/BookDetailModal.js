@@ -796,6 +796,12 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             {/* Informations supplémentaires */}
             <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
+                {book.original_title && book.original_title !== book.title && (
+                  <div className="col-span-2">
+                    <h4 className="font-medium text-gray-700 dark:text-gray-300">Titre original</h4>
+                    <p className="text-gray-600 dark:text-gray-400 italic">{book.original_title}</p>
+                  </div>
+                )}
                 <div>
                   <h4 className="font-medium text-gray-700 dark:text-gray-300">Date d'ajout</h4>
                   <p className="text-gray-600 dark:text-gray-400">

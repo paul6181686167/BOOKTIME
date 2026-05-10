@@ -2,10 +2,17 @@ from fastapi import APIRouter, HTTPException, Depends
 from datetime import datetime
 from typing import Optional
 import uuid
+import re as _re_global
+import unicodedata
 import requests
 from ..database.connection import books_collection
 from ..security.jwt import get_current_user
 from ..utils.validation import validate_category
+
+def _normalize_query(s: str) -> str:
+    """Supprime accents et ponctuation pour une recherche élargie"""
+    no_accent = unicodedata.normalize('NFD', s).encode('ascii', 'ignore').decode('utf-8')
+    return no_accent.strip()
 
 router = APIRouter(prefix="/api/openlibrary", tags=["openlibrary"])
 
@@ -41,6 +48,58 @@ def extract_cover_url(cover_i):
         return f"https://covers.openlibrary.org/b/id/{cover_i}-M.jpg"
     return ""
 
+def _build_ol_params(q_term: str, limit: int, year_start, year_end, language, author_filter) -> dict:
+    """Construit les paramètres d'une requête Open Library"""
+    query_parts = [q_term]
+    if year_start and year_end:
+        query_parts.append(f"first_publish_year:[{year_start} TO {year_end}]")
+    elif year_start:
+        query_parts.append(f"first_publish_year:[{year_start} TO *]")
+    elif year_end:
+        query_parts.append(f"first_publish_year:[* TO {year_end}]")
+    if language:
+        query_parts.append(f"language:{language}")
+    if author_filter:
+        query_parts.append(f"author:{author_filter}")
+    return {
+        "q": " AND ".join(query_parts),
+        "limit": limit,
+        "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,number_of_pages_median,publisher,language,series"
+    }
+
+def _doc_to_book(doc: dict) -> dict:
+    """Convertit un document OL en objet livre normalisé"""
+    raw_series = doc.get("series", [])
+    series_name = ""
+    if raw_series:
+        s = raw_series[0] if isinstance(raw_series, list) else raw_series
+        vol_match = _re_global.search(r'\s*[#,]\s*\d+', s)
+        series_name = s[:vol_match.start()].strip() if vol_match else s.strip()
+
+    ol_title = doc.get("title", "")
+
+    # Détecter si le titre semble être dans une langue non-latine (japonais, coréen, etc.)
+    # ou si c'est clairement anglais → on le stocke comme original_title
+    langs = doc.get("language", [])
+    is_original_english = "eng" in langs if langs else False
+
+    return {
+        "ol_key": doc.get("key", ""),
+        "title": ol_title,
+        "original_title": ol_title,  # conservé tel quel ; sera écrasé si on trouve la trad FR
+        "author": ", ".join(doc.get("author_name", [])) if doc.get("author_name") else "",
+        "category": detect_category_from_subjects(doc.get("subject", [])),
+        "cover_url": extract_cover_url(doc.get("cover_i")),
+        "first_publish_year": doc.get("first_publish_year"),
+        "isbn": doc.get("isbn", [""])[0] if doc.get("isbn") else "",
+        "subjects": doc.get("subject", [])[:5],
+        "number_of_pages": doc.get("number_of_pages_median"),
+        "publisher": ", ".join(doc.get("publisher", [])) if doc.get("publisher") else "",
+        "saga": series_name,
+        "available_languages": langs[:5] if langs else [],
+    }
+
+
 @router.get("/search")
 async def search_open_library(
     q: str,
@@ -53,71 +112,56 @@ async def search_open_library(
     author_filter: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Rechercher des livres dans Open Library"""
+    """
+    Rechercher des livres dans Open Library.
+    Stratégie large : requête originale + version sans accents, fusionnées et dédupliquées.
+    Retourne original_title pour que le front puisse l'afficher en sous-titre.
+    """
     try:
-        params = {
-            "q": q,
-            "limit": limit,
-            "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,number_of_pages_median,publisher,language,series"
-        }
-        
-        # Construire la requête avec filtres
-        query_parts = [q]
-        
-        if year_start and year_end:
-            query_parts.append(f"first_publish_year:[{year_start} TO {year_end}]")
-        elif year_start:
-            query_parts.append(f"first_publish_year:[{year_start} TO *]")
-        elif year_end:
-            query_parts.append(f"first_publish_year:[* TO {year_end}]")
-        
-        if language:
-            query_parts.append(f"language:{language}")
-        
-        if author_filter:
-            query_parts.append(f"author:{author_filter}")
-        
-        params["q"] = " AND ".join(query_parts)
-        
-        response = requests.get("https://openlibrary.org/search.json", params=params, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        
+        OL_URL = "https://openlibrary.org/search.json"
+        # Demander 2× plus pour compenser le dédoublonnage après fusion
+        fetch_limit = min(limit * 2, 100)
+
+        # ── Requête 1 : terme original de l'utilisateur ──────────────────────
+        params1 = _build_ol_params(q, fetch_limit, year_start, year_end, language, author_filter)
+        resp1 = requests.get(OL_URL, params=params1, timeout=10)
+        resp1.raise_for_status()
+        data1 = resp1.json()
+
+        # ── Requête 2 : terme sans accents (si différent) ────────────────────
+        q_norm = _normalize_query(q)
+        data2_docs = []
+        if q_norm.lower() != q.lower():
+            try:
+                params2 = _build_ol_params(q_norm, fetch_limit, year_start, year_end, language, author_filter)
+                resp2 = requests.get(OL_URL, params=params2, timeout=8)
+                if resp2.ok:
+                    data2_docs = resp2.json().get("docs", [])
+            except Exception:
+                pass  # la 2e requête est optionnelle
+
+        # ── Fusion et dédoublonnage par ol_key ──────────────────────────────
+        seen_keys = set()
+        merged_docs = []
+        for doc in data1.get("docs", []) + data2_docs:
+            key = doc.get("key", "")
+            if not key or key in seen_keys:
+                continue
+            seen_keys.add(key)
+            merged_docs.append(doc)
+
+        # ── Filtrage pages + construction objets livres ──────────────────────
         books = []
-        for doc in data.get("docs", []):
-            # Appliquer filtres de pages
+        for doc in merged_docs:
             if min_pages and doc.get("number_of_pages_median", 0) < min_pages:
                 continue
             if max_pages and doc.get("number_of_pages_median", float('inf')) > max_pages:
                 continue
-            
-            raw_series = doc.get("series", [])
-            series_name = ""
-            if raw_series:
-                s = raw_series[0] if isinstance(raw_series, list) else raw_series
-                # Nettoyer le numéro de tome éventuel ("Red Rising #1" → "Red Rising")
-                import re as _re
-                vol_match = _re.search(r'\s*[#,]\s*\d+', s)
-                series_name = s[:vol_match.start()].strip() if vol_match else s.strip()
+            books.append(_doc_to_book(doc))
 
-            book = {
-                "ol_key": doc.get("key", ""),
-                "title": doc.get("title", ""),
-                "author": ", ".join(doc.get("author_name", [])) if doc.get("author_name") else "",
-                "category": detect_category_from_subjects(doc.get("subject", [])),
-                "cover_url": extract_cover_url(doc.get("cover_i")),
-                "first_publish_year": doc.get("first_publish_year"),
-                "isbn": doc.get("isbn", [""])[0] if doc.get("isbn") else "",
-                "subjects": doc.get("subject", [])[:5],
-                "number_of_pages": doc.get("number_of_pages_median"),
-                "publisher": ", ".join(doc.get("publisher", [])) if doc.get("publisher") else "",
-                "saga": series_name,
-            }
-            books.append(book)
-        
         return {
             "books": books[:limit],
-            "total_found": data.get("numFound", 0),
+            "total_found": data1.get("numFound", 0),
             "filters_applied": {
                 "year_range": f"{year_start}-{year_end}" if year_start or year_end else None,
                 "language": language,
@@ -125,7 +169,7 @@ async def search_open_library(
                 "author": author_filter
             }
         }
-        
+
     except requests.RequestException as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la recherche: {str(e)}")
 
@@ -252,8 +296,24 @@ async def import_from_open_library(
         editions_response = requests.get(editions_url, timeout=10)
         editions_data = editions_response.json() if editions_response.status_code == 200 else {"entries": []}
         
-        # Extraire les informations principales
-        title = work_data.get("title", "")
+        # Titre original depuis OL (langue d'origine du work)
+        original_title = import_data.get("original_title") or work_data.get("title", "")
+        title = original_title  # par défaut même titre
+
+        # Chercher une édition française pour obtenir le titre traduit
+        try:
+            fr_editions_url = f"https://openlibrary.org{ol_key}/editions.json?language=fre&limit=5"
+            fr_resp = requests.get(fr_editions_url, timeout=6)
+            if fr_resp.ok:
+                fr_data = fr_resp.json()
+                for entry in fr_data.get("entries", []):
+                    entry_langs = [l.get("key", "") for l in entry.get("languages", [])]
+                    if "/languages/fre" in entry_langs and entry.get("title"):
+                        title = entry["title"]  # titre français trouvé
+                        break
+        except Exception:
+            pass  # non critique
+
         authors = []
         if work_data.get("authors"):
             for author_ref in work_data["authors"]:
@@ -306,6 +366,7 @@ async def import_from_open_library(
             "id": book_id,
             "user_id": current_user["id"],
             "title": title,
+            "original_title": original_title if original_title != title else None,
             "author": author_str,
             "category": validated_category,
             "description": description,

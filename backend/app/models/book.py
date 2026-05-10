@@ -5,6 +5,7 @@ from datetime import datetime
 class BookCreate(BaseModel):
     title: str
     author: str
+    original_title: Optional[str] = None   # Titre dans la langue d'origine
     category: str = "roman"
     description: str = ""
     total_pages: Optional[int] = None
@@ -20,13 +21,15 @@ class BookCreate(BaseModel):
     publisher: str = ""
     isbn: str = ""
     auto_added: bool = False
-    is_series: Optional[bool] = False  # CORRECTION: Ajout champ is_series manquant
+    is_series: Optional[bool] = False
     language: Optional[str] = "fr"
     ol_key: Optional[str] = None
     ol_work_id: Optional[str] = None
     ol_edition_id: Optional[str] = None
 
 class BookUpdate(BaseModel):
+    title: Optional[str] = None
+    original_title: Optional[str] = None
     status: Optional[str] = None
     current_page: Optional[int] = None
     rating: Optional[int] = None
@@ -35,11 +38,14 @@ class BookUpdate(BaseModel):
     description: Optional[str] = None
     total_pages: Optional[int] = None
     category: Optional[str] = None
+    cover_url: Optional[str] = None
+    language: Optional[str] = None
 
 class BookResponse(BaseModel):
     id: str
     user_id: str
     title: str
+    original_title: Optional[str] = None
     author: str
     category: str
     description: str

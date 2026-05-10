@@ -59,8 +59,8 @@ export const searchOpenLibrary = async (query, {
     const token = localStorage.getItem('token');
     const backendUrl = API_BASE_URL;
     
-    // RECHERCHE GLOBALE : pas de filtre par catégorie, recherche dans TOUTES les catégories
-    const response = await fetch(`${backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}&limit=40`, {
+    // RECHERCHE GLOBALE : pas de filtre par catégorie, résultats étendus (80)
+    const response = await fetch(`${backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}&limit=80`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -342,7 +342,7 @@ export const handleAddFromOpenLibrary = async (openLibraryBook, {
         ol_key: openLibraryBook.ol_key,
         category: targetCategory,
         cover_url: openLibraryBook.cover_url || "",
-        // Ajouter les données de série détectées si disponibles
+        original_title: openLibraryBook.original_title || openLibraryBook.title || null,
         saga: enhancedBookData.saga || null,
         volume_number: enhancedBookData.volume_number || null,
         auto_detected_series: enhancedBookData.auto_detected_series || false,

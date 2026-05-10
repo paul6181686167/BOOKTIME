@@ -136,11 +136,15 @@ const UnifiedSearchBar = React.memo(({
     const sagaMap = new Map();   // clé = nom saga
 
     books.forEach(book => {
-      if (book.title && book.title.toLowerCase().includes(term)) {
+      const titleMatch = book.title && book.title.toLowerCase().includes(term);
+      const originalMatch = book.original_title && book.original_title.toLowerCase().includes(term);
+      if (titleMatch || originalMatch) {
         bookSuggestions.push({
           type: 'book',
           text: book.title,
-          subtitle: `par ${book.author}`,
+          subtitle: book.original_title && book.original_title !== book.title
+            ? `${book.original_title} · par ${book.author}`
+            : `par ${book.author}`,
           icon: BookOpenIcon,
           data: book
         });

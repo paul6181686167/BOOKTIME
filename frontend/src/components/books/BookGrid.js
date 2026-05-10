@@ -184,6 +184,12 @@ const BookGrid = ({
                 <h3 className="font-medium text-gray-900 dark:text-white text-[11px] sm:text-sm line-clamp-2 leading-tight">
                   {item.title}
                 </h3>
+                {/* Titre original si différent du titre affiché */}
+                {item.original_title && item.original_title !== item.title && (
+                  <p className="text-[9px] sm:text-[10px] text-gray-400 dark:text-gray-500 italic line-clamp-1 mt-0.5 leading-tight">
+                    {item.original_title}
+                  </p>
+                )}
                 <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">
                   {item.author}
                 </p>

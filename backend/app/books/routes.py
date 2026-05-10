@@ -178,23 +178,31 @@ async def search_books_grouped(
     if not q or len(q.strip()) < 2:
         return {"results": [], "total_books": 0, "total_sagas": 0, "search_term": q}
     
+    import unicodedata
+
+    def _normalize(s: str) -> str:
+        """Supprime les accents pour la recherche élargie"""
+        return unicodedata.normalize('NFD', s).encode('ascii', 'ignore').decode('utf-8').lower()
+
     search_term = q.strip().lower()
+    search_term_norm = _normalize(search_term)  # version sans accents
     filter_dict = {"user_id": current_user["id"]}
-    
+
     if category:
         filter_dict["category"] = category
-    
-    # Recherche dans tous les champs pertinents
-    search_filter = {
-        "$or": [
-            {"title": {"$regex": re.escape(search_term), "$options": "i"}},
-            {"author": {"$regex": re.escape(search_term), "$options": "i"}},
-            {"saga": {"$regex": re.escape(search_term), "$options": "i"}},
-            {"description": {"$regex": re.escape(search_term), "$options": "i"}},
-            {"genre": {"$regex": re.escape(search_term), "$options": "i"}},
-            {"publisher": {"$regex": re.escape(search_term), "$options": "i"}}
-        ]
-    }
+
+    def _regex_clause(field: str, term: str):
+        return {field: {"$regex": re.escape(term), "$options": "i"}}
+
+    # Termes de recherche : avec accents (original) + sans accents (élargi)
+    terms = list({search_term, search_term_norm})  # dédupliqué
+
+    or_clauses = []
+    for term in terms:
+        for field in ["title", "original_title", "author", "saga", "genre", "publisher"]:
+            or_clauses.append(_regex_clause(field, term))
+
+    search_filter = {"$or": or_clauses}
     
     # Combiner les filtres
     final_filter = {"$and": [filter_dict, search_filter]}
