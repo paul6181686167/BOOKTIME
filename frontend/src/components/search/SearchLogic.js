@@ -126,41 +126,8 @@ export const searchOpenLibrary = async (query, {
         });
       });
 
-      // -- Stratégie 2 (fallback) : auteur + mots du query pour les livres sans saga --
-      const noSagaBooks = enriched.filter(b => !olSeriesBookIds.has(b.ol_key));
-      const authorGroups = {};
-      noSagaBooks.forEach(book => {
-        if (!book.author) return;
-        const key = book.author.toLowerCase().trim();
-        if (!authorGroups[key]) authorGroups[key] = { author: book.author, books: [], category: book.category };
-        authorGroups[key].books.push(book);
-      });
-
-      const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length >= 3);
-      Object.values(authorGroups).forEach(group => {
-        if (group.books.length < 2) return;
-        const matchingBooks = queryWords.length > 0
-          ? group.books.filter(b => queryWords.some(w => b.title.toLowerCase().includes(w)))
-          : group.books;
-        if (matchingBooks.length < 2) return;
-
-        const seriesName = queryWords.length > 0 ? query.trim() : group.author;
-        matchingBooks.forEach(b => olSeriesBookIds.add(b.ol_key));
-
-        olSeriesCards.push({
-          isSeriesCard: true,
-          id: `series_author_${seriesName.toLowerCase().replace(/\s+/g, '_')}`,
-          name: seriesName,
-          author: group.author,
-          category: group.category,
-          cover_url: matchingBooks.find(b => b.cover_url)?.cover_url || null,
-          totalBooks: matchingBooks.length,
-          books: matchingBooks,
-          description: `Série de ${matchingBooks.length} livres de ${group.author}`,
-          relevanceScore: 90000,
-          fromOpenLibrary: true,
-        });
-      });
+      // Stratégie 2 supprimée : le regroupement par auteur créait de fausses séries
+      // (ex. "running man" → tous les Stephen King regroupés → vrai livre caché derrière)
 
       // ── 4. Regroupement des livres orphelins par la base statique ────────
       // Si un titre correspond exactement à un volume d'une série connue → carte série
@@ -192,8 +159,31 @@ export const searchOpenLibrary = async (query, {
       // ── 5. Séries de la base statique (legacy query-based) ──────────────
       const staticSeriesCards = generateSeriesCardsForSearch(query, data.books);
 
-      // ── 6. Livres individuels (hors séries détectées) ────────────────────
-      const standaloneBooks = enriched.filter(b => !olSeriesBookIds.has(b.ol_key));
+      // ── 6. Livres individuels triés par pertinence ────────────────────────
+      const qLower = query.toLowerCase().trim();
+      const qWords = qLower.split(/\s+/).filter(w => w.length >= 2);
+
+      const scoreBook = (book) => {
+        const t = (book.title || '').toLowerCase();
+        let score = 0;
+        // Correspondance exacte du titre → très haute priorité
+        if (t === qLower) score += 2000;
+        // Le titre commence par la requête
+        else if (t.startsWith(qLower)) score += 1000;
+        // Le titre contient tous les mots de la requête
+        else if (qWords.every(w => t.includes(w))) score += 500;
+        // Chaque mot présent
+        else score += qWords.filter(w => t.includes(w)).length * 100;
+        // Popularité (nombre d'éditions OL) → signal de renommée
+        score += Math.min(book.edition_count || 0, 200);
+        // Pénalité légère si le titre est très long (moins précis)
+        score -= Math.max(0, t.split(' ').length - 6) * 10;
+        return score;
+      };
+
+      const standaloneBooks = enriched
+        .filter(b => !olSeriesBookIds.has(b.ol_key))
+        .sort((a, b) => scoreBook(b) - scoreBook(a));
 
       // ── 7. Fusion + tri : séries d'abord, puis livres ───────────────────
       const allSeriesNames = new Set(olSeriesCards.map(c => c.name.toLowerCase()));

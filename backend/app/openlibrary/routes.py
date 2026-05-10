@@ -64,7 +64,8 @@ def _build_ol_params(q_term: str, limit: int, year_start, year_end, language, au
     return {
         "q": " AND ".join(query_parts),
         "limit": limit,
-        "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,number_of_pages_median,publisher,language,series"
+        "sort": "editions",   # trier par nombre d'éditions = popularité
+        "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,number_of_pages_median,publisher,language,series,edition_count"
     }
 
 def _doc_to_book(doc: dict) -> dict:
@@ -97,6 +98,7 @@ def _doc_to_book(doc: dict) -> dict:
         "publisher": ", ".join(doc.get("publisher", [])) if doc.get("publisher") else "",
         "saga": series_name,
         "available_languages": langs[:5] if langs else [],
+        "edition_count": doc.get("edition_count", 0),
     }
 
 
