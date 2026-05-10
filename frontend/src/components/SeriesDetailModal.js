@@ -54,16 +54,55 @@ const SeriesDetailModal = ({
     setConfirmDelete(false);
     try {
       const token = localStorage.getItem('token');
+      let deleted = false;
 
-      if (isSeriesOwned) {
-        // Série possédée → retirer de la bibliothèque de séries
+      // Cas 1 : série possédée → retirer de la bibliothèque de séries
+      if (isSeriesOwned || series.isOwnedSeries || series.isLibrarySeries) {
         const seriesId = series.id || series._id;
-        await deleteSeriesFromLibrary(seriesId, token);
-      } else {
-        // Série auto-détectée → supprimer chaque livre individuellement
-        const booksToDelete = series.books || [];
-        await Promise.all(booksToDelete.map(b => bookService.deleteBook(b.id || b._id)));
+        if (seriesId) {
+          try {
+            await deleteSeriesFromLibrary(seriesId, token);
+            deleted = true;
+          } catch (e) {
+            // continue pour essayer de supprimer les livres
+          }
+        }
       }
+
+      // Cas 2 : supprimer les livres individuels (série auto-détectée ou livres associés)
+      // Priorité : books[] sur l'objet série, puis books[] chargés dans le modal
+      const directBooks = [
+        ...(series.books || []),
+        ...books  // état interne du modal (chargé par loadBooksForSeries)
+      ];
+      const uniqueBooks = directBooks.filter(
+        (b, i, arr) => b && (b.id || b._id) && arr.findIndex(x => (x.id || x._id) === (b.id || b._id)) === i
+      );
+
+      if (uniqueBooks.length > 0) {
+        await Promise.allSettled(uniqueBooks.map(b => bookService.deleteBook(b.id || b._id)));
+        deleted = true;
+      }
+
+      // Cas 3 : fallback — chercher par champ saga
+      if (!deleted) {
+        const resp = await fetch(
+          `${API_BASE_URL}/api/books/all?saga=${encodeURIComponent(series.name)}&limit=100`,
+          { headers: { 'Authorization': `Bearer ${token}` } }
+        );
+        if (resp.ok) {
+          const data = await resp.json();
+          const sagaBooks = (data.items || []).filter(b =>
+            (b.saga || '').toLowerCase().trim() === (series.name || '').toLowerCase().trim()
+          );
+          if (sagaBooks.length > 0) {
+            await Promise.allSettled(sagaBooks.map(b => bookService.deleteBook(b.id || b._id)));
+            deleted = true;
+          }
+        }
+      }
+
+      if (!deleted) throw new Error('Aucun contenu trouvé à supprimer');
 
       toast.success('Série retirée de ta bibliothèque !');
       onClose();
@@ -826,8 +865,8 @@ const SeriesDetailModal = ({
                 </button>
               )}
 
-              {/* Bouton Retirer — visible seulement si la série est dans la bibliothèque */}
-              {(isSeriesOwned || (series.books && series.books.length > 0)) && (
+              {/* Bouton Retirer — visible si la série ou ses livres sont dans la bibliothèque */}
+              {(isSeriesOwned || series.isOwnedSeries || series.isLibrarySeries || series.isSeriesCard || (series.books && series.books.length > 0) || books.length > 0) && (
                 confirmDelete ? (
                   <div className="flex items-center gap-1 w-full md:w-auto">
                     <span className="text-xs text-red-600 dark:text-red-400 font-medium whitespace-nowrap">Confirmer ?</span>
