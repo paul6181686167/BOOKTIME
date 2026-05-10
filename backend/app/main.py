@@ -167,16 +167,6 @@ async def health():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database connection error: {str(e)}")
 
-@app.get("/api/deployment-status")
-async def deployment_status():
-    """Status déploiement pour validation production"""
-    return {
-        "status": "deployed",
-        "environment": os.environ.get("ENVIRONMENT", "development"),
-        "backend_url": os.environ.get("RAILWAY_PUBLIC_DOMAIN", "localhost:8001"),
-        "cors_origins": get_cors_origins(),
-        "timestamp": datetime.utcnow().isoformat()
-    }
 
 # Enregistrement des routers
 app.include_router(auth_router)

@@ -15,7 +15,7 @@
       name="description"
       content="BOOKTIME - Votre application de tracking de livres personnelle"
     />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/favicon.ico" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     
     <!-- Fonts -->
@@ -71,44 +71,8 @@
     <div id="root"></div>
     
     <script>
-      // Hide loading spinner when React loads
       window.addEventListener('load', function() {
         document.body.classList.add('loaded');
-      });
-      
-      // 🔍 SCRIPTS D'ANALYSE GLOBALE DES SÉRIES
-      // Chargement des analyseurs après le chargement de React
-      window.addEventListener('load', function() {
-        // Attendre que React soit chargé
-        setTimeout(function() {
-          // Charger les analyseurs de série
-          if (window.SeriesAnalyzer) {
-            console.log('🔍 SeriesAnalyzer disponible globalement');
-            console.log('💡 Commandes disponibles:');
-            console.log('   - analyzeAllSeries() : Analyse tous les livres');
-            console.log('   - updateDetectedSeries() : Met à jour les séries détectées');
-            console.log('   - generateSeriesReport() : Génère un rapport complet');
-          }
-          
-          if (window.AutoSeriesDetector) {
-            console.log('🤖 AutoSeriesDetector disponible globalement');
-            console.log('💡 Détection automatique activée lors de l\'ajout de livres');
-          }
-          
-          if (window.SeriesReportGenerator) {
-            console.log('📊 SeriesReportGenerator disponible globalement');
-            console.log('💡 Génération de rapports détaillés disponible');
-          }
-          
-          // Charger le script de démonstration
-          const script = document.createElement('script');
-          script.src = '/seriesAnalysisDemo.js';
-          script.onload = function() {
-            console.log('🚀 Script de démonstration chargé !');
-            console.log('💡 Tapez showSeriesAnalysisHelp() pour voir l\'aide');
-          };
-          document.head.appendChild(script);
-        }, 2000);
       });
     </script>
   </body>

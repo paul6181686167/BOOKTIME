@@ -34,16 +34,11 @@ export const loadUserSeriesLibrary = async (setSeriesLibraryLoading, setUserSeri
 // ENRICHISSEMENT AUTOMATIQUE DES MÉTADONNÉES
 export const enrichSeriesMetadata = async (seriesData) => {
   try {
-    console.log('🔍 Enrichissement métadonnées pour:', seriesData.name);
-    
-    // 1. Récupérer une image depuis Open Library (tome 1 comme fallback)
     let cover_image_url = '';
     try {
       const openLibraryUrl = await seriesImageService.fetchCoverFromOpenLibrary(seriesData.name);
       cover_image_url = openLibraryUrl || DEFAULT_SERIES_COVER;
-      console.log('🖼️ Image récupérée Open Library:', cover_image_url !== DEFAULT_SERIES_COVER ? cover_image_url : '(fallback SVG)');
     } catch (error) {
-      console.warn('⚠️ Erreur récupération image Open Library:', error);
       cover_image_url = DEFAULT_SERIES_COVER;
     }
     
@@ -71,9 +66,7 @@ export const enrichSeriesMetadata = async (seriesData) => {
         description_fr = `Série de ${categoryText[seriesData.category] || 'livres'} populaire${authorText}.${volumeText}`;
       }
       
-      console.log('📝 Description générée:', description_fr);
     } catch (error) {
-      console.warn('⚠️ Erreur génération description:', error);
       description_fr = `Série ${seriesData.category || 'populaire'}.`;
     }
     
@@ -108,20 +101,13 @@ export const handleAddSeriesToLibrary = async (seriesData, {
     setSeriesLibraryLoading(true);
     const token = localStorage.getItem('token');
     
-    console.log('🚀 Ajout série à la bibliothèque:', seriesData);
-    
     // Importer le référentiel étendu
     const { EXTENDED_SERIES_DATABASE } = await import('../../utils/seriesDatabaseExtended.js');
     
     // Générer les volumes avec titres depuis le référentiel
     const volumes = seriesLibraryService.generateVolumesList(seriesData, EXTENDED_SERIES_DATABASE);
     
-    console.log('📚 Volumes générés:', volumes);
-    
-    // Enrichissement automatique des métadonnées
     const enrichedMetadata = await enrichSeriesMetadata(seriesData);
-    
-    console.log('✨ Métadonnées enrichies:', enrichedMetadata);
     
     // Préparer les données de la série avec toutes les métadonnées
     const seriesPayload = {
@@ -139,14 +125,10 @@ export const handleAddSeriesToLibrary = async (seriesData, {
       series_status: 'to_read'
     };
     
-    console.log('📋 Payload final:', seriesPayload);
-    
     // Appel API pour ajouter la série
     const result = await seriesLibraryService.addSeriesToLibrary(seriesPayload, token);
     
     if (result.success) {
-      // CORRECTION : Utiliser le callback fourni pour recharger la bibliothèque
-      console.log('🔄 Rechargement bibliothèque séries après ajout réussi...');
       await loadUserSeriesLibrary();
       
       // Message de succès détaillé
@@ -155,7 +137,6 @@ export const handleAddSeriesToLibrary = async (seriesData, {
         { duration: 4000 }
       );
       
-      console.log('✅ Série ajoutée avec succès:', result);
     }
   } catch (error) {
     console.error('❌ Erreur ajout série:', error);

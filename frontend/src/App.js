@@ -1,5 +1,5 @@
 // Imports
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { toast, Toaster } from 'react-hot-toast';
 
@@ -605,62 +605,32 @@ function MainApp() {
 
   // Calculer les livres à afficher selon le mode
   // Tous les livres appartenant à une série sont groupés en carte série (bibliothèque ET recherche)
-  const getDisplayedBooks = () => {
+  const displayedBooks = useMemo(() => {
     if (searchHook.isSearchMode) {
-      // En recherche : grouper uniquement les résultats de recherche, SANS injecter les séries de la bibliothèque
       const rawBooks = (searchHook.openLibraryResults || []).filter(item => !item.isSeriesCard);
       return BookActions.createUnifiedDisplay(rawBooks, getCategoryBadgeFromBook, [], {});
     }
     return createUnifiedDisplay(filteredBooks || []);
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchHook.isSearchMode, searchHook.openLibraryResults, filteredBooks, activeTab, unifiedContent.userSeriesLibrary]);
 
-  const displayedBooks = getDisplayedBooks();
-
-  // MODIFICATION ORGANISATIONNELLE : Grouper les livres par statut pour affichage en sections
-  const groupBooksByStatus = (books) => {
+  const groupedBooks = useMemo(() => {
     if (searchHook.isSearchMode) {
-      // En mode recherche, pas de groupement par statut
-      return { all: books };
+      return { all: displayedBooks };
     }
-
-    const groups = {
-      reading: [],    // EN COURS
-      to_read: [],    // À LIRE  
-      completed: []   // TERMINÉ
-    };
-
-    books.forEach(book => {
+    const groups = { reading: [], to_read: [], completed: [] };
+    displayedBooks.forEach(book => {
       const status = book.status || 'to_read';
-      if (groups[status]) {
-        groups[status].push(book);
-      } else {
-        groups.to_read.push(book); // Statut inconnu → À lire par défaut
-      }
+      (groups[status] || groups.to_read).push(book);
     });
-
-    // Trier chaque groupe : vignettes séries d'abord, puis livres individuels
-    const sortGroup = (groupArray) => {
-      return groupArray.sort((a, b) => {
-        // Vignettes séries en premier
-        if (a.isSeriesCard && !b.isSeriesCard) return -1;
-        if (!a.isSeriesCard && b.isSeriesCard) return 1;
-        
-        // Si même type, trier par date d'ajout (plus récent d'abord)
-        const dateA = new Date(a.date_added || a.updated_at || 0);
-        const dateB = new Date(b.date_added || b.updated_at || 0);
-        return dateB - dateA;
-      });
-    };
-
-    // Appliquer le tri à chaque groupe
-    Object.keys(groups).forEach(status => {
-      groups[status] = sortGroup(groups[status]);
+    const sortGroup = (arr) => [...arr].sort((a, b) => {
+      if (a.isSeriesCard && !b.isSeriesCard) return -1;
+      if (!a.isSeriesCard && b.isSeriesCard) return 1;
+      return new Date(b.date_added || b.updated_at || 0) - new Date(a.date_added || a.updated_at || 0);
     });
-
+    Object.keys(groups).forEach(s => { groups[s] = sortGroup(groups[s]); });
     return groups;
-  };
-
-  const groupedBooks = groupBooksByStatus(displayedBooks);
+  }, [displayedBooks, searchHook.isSearchMode]);
   const { sortConfig, setSortConfig, sortBooks } = useSectionSort();
 
   return (

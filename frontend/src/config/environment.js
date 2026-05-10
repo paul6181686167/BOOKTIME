@@ -7,21 +7,12 @@
  * Détection intelligente URL backend selon environnement
  */
 const getBackendURL = () => {
-  // Preview Emergent - utilise même domaine (backend et frontend sur même URL)
   if (window.location.hostname.includes('emergentagent.com')) {
-    console.log('🌍 Environment: Emergent Preview');
     return window.location.origin;
   }
-
-  // Production : Railway backend URL fournie via variable d'environnement Vercel
-  // Définie dans le dashboard Vercel : REACT_APP_BACKEND_URL = https://xxxx.up.railway.app
   if (process.env.REACT_APP_BACKEND_URL) {
-    console.log('🌍 Environment: Production (Railway backend)');
     return process.env.REACT_APP_BACKEND_URL;
   }
-
-  // Development local - URL directe backend pour éviter 405 (proxy) et 500
-  console.log('🌍 Environment: Local Development (backend direct)');
   return process.env.REACT_APP_API_URL || 'http://localhost:8001';
 };
 
@@ -48,34 +39,14 @@ export const API_ENDPOINTS = {
   DEPLOYMENT: `${API_BASE_URL}/api/deployment-status`
 };
 
-/**
- * Configuration debugging
- */
-if (!IS_PRODUCTION) {
-  console.log('🔗 Backend URL:', API_BASE_URL);
-  console.log('🌍 Environment:', ENVIRONMENT);
-  console.log('📡 API Endpoints:', API_ENDPOINTS);
-}
-
-/**
- * Test connectivité backend au chargement
- */
 export const checkBackendHealth = async () => {
   try {
     const response = await fetch(API_ENDPOINTS.HEALTH);
-    const data = await response.json();
-    console.log('✅ Backend Health:', data);
-    return data;
+    return await response.json();
   } catch (error) {
-    console.error('❌ Backend Health Check Failed:', error);
     return { status: 'error', error: error.message };
   }
 };
-
-// Test automatique en development
-if (IS_DEVELOPMENT) {
-  setTimeout(checkBackendHealth, 2000);
-}
 
 export default {
   API_BASE_URL,
