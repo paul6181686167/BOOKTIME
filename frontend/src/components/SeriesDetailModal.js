@@ -70,7 +70,7 @@ const SeriesDetailModal = ({
       }
     } catch (error) {
       console.error('❌ Erreur lors du chargement des préférences:', error);
-      return new Set();
+      return {};
     }
   };
 

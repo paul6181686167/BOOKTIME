@@ -264,7 +264,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                 {book.category === 'roman' && '📚'} 
                 {book.category === 'bd' && '🎨'} 
                 {book.category === 'manga' && '🇯🇵'} 
-                {book.category.charAt(0).toUpperCase() + book.category.slice(1)}
+                {(book.category || 'roman').charAt(0).toUpperCase() + (book.category || 'roman').slice(1)}
               </span>
               <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getCurrentStatus().color}`}>
                 {getCurrentStatus().label}

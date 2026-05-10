@@ -31,6 +31,8 @@ const MobileBottomNav = ({ activeTab, onTabChange }) => {
               key={id}
               type="button"
               onClick={() => onTabChange(id)}
+              aria-label={label}
+              aria-current={isActive ? 'page' : undefined}
               className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 ${
                 isActive
                   ? 'text-green-600 dark:text-green-400'
@@ -40,8 +42,8 @@ const MobileBottomNav = ({ activeTab, onTabChange }) => {
               {isActive && (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-8 bg-green-500 rounded-b-full" />
               )}
-              <Ic className="w-5 h-5" />
-              <span className="text-[9px] font-medium leading-none">{label}</span>
+              <Ic className="w-5 h-5" aria-hidden="true" />
+              <span className="text-[11px] font-medium leading-none">{label}</span>
             </button>
           );
         })}

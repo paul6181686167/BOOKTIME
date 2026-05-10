@@ -49,8 +49,8 @@ export const bookService = {
       if (category) params.category = category;
       if (status) params.status = status;
       
-      // Charger tous les livres (limit élevée pour éviter la troncature à 20)
-      params.limit = 500;
+      // Charger tous les livres (limit max backend = 1000)
+      params.limit = 1000;
       const response = await api.get('/api/books/all', { params });
       return response.data;
     } catch (error) {

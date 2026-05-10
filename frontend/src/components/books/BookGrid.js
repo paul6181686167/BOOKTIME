@@ -1,5 +1,4 @@
 import React from 'react';
-import BookActions from './BookActions';
 import { resolveCoverForGridItem } from '../../utils/helpers';
 
 const BookGrid = ({ 
@@ -10,34 +9,16 @@ const BookGrid = ({
   onAuthorClick,
   showEmptyState = true 
 }) => {
-  const applySeriesBookMasking = (booksList) => {
-    if (!booksList || !Array.isArray(booksList)) return [];
-    
-    const unifiedDisplay = BookActions.createUnifiedDisplay(booksList, (book) => {
-      if (book.category) {
-        switch (book.category.toLowerCase()) {
-          case 'roman':
-            return { key: 'roman', text: 'Roman', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300', emoji: '📚' };
-          case 'bd':
-            return { key: 'bd', text: 'BD', class: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300', emoji: '🎨' };
-          case 'manga':
-            return { key: 'manga', text: 'Manga', class: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300', emoji: '🇯🇵' };
-          default:
-            return { key: 'roman', text: 'Roman', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300', emoji: '📚' };
-        }
-      }
-      return { key: 'roman', text: 'Roman', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300', emoji: '📚' };
-    });
-    
-    return unifiedDisplay.filter(item => {
+  // Les livres reçus sont déjà traités par App.js (createUnifiedDisplay + filtrage)
+  // On n'applique qu'un filtre minimal pour éviter les livres standalone avec saga
+  const displayedBooks = React.useMemo(() => {
+    if (!books || !Array.isArray(books)) return [];
+    return books.filter(item => {
       if (item.isSeriesCard) return true;
       const belongsToSeries = !!(item.saga && item.saga.trim());
-      if (belongsToSeries) return false;
-      return true;
+      return !belongsToSeries;
     });
-  };
-  
-  const displayedBooks = applySeriesBookMasking(books);
+  }, [books]);
 
   if (loading) {
     return (

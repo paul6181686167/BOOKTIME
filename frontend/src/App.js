@@ -139,6 +139,7 @@ const SortControls = ({ sortConfig, setSortConfig }) => {
 const AnimatedCounter = ({ value, className }) => {
   const [displayed, setDisplayed] = React.useState(0);
   React.useEffect(() => {
+    if (value === 0) { setDisplayed(0); return; }
     if (!value) return;
     let start = 0;
     const step = Math.ceil(value / 20);
@@ -292,7 +293,6 @@ function MainApp() {
   // CORRECTION RCA - Gestionnaire d'événements pour retour automatique vers bibliothèque
   useEffect(() => {
     const handleBackToLibrary = (event) => {
-      console.log('🎯 CORRECTION RCA: Retour automatique vers bibliothèque déclenché', event.detail);
       // Appeler la fonction de retour à la bibliothèque
       backToLibrary();
       
@@ -335,9 +335,6 @@ function MainApp() {
       return true; // Fallback pour autres onglets
     });
     
-    console.log(`🔍 [CORRECTION RCA] Onglet actif: ${activeTab}`);
-    console.log(`🔍 [CORRECTION RCA] Séries avant filtrage: ${(unifiedContent.userSeriesLibrary || []).length}`);
-    console.log(`🔍 [CORRECTION RCA] Séries après filtrage: ${filteredSeries.length}`);
     
     return BookActions.createUnifiedDisplay(booksList, getCategoryBadgeFromBook, filteredSeries, unifiedContent.readingPreferences || {});
   };
@@ -433,7 +430,6 @@ function MainApp() {
     const apiStartTime = Date.now();
     
     try {
-      console.log('🔄 [CORRECTION RCA] Utilisation SeriesActions.handleAddSeriesToLibrary pour:', series.name);
       
       // Utiliser l'implémentation complète et robuste de SeriesActions
       await SeriesActions.handleAddSeriesToLibrary(series, {
@@ -464,7 +460,6 @@ function MainApp() {
         category: series.category
       });
       
-      console.log('✅ [CORRECTION RCA] Série ajoutée avec SeriesActions avec succès');
       
     } catch (error) {
       console.error('❌ [CORRECTION RCA] Erreur SeriesActions:', error);
@@ -624,22 +619,14 @@ function MainApp() {
         // Vérifier d'abord le champ saga existant
         const belongsToSeries = !!(item.saga && item.saga.trim());
         if (belongsToSeries) {
-          console.log(`🔒 [MASQUAGE UNIVERSEL - RECHERCHE] Livre "${item.title}" appartenant à la série "${item.saga}" - MASQUÉ`);
-          return false;
+              return false;
         }
         
-        // Utiliser la détection intelligente pour les livres sans champ saga
         const detection = SeriesDetector.detectBookSeries(item);
+        if (detection.belongsToSeries && detection.confidence >= 70) return false;
         
-        if (detection.belongsToSeries && detection.confidence >= 70) {
-          console.log(`🔒 [MASQUAGE INTELLIGENT - RECHERCHE] Livre "${item.title}" détecté série "${detection.seriesName}" (${detection.confidence}% confiance) - MASQUÉ`);
-          return false;
-        }
-        
-        return true; // Livre standalone autorisé
+        return true;
       });
-      
-      console.log(`🔒 [MASQUAGE INTELLIGENT - RECHERCHE] ${searchHook.openLibraryResults.length - filteredSearchResults.length} livre(s) masqué(s) sur ${searchHook.openLibraryResults.length} résultats`);
       
       return filteredSearchResults;
     }
@@ -661,30 +648,6 @@ function MainApp() {
       return !(detection.belongsToSeries && detection.confidence >= minConfidenceForAuto);
     });
     
-    console.log(`🔍 [SESSION 81.8] Filtrage en amont intelligent - ${booksToDisplay.length} livres total:`);
-    console.log(`📚 [SESSION 81.8] - ${seriesBooks.length} livres appartenant à des séries (seront regroupés et masqués)`);
-    console.log(`📖 [SESSION 81.8] - ${standaloneBooks.length} livres standalone (vignettes individuelles autorisées)`);
-    
-    // Analyse détaillée des séries détectées
-    const seriesAnalysis = {};
-    seriesBooks.forEach(book => {
-      const seriesKey = book.saga.toLowerCase().trim();
-      if (!seriesAnalysis[seriesKey]) {
-        seriesAnalysis[seriesKey] = {
-          name: book.saga,
-          count: 0,
-          titles: []
-        };
-      }
-      seriesAnalysis[seriesKey].count++;
-      seriesAnalysis[seriesKey].titles.push(book.title);
-    });
-    
-    console.log(`🔍 [SESSION 81.1] Analyse des séries détectées:`);
-    Object.values(seriesAnalysis).forEach(series => {
-      console.log(`📚 [SESSION 81.1] Série "${series.name}" - ${series.count} livre(s) masqué(s): ${series.titles.join(', ')}`);
-    });
-    
     // Créer l'affichage unifié avec la logique de masquage renforcée
     // 🆕 PHASE B.2 : Utiliser la fonction createUnifiedDisplay locale qui passe userSeriesLibrary
     const unifiedDisplay = createUnifiedDisplay(booksToDisplay);
@@ -702,23 +665,14 @@ function MainApp() {
         // Pour les livres individuels, vérifier qu'ils n'appartiennent pas à une série
         // Méthode 1 : Champ saga existant
         const belongsToSeries = !!(item.saga && item.saga.trim());
-        if (belongsToSeries) {
-          console.warn(`⚠️ [SESSION 81.8] PROTECTION FINALE: Livre "${item.title}" de la série "${item.saga}" détecté - MASQUÉ`);
-          return false; // Masquer ce livre
-        }
+        if (belongsToSeries) return false;
         
-        // Méthode 2 : Détection intelligente (seuil 90% pour éviter faux positifs)
         const detection = SeriesDetector.detectBookSeries(item);
-        if (detection.belongsToSeries && detection.confidence >= 90) {
-          console.warn(`⚠️ [SESSION 81.8] PROTECTION INTELLIGENTE: Livre "${item.title}" détecté série "${detection.seriesName}" (${detection.confidence}% confiance) - MASQUÉ`);
-          return false; // Masquer ce livre détecté
-        }
+        if (detection.belongsToSeries && detection.confidence >= 90) return false;
         
-        return true; // Livre standalone autorisé
+        return true;
       }
     });
-    
-    console.log(`🎯 [SESSION 81.1] Affichage final: ${finalBooks.length} éléments (${finalBooks.filter(f => f.isSeriesCard).length} séries + ${finalBooks.filter(f => !f.isSeriesCard).length} livres standalone)`);
     
     return finalBooks;
   };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDownIcon, ChevronUpIcon, BookOpenIcon, CalendarIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 
 // tomeStatus : 'non_lu' | 'en_cours' | 'lu'
@@ -6,6 +6,11 @@ import { ChevronDownIcon, ChevronUpIcon, BookOpenIcon, CalendarIcon, DocumentTex
 const TomeDropdown = ({ tomeNumber, tomeTitle, seriesData, tomeStatus = 'non_lu', currentPage = null, onToggleRead, onStatusChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [pageInput, setPageInput] = useState(currentPage || '');
+
+  // Synchroniser pageInput si currentPage change depuis le parent
+  useEffect(() => {
+    setPageInput(currentPage ?? '');
+  }, [currentPage]);
 
   // Rétrocompatibilité : si onStatusChange absent, utiliser onToggleRead (booléen)
   const handleStatusChange = (newStatus) => {
