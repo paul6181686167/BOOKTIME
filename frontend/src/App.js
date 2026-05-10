@@ -602,16 +602,34 @@ function MainApp() {
     }
   }, [user]);
 
+  // Helper : recalcule isOwned depuis la bibliothèque courante (évite les faux "déjà possédé" après suppression)
+  const recomputeOwnership = useCallback((olResults, localBooks) => {
+    if (!olResults?.length) return olResults;
+    return olResults.map(item => {
+      if (item.isSeriesCard) return item;
+      const owned = (localBooks || []).some(b => {
+        if (b.ol_key && item.ol_key && b.ol_key === item.ol_key) return true;
+        if (b.isbn && item.isbn && b.isbn.replace(/[-\s]/g, '') === item.isbn.replace(/[-\s]/g, '')) return true;
+        const normalize = s => (s || '').toLowerCase().trim().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ');
+        const sameTitle = normalize(b.title) === normalize(item.title);
+        const sameAuthor = normalize(b.author) === normalize(item.author);
+        return sameTitle && sameAuthor && normalize(b.title).length > 3;
+      });
+      return { ...item, isOwned: owned };
+    });
+  }, []);
+
   // Calculer les livres à afficher selon le mode
-  // Tous les livres appartenant à une série sont groupés en carte série (bibliothèque ET recherche)
   const displayedBooks = useMemo(() => {
     if (searchHook.isSearchMode) {
-      const rawBooks = (searchHook.openLibraryResults || []).filter(item => !item.isSeriesCard);
+      // Recalcule isOwned à chaque fois que la bibliothèque change (ex. après suppression)
+      const refreshed = recomputeOwnership(searchHook.openLibraryResults, unifiedContent.books);
+      const rawBooks = (refreshed || []).filter(item => !item.isSeriesCard);
       return BookActions.createUnifiedDisplay(rawBooks, getCategoryBadgeFromBook, [], {});
     }
     return createUnifiedDisplay(filteredBooks || []);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchHook.isSearchMode, searchHook.openLibraryResults, filteredBooks, activeTab, unifiedContent.userSeriesLibrary]);
+  }, [searchHook.isSearchMode, searchHook.openLibraryResults, filteredBooks, activeTab, unifiedContent.userSeriesLibrary, unifiedContent.books, recomputeOwnership]);
 
   const groupedBooks = useMemo(() => {
     if (searchHook.isSearchMode) {

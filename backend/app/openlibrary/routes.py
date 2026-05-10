@@ -118,37 +118,37 @@ async def search_open_library(
     Retourne original_title pour que le front puisse l'afficher en sous-titre.
     """
     try:
+        import concurrent.futures
         OL_URL = "https://openlibrary.org/search.json"
-        # Demander 2× plus pour compenser le dédoublonnage après fusion
-        fetch_limit = min(limit * 2, 100)
+        fetch_limit = min(limit + 10, 50)  # marge légère sans surcharger
 
-        # ── Requête 1 : terme original de l'utilisateur ──────────────────────
-        params1 = _build_ol_params(q, fetch_limit, year_start, year_end, language, author_filter)
-        resp1 = requests.get(OL_URL, params=params1, timeout=10)
-        resp1.raise_for_status()
-        data1 = resp1.json()
-
-        # ── Requête 2 : terme sans accents (si différent) ────────────────────
+        # ── Requêtes parallèles : terme original + version sans accents ───────
         q_norm = _normalize_query(q)
-        data2_docs = []
+        queries = [q]
         if q_norm.lower() != q.lower():
-            try:
-                params2 = _build_ol_params(q_norm, fetch_limit, year_start, year_end, language, author_filter)
-                resp2 = requests.get(OL_URL, params=params2, timeout=8)
-                if resp2.ok:
-                    data2_docs = resp2.json().get("docs", [])
-            except Exception:
-                pass  # la 2e requête est optionnelle
+            queries.append(q_norm)
+
+        def _fetch(q_term):
+            params = _build_ol_params(q_term, fetch_limit, year_start, year_end, language, author_filter)
+            r = requests.get(OL_URL, params=params, timeout=8)
+            return r.json() if r.ok else {}
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [pool.submit(_fetch, qt) for qt in queries]
+            results = [f.result() for f in concurrent.futures.as_completed(futures)]
 
         # ── Fusion et dédoublonnage par ol_key ──────────────────────────────
         seen_keys = set()
         merged_docs = []
-        for doc in data1.get("docs", []) + data2_docs:
-            key = doc.get("key", "")
-            if not key or key in seen_keys:
-                continue
-            seen_keys.add(key)
-            merged_docs.append(doc)
+        for data in results:
+            for doc in data.get("docs", []):
+                key = doc.get("key", "")
+                if not key or key in seen_keys:
+                    continue
+                seen_keys.add(key)
+                merged_docs.append(doc)
+
+        total_found = max((r.get("numFound", 0) for r in results), default=0)
 
         # ── Filtrage pages + construction objets livres ──────────────────────
         books = []
@@ -161,7 +161,7 @@ async def search_open_library(
 
         return {
             "books": books[:limit],
-            "total_found": data1.get("numFound", 0),
+            "total_found": total_found,
             "filters_applied": {
                 "year_range": f"{year_start}-{year_end}" if year_start or year_end else None,
                 "language": language,
@@ -298,21 +298,30 @@ async def import_from_open_library(
         
         # Titre original depuis OL (langue d'origine du work)
         original_title = import_data.get("original_title") or work_data.get("title", "")
-        title = original_title  # par défaut même titre
+        title = original_title  # par défaut = titre original
 
-        # Chercher une édition française pour obtenir le titre traduit
-        try:
-            fr_editions_url = f"https://openlibrary.org{ol_key}/editions.json?language=fre&limit=5"
-            fr_resp = requests.get(fr_editions_url, timeout=6)
-            if fr_resp.ok:
-                fr_data = fr_resp.json()
-                for entry in fr_data.get("entries", []):
-                    entry_langs = [l.get("key", "") for l in entry.get("languages", [])]
-                    if "/languages/fre" in entry_langs and entry.get("title"):
-                        title = entry["title"]  # titre français trouvé
-                        break
-        except Exception:
-            pass  # non critique
+        # Chercher éditions FR en parallèle avec la récupération des auteurs (timeout court)
+        import concurrent.futures as _cf
+
+        def _find_fr_title():
+            try:
+                fr_resp = requests.get(
+                    f"https://openlibrary.org{ol_key}/editions.json",
+                    params={"language": "fre", "limit": 5},
+                    timeout=3
+                )
+                if fr_resp.ok:
+                    for entry in fr_resp.json().get("entries", []):
+                        langs = [l.get("key", "") for l in entry.get("languages", [])]
+                        if "/languages/fre" in langs and entry.get("title"):
+                            return entry["title"]
+            except Exception:
+                pass
+            return None
+
+        # Lancer en tâche de fond (non bloquant, on récupère après les auteurs)
+        _fr_executor = _cf.ThreadPoolExecutor(max_workers=1)
+        _fr_future = _fr_executor.submit(_find_fr_title)
 
         authors = []
         if work_data.get("authors"):
@@ -357,9 +366,19 @@ async def import_from_open_library(
         if import_data.get("saga"):
             saga_name = import_data["saga"]
 
+        # Récupérer le titre français (attendu max 1s supplémentaire, car lancé en parallèle)
+        try:
+            fr_title = _fr_future.result(timeout=1)
+            if fr_title:
+                title = fr_title
+        except Exception:
+            pass
+        finally:
+            _fr_executor.shutdown(wait=False)
+
         # Récupérer des détails depuis la première édition
         first_edition = editions_data.get("entries", [{}])[0]
-        
+
         # Créer le livre
         book_id = str(uuid.uuid4())
         book = {

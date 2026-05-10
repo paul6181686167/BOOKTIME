@@ -59,8 +59,8 @@ export const searchOpenLibrary = async (query, {
     const token = localStorage.getItem('token');
     const backendUrl = API_BASE_URL;
     
-    // RECHERCHE GLOBALE : pas de filtre par catégorie, résultats étendus (80)
-    const response = await fetch(`${backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}&limit=80`, {
+    // RECHERCHE GLOBALE : pas de filtre par catégorie, 40 résultats (double-pass OL côté backend)
+    const response = await fetch(`${backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}&limit=40`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
