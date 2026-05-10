@@ -181,6 +181,54 @@ export class SeriesDetector {
           }
         }
         
+        // Test correspondance avec les titres de tomes individuels (méthode la plus précise)
+        // Permet de détecter "La Communauté de l'Anneau" → "Le Seigneur des Anneaux"
+        if (series.volume_titles) {
+          for (const volTitle of Object.values(series.volume_titles)) {
+            if (!volTitle) continue;
+            const volTitleNorm = FuzzyMatcher.normalizeString(volTitle);
+            if (!volTitleNorm || volTitleNorm.length < 6) continue;
+
+            const isExactMatch = titleNormalized === volTitleNorm;
+            // Correspondance partielle : le titre contient le titre du tome (ex: "La Communauté de l'Anneau - Tome 1")
+            const isPartialMatch = volTitleNorm.length >= 12 && titleNormalized.includes(volTitleNorm);
+
+            if (isExactMatch || isPartialMatch) {
+              // Titre de tome long (>= 15 chars) : haute confiance sans vérification d'auteur
+              if (volTitleNorm.length >= 15) {
+                return {
+                  belongsToSeries: true,
+                  seriesName: series.name,
+                  confidence: 98,
+                  method: 'series_database_volume_title'
+                };
+              }
+              // Titre de tome court : vérifier l'auteur pour éviter les faux positifs
+              if (author && series.authors && series.authors.length > 0) {
+                const authorMatch = series.authors.some(sa =>
+                  FuzzyMatcher.fuzzyMatch(authorNormalized, FuzzyMatcher.normalizeString(sa)) >= 50
+                );
+                if (authorMatch) {
+                  return {
+                    belongsToSeries: true,
+                    seriesName: series.name,
+                    confidence: 93,
+                    method: 'series_database_volume_title'
+                  };
+                }
+              } else if (!author) {
+                // Pas d'auteur disponible : confiance modérée pour titre court
+                return {
+                  belongsToSeries: true,
+                  seriesName: series.name,
+                  confidence: 80,
+                  method: 'series_database_volume_title_no_author'
+                };
+              }
+            }
+          }
+        }
+
         // Test correspondance avec les variations
         if (series.variations) {
           for (const variation of series.variations) {
