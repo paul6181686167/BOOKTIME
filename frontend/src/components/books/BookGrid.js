@@ -111,7 +111,7 @@ const BookGrid = ({
                 <h3 className="font-medium text-gray-900 dark:text-white text-[11px] sm:text-sm line-clamp-2 leading-tight">
                   {item.name}
                 </h3>
-                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1 hidden sm:block">
+                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">
                   {item.author}
                 </p>
                 <div className="flex items-center justify-between mt-1">
@@ -184,7 +184,7 @@ const BookGrid = ({
                 <h3 className="font-medium text-gray-900 dark:text-white text-[11px] sm:text-sm line-clamp-2 leading-tight">
                   {item.title}
                 </h3>
-                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5 hidden sm:block">
+                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">
                   {item.author}
                 </p>
                 {/* Étoiles — desktop seulement */}

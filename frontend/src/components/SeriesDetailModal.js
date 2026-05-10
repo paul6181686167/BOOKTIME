@@ -556,42 +556,28 @@ const SeriesDetailModal = ({
     }
   };
 
-  // Fonction pour vérifier si la série est déjà dans la bibliothèque
+  // Vérification allégée : limit=1 pour éviter de télécharger toute la bibliothèque
   const checkIfSeriesOwned = async () => {
-    if (!series?.name) {
-      console.log('⚠️ Pas de nom de série fourni');
-      return;
-    }
-    
+    if (!series?.name) return;
     try {
       const token = localStorage.getItem('token');
-      const backendUrl = API_BASE_URL
-
-      const response = await fetch(`${backendUrl}/api/books/all?saga=${encodeURIComponent(series.name)}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
+      const response = await fetch(
+        `${API_BASE_URL}/api/books/all?saga=${encodeURIComponent(series.name)}&limit=1`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
       if (response.ok) {
         const data = await response.json();
         const seriesNameLower = series.name.toLowerCase().trim();
-        const hasSeriesBook = data.items && data.items.some(book => {
+        const match = (data.items || []).find(book => {
           const bookSaga = (book.saga || '').toLowerCase().trim();
           return bookSaga && (bookSaga === seriesNameLower || bookSaga.includes(seriesNameLower));
         });
-        setIsSeriesOwned(hasSeriesBook);
-        if (hasSeriesBook) {
-          const seriesBook = data.items.find(book => {
-            const bookSaga = (book.saga || '').toLowerCase().trim();
-            return bookSaga && (bookSaga === seriesNameLower || bookSaga.includes(seriesNameLower));
-          });
-          if (seriesBook) setSeriesStatus(seriesBook.status || 'to_read');
-        }
+        setIsSeriesOwned(!!match);
+        if (match) setSeriesStatus(match.status || 'to_read');
       } else {
         setIsSeriesOwned(false);
       }
-    } catch (error) {
-      console.error('❌ Erreur lors de la vérification de la série:', error);
-      // Ne pas bloquer l'interface si la vérification échoue
+    } catch {
       setIsSeriesOwned(false);
     }
   };
@@ -624,7 +610,10 @@ const SeriesDetailModal = ({
         loadOLSeriesBooks();
       }
     }
-  }, [isOpen, series, userSeriesLibrary]);
+  // userSeriesLibrary retiré des dépendances : la vérification en-mémoire est faite de façon
+  // synchrone dans l'effet, pas besoin de re-déclencher les appels API à chaque changement.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, series]);
 
   const loadSeriesBooks = async () => {
     if (!series?.name) return;

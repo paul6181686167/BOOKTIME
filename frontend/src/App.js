@@ -1,6 +1,6 @@
 // Imports
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { toast, Toaster } from 'react-hot-toast';
 
 // Context imports
@@ -169,6 +169,7 @@ function AppContent() {
 // Composant principal de l'application
 function MainApp() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   // États locaux pour l'UI
   const [activeTab, setActiveTab] = useState('roman');
@@ -298,26 +299,30 @@ function MainApp() {
     }
   }, [userAnalytics, searchHook, clearSearch]);
 
-  // CORRECTION RCA - Gestionnaire d'événements pour retour automatique vers bibliothèque
+  // Gestionnaire unique pour l'événement backToLibrary (fusion des deux anciens listeners)
   useEffect(() => {
     const handleBackToLibrary = (event) => {
-      // Appeler la fonction de retour à la bibliothèque
+      const detail = event.detail || {};
+      const { reason, seriesName, bookTitle, attempts, totalTime } = detail;
+
+      if (reason === 'series_verified_success') {
+        toast.success(`Série "${seriesName}" ajoutée avec succès !`);
+      } else if (reason === 'book_verified_success') {
+        toast.success(`Livre "${bookTitle}" ajouté avec succès !`);
+      } else if (reason === 'series_verification_failed') {
+        toast.error(`Série "${seriesName}" non trouvée après ${attempts} tentatives`);
+        return; // Ne pas revenir en cas d'échec
+      }
+
       backToLibrary();
-      
-      // Analytics pour tracking de la correction
-      if (userAnalytics && event.detail) {
-        userAnalytics.trackInteraction('auto_back_to_library', 'correction_rca', {
-          reason: event.detail.reason,
-          targetCategory: event.detail.targetCategory,
-          bookTitle: event.detail.bookTitle
-        });
+
+      if (userAnalytics && detail) {
+        userAnalytics.trackInteraction('auto_back_to_library', 'event', { reason });
       }
     };
 
     window.addEventListener('backToLibrary', handleBackToLibrary);
-    return () => {
-      window.removeEventListener('backToLibrary', handleBackToLibrary);
-    };
+    return () => window.removeEventListener('backToLibrary', handleBackToLibrary);
   }, [backToLibrary, userAnalytics]);
 
   // FONCTION UTILITAIRE : Déterminer le badge de catégorie depuis un livre Open Library
@@ -538,7 +543,7 @@ function MainApp() {
   const handleMobileTabChange = (tab) => {
     setMobileTab(tab);
     if (tab === 'recommendations') {
-      window.location.href = '/recommendations';
+      navigate('/recommendations');
     } else if (tab === 'upcoming') {
       setShowUpcomingPanel(true);
     } else if (tab === 'profile') {
@@ -565,36 +570,20 @@ function MainApp() {
     }
   }, [activeTab]);
 
-  // PHASE C.1 : Gestionnaire d'événement pour retour automatique à la bibliothèque
+  // Listener backToLibrary fusionné avec le gestionnaire unique ci-dessus
+
+  // Toast d'information si le backend est en veille (erreur au 1er chargement)
   useEffect(() => {
-    const handleBackToLibraryEvent = (event) => {
-      const { reason, seriesName, bookTitle, targetCategory, attempts, totalTime } = event.detail;
-      
-      console.log(`🔄 [PHASE C.1] Événement retour bibliothèque reçu: ${reason}`);
-      
-      if (reason === 'series_verified_success') {
-        toast.success(`✅ Série "${seriesName}" ajoutée avec succès en ${totalTime}ms (${attempts} tentatives)`);
-        searchHook.backToLibrary();
-      } else if (reason === 'book_verified_success') {
-        toast.success(`✅ Livre "${bookTitle}" ajouté avec succès en ${totalTime}ms (${attempts} tentatives)`);
-        searchHook.backToLibrary();
-      } else if (reason === 'series_verification_failed') {
-        toast.error(`❌ Série "${seriesName}" non trouvée après ${attempts} tentatives (${totalTime}ms)`);
-        // Ne pas revenir automatiquement en cas d'échec pour permettre investigation
-      }
-    };
-
-    // Ajouter l'écouteur d'événement
-    window.addEventListener('backToLibrary', handleBackToLibraryEvent);
-
-    // Nettoyage à la destruction du composant
-    return () => {
-      window.removeEventListener('backToLibrary', handleBackToLibraryEvent);
-    };
-  }, [searchHook]);
+    if (unifiedContent.error && !unifiedContent.loading) {
+      toast('Le serveur se réveille, patiente quelques secondes puis réessaie.', {
+        icon: '⏳',
+        duration: 6000,
+        id: 'backend-wakeup' // éviter les doublons
+      });
+    }
+  }, [unifiedContent.error, unifiedContent.loading]);
 
   // Chargement initial au montage du composant
-  // PHASE C.1 : Suppression du chargement manuel - useUnifiedContent s'en charge
   useEffect(() => {
     if (user) {
       // Les données sont automatiquement chargées par useUnifiedContent
@@ -683,7 +672,7 @@ function MainApp() {
             {/* Profil et navigation */}
             <div className="flex-shrink-0 flex items-center space-x-4">
               <button
-                onClick={() => window.location.href = '/recommendations'}
+                onClick={() => navigate('/recommendations')}
                 className="flex items-center space-x-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
               >
                 <span>Recommandations</span>
@@ -799,8 +788,30 @@ function MainApp() {
           {/* Affichage par sections de statut - MODIFICATION ORGANISATIONNELLE */}
           {!searchHook.isSearchMode && (
             <div className="space-y-6 sm:space-y-8">
+
+              {/* Erreur de chargement */}
+              {unifiedContent.error && !unifiedContent.loading && (
+                <div className="flex items-center gap-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+                  <span>⚠️</span>
+                  <span>Impossible de charger ta bibliothèque. Vérifie ta connexion et <button className="underline font-medium" onClick={() => unifiedContent.loadUnifiedContent({ forceRefresh: true })}>réessaie</button>.</span>
+                </div>
+              )}
+
+              {/* Skeleton de chargement initial */}
+              {unifiedContent.loading && (
+                <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-5 p-2 sm:p-6">
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="bg-gray-200 dark:bg-gray-700 rounded-lg aspect-[3/4] mb-2" />
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded mb-1" />
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Section EN COURS */}
-              {groupedBooks.reading && groupedBooks.reading.length > 0 && (
+              {!unifiedContent.loading && groupedBooks.reading && groupedBooks.reading.length > 0 && (
                 <div className="section-appear">
                   <div className="flex items-center mb-3 sm:mb-4 flex-wrap gap-2">
                     <h2 className="text-base sm:text-xl font-semibold text-yellow-600 dark:text-yellow-400">
@@ -819,7 +830,7 @@ function MainApp() {
               )}
 
               {/* Section À LIRE */}
-              {groupedBooks.to_read && groupedBooks.to_read.length > 0 && (
+              {!unifiedContent.loading && groupedBooks.to_read && groupedBooks.to_read.length > 0 && (
                 <div className="section-appear" style={{ animationDelay: '80ms' }}>
                   <div className="flex items-center mb-4 flex-wrap gap-2">
                     <h2 className="text-xl font-semibold text-blue-600 dark:text-blue-400">
@@ -838,7 +849,7 @@ function MainApp() {
               )}
 
               {/* Section TERMINÉ */}
-              {groupedBooks.completed && groupedBooks.completed.length > 0 && (
+              {!unifiedContent.loading && groupedBooks.completed && groupedBooks.completed.length > 0 && (
                 <div className="section-appear" style={{ animationDelay: '160ms' }}>
                   <div className="flex items-center mb-4 flex-wrap gap-2">
                     <h2 className="text-xl font-semibold text-green-600 dark:text-green-400">
@@ -857,7 +868,7 @@ function MainApp() {
               )}
 
               {/* Section Découvrir — toujours visible en bas pour découvrir plus */}
-              {((groupedBooks.reading?.length || 0) + (groupedBooks.to_read?.length || 0) + (groupedBooks.completed?.length || 0)) < 10 && (
+              {!unifiedContent.loading && ((groupedBooks.reading?.length || 0) + (groupedBooks.to_read?.length || 0) + (groupedBooks.completed?.length || 0)) < 10 && (
                 <div className="section-appear mt-4 pt-6 border-t border-gray-100 dark:border-gray-800" style={{ animationDelay: '240ms' }}>
                   <DiscoverSection
                     activeCategory={activeTab}
@@ -867,8 +878,9 @@ function MainApp() {
                 </div>
               )}
 
-              {/* Section Découvrir — affichée quand la bibliothèque est vide OU toujours en bas */}
-              {(!groupedBooks.reading || groupedBooks.reading.length === 0) &&
+              {/* Section Découvrir — affichée quand la bibliothèque est vide */}
+              {!unifiedContent.loading &&
+               (!groupedBooks.reading || groupedBooks.reading.length === 0) &&
                (!groupedBooks.to_read || groupedBooks.to_read.length === 0) &&
                (!groupedBooks.completed || groupedBooks.completed.length === 0) && (
                 <div className="section-appear">

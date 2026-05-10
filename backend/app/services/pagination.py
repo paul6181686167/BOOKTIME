@@ -53,10 +53,11 @@ class CacheManager:
             print("[INFO] Redis non disponible - Cache desactive")
     
     def _generate_cache_key(self, prefix: str, **kwargs) -> str:
-        """Génère une clé de cache unique"""
+        """Génère une clé de cache unique avec user_id en clair pour permettre l'invalidation"""
+        user_id = kwargs.get('user_id', 'anonymous')
         key_data = json.dumps(kwargs, sort_keys=True)
         key_hash = hashlib.md5(key_data.encode()).hexdigest()
-        return f"booktime:{prefix}:{key_hash}"
+        return f"booktime:{prefix}:{user_id}:{key_hash}"
     
     def get(self, key: str) -> Optional[Dict]:
         """Récupère une valeur du cache"""
@@ -305,11 +306,11 @@ class PaginationService:
         return PaginatedResponse(**response_data)
     
     def invalidate_user_cache(self, user_id: str):
-        """Invalide le cache pour un utilisateur spécifique"""
+        """Invalide le cache pour un utilisateur spécifique (user_id est maintenant en clair dans la clé)"""
         patterns = [
-            f"booktime:books:*user_id*{user_id}*",
-            f"booktime:series:*user_id*{user_id}*",
-            f"booktime:stats:*user_id*{user_id}*"
+            f"booktime:books:{user_id}:*",
+            f"booktime:series:{user_id}:*",
+            f"booktime:stats:{user_id}:*"
         ]
         
         for pattern in patterns:

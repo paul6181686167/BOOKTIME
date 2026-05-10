@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { API_BASE_URL } from '../config/environment';
 import { 
@@ -22,7 +21,6 @@ const UnifiedSearchBar = React.memo(({
   className = '',
   isCompact = false // Mode compact pour le header
 }) => {
-  const navigate = useNavigate();
   const [showFilters, setShowFilters] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
@@ -79,16 +77,17 @@ const UnifiedSearchBar = React.memo(({
     }
   }, [backendUrl]);
 
-  // Supprimer le débounce automatique - la recherche se fait uniquement sur Entrée
-  // useEffect(() => {
-  //   const timer = setTimeout(() => {
-  //     if (localSearchTerm && showSuggestions) {
-  //       searchUniversal(localSearchTerm);
-  //     }
-  //   }, 500);
-  //
-  //   return () => clearTimeout(timer);
-  // }, [localSearchTerm, showSuggestions, searchUniversal]);
+  // Suggestions OL avec debounce 600ms (déclenche uniquement si > 3 chars et panel ouvert)
+  useEffect(() => {
+    if (!localSearchTerm || localSearchTerm.length < 3 || !showSuggestions) {
+      setUniversalResults([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      searchUniversal(localSearchTerm);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [localSearchTerm, showSuggestions, searchUniversal]);
 
   // Sauvegarder les recherches récentes
   const saveRecentSearch = useCallback((term) => {
@@ -128,14 +127,14 @@ const UnifiedSearchBar = React.memo(({
     }
   }, [localSearchTerm, onSearchChange, saveRecentSearch, onOpenLibrarySearch]);
 
-  // Générer les suggestions locales
+  // Générer les suggestions locales (auteurs/sagas dédupliqués par Map)
   const memoizedSuggestions = useMemo(() => {
     if (!localSearchTerm || localSearchTerm.length < 2) return [];
 
     const term = localSearchTerm.toLowerCase();
     const bookSuggestions = [];
-    const authorSuggestions = new Set();
-    const sagaSuggestions = new Set();
+    const authorMap = new Map(); // clé = nom auteur → déduplication fiable
+    const sagaMap = new Map();   // clé = nom saga
 
     books.forEach(book => {
       if (book.title && book.title.toLowerCase().includes(term)) {
@@ -148,8 +147,8 @@ const UnifiedSearchBar = React.memo(({
         });
       }
 
-      if (book.author && book.author.toLowerCase().includes(term)) {
-        authorSuggestions.add({
+      if (book.author && book.author.toLowerCase().includes(term) && !authorMap.has(book.author)) {
+        authorMap.set(book.author, {
           type: 'author',
           text: book.author,
           subtitle: 'Auteur',
@@ -158,8 +157,8 @@ const UnifiedSearchBar = React.memo(({
         });
       }
 
-      if (book.saga && book.saga.toLowerCase().includes(term)) {
-        sagaSuggestions.add({
+      if (book.saga && book.saga.toLowerCase().includes(term) && !sagaMap.has(book.saga)) {
+        sagaMap.set(book.saga, {
           type: 'saga',
           text: book.saga,
           subtitle: 'Saga',
@@ -169,13 +168,11 @@ const UnifiedSearchBar = React.memo(({
       }
     });
 
-    const allSuggestions = [
+    return [
       ...bookSuggestions.slice(0, 3),
-      ...Array.from(authorSuggestions).slice(0, 2),
-      ...Array.from(sagaSuggestions).slice(0, 2)
+      ...Array.from(authorMap.values()).slice(0, 2),
+      ...Array.from(sagaMap.values()).slice(0, 2)
     ].slice(0, 5);
-
-    return allSuggestions;
   }, [localSearchTerm, books]);
 
   useEffect(() => {

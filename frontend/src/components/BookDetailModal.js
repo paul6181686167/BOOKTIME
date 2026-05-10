@@ -469,7 +469,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             <button
               type="button"
               onClick={onClose}
-              className="hidden md:block p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               aria-label="Fermer"
             >
               <XMarkIcon className="h-6 w-6" />
@@ -479,7 +479,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
         </div>
 
         {/* Onglets Détails / Notes */}
-        {true && (
+        {(
           <div className="flex space-x-1 mb-5 border-b border-gray-200 dark:border-gray-700">
             <button
               onClick={() => setActiveTab('details')}

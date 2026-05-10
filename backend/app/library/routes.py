@@ -12,25 +12,39 @@ async def create_series_library(
     series_data: SeriesLibraryCreate,
     current_user: dict = Depends(get_current_user)
 ):
-    """Créer une nouvelle série dans la bibliothèque"""
+    """Créer ou mettre à jour une série dans la bibliothèque (upsert pour éviter les doublons)"""
     import uuid
     from datetime import datetime
-    
+
+    user_id = current_user["id"]
+    data = series_data.model_dump()
+    series_name = data.get("name", "")
+
+    # Vérifier si la série existe déjà pour cet utilisateur
+    existing = series_library_collection.find_one({"user_id": user_id, "name": series_name})
+    if existing:
+        existing.pop("_id", None)
+        return {
+            "success": True,
+            "message": "Série déjà dans ta bibliothèque",
+            "series": existing
+        }
+
     series_id = str(uuid.uuid4())
     series = {
         "id": series_id,
-        "user_id": current_user["id"],
-        **series_data.model_dump(),
+        "user_id": user_id,
+        **data,
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     }
-    
+
     series_library_collection.insert_one(series)
     series.pop("_id", None)
-    
+
     return {
         "success": True,
-        "message": "Série créée avec succès",
+        "message": "Série ajoutée à ta bibliothèque",
         "series": series
     }
 

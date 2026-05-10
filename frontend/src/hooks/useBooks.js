@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import BookActions from '../components/books/BookActions';
 
 // Hook personnalisé pour gérer l'état des livres
@@ -9,11 +9,8 @@ export const useBooks = () => {
   const [selectedBook, setSelectedBook] = useState(null);
   const [showBookModal, setShowBookModal] = useState(false);
 
-  // Charger les livres au montage
-  useEffect(() => {
-    loadBooks();
-    loadStats();
-  }, []);
+  // Pas de chargement au montage : useUnifiedContent s'en charge déjà
+  // (évite les doubles requêtes API)
 
   // Fonction pour charger les livres
   const loadBooks = async () => {
