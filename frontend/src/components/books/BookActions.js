@@ -285,20 +285,26 @@ const BookActions = {
       return card;
     });
 
-    // 🆕 PHASE B : Combiner séries bibliothèque + séries détectées + livres standalone
+    // Combiner séries bibliothèque + séries détectées, puis dédoublonner par nom normalisé
+    // Priorité : série de bibliothèque (isOwnedSeries) > série détectée
     const rawSeriesCards = [...seriesCards, ...detectedSeriesCards];
-    const allSeriesCards = applyReadingPreferences(rawSeriesCards).sort((a, b) => {
-      // Priorité aux séries de bibliothèque (isOwnedSeries)
+    const seenSeriesNames = new Set();
+    const dedupedSeriesCards = rawSeriesCards.filter(card => {
+      const key = (card.name || card.title || '').toLowerCase().trim();
+      if (!key) return true;
+      if (seenSeriesNames.has(key)) return false;
+      seenSeriesNames.add(key);
+      return true;
+    });
+
+    const allSeriesCards = applyReadingPreferences(dedupedSeriesCards).sort((a, b) => {
       if (a.isOwnedSeries && !b.isOwnedSeries) return -1;
       if (!a.isOwnedSeries && b.isOwnedSeries) return 1;
-      
-      // Pour même type, tri par date (plus récent d'abord)
       const dateA = new Date(a.updated_at || a.date_added || 0);
       const dateB = new Date(b.updated_at || b.date_added || 0);
       return dateB - dateA;
     });
-    
-    
+
     return [...allSeriesCards, ...sortedStandaloneBooks];
   },
 

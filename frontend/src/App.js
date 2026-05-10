@@ -607,8 +607,9 @@ function MainApp() {
   // Tous les livres appartenant à une série sont groupés en carte série (bibliothèque ET recherche)
   const getDisplayedBooks = () => {
     if (searchHook.isSearchMode) {
-      // En recherche : même pipeline que bibliothèque → les livres de séries deviennent cartes série
-      return createUnifiedDisplay(searchHook.openLibraryResults || []);
+      // Ne passer que les vrais livres (pas les cartes série déjà construites) pour éviter les doublons
+      const rawBooks = (searchHook.openLibraryResults || []).filter(item => !item.isSeriesCard);
+      return createUnifiedDisplay(rawBooks);
     }
     return createUnifiedDisplay(filteredBooks || []);
   };
