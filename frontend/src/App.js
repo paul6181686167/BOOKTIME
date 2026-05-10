@@ -942,7 +942,11 @@ function MainApp() {
           isOpen={booksHook.showBookModal}
           onClose={booksHook.closeBookModal}
           onUpdate={handleUpdateBookOptimistic}
-          onDelete={booksHook.handleDeleteBook}
+          onDelete={async (bookId) => {
+            await booksHook.handleDeleteBook(bookId);
+            // Rafraîchir unifiedContent pour que isOwned soit recalculé dans les résultats de recherche
+            await unifiedContent.loadUnifiedContent({ forceRefresh: true, skipSeries: true, skipStats: true });
+          }}
           onAddFromOpenLibrary={handleAddFromOpenLibrary}
           onAuthorClick={handleAuthorClick}
         />
