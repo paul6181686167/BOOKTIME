@@ -202,8 +202,11 @@ const SeriesDetailModal = ({
     let newStatus = 'to_read'; // Par défaut
     
     if (readTomesCount === 0) {
-      newStatus = 'to_read'; // Aucun tome lu = À lire
-    } else if (readTomesCount === totalTomes) {
+      // Aucun tome lu → ne pas écraser un statut manuel ("En cours" positionné par l'utilisateur)
+      // On laisse seriesStatus tel quel, sauf si c'était déjà 'to_read'
+      console.log('🎯 0 tome lu — statut manuel conservé:', seriesStatus);
+      return;
+    } else if (readTomesCount === totalTomes && totalTomes > 0) {
       newStatus = 'completed'; // Tous les tomes lus = Terminé
     } else {
       newStatus = 'reading'; // Quelques tomes lus = En cours
@@ -211,8 +214,6 @@ const SeriesDetailModal = ({
 
     console.log('🎯 Nouveau statut calculé:', newStatus, 'depuis', seriesStatus);
 
-    // ✅ CORRECTION : Seulement tenter la mise à jour API si la série est possédée
-    // Sinon, juste mettre à jour l'état local pour l'affichage
     if (isSeriesOwned && newStatus !== seriesStatus) {
       console.log('🔄 Mise à jour statut série automatique (série possédée):', seriesStatus, '→', newStatus);
       
@@ -383,16 +384,26 @@ const SeriesDetailModal = ({
         const seriesId = libEntry?.id || series.id;
 
         if (seriesId) {
-          await fetch(`${backendUrl}/api/library/series/${seriesId}`, {
+          const res = await fetch(`${backendUrl}/api/series/library/${seriesId}`, {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ series_status: newStatus })
           });
+          if (!res.ok) {
+            console.error('Erreur API series_library:', res.status, await res.text());
+          }
+        } else {
+          console.warn('Aucun ID de série trouvé pour la mise à jour du statut');
         }
       }
 
       toast.success(`Statut de la série "${series.name}" : ${statusLabel}`);
-      if (onUpdate) await onUpdate();
+      // Recharger uniquement les données de la bibliothèque sans écraser seriesStatus local
+      if (onUpdate) {
+        await onUpdate();
+        // Forcer le statut après le rechargement (onUpdate peut écraser l'état local)
+        setSeriesStatus(newStatus);
+      }
     } catch (error) {
       console.error('❌ Erreur changement statut:', error);
       toast.error('Erreur lors du changement de statut');
