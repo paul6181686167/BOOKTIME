@@ -66,8 +66,6 @@ const BookActions = {
       return [];
     }
 
-    console.log('🔍 [PHASE B] createUnifiedDisplay - Livres reçus:', booksList.length);
-    console.log('🔍 [PHASE B] createUnifiedDisplay - Séries bibliothèque reçues:', userSeriesLibrary.length);
 
     const seriesGroups = {};
     const standaloneBooks = [];
@@ -99,7 +97,6 @@ const BookActions = {
       progressPercent: series.completion_percentage || 0
     }));
 
-    console.log(`🎯 [PHASE B] Séries bibliothèque converties: ${seriesCards.length} cartes série`);
 
     // 🔍 SESSION 82.2 - CORRECTION RCA : Utiliser SeriesDetector pour détection complète
     // Import dynamique du SeriesDetector
@@ -148,10 +145,6 @@ const BookActions = {
       };
     });
 
-    console.log('🔍 [SESSION 82.2] Analyse des livres avec détection intelligente:');
-    console.log(`📚 Total: ${booksWithSeriesMarked.length} livres`);
-    console.log(`📚 Avec série: ${booksWithSeriesMarked.filter(b => b.belongsToSeries).length} livres`);
-    console.log(`📖 Standalone: ${booksWithSeriesMarked.filter(b => !b.belongsToSeries).length} livres`);
 
     booksWithSeriesMarked.forEach(book => {
       if (book.belongsToSeries) {
@@ -228,13 +221,9 @@ const BookActions = {
           seriesGroups[seriesKey].status = 'to_read';
         }
         
-        // ✅ SESSION 82.2 - MASQUAGE CONFIRMÉ : Livre d'une série, PAS d'ajout aux standaloneBooks
-        console.log(`📚 [SESSION 82.2] Livre "${book.title}" appartient à la série "${book.detectedSeriesName}" (${book.detectionMethod}, ${book.confidence}%) - MASQUÉ (regroupé dans vignette série)`);
         
       } else {
-        // 📖 LIVRE STANDALONE (sans série) - VIGNETTE INDIVIDUELLE AUTORISÉE
         standaloneBooks.push(book);
-        console.log(`📖 [SESSION 82.2] Livre "${book.title}" standalone - VIGNETTE INDIVIDUELLE`);
       }
     });
 
@@ -309,20 +298,6 @@ const BookActions = {
       return dateB - dateA;
     });
     
-    // 📊 PHASE B - RÉSUMÉ AFFICHAGE UNIFIÉ AVEC SÉRIES BIBLIOTHÈQUE
-    console.log(`🎯 [PHASE B] Résumé affichage unifié avec séries bibliothèque:`);
-    console.log(`🎯 - ${seriesCards.length} séries bibliothèque (vraies séries possédées)`);
-    console.log(`🎯 - ${detectedSeriesCards.length} séries détectées (livres regroupés automatiquement)`);
-    console.log(`🎯 - ${sortedStandaloneBooks.length} livres standalone (vignettes individuelles)`);
-    console.log(`🎯 - ${booksList.length - sortedStandaloneBooks.length} livres masqués (dans vignettes série)`);
-    
-    seriesCards.forEach(series => {
-      console.log(`📚 [PHASE B] Série bibliothèque "${series.name}" - ${series.total_books} tomes (${series.completion_percentage}% lu)`);
-    });
-    
-    detectedSeriesCards.forEach(series => {
-      console.log(`📚 [PHASE B] Série détectée "${series.name}" - ${series.totalBooks} tomes regroupés (détection: ${series.detectionMethod}, confiance: ${series.averageConfidence}%)`);
-    });
     
     return [...allSeriesCards, ...sortedStandaloneBooks];
   },

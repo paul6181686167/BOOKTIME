@@ -72,7 +72,6 @@ import SeriesActions from './components/series/SeriesActions';
 // Books components imports (Phase 1.1 - Step 5 & 6)
 import BookActions from './components/books/BookActions';
 import BookGrid from './components/books/BookGrid';
-import SeriesDetector from './utils/seriesDetector';
 import MobileBottomNav from './components/MobileBottomNav';
 import MobileSearchOverlay from './components/MobileSearchOverlay';
 
@@ -605,76 +604,13 @@ function MainApp() {
   }, [user]);
 
   // Calculer les livres à afficher selon le mode
-  // SESSION 81.1 - DOUBLE PROTECTION : Filtrage renforcé des livres individuels appartenant à une série
+  // Tous les livres appartenant à une série sont groupés en carte série (bibliothèque ET recherche)
   const getDisplayedBooks = () => {
-    // En mode recherche, afficher tous les résultats Open Library
     if (searchHook.isSearchMode) {
-      // 🔒 MASQUAGE UNIVERSEL INTELLIGENT - RECHERCHE : Utiliser détection automatique
-      const filteredSearchResults = searchHook.openLibraryResults.filter(item => {
-        // Garder les vignettes de série
-        if (item.isSeriesCard) {
-          return true;
-        }
-        
-        // Vérifier d'abord le champ saga existant
-        const belongsToSeries = !!(item.saga && item.saga.trim());
-        if (belongsToSeries) {
-              return false;
-        }
-        
-        const detection = SeriesDetector.detectBookSeries(item);
-        if (detection.belongsToSeries && detection.confidence >= 70) return false;
-        
-        return true;
-      });
-      
-      return filteredSearchResults;
+      // En recherche : même pipeline que bibliothèque → les livres de séries deviennent cartes série
+      return createUnifiedDisplay(searchHook.openLibraryResults || []);
     }
-    
-    // En mode bibliothèque, appliquer le double filtrage renforcé
-    const booksToDisplay = filteredBooks || [];
-    
-    // 🔍 SESSION 81.1 + 81.8 - FILTRAGE EN AMONT INTELLIGENT : Identifier et analyser les livres appartenant à des séries
-    const minConfidenceForAuto = 90; // Seuil strict sans saga = éviter faux positifs
-    const seriesBooks = booksToDisplay.filter(book => {
-      if (book.saga && book.saga.trim()) return true;
-      const detection = SeriesDetector.detectBookSeries(book);
-      return detection.belongsToSeries && detection.confidence >= minConfidenceForAuto;
-    });
-    
-    const standaloneBooks = booksToDisplay.filter(book => {
-      if (book.saga && book.saga.trim()) return false;
-      const detection = SeriesDetector.detectBookSeries(book);
-      return !(detection.belongsToSeries && detection.confidence >= minConfidenceForAuto);
-    });
-    
-    // Créer l'affichage unifié avec la logique de masquage renforcée
-    // 🆕 PHASE B.2 : Utiliser la fonction createUnifiedDisplay locale qui passe userSeriesLibrary
-    const unifiedDisplay = createUnifiedDisplay(booksToDisplay);
-    
-    // 🔍 SESSION 81.8 + PHASE B.2 - PROTECTION FINALE INTELLIGENTE : Vérification qu'aucun livre de série n'échappe
-    const finalBooks = unifiedDisplay.filter(item => {
-      if (item.isSeriesCard) {
-        // 🆕 PHASE B.2 : TOUJOURS garder les vraies séries possédées
-        if (item.isOwnedSeries) {
-          return true; // Vraies séries de bibliothèque toujours visibles
-        }
-        // Les autres vignettes de série sont aussi autorisées
-        return true;
-      } else {
-        // Pour les livres individuels, vérifier qu'ils n'appartiennent pas à une série
-        // Méthode 1 : Champ saga existant
-        const belongsToSeries = !!(item.saga && item.saga.trim());
-        if (belongsToSeries) return false;
-        
-        const detection = SeriesDetector.detectBookSeries(item);
-        if (detection.belongsToSeries && detection.confidence >= 90) return false;
-        
-        return true;
-      }
-    });
-    
-    return finalBooks;
+    return createUnifiedDisplay(filteredBooks || []);
   };
 
   const displayedBooks = getDisplayedBooks();
