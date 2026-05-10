@@ -923,6 +923,10 @@ function MainApp() {
           isOpen={seriesHook.showSeriesModal}
           onClose={seriesHook.closeSeriesModal}
           onUpdate={() => unifiedContent.loadUnifiedContent({ forceRefresh: true })}
+          onDelete={() => {
+            seriesHook.closeSeriesModal();
+            unifiedContent.loadUnifiedContent({ forceRefresh: true });
+          }}
           onAddSeries={handleAddSeries}
           onAuthorClick={handleAuthorClick}
           userSeriesLibrary={unifiedContent.userSeriesLibrary || []}

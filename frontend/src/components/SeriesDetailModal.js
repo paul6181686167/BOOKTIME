@@ -7,9 +7,11 @@ import {
   MagnifyingGlassIcon,
   ExclamationTriangleIcon,
   SparklesIcon,
-  XMarkIcon
+  XMarkIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import { bookService } from '../services/bookService';
+import { deleteSeriesFromLibrary } from '../services/seriesLibraryService';
 import { EXTENDED_SERIES_DATABASE } from '../utils/seriesDatabaseExtended';
 import TomeDropdown from './TomeDropdown'; // ← AJOUT : Import du nouveau composant
 import ChapterSection from './ChapterSection'; // ← NOUVEAU : Import du composant chapitres
@@ -21,6 +23,7 @@ const SeriesDetailModal = ({
   isOpen, 
   onClose, 
   onUpdate,
+  onDelete,
   onAddSeries,
   onAuthorClick,
   userSeriesLibrary = []
@@ -42,7 +45,35 @@ const SeriesDetailModal = ({
       .map(([k]) => Number(k))
   );
   const [missingPreviousWarning, setMissingPreviousWarning] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const onUpdateDebounceRef = useRef(null);
+
+  const handleDeleteSeries = async () => {
+    setDeleting(true);
+    setConfirmDelete(false);
+    try {
+      const token = localStorage.getItem('token');
+
+      if (isSeriesOwned) {
+        // Série possédée → retirer de la bibliothèque de séries
+        const seriesId = series.id || series._id;
+        await deleteSeriesFromLibrary(seriesId, token);
+      } else {
+        // Série auto-détectée → supprimer chaque livre individuellement
+        const booksToDelete = series.books || [];
+        await Promise.all(booksToDelete.map(b => bookService.deleteBook(b.id || b._id)));
+      }
+
+      toast.success('Série retirée de ta bibliothèque !');
+      onClose();
+      if (onDelete) onDelete();
+    } catch (error) {
+      toast.error('Erreur lors du retrait de la série');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   // ✅ NOUVELLE FONCTION : Charger les préférences de lecture depuis la base de données
   const loadReadingPreferences = async (seriesName) => {
@@ -793,6 +824,38 @@ const SeriesDetailModal = ({
                   <span>{isSeriesOwned ? '✓' : '+'}</span>
                   <span className="truncate">{isSeriesOwned ? 'Dans ma bibliothèque' : 'Ajouter à ma bibliothèque'}</span>
                 </button>
+              )}
+
+              {/* Bouton Retirer — visible seulement si la série est dans la bibliothèque */}
+              {(isSeriesOwned || (series.books && series.books.length > 0)) && (
+                confirmDelete ? (
+                  <div className="flex items-center gap-1 w-full md:w-auto">
+                    <span className="text-xs text-red-600 dark:text-red-400 font-medium whitespace-nowrap">Confirmer ?</span>
+                    <button
+                      onClick={handleDeleteSeries}
+                      disabled={deleting}
+                      className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 transition-colors font-medium"
+                    >
+                      {deleting ? '…' : 'Oui'}
+                    </button>
+                    <button
+                      onClick={() => setConfirmDelete(false)}
+                      className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-300 transition-colors"
+                    >
+                      Non
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(true)}
+                    title="Retirer de ma bibliothèque"
+                    className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-3 md:py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl md:rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                    <span className="truncate">Retirer de ma bibliothèque</span>
+                  </button>
+                )
               )}
               
               <button
