@@ -334,89 +334,67 @@ const SeriesDetailModal = ({
 
   // Fonction pour changer rapidement le statut de la série
   const handleQuickStatusChange = async (newStatus) => {
-    console.log('🎯 DÉBUT handleQuickStatusChange:', { newStatus, isSeriesOwned, series });
-    
     if (!isSeriesOwned) {
-      console.log('❌ Série non possédée, affichage erreur');
       toast.error('Vous devez d\'abord ajouter cette série à votre bibliothèque');
       return;
     }
 
+    const token = localStorage.getItem('token');
+    const backendUrl = API_BASE_URL;
+    const statusLabel = statusOptions.find(s => s.value === newStatus)?.label || newStatus;
+
+    // Mise à jour optimiste de l'UI
+    setSeriesStatus(newStatus);
+
     try {
-      const token = localStorage.getItem('token');
-      const backendUrl = API_BASE_URL
-      
-      console.log('🔑 Token trouvé:', !!token);
-      console.log('🔄 Changement statut série:', series.name, 'vers', newStatus);
-      
-      // NOUVELLE APPROCHE: Rechercher tous les livres de cette saga pour mise à jour globale
-      const response = await fetch(`${backendUrl}/api/books/all?saga=${encodeURIComponent(series.name)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      console.log('📡 Réponse recherche série:', { status: response.status, ok: response.ok });
-      
+      // 1. Chercher les livres individuels avec ce saga dans la bibliothèque
+      const response = await fetch(
+        `${backendUrl}/api/books/all?saga=${encodeURIComponent(series.name)}&limit=100`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+
+      let updatedViaBooks = false;
+
       if (response.ok) {
         const data = await response.json();
-        console.log('📚 Données reçues:', data);
-        
-        // Trouver les livres de cette série
-        const seriesBooks = data.items?.filter(book => 
-          book.saga?.toLowerCase() === series.name.toLowerCase()
-        ) || [];
-        
-        console.log('📖 Livres trouvés pour la série:', seriesBooks.length);
-        
+        const seriesBooks = (data.items || []).filter(book =>
+          (book.saga || '').toLowerCase().trim() === (series.name || '').toLowerCase().trim()
+        );
+
         if (seriesBooks.length > 0) {
-          // Mettre à jour le statut de tous les livres de la série
-          const updatePromises = seriesBooks.map(async (book) => {
-            const updateResponse = await fetch(`${backendUrl}/api/books/${book.id}`, {
-              method: 'PUT',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ status: newStatus })
-            });
-            return updateResponse.ok;
-          });
-          
-          const results = await Promise.all(updatePromises);
-          const successCount = results.filter(r => r).length;
-          
-          console.log(`✅ ${successCount}/${seriesBooks.length} livres mis à jour`);
-          
-          if (successCount > 0) {
-            setSeriesStatus(newStatus);
-            toast.success(`Statut de la série "${series.name}" changé vers "${statusOptions.find(s => s.value === newStatus)?.label}"`);
-            
-            // Actualiser la bibliothèque avec délai pour synchronisation
-            if (onUpdate) {
-              console.log('🔄 Actualisation bibliothèque complète');
-              await onUpdate();
-              
-              // Force refresh après délai pour s'assurer de la synchronisation
-              setTimeout(async () => {
-                console.log('🔄 Rafraîchissement final après délai');
-                await onUpdate();
-              }, 1000);
-            }
-          } else {
-            toast.error('Erreur lors de la mise à jour du statut');
-          }
-        } else {
-          console.error('❌ Aucun livre trouvé pour cette série');
-          toast.error('Série non trouvée dans la bibliothèque');
+          const results = await Promise.all(
+            seriesBooks.map(book =>
+              fetch(`${backendUrl}/api/books/${book.id}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+              }).then(r => r.ok)
+            )
+          );
+          if (results.some(r => r)) updatedViaBooks = true;
         }
-      } else {
-        const errorData = await response.json();
-        console.error('❌ Erreur recherche série:', errorData);
-        toast.error('Erreur lors de la recherche de la série');
       }
+
+      // 2. Fallback : mettre à jour via series_library (série ajoutée sans livres individuels)
+      if (!updatedViaBooks) {
+        const libEntry = (userSeriesLibrary || []).find(
+          s => (s.series_name || s.name || '').toLowerCase().trim() === (series.name || '').toLowerCase().trim()
+        );
+        const seriesId = libEntry?.id || series.id;
+
+        if (seriesId) {
+          await fetch(`${backendUrl}/api/library/series/${seriesId}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ series_status: newStatus })
+          });
+        }
+      }
+
+      toast.success(`Statut de la série "${series.name}" : ${statusLabel}`);
+      if (onUpdate) await onUpdate();
     } catch (error) {
-      console.error('❌ Erreur générale changement statut:', error);
+      console.error('❌ Erreur changement statut:', error);
       toast.error('Erreur lors du changement de statut');
     }
   };
