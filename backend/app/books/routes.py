@@ -437,8 +437,10 @@ async def enrich_book(book_id: str, current_user: dict = Depends(get_current_use
 
             if not enriched and title:
                 q = f"{title} {author}".strip()
-                search_url = f"https://openlibrary.org/search.json?q={q}&limit=1&fields=cover_i,description,subject"
-                r = await client.get(search_url)
+                r = await client.get(
+                    "https://openlibrary.org/search.json",
+                    params={"q": q, "limit": 1, "fields": "cover_i,description,subject"}
+                )
                 if r.status_code == 200:
                     docs = r.json().get("docs", [])
                     if docs:

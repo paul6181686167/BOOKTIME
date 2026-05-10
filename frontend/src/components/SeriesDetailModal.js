@@ -556,19 +556,20 @@ const SeriesDetailModal = ({
     }
   };
 
-  // Vérification allégée : limit=1 pour éviter de télécharger toute la bibliothèque
-  const checkIfSeriesOwned = async () => {
+  // Vérification allégée : limit=1. Accepte un AbortSignal pour éviter les races.
+  const checkIfSeriesOwned = async (signal) => {
     if (!series?.name) return;
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
         `${API_BASE_URL}/api/books/all?saga=${encodeURIComponent(series.name)}&limit=1`,
-        { headers: { 'Authorization': `Bearer ${token}` } }
+        { headers: { 'Authorization': `Bearer ${token}` }, signal }
       );
+      if (signal?.aborted) return;
       if (response.ok) {
         const data = await response.json();
+        if (signal?.aborted) return;
         const seriesNameLower = series.name.toLowerCase().trim();
-        // Comparaison stricte uniquement pour éviter les faux positifs sur sous-chaînes courtes
         const match = (data.items || []).find(book => {
           const bookSaga = (book.saga || '').toLowerCase().trim();
           return bookSaga === seriesNameLower;
@@ -578,15 +579,16 @@ const SeriesDetailModal = ({
       } else {
         setIsSeriesOwned(false);
       }
-    } catch {
-      setIsSeriesOwned(false);
+    } catch (e) {
+      if (e?.name !== 'AbortError') setIsSeriesOwned(false);
     }
   };
 
   useEffect(() => {
     if (!isOpen || !series) return;
 
-    let cancelled = false; // flag pour éviter les setState après démontage
+    let cancelled = false;
+    const abortController = new AbortController();
 
     setTomeStatuses({});
     setOlBooks([]);
@@ -602,11 +604,11 @@ const SeriesDetailModal = ({
       if (inLibrary || hasBooks) {
         setIsSeriesOwned(true);
       } else {
-        checkIfSeriesOwned(); // requête légère (limit=1)
+        // Passer le signal pour annuler si le modal est fermé avant la réponse
+        checkIfSeriesOwned(abortController.signal);
       }
     }
 
-    // Chargements async protégés par le flag cancelled
     const loadAll = async () => {
       await loadSeriesBooks();
       if (cancelled) return;
@@ -620,7 +622,7 @@ const SeriesDetailModal = ({
 
     return () => {
       cancelled = true;
-      // Annuler le debounce onUpdate en cours si le modal est fermé
+      abortController.abort(); // annule checkIfSeriesOwned en vol
       if (onUpdateDebounceRef.current) clearTimeout(onUpdateDebounceRef.current);
     };
   // userSeriesLibrary retiré des dépendances pour éviter la rafale API à chaque refresh global.
