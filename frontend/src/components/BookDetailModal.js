@@ -68,6 +68,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   const [enriching, setEnriching] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [addDone, setAddDone] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const pageInputRef = useRef(null);
 
   useEffect(() => {
@@ -166,16 +167,18 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   };
 
   const handleDelete = async () => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce livre ?')) {
-      setIsLoading(true);
-      try {
-        await onDelete(book.id);
-        toast.success('Livre supprimé avec succès !');
-      } catch (error) {
-        toast.error('Erreur lors de la suppression');
-      } finally {
-        setIsLoading(false);
-      }
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
+    setIsLoading(true);
+    setConfirmDelete(false);
+    try {
+      await onDelete(book.id);
+      // Le toast est géré par BookActions.handleDeleteBook
+    } catch (error) {
+      toast.error('Erreur lors de la suppression');
+      setIsLoading(false);
     }
   };
 
@@ -453,7 +456,8 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                   <PencilIcon className="h-5 w-5" />
                 </button>
                 <button
-                  onClick={handleDelete}
+                  onClick={() => setConfirmDelete(true)}
+                  title="Retirer de ma bibliothèque"
                   className="p-2 text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                 >
                   <TrashIcon className="h-5 w-5" />
@@ -809,7 +813,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
         )} {/* Fin onglet Détails */}
 
         {/* Boutons d'action */}
-        {isEditing && (
+        {isEditing ? (
           <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={() => setIsEditing(false)}
@@ -837,6 +841,42 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               )}
             </button>
           </div>
+        ) : (
+          /* Bouton Retirer - visible en mode lecture */
+          !book.isFromOpenLibrary && onDelete && (
+            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+              {confirmDelete ? (
+                <div className="flex items-center justify-between bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3">
+                  <span className="text-sm text-red-700 dark:text-red-300 font-medium">
+                    Retirer définitivement ce livre ?
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setConfirmDelete(false)}
+                      className="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      disabled={isLoading}
+                      className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors font-medium disabled:opacity-50"
+                    >
+                      {isLoading ? 'Suppression…' : 'Confirmer'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                  Retirer de ma bibliothèque
+                </button>
+              )}
+            </div>
+          )
         )}
         </div>
       </div>
