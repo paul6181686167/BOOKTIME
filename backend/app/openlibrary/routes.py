@@ -68,14 +68,36 @@ def _build_ol_params(q_term: str, limit: int, year_start, year_end, language, au
         "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,number_of_pages_median,publisher,language,series,edition_count"
     }
 
+def _extract_saga_from_series(raw_series) -> str:
+    """
+    Extrait un nom de série propre depuis le champ OL 'series'.
+    Gère les formats :
+      - "Red Rising #1"           → "Red Rising"
+      - "Red Rising, Book 1"      → "Red Rising"
+      - "Red Rising (Book 1)"     → "Red Rising"
+      - "Book 1 of Red Rising"    → "Red Rising"
+      - "The Expanse Series"      → "The Expanse"
+    """
+    if not raw_series:
+        return ""
+    s = raw_series[0] if isinstance(raw_series, list) else raw_series
+    if not isinstance(s, str):
+        return ""
+    s = s.strip()
+    # "Book X of Series Name" → "Series Name"
+    m = _re_global.match(r'^(?:book|tome|vol\.?|volume)\s*\d+\s+of\s+(.+)$', s, _re_global.IGNORECASE)
+    if m:
+        s = m.group(1).strip()
+    # "Series Name, Book X" ou "Series Name #X" ou "Series Name (Book X)"
+    s = _re_global.sub(r'[,\s]*[\(#]?\s*(?:book|tome|vol\.?|volume|part|#)\s*\d+[\)]?.*$', '', s, flags=_re_global.IGNORECASE).strip()
+    # Supprimer "Series" en suffix générique
+    s = _re_global.sub(r'\s*(?:series|saga|trilogy|tetralogy|duology)$', '', s, flags=_re_global.IGNORECASE).strip()
+    return s
+
+
 def _doc_to_book(doc: dict) -> dict:
     """Convertit un document OL en objet livre normalisé"""
-    raw_series = doc.get("series", [])
-    series_name = ""
-    if raw_series:
-        s = raw_series[0] if isinstance(raw_series, list) else raw_series
-        vol_match = _re_global.search(r'\s*[#,]\s*\d+', s)
-        series_name = s[:vol_match.start()].strip() if vol_match else s.strip()
+    series_name = _extract_saga_from_series(doc.get("series", []))
 
     ol_title = doc.get("title", "")
 

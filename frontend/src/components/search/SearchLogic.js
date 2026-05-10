@@ -19,14 +19,39 @@ import SeriesDetector from '../../utils/seriesDetector';
 import { API_BASE_URL } from '../../config/environment';
 import { EXTENDED_SERIES_DATABASE } from '../../utils/seriesDatabaseExtended';
 
-// Index plat : titre de tome (lowercase) → { seriesKey, seriesData, volumeNumber }
+// Normalisation de titre : supprime accents, ponctuation, articles, suffixes "Tome X"
+const _normalizeVolumeTitle = (s) =>
+  (s || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')  // accents
+    .toLowerCase()
+    .replace(/[''`]/g, '')                              // apostrophes
+    .replace(/\b(le|la|les|l|the|a|an|de|du|des|un|une)\b/g, '') // articles
+    .replace(/\s*(tome|vol\.?|volume|t\.?|book|#)\s*\d+\s*$/i, '') // "Tome 3" final
+    .replace(/[^a-z0-9\s]/g, '')                        // ponctuation résiduelle
+    .replace(/\s+/g, ' ')
+    .trim();
+
+// Index plat : plusieurs clés par titre pour tolérance maximale
 const buildVolumeTitleIndex = () => {
   const index = {};
+  const addEntry = (raw, data) => {
+    const keys = [
+      raw.toLowerCase().trim(),
+      _normalizeVolumeTitle(raw),
+    ];
+    for (const k of keys) {
+      if (k && !index[k]) index[k] = data;
+    }
+  };
   for (const category of Object.values(EXTENDED_SERIES_DATABASE)) {
     for (const [key, s] of Object.entries(category)) {
       if (!s.volume_titles) continue;
       for (const [num, title] of Object.entries(s.volume_titles)) {
-        index[title.toLowerCase().trim()] = { seriesKey: key, seriesData: s, volumeNumber: Number(num) };
+        const data = { seriesKey: key, seriesData: s, volumeNumber: Number(num) };
+        addEntry(title, data);
+        // Aussi ajouter le nom de la série seul → tous les tomes tombent dans la bonne série
+        if (s.name) addEntry(s.name, { seriesKey: key, seriesData: s, volumeNumber: null });
+        if (s.variations) s.variations.forEach(v => addEntry(v, { seriesKey: key, seriesData: s, volumeNumber: null }));
       }
     }
   }
@@ -134,7 +159,8 @@ export const searchOpenLibrary = async (query, {
       const staticFromOrphans = {};
       enriched.forEach(book => {
         if (olSeriesBookIds.has(book.ol_key)) return;
-        const match = VOLUME_TITLE_INDEX[book.title?.toLowerCase().trim()];
+        const match = VOLUME_TITLE_INDEX[book.title?.toLowerCase().trim()]
+                   || VOLUME_TITLE_INDEX[_normalizeVolumeTitle(book.title)];
         if (!match) return;
         const { seriesKey, seriesData } = match;
         if (!staticFromOrphans[seriesKey]) {
