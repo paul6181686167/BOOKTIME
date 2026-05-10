@@ -398,13 +398,22 @@ async def update_book(
 
 @router.delete("/{book_id}")
 async def delete_book(book_id: str, current_user: dict = Depends(get_current_user)):
-    """Supprimer un livre"""
-    result = books_collection.delete_one({
-        "id": book_id, 
-        "user_id": current_user["id"]
-    })
-    
+    """Supprimer un livre - recherche par champ 'id' ou '_id' pour la compatibilité"""
+    user_id = current_user["id"]
+
+    # Tentative 1 : champ "id" (format standard UUID)
+    result = books_collection.delete_one({"id": book_id, "user_id": user_id})
+
+    # Tentative 2 : champ "_id" en string si le livre a été créé sans champ id explicite
     if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Livre non trouvé")
-    
-    return {"message": "Livre supprimé avec succès"}
+        from bson import ObjectId
+        try:
+            oid = ObjectId(book_id)
+            result = books_collection.delete_one({"_id": oid, "user_id": user_id})
+        except Exception:
+            pass
+
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Livre non trouvé dans ta bibliothèque")
+
+    return {"message": "Livre retiré avec succès"}

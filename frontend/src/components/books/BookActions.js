@@ -368,20 +368,14 @@ const BookActions = {
   async handleDeleteBook(bookId, actions) {
     const { setSelectedBook, setShowBookModal, loadBooks, loadStats } = actions;
     
-    try {
-      await bookService.deleteBook(bookId);
-      setSelectedBook(null);
-      setShowBookModal(false);
-      
-      // Recharger les données
-      await loadBooks();
-      await loadStats();
-      
-      toast.success('Livre supprimé avec succès !');
-    } catch (error) {
-      console.error('Erreur lors de la suppression du livre:', error);
-      toast.error('Erreur lors de la suppression du livre');
-    }
+    await bookService.deleteBook(bookId);
+    setSelectedBook(null);
+    setShowBookModal(false);
+    
+    await loadBooks();
+    await loadStats();
+    
+    toast.success('Livre retiré de ta bibliothèque !');
   }
 };
 

@@ -175,10 +175,11 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     setConfirmDelete(false);
     try {
       await onDelete(book.id);
-      // Le toast est géré par BookActions.handleDeleteBook
+      // Le toast succès et la fermeture du modal sont gérés par BookActions.handleDeleteBook
     } catch (error) {
-      toast.error('Erreur lors de la suppression');
+      toast.error('Erreur lors de la suppression. Vérifie ta connexion et réessaie.');
       setIsLoading(false);
+      setConfirmDelete(false);
     }
   };
 

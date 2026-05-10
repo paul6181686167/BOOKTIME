@@ -52,6 +52,9 @@ export const useBooks = () => {
 
   // Fonction pour supprimer un livre
   const handleDeleteBook = async (bookId) => {
+    if (!bookId) {
+      throw new Error('ID du livre manquant');
+    }
     await BookActions.handleDeleteBook(bookId, {
       setSelectedBook,
       setShowBookModal,
