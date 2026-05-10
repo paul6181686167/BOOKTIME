@@ -476,8 +476,8 @@ function MainApp() {
       
       
     } catch (error) {
-      console.error('❌ [CORRECTION RCA] Erreur SeriesActions:', error);
-      // L'erreur sera gérée par SeriesActions.handleAddSeriesToLibrary
+      console.error('❌ Erreur ajout série:', error);
+      toast.error(error.message || 'Erreur lors de l\'ajout de la série');
       performanceMonitoring.measureApiResponse('add_series_seriesactions', apiStartTime, false);
     }
   };
@@ -662,7 +662,7 @@ function MainApp() {
               <UnifiedSearchBar 
                 searchTerm={searchHook.lastSearchTerm || ''}
                 onSearchChange={searchHook.handleSearchTermChange}
-                books={booksHook.books || []}
+                books={unifiedContent.books || []}
                 onOpenLibrarySearch={searchOpenLibrary}
                 filters={filters || {}}
                 onFiltersChange={setFilters}
@@ -1005,6 +1005,7 @@ function MainApp() {
               });
             } catch (error) {
               console.error('Erreur lors de l\'ajout du livre:', error);
+              toast.error(error.message || 'Erreur lors de l\'ajout du livre');
             }
           }}
         />
@@ -1028,6 +1029,7 @@ function MainApp() {
               });
             } catch (error) {
               console.error('Erreur lors de l\'ajout des livres:', error);
+              toast.error(error.message || 'Erreur lors de l\'import des livres');
             }
           }}
         />

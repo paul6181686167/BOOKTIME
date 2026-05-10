@@ -568,9 +568,10 @@ const SeriesDetailModal = ({
       if (response.ok) {
         const data = await response.json();
         const seriesNameLower = series.name.toLowerCase().trim();
+        // Comparaison stricte uniquement pour éviter les faux positifs sur sous-chaînes courtes
         const match = (data.items || []).find(book => {
           const bookSaga = (book.saga || '').toLowerCase().trim();
-          return bookSaga && (bookSaga === seriesNameLower || bookSaga.includes(seriesNameLower));
+          return bookSaga === seriesNameLower;
         });
         setIsSeriesOwned(!!match);
         if (match) setSeriesStatus(match.status || 'to_read');

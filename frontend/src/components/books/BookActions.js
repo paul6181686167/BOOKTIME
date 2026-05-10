@@ -348,6 +348,7 @@ const BookActions = {
     } catch (error) {
       console.error('Erreur lors de la mise à jour du livre:', error);
       toast.error('Erreur lors de la mise à jour du livre');
+      throw error; // propager pour que les appelants gèrent l'état (ex. isLoading)
     }
   },
 

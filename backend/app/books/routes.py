@@ -199,8 +199,8 @@ async def search_books_grouped(
     # Combiner les filtres
     final_filter = {"$and": [filter_dict, search_filter]}
     
-    # Récupérer tous les livres qui correspondent
-    matching_books = list(books_collection.find(final_filter, {"_id": 0}))
+    # Récupérer les livres correspondants (plafond de sécurité pour éviter la surcharge mémoire)
+    matching_books = list(books_collection.find(final_filter, {"_id": 0}).limit(500))
     
     # 🆕 AMÉLIORATION : Grouper par saga ET par auteur en privilégiant les séries
     saga_groups = {}
@@ -398,6 +398,67 @@ async def update_book(
     }, {"_id": 0})
     
     return updated_book
+
+@router.post("/{book_id}/enrich")
+async def enrich_book(book_id: str, current_user: dict = Depends(get_current_user)):
+    """Enrichir un livre avec les métadonnées Open Library (couverture, description, genres)"""
+    import httpx
+
+    book = books_collection.find_one({"id": book_id, "user_id": current_user["id"]}, {"_id": 0})
+    if not book:
+        raise HTTPException(status_code=404, detail="Livre non trouvé")
+
+    isbn = book.get("isbn") or ""
+    title = book.get("title") or ""
+    author = book.get("author") or ""
+
+    enriched = {}
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            # Chercher par ISBN d'abord, puis par titre/auteur
+            if isbn:
+                ol_url = f"https://openlibrary.org/api/books?bibkeys=ISBN:{isbn}&jscmd=data&format=json"
+                r = await client.get(ol_url)
+                if r.status_code == 200:
+                    data = r.json()
+                    ol_data = data.get(f"ISBN:{isbn}", {})
+                    cover_ids = ol_data.get("cover", {})
+                    if cover_ids.get("large"):
+                        enriched["cover_url"] = cover_ids["large"]
+                    elif cover_ids.get("medium"):
+                        enriched["cover_url"] = cover_ids["medium"]
+                    if ol_data.get("description"):
+                        desc = ol_data["description"]
+                        enriched["description"] = desc if isinstance(desc, str) else desc.get("value", "")
+                    subjects = [s.get("name", "") for s in ol_data.get("subjects", [])[:5]]
+                    if subjects:
+                        enriched["genres"] = subjects
+
+            if not enriched and title:
+                q = f"{title} {author}".strip()
+                search_url = f"https://openlibrary.org/search.json?q={q}&limit=1&fields=cover_i,description,subject"
+                r = await client.get(search_url)
+                if r.status_code == 200:
+                    docs = r.json().get("docs", [])
+                    if docs:
+                        doc = docs[0]
+                        if doc.get("cover_i"):
+                            enriched["cover_url"] = f"https://covers.openlibrary.org/b/id/{doc['cover_i']}-L.jpg"
+                        if doc.get("subject"):
+                            enriched["genres"] = doc["subject"][:5]
+
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erreur Open Library : {str(e)}")
+
+    if not enriched:
+        return {"message": "Aucune donnée supplémentaire trouvée sur Open Library", "book": book}
+
+    enriched["updated_at"] = datetime.utcnow()
+    books_collection.update_one({"id": book_id, "user_id": current_user["id"]}, {"$set": enriched})
+    updated = books_collection.find_one({"id": book_id, "user_id": current_user["id"]}, {"_id": 0})
+    return {"message": "Livre enrichi avec succès", "book": updated}
+
 
 @router.delete("/{book_id}")
 async def delete_book(book_id: str, current_user: dict = Depends(get_current_user)):
