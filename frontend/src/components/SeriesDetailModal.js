@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   BookOpenIcon,
   CheckCircleIcon,
@@ -42,6 +42,7 @@ const SeriesDetailModal = ({
       .map(([k]) => Number(k))
   );
   const [missingPreviousWarning, setMissingPreviousWarning] = useState(null);
+  const onUpdateDebounceRef = useRef(null);
 
   // ✅ NOUVELLE FONCTION : Charger les préférences de lecture depuis la base de données
   const loadReadingPreferences = async (seriesName) => {
@@ -75,7 +76,7 @@ const SeriesDetailModal = ({
   };
 
   // ✅ NOUVELLE FONCTION : Sauvegarder les préférences de lecture en base de données
-  const saveReadingPreferences = async (seriesName, readTomes) => {
+  const saveReadingPreferences = async (seriesName, currentTomeStatuses) => {
     try {
       const token = localStorage.getItem('token');
       const backendUrl = API_BASE_URL
@@ -88,10 +89,10 @@ const SeriesDetailModal = ({
         },
         body: JSON.stringify({
           series_name: seriesName,
-          read_tomes: Object.entries(tomeStatuses)
+          read_tomes: Object.entries(currentTomeStatuses)
             .filter(([, v]) => v.status === 'lu')
             .map(([k]) => Number(k)),
-          tome_statuses: tomeStatuses
+          tome_statuses: currentTomeStatuses
         })
       });
       
@@ -115,10 +116,24 @@ const SeriesDetailModal = ({
     try {
       const statuses = await loadReadingPreferences(enrichedSeries.name);
       setTomeStatuses(statuses || {});
-      const readSet = new Set(
-        Object.entries(statuses || {}).filter(([,v]) => v.status === 'lu').map(([k]) => Number(k))
-      );
-      await calculateAndUpdateSeriesStatus(readSet);
+
+      // Calculer le statut à afficher depuis les données chargées, sans déclencher de toast
+      const entries = Object.values(statuses || {});
+      const hasRead = entries.some(v => v.status === 'lu');
+      const hasInProgress = entries.some(v => v.status === 'en_cours');
+      const readCount = entries.filter(v => v.status === 'lu').length;
+      const totalTomes = enrichedSeries?.volumes || (series?.books?.length) || 0;
+
+      let derivedStatus = 'to_read';
+      if (hasInProgress || (hasRead && (totalTomes === 0 || readCount < totalTomes))) {
+        derivedStatus = 'reading';
+      } else if (hasRead && totalTomes > 0 && readCount >= totalTomes) {
+        derivedStatus = 'completed';
+      }
+      // Ne mettre à jour que si on a des données significatives
+      if (hasRead || hasInProgress) {
+        setSeriesStatus(derivedStatus);
+      }
     } catch (error) {
       console.error('❌ Erreur chargement préférences:', error);
       setTomeStatuses({});
@@ -190,21 +205,11 @@ const SeriesDetailModal = ({
     const totalTomes = enrichedSeries.volumes;
     const readTomesCount = newReadTomes.size;
     
-    console.log('📊 Calcul statut série:', {
-      seriesName: enrichedSeries.name,
-      totalTomes,
-      readTomesCount,
-      readTomes: Array.from(newReadTomes),
-      isSeriesOwned
-    });
 
     // Déterminer le nouveau statut selon les règles
     let newStatus = 'to_read'; // Par défaut
     
     if (readTomesCount === 0) {
-      // Aucun tome lu → ne pas écraser un statut manuel ("En cours" positionné par l'utilisateur)
-      // On laisse seriesStatus tel quel, sauf si c'était déjà 'to_read'
-      console.log('🎯 0 tome lu — statut manuel conservé:', seriesStatus);
       return;
     } else if (readTomesCount === totalTomes && totalTomes > 0) {
       newStatus = 'completed'; // Tous les tomes lus = Terminé
@@ -212,10 +217,7 @@ const SeriesDetailModal = ({
       newStatus = 'reading'; // Quelques tomes lus = En cours
     }
 
-    console.log('🎯 Nouveau statut calculé:', newStatus, 'depuis', seriesStatus);
-
     if (isSeriesOwned && newStatus !== seriesStatus) {
-      console.log('🔄 Mise à jour statut série automatique (série possédée):', seriesStatus, '→', newStatus);
       
       try {
         // Utiliser la fonction existante pour changer le statut
@@ -237,7 +239,6 @@ const SeriesDetailModal = ({
         console.error('❌ Erreur lors de la mise à jour automatique du statut:', error);
       }
     } else if (!isSeriesOwned && newStatus !== seriesStatus) {
-      console.log('📝 Mise à jour statut série local (série non possédée):', seriesStatus, '→', newStatus);
       
       // Mettre à jour l'état local pour l'affichage même si série non possédée
       setSeriesStatus(newStatus);
@@ -253,8 +254,6 @@ const SeriesDetailModal = ({
         icon: '📈',
         duration: 2000
       });
-    } else {
-      console.log('ℹ️ Statut série inchangé, pas de mise à jour nécessaire');
     }
   };
 
@@ -296,7 +295,11 @@ const SeriesDetailModal = ({
 
     if (enrichedSeries?.name) {
       await saveReadingPreferences(enrichedSeries.name, newStatuses);
-      if (onUpdate) onUpdate();
+      // Debounce onUpdate pour éviter N rechargements si l'utilisateur clique vite sur plusieurs tomes
+      if (onUpdate) {
+        if (onUpdateDebounceRef.current) clearTimeout(onUpdateDebounceRef.current);
+        onUpdateDebounceRef.current = setTimeout(() => { onUpdate(); }, 800);
+      }
     }
   };
 
@@ -320,6 +323,12 @@ const SeriesDetailModal = ({
       await saveReadingPreferences(enrichedSeries.name, newStatuses);
       if (onUpdate) onUpdate();
     }
+    // Recalcul du statut série
+    const readCount = Object.values(newStatuses).filter(v => v.status === 'lu').length;
+    const hasInProgress = Object.values(newStatuses).some(v => v.status === 'en_cours');
+    const totalTomes = enrichedSeries?.volumes || (series?.books?.length) || 0;
+    if (hasInProgress || (readCount > 0 && readCount < totalTomes)) setSeriesStatus('reading');
+    else if (readCount > 0 && totalTomes > 0 && readCount >= totalTomes) setSeriesStatus('completed');
     setMissingPreviousWarning(null);
   };
 
@@ -335,7 +344,9 @@ const SeriesDetailModal = ({
 
   // Fonction pour changer rapidement le statut de la série
   const handleQuickStatusChange = async (newStatus) => {
-    if (!isSeriesOwned) {
+    // Autoriser si la série est possédée OU si elle contient des livres détectés
+    const hasDetectedBooks = (series?.books || []).length > 0;
+    if (!isSeriesOwned && !hasDetectedBooks) {
       toast.error('Vous devez d\'abord ajouter cette série à votre bibliothèque');
       return;
     }
@@ -428,61 +439,27 @@ const SeriesDetailModal = ({
     try {
       const token = localStorage.getItem('token');
       const backendUrl = API_BASE_URL
-      
-      console.log('🔍 Vérification série possédée:', series.name);
-      console.log('🔑 Token disponible:', !!token);
-      console.log('🌐 Backend URL:', backendUrl);
-      
-      // Rechercher les livres de cette saga
+
       const response = await fetch(`${backendUrl}/api/books/all?saga=${encodeURIComponent(series.name)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-      
-      console.log('📡 Réponse vérification:', { 
-        status: response.status, 
-        ok: response.ok,
-        statusText: response.statusText 
-      });
-      
+
       if (response.ok) {
         const data = await response.json();
-        console.log('📚 Livres trouvés pour saga:', data);
-        
-        // Une série est possédée si au moins un livre a une saga correspondante (match strict pour éviter faux positifs)
         const seriesNameLower = series.name.toLowerCase().trim();
         const hasSeriesBook = data.items && data.items.some(book => {
           const bookSaga = (book.saga || '').toLowerCase().trim();
-          if (!bookSaga) return false;
-          // Correspondance exacte ou le livre a le nom complet de la série
-          return bookSaga === seriesNameLower || bookSaga.includes(seriesNameLower);
+          return bookSaga && (bookSaga === seriesNameLower || bookSaga.includes(seriesNameLower));
         });
-        
-        console.log('📖 Série déjà possédée:', hasSeriesBook);
         setIsSeriesOwned(hasSeriesBook);
-        
-        // Récupérer le statut de la série si elle existe
         if (hasSeriesBook) {
           const seriesBook = data.items.find(book => {
             const bookSaga = (book.saga || '').toLowerCase().trim();
             return bookSaga && (bookSaga === seriesNameLower || bookSaga.includes(seriesNameLower));
           });
-          if (seriesBook) {
-            setSeriesStatus(seriesBook.status || 'to_read');
-            console.log('📊 Statut série récupéré:', seriesBook.status);
-          }
+          if (seriesBook) setSeriesStatus(seriesBook.status || 'to_read');
         }
-        
-        console.log('✅ Série déjà possédée:', hasSeriesBook);
       } else {
-        const errorData = await response.json().catch(() => ({ detail: 'Erreur inconnue' }));
-        console.error('❌ Erreur API vérification série:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData
-        });
-        // Ne pas bloquer l'interface si l'API échoue
         setIsSeriesOwned(false);
       }
     } catch (error) {
@@ -494,13 +471,20 @@ const SeriesDetailModal = ({
 
   useEffect(() => {
     if (isOpen && series) {
+      // Réinitialiser AVANT les appels async pour éviter flash de données périmées
+      setTomeStatuses({});
+      setOlBooks([]);
+      setMissingPreviousWarning(null);
+
       if (series.isOwnedSeries || series.isLibrarySeries) {
         setIsSeriesOwned(true);
       } else {
         const inLibrary = (userSeriesLibrary || []).some(
           s => (s.series_name || s.name || '').toLowerCase().trim() === (series.name || '').toLowerCase().trim()
         );
-        if (inLibrary) {
+        // Aussi considérer une série comme possédée si elle contient des livres (détection automatique)
+        const hasBooks = (series.books || []).length > 0;
+        if (inLibrary || hasBooks) {
           setIsSeriesOwned(true);
         } else {
           checkIfSeriesOwned();
@@ -508,9 +492,6 @@ const SeriesDetailModal = ({
       }
       loadSeriesBooks();
       loadReadingPreferencesForSeries();
-      setMissingPreviousWarning(null);
-      setTomeStatuses({});
-      setOlBooks([]);
       // Charger les tomes OL pour les séries hors base statique
       if (!enrichedSeries?.referenceFound) {
         loadOLSeriesBooks();
@@ -718,8 +699,8 @@ const SeriesDetailModal = ({
                   </button>
                 </p>
                 <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
-                  <span className={`px-2 py-1 rounded-full font-medium ${getStatusBadge(series?.status)}`}>
-                    {getStatusLabel(series?.status)}
+                  <span className={`px-2 py-1 rounded-full font-medium ${getStatusBadge(seriesStatus)}`}>
+                    {getStatusLabel(seriesStatus)}
                   </span>
                   <span className="text-gray-500 dark:text-gray-400 whitespace-nowrap">
                     📚 {enrichedSeries?.volumes || olBooks.length || books.length || (series?.books?.length) || 0} tome(s)
