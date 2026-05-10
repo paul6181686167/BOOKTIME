@@ -60,6 +60,7 @@ import useUserAnalytics from './hooks/useUserAnalytics';
 // Utils imports
 import { getCategoryBadge } from './utils/helpers';
 import { TAB_CONFIG } from './utils/constants';
+import { API_BASE_URL } from './config/environment';
 
 
 // Search components imports (Phase 1.1 - Step 3)
@@ -248,6 +249,14 @@ function MainApp() {
       }
       userAnalytics.stopTracking();
     };
+  }, []);
+
+  // Keep-alive : ping le backend toutes les 4 min pour éviter la mise en veille Render
+  useEffect(() => {
+    const PING_INTERVAL = 4 * 60 * 1000; // 4 minutes
+    const ping = () => fetch(`${API_BASE_URL}/ping`, { method: 'GET' }).catch(() => {});
+    const id = setInterval(ping, PING_INTERVAL);
+    return () => clearInterval(id);
   }, []);
 
   // PHASE C.1 - Hooks unifiés pour rafraîchissement optimisé
