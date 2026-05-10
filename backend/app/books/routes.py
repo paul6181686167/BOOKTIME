@@ -431,7 +431,10 @@ async def enrich_book(book_id: str, current_user: dict = Depends(get_current_use
                     if ol_data.get("description"):
                         desc = ol_data["description"]
                         enriched["description"] = desc if isinstance(desc, str) else desc.get("value", "")
-                    subjects = [s.get("name", "") for s in ol_data.get("subjects", [])[:5]]
+                    subjects = [
+                        (s if isinstance(s, str) else s.get("name", ""))
+                        for s in ol_data.get("subjects", [])[:5]
+                    ]
                     if subjects:
                         enriched["genres"] = subjects
 
