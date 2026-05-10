@@ -583,35 +583,46 @@ const SeriesDetailModal = ({
   };
 
   useEffect(() => {
-    if (isOpen && series) {
-      // Réinitialiser AVANT les appels async pour éviter flash de données périmées
-      setTomeStatuses({});
-      setOlBooks([]);
-      setMissingPreviousWarning(null);
+    if (!isOpen || !series) return;
 
-      if (series.isOwnedSeries || series.isLibrarySeries) {
+    let cancelled = false; // flag pour éviter les setState après démontage
+
+    setTomeStatuses({});
+    setOlBooks([]);
+    setMissingPreviousWarning(null);
+
+    if (series.isOwnedSeries || series.isLibrarySeries) {
+      setIsSeriesOwned(true);
+    } else {
+      const inLibrary = (userSeriesLibrary || []).some(
+        s => (s.series_name || s.name || '').toLowerCase().trim() === (series.name || '').toLowerCase().trim()
+      );
+      const hasBooks = (series.books || []).length > 0;
+      if (inLibrary || hasBooks) {
         setIsSeriesOwned(true);
       } else {
-        const inLibrary = (userSeriesLibrary || []).some(
-          s => (s.series_name || s.name || '').toLowerCase().trim() === (series.name || '').toLowerCase().trim()
-        );
-        // Aussi considérer une série comme possédée si elle contient des livres (détection automatique)
-        const hasBooks = (series.books || []).length > 0;
-        if (inLibrary || hasBooks) {
-          setIsSeriesOwned(true);
-        } else {
-          checkIfSeriesOwned();
-        }
-      }
-      loadSeriesBooks();
-      loadReadingPreferencesForSeries();
-      // Charger les tomes OL pour les séries hors base statique
-      if (!enrichedSeries?.referenceFound) {
-        loadOLSeriesBooks();
+        checkIfSeriesOwned(); // requête légère (limit=1)
       }
     }
-  // userSeriesLibrary retiré des dépendances : la vérification en-mémoire est faite de façon
-  // synchrone dans l'effet, pas besoin de re-déclencher les appels API à chaque changement.
+
+    // Chargements async protégés par le flag cancelled
+    const loadAll = async () => {
+      await loadSeriesBooks();
+      if (cancelled) return;
+      await loadReadingPreferencesForSeries();
+      if (cancelled) return;
+      if (!enrichedSeries?.referenceFound) {
+        await loadOLSeriesBooks();
+      }
+    };
+    loadAll();
+
+    return () => {
+      cancelled = true;
+      // Annuler le debounce onUpdate en cours si le modal est fermé
+      if (onUpdateDebounceRef.current) clearTimeout(onUpdateDebounceRef.current);
+    };
+  // userSeriesLibrary retiré des dépendances pour éviter la rafale API à chaque refresh global.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, series]);
 

@@ -350,7 +350,10 @@ async def create_book(book_data: BookCreate, current_user: dict = Depends(get_cu
         book["date_started"] = datetime.utcnow()
         book["date_completed"] = datetime.utcnow()
     
-    books_collection.insert_one(book)
+    try:
+        books_collection.insert_one(book)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la création du livre : {str(e)}")
     book.pop("_id", None)
     return book
 

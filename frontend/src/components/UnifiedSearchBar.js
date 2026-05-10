@@ -70,7 +70,7 @@ const UnifiedSearchBar = React.memo(({
 
       if (response.ok) {
         const data = await response.json();
-        setUniversalResults(data.books.slice(0, 3));
+        setUniversalResults((data.books ?? []).slice(0, 3));
       }
     } catch (error) {
       console.error('Erreur recherche universelle:', error);
@@ -119,10 +119,9 @@ const UnifiedSearchBar = React.memo(({
   const triggerSearch = useCallback(() => {
     const searchTerm = localSearchTerm.trim();
     if (searchTerm) {
-      // Synchroniser avec le parent SEULEMENT au moment de la recherche
-      onSearchChange(searchTerm);
+      onSearchChange?.(searchTerm);
       saveRecentSearch(searchTerm);
-      onOpenLibrarySearch(searchTerm);
+      onOpenLibrarySearch?.(searchTerm);
       setShowSuggestions(false);
     }
   }, [localSearchTerm, onSearchChange, saveRecentSearch, onOpenLibrarySearch]);
@@ -182,13 +181,13 @@ const UnifiedSearchBar = React.memo(({
   // Gérer la sélection d'une suggestion
   const handleSuggestionClick = (suggestion) => {
     if (suggestion.type === 'book') {
-      onSearchChange(suggestion.text);
+      onSearchChange?.(suggestion.text);
     } else if (suggestion.type === 'author') {
-      onFiltersChange({ ...filters, author: suggestion.data });
-      onSearchChange('');
+      onFiltersChange?.({ ...filters, author: suggestion.data });
+      onSearchChange?.('');
     } else if (suggestion.type === 'saga') {
-      onFiltersChange({ ...filters, saga: suggestion.data });
-      onSearchChange('');
+      onFiltersChange?.({ ...filters, saga: suggestion.data });
+      onSearchChange?.('');
     }
     
     saveRecentSearch(suggestion.text);

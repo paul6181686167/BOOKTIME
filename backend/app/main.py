@@ -85,9 +85,15 @@ app.add_middleware(
 )
 
 def _cors_headers(origin: str = None) -> dict:
-    """Headers CORS pour les reponses d'erreur"""
+    """Headers CORS pour les reponses d'erreur - ne renvoie pas d'origine si non autorisée"""
     origins = get_cors_origins()
-    allow_origin = origin if origin and origin in origins else (origins[0] if origins else "http://localhost:3000")
+    if origin and origin in origins:
+        allow_origin = origin
+    elif not origin:
+        allow_origin = origins[0] if origins else "http://localhost:3000"
+    else:
+        # Origine non autorisée : ne pas exposer un header CORS permissif
+        return {}
     return {
         "Access-Control-Allow-Origin": allow_origin,
         "Access-Control-Allow-Credentials": "true",

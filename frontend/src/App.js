@@ -158,10 +158,10 @@ function AppContent() {
   return (
     <Routes>
       <Route path="/" element={<MainApp />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/series/:seriesName" element={<SeriesDetailPage />} />
       <Route path="/recommendations" element={<RecommendationPage />} />
       <Route path="/export-import" element={<ExportImportPage />} />
+      <Route path="/catalogue/*" element={<OpenLibraryBookPage />} />
     </Routes>
   );
 }
@@ -433,6 +433,7 @@ function MainApp() {
       
     } catch (error) {
       console.error('Error adding book:', error);
+      toast.error(error.message || 'Erreur lors de l\'ajout du livre');
       performanceMonitoring.measureApiResponse('add_from_openlibrary', apiStartTime, false);
     }
   };
@@ -1071,11 +1072,10 @@ function App() {
         <AuthProvider>
           <ErrorBoundary>
             <Routes>
-              <Route path="/" element={<AppWithAuth />} />
+              {/* Route publique */}
               <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="/recommendations" element={<RecommendationPage />} />
-              <Route path="/series/:seriesId" element={<SeriesDetailPage />} />
-              <Route path="/catalogue/*" element={<OpenLibraryBookPage />} />
+              {/* Toutes les autres routes passent par AppWithAuth (vérification login) */}
+              <Route path="/*" element={<AppWithAuth />} />
             </Routes>
           </ErrorBoundary>
         </AuthProvider>

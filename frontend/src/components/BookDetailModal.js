@@ -190,8 +190,8 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
       if (result.message) {
         toast.success(result.message);
         if (result.book) {
-          // Recharger les données du livre dans le parent
-          window.location.reload(); // Solution simple pour rafraîchir
+          // Rafraîchir via le callback parent (pas de reload complet)
+          onUpdate?.(book.id, result.book);
         }
       }
     } catch (error) {
@@ -212,6 +212,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
       setTimeout(() => onClose(), 800);
     } catch (error) {
       console.error('Erreur ajout livre:', error);
+      toast.error(error.message || 'Erreur lors de l\'ajout du livre');
       setIsAdding(false);
     }
   };
@@ -798,7 +799,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                 <div>
                   <h4 className="font-medium text-gray-700 dark:text-gray-300">Date d'ajout</h4>
                   <p className="text-gray-600 dark:text-gray-400">
-                    {new Date(book.date_added).toLocaleDateString('fr-FR')}
+                    {book.date_added ? new Date(book.date_added).toLocaleDateString('fr-FR') : '—'}
                   </p>
                 </div>
                 {book.isbn && (
