@@ -348,60 +348,68 @@ const SeriesDetailModal = ({
     setSeriesStatus(newStatus);
 
     try {
-      // 1. Chercher les livres individuels avec ce saga dans la bibliothèque
-      const response = await fetch(
-        `${backendUrl}/api/books/all?saga=${encodeURIComponent(series.name)}&limit=100`,
-        { headers: { 'Authorization': `Bearer ${token}` } }
-      );
-
       let updatedViaBooks = false;
 
-      if (response.ok) {
-        const data = await response.json();
-        const seriesBooks = (data.items || []).filter(book =>
-          (book.saga || '').toLowerCase().trim() === (series.name || '').toLowerCase().trim()
-        );
+      // 1a. Livres déjà présents dans l'objet série (détection automatique ou série possédée)
+      const booksInSeries = series.books || [];
 
-        if (seriesBooks.length > 0) {
-          const results = await Promise.all(
-            seriesBooks.map(book =>
-              fetch(`${backendUrl}/api/books/${book.id}`, {
-                method: 'PUT',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus })
-              }).then(r => r.ok)
-            )
+      if (booksInSeries.length > 0) {
+        const results = await Promise.all(
+          booksInSeries.map(book =>
+            fetch(`${backendUrl}/api/books/${book.id}`, {
+              method: 'PUT',
+              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: newStatus })
+            }).then(r => r.ok)
+          )
+        );
+        if (results.some(r => r)) updatedViaBooks = true;
+      }
+
+      // 1b. Fallback saga : chercher les livres par champ saga si series.books vide
+      if (!updatedViaBooks) {
+        const response = await fetch(
+          `${backendUrl}/api/books/all?saga=${encodeURIComponent(series.name)}&limit=100`,
+          { headers: { 'Authorization': `Bearer ${token}` } }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          const seriesBooks = (data.items || []).filter(book =>
+            (book.saga || '').toLowerCase().trim() === (series.name || '').toLowerCase().trim()
           );
-          if (results.some(r => r)) updatedViaBooks = true;
+          if (seriesBooks.length > 0) {
+            const results = await Promise.all(
+              seriesBooks.map(book =>
+                fetch(`${backendUrl}/api/books/${book.id}`, {
+                  method: 'PUT',
+                  headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ status: newStatus })
+                }).then(r => r.ok)
+              )
+            );
+            if (results.some(r => r)) updatedViaBooks = true;
+          }
         }
       }
 
-      // 2. Fallback : mettre à jour via series_library (série ajoutée sans livres individuels)
+      // 2. Fallback series_library : série ajoutée via le panneau séries (sans livres individuels)
       if (!updatedViaBooks) {
         const libEntry = (userSeriesLibrary || []).find(
           s => (s.series_name || s.name || '').toLowerCase().trim() === (series.name || '').toLowerCase().trim()
         );
         const seriesId = libEntry?.id || series.id;
-
         if (seriesId) {
-          const res = await fetch(`${backendUrl}/api/series/library/${seriesId}`, {
+          await fetch(`${backendUrl}/api/series/library/${seriesId}`, {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ series_status: newStatus })
           });
-          if (!res.ok) {
-            console.error('Erreur API series_library:', res.status, await res.text());
-          }
-        } else {
-          console.warn('Aucun ID de série trouvé pour la mise à jour du statut');
         }
       }
 
       toast.success(`Statut de la série "${series.name}" : ${statusLabel}`);
-      // Recharger uniquement les données de la bibliothèque sans écraser seriesStatus local
       if (onUpdate) {
         await onUpdate();
-        // Forcer le statut après le rechargement (onUpdate peut écraser l'état local)
         setSeriesStatus(newStatus);
       }
     } catch (error) {
