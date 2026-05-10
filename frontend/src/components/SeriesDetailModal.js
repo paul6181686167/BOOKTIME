@@ -295,6 +295,41 @@ const SeriesDetailModal = ({
 
     if (enrichedSeries?.name) {
       await saveReadingPreferences(enrichedSeries.name, newStatuses);
+
+      // Mapping statut tome → statut livre (pour mettre à jour la BDD et bouger la carte)
+      const tomeToBookStatus = { non_lu: 'to_read', en_cours: 'reading', lu: 'completed' };
+      const bookStatus = tomeToBookStatus[newStatus] || 'to_read';
+      const token = localStorage.getItem('token');
+      const backendUrl = API_BASE_URL;
+
+      // 1. Mettre à jour le livre correspondant dans series.books (séries auto-détectées)
+      const booksInSeries = series?.books || [];
+      const matchingBook = booksInSeries.find(b =>
+        (b.volume_number || 0) === tomeNumber || booksInSeries.indexOf(b) + 1 === tomeNumber
+      );
+      if (matchingBook?.id) {
+        await fetch(`${backendUrl}/api/books/${matchingBook.id}`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: bookStatus })
+        }).catch(() => {});
+      }
+
+      // 2. Mettre à jour le statut agrégé de la série dans la library (séries possédées)
+      if (autoStatus !== (series?.status || 'to_read')) {
+        const libEntry = (userSeriesLibrary || []).find(
+          s => (s.series_name || s.name || '').toLowerCase().trim() === (series.name || '').toLowerCase().trim()
+        );
+        const seriesId = libEntry?.id || series?.id;
+        if (seriesId && autoStatus) {
+          await fetch(`${backendUrl}/api/series/library/${seriesId}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ series_status: autoStatus })
+          }).catch(() => {});
+        }
+      }
+
       // Debounce onUpdate pour éviter N rechargements si l'utilisateur clique vite sur plusieurs tomes
       if (onUpdate) {
         if (onUpdateDebounceRef.current) clearTimeout(onUpdateDebounceRef.current);
@@ -319,16 +354,38 @@ const SeriesDetailModal = ({
     });
     setTomeStatuses(newStatuses);
     
-    if (enrichedSeries?.name) {
-      await saveReadingPreferences(enrichedSeries.name, newStatuses);
-      if (onUpdate) onUpdate();
-    }
-    // Recalcul du statut série
+    // Recalcul du statut agrégé
     const readCount = Object.values(newStatuses).filter(v => v.status === 'lu').length;
     const hasInProgress = Object.values(newStatuses).some(v => v.status === 'en_cours');
     const totalTomes = enrichedSeries?.volumes || (series?.books?.length) || 0;
-    if (hasInProgress || (readCount > 0 && readCount < totalTomes)) setSeriesStatus('reading');
-    else if (readCount > 0 && totalTomes > 0 && readCount >= totalTomes) setSeriesStatus('completed');
+    let bulkStatus = 'to_read';
+    if (hasInProgress || (readCount > 0 && readCount < totalTomes)) bulkStatus = 'reading';
+    else if (readCount > 0 && totalTomes > 0 && readCount >= totalTomes) bulkStatus = 'completed';
+    setSeriesStatus(bulkStatus);
+
+    if (enrichedSeries?.name) {
+      await saveReadingPreferences(enrichedSeries.name, newStatuses);
+
+      // Mettre à jour chaque livre coché "lu" en BDD
+      const token = localStorage.getItem('token');
+      const backendUrl = API_BASE_URL;
+      const booksInSeries = series?.books || [];
+      await Promise.all(
+        missingPreviousWarning.missingTomes.map(tomeNum => {
+          const book = booksInSeries.find(b =>
+            (b.volume_number || 0) === tomeNum || booksInSeries.indexOf(b) + 1 === tomeNum
+          );
+          if (!book?.id) return Promise.resolve();
+          return fetch(`${backendUrl}/api/books/${book.id}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'completed' })
+          }).catch(() => {});
+        })
+      );
+
+      if (onUpdate) onUpdate();
+    }
     setMissingPreviousWarning(null);
   };
 
