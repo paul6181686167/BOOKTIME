@@ -7,9 +7,16 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 import logging
 
+import requests
+from starlette.concurrency import run_in_threadpool
+
 from ..security.jwt import get_current_user
+from ..google_books.service import (
+    get_volume_by_id,
+    search_volumes_simplified,
+    simplified_volume_to_integration_book,
+)
 from .goodreads_service import goodreads_service
-from .google_books_service import google_books_service
 from .librarything_service import librarything_service
 
 logger = logging.getLogger(__name__)
@@ -92,22 +99,15 @@ async def import_goodreads_csv(
 async def search_google_books(
     query: str = Query(..., description="Terme de recherche"),
     max_results: int = Query(20, ge=1, le=40, description="Nombre maximum de résultats"),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
-    Rechercher des livres sur Google Books
-    
-    Args:
-        query: Terme de recherche
-        max_results: Nombre maximum de résultats
-        current_user: Utilisateur connecté
-        
-    Returns:
-        Dict avec résultats de recherche
+    Recherche Google Books — délègue à `google_books.service` (même logique que `/api/google-books/volumes`).
+    Conservé pour compatibilité ; préférer `/api/google-books/volumes` côté nouveau code.
     """
     try:
-        books = await google_books_service.search_books(query, max_results)
-        
+        data = await run_in_threadpool(lambda: search_volumes_simplified(query, max_results=max_results))
+        books = [simplified_volume_to_integration_book(it) for it in (data.get("items") or [])]
         return {
             "success": True,
             "message": f"Recherche Google Books terminée: {len(books)} livres trouvés",
@@ -115,57 +115,61 @@ async def search_google_books(
                 "books": books,
                 "query": query,
                 "results_count": len(books),
-                "source": "google_books"
+                "source": "google_books",
             },
-            "searched_at": datetime.utcnow().isoformat()
+            "searched_at": datetime.utcnow().isoformat(),
         }
-        
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+    except requests.HTTPError as e:
+        code = e.response.status_code if e.response is not None else 502
+        logger.error("Google Books HTTP %s: %s", code, e)
+        raise HTTPException(status_code=502, detail=f"Google Books: {e}") from e
     except Exception as e:
-        logger.error(f"Error searching Google Books: {str(e)}")
+        logger.error("Error searching Google Books: %s", e)
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la recherche Google Books: {str(e)}"
-        )
+            detail=f"Erreur lors de la recherche Google Books: {str(e)}",
+        ) from e
+
 
 @router.get("/google-books/details/{volume_id}")
 async def get_google_book_details(
     volume_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
-    Récupérer les détails d'un livre Google Books
-    
-    Args:
-        volume_id: ID du volume Google Books
-        current_user: Utilisateur connecté
-        
-    Returns:
-        Dict avec détails du livre
+    Détail d'un volume Google — délègue à `google_books.service.get_volume_by_id`.
+    Préférer `/api/google-books/volume/{volume_id}` pour le nouveau code.
     """
     try:
-        book = await google_books_service.get_book_details(volume_id)
-        
-        if not book:
-            raise HTTPException(status_code=404, detail="Livre non trouvé sur Google Books")
-        
+        it = await run_in_threadpool(lambda: get_volume_by_id(volume_id))
+        book = simplified_volume_to_integration_book(it)
         return {
             "success": True,
             "message": "Détails du livre Google Books récupérés",
             "data": {
                 "book": book,
-                "source": "google_books"
+                "source": "google_books",
             },
-            "retrieved_at": datetime.utcnow().isoformat()
+            "retrieved_at": datetime.utcnow().isoformat(),
         }
-        
-    except HTTPException:
-        raise
+    except requests.HTTPError as e:
+        code = e.response.status_code if e.response is not None else 502
+        if code == 404:
+            raise HTTPException(status_code=404, detail="Livre non trouvé sur Google Books") from e
+        logger.error("Google Books HTTP %s: %s", code, e)
+        raise HTTPException(status_code=502, detail=f"Google Books: {e}") from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
     except Exception as e:
-        logger.error(f"Error getting Google Books details: {str(e)}")
+        logger.error("Error getting Google Books details: %s", e)
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la récupération des détails: {str(e)}"
-        )
+            detail=f"Erreur lors de la récupération des détails: {str(e)}",
+        ) from e
 
 # === LIBRARYTHING INTEGRATION ===
 
@@ -268,7 +272,12 @@ async def combined_external_search(
         
         # Google Books
         if 'google_books' in source_list:
-            google_books = await google_books_service.search_books(query, max_results_per_source)
+            data = await run_in_threadpool(
+                lambda: search_volumes_simplified(query, max_results=max_results_per_source)
+            )
+            google_books = [
+                simplified_volume_to_integration_book(it) for it in (data.get("items") or [])
+            ]
             combined_results.extend(google_books)
         
         # TODO: Ajouter d'autres sources externes
@@ -379,7 +388,7 @@ async def integrations_health():
             "module": "external_integrations",
             "services": {
                 "goodreads_service": "available",
-                "google_books_service": "available",
+                "google_books_service": "delegated_to_app.google_books.service",
                 "librarything_service": "available"
             },
             "features": [

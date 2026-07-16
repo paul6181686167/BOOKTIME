@@ -1,0 +1,317 @@
+"""
+Charge paresseuse de wikidata_series_db.json et popular_standalone_books.json.
+Thread-safe ; pas de rechargement automatique (redémarrage serveur ou clear_cache).
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import threading
+import unicodedata
+from typing import Any
+
+from ..config import WIKIDATA_SERIES_DB_PATH, WIKIDATA_STANDALONE_CACHE_PATH
+
+# Doit rester aligné avec extract_wikidata_series.norm (clés title_index).
+_LIGATURES = {"œ": "oe", "æ": "ae", "ø": "o", "ß": "ss"}
+_STOP = re.compile(
+    r"\b(le|la|les|l|the|a|an|de|du|des|un|une|of|in|to|for|on|at|by|with|and|et|au|aux|no)\b"
+)
+
+
+def norm_title(s: str) -> str:
+    if not s:
+        return ""
+    for src, dst in _LIGATURES.items():
+        s = s.replace(src, dst).replace(src.upper(), dst)
+    s = re.sub(r"'s\b", "s", s, flags=re.IGNORECASE)
+    s = unicodedata.normalize("NFD", s).encode("ascii", "ignore").decode()
+    s = re.sub(r"[''`\-]", " ", s.lower())
+    s = re.sub(r"[^a-z0-9\s]", "", s)
+    s = _STOP.sub(" ", s)
+    return re.sub(r"\s+", " ", s).strip()
+
+
+_LITE_SERIES_KEYS = ("qid", "name", "name_fr", "name_en", "type", "work_count", "popularity")
+
+# Genres P136 (libellés EN) signalant un format précis (priorité sur "book series" générique).
+_MANGA_GENRE = re.compile(r"\b(manga|manhwa|manhua|light novel|webtoon)\b", re.I)
+_BD_GENRE = re.compile(
+    r"(comic|comics|graphic novel|bande dessin|fumetti|franco-belgian)", re.I
+)
+
+
+def infer_series_category(row: dict[str, Any]) -> str:
+    """
+    Catégorie (roman | bd | manga) déduite du **type Wikidata** (P31) puis, à défaut,
+    des **genres P136** des œuvres. Fiable car basé sur les QID, pas sur du texte libre.
+    """
+    t = str((row or {}).get("type") or "").lower()
+    if "manga" in t or "light novel" in t:
+        return "manga"
+    if "comic" in t:  # "comics series", "comic book series"
+        return "bd"
+    if "novel" in t:  # "novel series"
+        return "roman"
+    # "book series" / "written work series" : on inspecte les genres des œuvres + sujets série.
+    parts: list[str] = []
+    for w in (row or {}).get("works") or []:
+        if not isinstance(w, dict):
+            continue
+        g = w.get("genres_en")
+        if isinstance(g, list):
+            parts.extend(str(x) for x in g if x)
+        elif g:
+            parts.append(str(g))
+    ms = (row or {}).get("main_subjects_en")
+    if isinstance(ms, list):
+        parts.extend(str(x) for x in ms if x)
+    elif ms:
+        parts.append(str(ms))
+    blob = " ".join(parts)
+    if _MANGA_GENRE.search(blob):
+        return "manga"
+    if _BD_GENRE.search(blob):
+        return "bd"
+    return "roman"
+
+
+def _series_lite(row: dict[str, Any]) -> dict[str, Any]:
+    lite = {k: row[k] for k in _LITE_SERIES_KEYS if k in row}
+    lite["category"] = infer_series_category(row)
+    return lite
+
+
+# Types génériques où Wikidata range souvent des LIVRES INDIVIDUELS mal étiquetés
+# "série". Sans tome lié (work_count < 2), ce sont presque toujours des faux positifs
+# (ex. "Harry Potter à l'école des sorciers" rangé en "book series").
+_GENERIC_SERIES_TYPES = {"book series", "written work series", ""}
+_MIN_GENERIC_WORKS = 2
+
+# Types synthétiques issus de la découverte (franchises / hubs P179). Après filtrage des
+# formats, beaucoup ne contiennent plus que des jeux/films -> 0 tome : ce sont alors des
+# séries de jeux vidéo (Lego Harry Potter, One Piece: Grand Battle...) à écarter.
+_DISCOVERY_TYPES = {"literary series hub", "literary franchise"}
+
+# Types Wikidata curés : vraie classification de série, gardée même sans tome lié
+# (ex. "manga series" Naruto, tomes absents de Wikidata mais série bien réelle).
+_CURATED_TYPES = {
+    "novel series",
+    "manga series",
+    "light novel series",
+    "manhwa series",
+    "comic book series",
+    "comics series",
+    "children's book series",
+    "heptalogy",
+    "seed series",
+}
+
+
+def is_real_series(row: dict[str, Any]) -> bool:
+    """
+    True si l'entrée est une vraie série (multi-tomes) et non un livre/jeu/film isolé.
+    - Types curés Wikidata + seed : toujours acceptés (série réelle, tomes parfois absents).
+    - Types découverte (hub/franchise) : exigent >= 1 tome livre (sinon = série de jeux/films).
+    - Types génériques ("book series", "written work series") : exigent >= 2 tomes liés.
+    """
+    if not isinstance(row, dict):
+        return False
+    t = str(row.get("type") or "").strip().lower()
+    wc = int(row.get("work_count") or 0)
+    if t in _CURATED_TYPES:
+        return True
+    if t in _DISCOVERY_TYPES:
+        return wc >= 1
+    if t in _GENERIC_SERIES_TYPES:
+        return wc >= _MIN_GENERIC_WORKS
+    return True
+
+_lock = threading.Lock()
+_series_db: dict[str, Any] | None = None
+_standalone_doc: dict[str, Any] | None = None
+_standalone_loaded_once = False
+_load_error: str | None = None
+
+
+def clear_cache() -> None:
+    global _series_db, _standalone_doc, _standalone_loaded_once, _load_error
+    with _lock:
+        _series_db = None
+        _standalone_doc = None
+        _standalone_loaded_once = False
+        _load_error = None
+
+
+def _load_series_locked() -> None:
+    global _series_db, _load_error
+    path = WIKIDATA_SERIES_DB_PATH
+    if not path.is_file():
+        _series_db = None
+        _load_error = f"Fichier séries absent : {path}"
+        return
+    try:
+        with open(path, encoding="utf-8") as f:
+            _series_db = json.load(f)
+        _load_error = None
+    except Exception as e:
+        _series_db = None
+        _load_error = str(e)
+
+
+def _load_standalone_locked() -> None:
+    global _standalone_doc
+    path = WIKIDATA_STANDALONE_CACHE_PATH
+    if not path.is_file():
+        _standalone_doc = {"books": []}
+        return
+    try:
+        with open(path, encoding="utf-8") as f:
+            doc = json.load(f)
+        _standalone_doc = doc if isinstance(doc, dict) else {"books": []}
+    except Exception:
+        _standalone_doc = {"books": []}
+
+
+def ensure_loaded() -> None:
+    global _standalone_loaded_once
+    with _lock:
+        if _series_db is None and _load_error is None:
+            _load_series_locked()
+        if not _standalone_loaded_once:
+            _standalone_loaded_once = True
+            _load_standalone_locked()
+
+
+def status() -> dict[str, Any]:
+    ensure_loaded()
+    with _lock:
+        by = (_series_db or {}).get("by_qid") or {}
+        n = len(by)
+        sample = next(iter(by.values()), {}) if by else {}
+        has_pop = "popularity" in sample
+        st = _standalone_doc or {}
+        books = st.get("books") if isinstance(st, dict) else None
+        nb = len(books) if isinstance(books, list) else 0
+        return {
+            "series_db_path": str(WIKIDATA_SERIES_DB_PATH),
+            "series_db_exists": WIKIDATA_SERIES_DB_PATH.is_file(),
+            "standalone_cache_path": str(WIKIDATA_STANDALONE_CACHE_PATH),
+            "standalone_cache_exists": WIKIDATA_STANDALONE_CACHE_PATH.is_file(),
+            "series_count": n,
+            "standalone_count": nb,
+            "index_has_popularity_field": has_pop,
+            "load_error": _load_error,
+        }
+
+
+def get_series(qid: str) -> dict[str, Any] | None:
+    ensure_loaded()
+    with _lock:
+        if not _series_db:
+            return None
+        row = (_series_db.get("by_qid") or {}).get(qid)
+    if row is None:
+        return None
+    return {**row, "category": infer_series_category(row)}
+
+
+def search_series_by_title(*, q: str, limit: int) -> list[dict[str, Any]]:
+    """
+    Recherche sur title_index (titres normalisés FR/EN + titres d'œuvres).
+    Sous-chaîne sur les clés ; tri par popularity puis work_count.
+    """
+    qn = norm_title(q.strip())
+    if len(qn) < 2:
+        return []
+    ensure_loaded()
+    with _lock:
+        if not _series_db:
+            return []
+        ti = _series_db.get("title_index") or {}
+        by = _series_db.get("by_qid") or {}
+
+    # Qualité de correspondance par qid (exacte > préfixe > sous-chaîne) : on garde le
+    # meilleur score rencontré. Sans ça, le tri popularité noie la correspondance exacte
+    # derrière des œuvres dérivées plus "populaires".
+    best: dict[str, int] = {}
+
+    def consider(qid: str, score: int) -> None:
+        if isinstance(qid, str) and qid.startswith("Q"):
+            if score > best.get(qid, 0):
+                best[qid] = score
+
+    direct = ti.get(qn)
+    if direct:
+        consider(direct, 3)
+
+    max_collect = 400
+    if len(qn) >= 2:
+        for k, qid in ti.items():
+            if len(best) >= max_collect:
+                break
+            if not isinstance(k, str) or not isinstance(qid, str):
+                continue
+            if k == qn:
+                consider(qid, 3)
+            elif k.startswith(qn):
+                consider(qid, 2)
+            elif qn in k:
+                consider(qid, 1)
+
+    rows: list[dict[str, Any]] = []
+    for qid, match in best.items():
+        row = by.get(qid)
+        if not row or not is_real_series(row):
+            continue
+        lite = _series_lite(row)
+        lite["_match"] = match
+        rows.append(lite)
+
+    def sort_key(r: dict[str, Any]) -> tuple[int, int, int]:
+        p = r.get("popularity")
+        pi = int(p) if isinstance(p, int) else -1
+        return (int(r.get("_match") or 0), pi, int(r.get("work_count") or 0))
+
+    rows.sort(key=sort_key, reverse=True)
+    for r in rows:
+        r.pop("_match", None)
+    return rows[:limit]
+
+
+def top_series_by_popularity(*, limit: int) -> list[dict[str, Any]]:
+    ensure_loaded()
+    with _lock:
+        if not _series_db:
+            return []
+        by = _series_db.get("by_qid") or {}
+        rows = list(by.values())
+
+    def key(e: dict) -> tuple[int, int]:
+        p = e.get("popularity")
+        if isinstance(p, int):
+            return (p, int(e.get("work_count") or 0))
+        return (-1, int(e.get("work_count") or 0))
+
+    rows.sort(key=key, reverse=True)
+    return [{**r, "category": infer_series_category(r)} for r in rows[:limit]]
+
+
+def popular_standalone(*, limit: int) -> list[dict[str, Any]]:
+    ensure_loaded()
+    with _lock:
+        st = _standalone_doc or {}
+        books = st.get("books")
+        if not isinstance(books, list):
+            return []
+    return books[:limit]
+
+
+def standalone_meta() -> dict[str, Any]:
+    ensure_loaded()
+    with _lock:
+        st = _standalone_doc or {}
+        if not isinstance(st, dict):
+            return {}
+        return {k: v for k, v in st.items() if k != "books"}

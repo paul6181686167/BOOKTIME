@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from datetime import datetime
 from typing import Optional
+import logging
 import uuid
 import re as _re_global
 import unicodedata
@@ -8,6 +9,8 @@ import requests
 from ..database.connection import books_collection
 from ..security.jwt import get_current_user
 from ..utils.validation import validate_category
+
+logger = logging.getLogger("booktime.openlibrary")
 
 def _normalize_query(s: str) -> str:
     """Supprime accents et ponctuation pour une recherche élargie"""
@@ -129,9 +132,15 @@ async def search_open_library(
             queries.append(q_norm)
 
         def _fetch(q_term):
-            params = _build_ol_params(q_term, fetch_limit, year_start, year_end, language, author_filter)
-            r = requests.get(OL_URL, params=params, timeout=8)
-            return r.json() if r.ok else {}
+            # Chaque sous-requête gère son propre échec : un timeout sur l'une ne doit
+            # pas faire échouer l'autre (ni la réponse globale).
+            try:
+                params = _build_ol_params(q_term, fetch_limit, year_start, year_end, language, author_filter)
+                r = requests.get(OL_URL, params=params, timeout=6)
+                return r.json() if r.ok else {}
+            except requests.RequestException as exc:
+                logger.warning("OpenLibrary lent pour '%s': %s", q_term, exc)
+                return {}
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
             futures = [pool.submit(_fetch, qt) for qt in queries]
@@ -162,6 +171,7 @@ async def search_open_library(
         return {
             "books": books[:limit],
             "total_found": total_found,
+            "source_unavailable": False,
             "filters_applied": {
                 "year_range": f"{year_start}-{year_end}" if year_start or year_end else None,
                 "language": language,
@@ -171,7 +181,20 @@ async def search_open_library(
         }
 
     except requests.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de la recherche: {str(e)}")
+        # OpenLibrary lent ou indisponible : dégradation en douceur (HTTP 200, liste vide).
+        # Le front conserve ainsi les autres sources (Wikidata statique, etc.) sans planter.
+        logger.warning("OpenLibrary indisponible pour '%s': %s", q, e)
+        return {
+            "books": [],
+            "total_found": 0,
+            "source_unavailable": True,
+            "filters_applied": {
+                "year_range": f"{year_start}-{year_end}" if year_start or year_end else None,
+                "language": language,
+                "pages_range": f"{min_pages}-{max_pages}" if min_pages or max_pages else None,
+                "author": author_filter
+            }
+        }
 
 
 @router.get("/series-books")

@@ -1,0 +1,4266 @@
+{
+  "schema_version": "1.0.0",
+  "count": 110,
+  "series": [
+    {
+      "key": "acotar",
+      "name": "A Court of Thorns and Roses",
+      "authors": [
+        "Sarah J. Maas"
+      ],
+      "category": "roman",
+      "volumes": 5,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "A Court of Thorns and Roses"
+        },
+        {
+          "volume_number": 2,
+          "title": "A Court of Mist and Fury"
+        },
+        {
+          "volume_number": 3,
+          "title": "A Court of Wings and Ruin"
+        },
+        {
+          "volume_number": 4,
+          "title": "A Court of Frost and Starlight"
+        },
+        {
+          "volume_number": 5,
+          "title": "A Court of Silver Flames"
+        }
+      ],
+      "keywords": [
+        "acotar",
+        "feyre",
+        "rhysand",
+        "prythian",
+        "fae",
+        "maas",
+        "thorns roses"
+      ],
+      "variations": [
+        "acotar",
+        "a court of thorns",
+        "court of thorns",
+        "cour des épines"
+      ],
+      "exclusions": [
+        "throne of glass"
+      ],
+      "first_published": "2015",
+      "source": "curated_reference"
+    },
+    {
+      "key": "his_dark_materials",
+      "name": "À la croisée des mondes",
+      "authors": [
+        "Philip Pullman"
+      ],
+      "category": "roman",
+      "volumes": 3,
+      "volume_titles": [],
+      "keywords": [
+        "croisée des mondes",
+        "lyra",
+        "will",
+        "dæmon",
+        "alethiomètre",
+        "pullman",
+        "his dark materials"
+      ],
+      "variations": [
+        "à la croisée des mondes",
+        "croisée des mondes",
+        "his dark materials",
+        "golden compass"
+      ],
+      "exclusions": [
+        "la boussole dorée film",
+        "hbo series"
+      ],
+      "first_published": "1995",
+      "source": "curated_reference"
+    },
+    {
+      "key": "a_la_recherche_du_temps_perdu",
+      "name": "À la recherche du temps perdu",
+      "authors": [
+        "Marcel Proust"
+      ],
+      "category": "roman",
+      "volumes": 7,
+      "volume_titles": [],
+      "keywords": [
+        "proust",
+        "temps perdu",
+        "madeleine",
+        "swann",
+        "recherche",
+        "involontaire"
+      ],
+      "variations": [
+        "à la recherche du temps perdu",
+        "recherche temps perdu",
+        "proust"
+      ],
+      "exclusions": [
+        "adaptations"
+      ],
+      "first_published": "1913",
+      "source": "curated_reference"
+    },
+    {
+      "key": "alex_rider",
+      "name": "Alex Rider",
+      "authors": [
+        "Anthony Horowitz"
+      ],
+      "category": "roman",
+      "volumes": 12,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Stormbreaker"
+        },
+        {
+          "volume_number": 2,
+          "title": "Pointe Blanche"
+        },
+        {
+          "volume_number": 3,
+          "title": "Skeleton Key"
+        },
+        {
+          "volume_number": 4,
+          "title": "Eagle Strike"
+        },
+        {
+          "volume_number": 5,
+          "title": "Scorpia"
+        },
+        {
+          "volume_number": 6,
+          "title": "Ark Angel"
+        },
+        {
+          "volume_number": 7,
+          "title": "Snakehead"
+        },
+        {
+          "volume_number": 8,
+          "title": "Crocodile Tears"
+        },
+        {
+          "volume_number": 9,
+          "title": "Scorpia Rising"
+        },
+        {
+          "volume_number": 10,
+          "title": "Russian Roulette"
+        },
+        {
+          "volume_number": 11,
+          "title": "Never Say Die"
+        },
+        {
+          "volume_number": 12,
+          "title": "Nightshade"
+        }
+      ],
+      "keywords": [
+        "alex rider",
+        "horowitz",
+        "espion",
+        "mi6",
+        "stormbreaker",
+        "scorpia"
+      ],
+      "variations": [
+        "alex rider",
+        "alexrider",
+        "alex ryder"
+      ],
+      "exclusions": [
+        "adaptations",
+        "tv series"
+      ],
+      "first_published": "2000",
+      "source": "curated_reference"
+    },
+    {
+      "key": "arsene_lupin",
+      "name": "Arsène Lupin",
+      "authors": [
+        "Maurice Leblanc"
+      ],
+      "category": "roman",
+      "volumes": 17,
+      "volume_titles": [],
+      "keywords": [
+        "arsène lupin",
+        "lupin",
+        "gentleman cambrioleur",
+        "leblanc",
+        "sherlock holmes"
+      ],
+      "variations": [
+        "arsène lupin",
+        "arsene lupin",
+        "lupin"
+      ],
+      "exclusions": [
+        "adaptations",
+        "autres auteurs"
+      ],
+      "first_published": "1905",
+      "source": "curated_reference"
+    },
+    {
+      "key": "artemis_fowl",
+      "name": "Artemis Fowl",
+      "authors": [
+        "Eoin Colfer"
+      ],
+      "category": "roman",
+      "volumes": 8,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Artemis Fowl"
+        },
+        {
+          "volume_number": 2,
+          "title": "Mission Polaire"
+        },
+        {
+          "volume_number": 3,
+          "title": "Code Éternité"
+        },
+        {
+          "volume_number": 4,
+          "title": "L'Odyssée de l'espace"
+        },
+        {
+          "volume_number": 5,
+          "title": "La Colonie Perdue"
+        },
+        {
+          "volume_number": 6,
+          "title": "Le Paradoxe du Temps"
+        },
+        {
+          "volume_number": 7,
+          "title": "Le Dernier Gardien"
+        },
+        {
+          "volume_number": 8,
+          "title": "The Fowl Twins"
+        }
+      ],
+      "keywords": [
+        "artemis fowl",
+        "colfer",
+        "féerie",
+        "farfadet",
+        "holly short",
+        "LEP"
+      ],
+      "variations": [
+        "artemis fowl",
+        "artemis",
+        "fowl"
+      ],
+      "exclusions": [
+        "adaptations",
+        "disney film"
+      ],
+      "first_published": "2001",
+      "source": "curated_reference"
+    },
+    {
+      "key": "asterix",
+      "name": "Astérix",
+      "authors": [
+        "René Goscinny",
+        "Albert Uderzo"
+      ],
+      "category": "bd",
+      "volumes": 39,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Astérix le Gaulois"
+        },
+        {
+          "volume_number": 2,
+          "title": "La Serpe d'or"
+        },
+        {
+          "volume_number": 3,
+          "title": "Astérix et les Goths"
+        },
+        {
+          "volume_number": 4,
+          "title": "Astérix gladiateur"
+        },
+        {
+          "volume_number": 5,
+          "title": "Le Tour de Gaule d'Astérix"
+        },
+        {
+          "volume_number": 6,
+          "title": "Astérix et Cléopâtre"
+        },
+        {
+          "volume_number": 7,
+          "title": "Le Combat des chefs"
+        },
+        {
+          "volume_number": 8,
+          "title": "Astérix chez les Bretons"
+        },
+        {
+          "volume_number": 9,
+          "title": "Astérix et les Normands"
+        },
+        {
+          "volume_number": 10,
+          "title": "Astérix légionnaire"
+        },
+        {
+          "volume_number": 11,
+          "title": "Le Bouclier arverne"
+        },
+        {
+          "volume_number": 12,
+          "title": "Astérix aux Jeux olympiques"
+        },
+        {
+          "volume_number": 13,
+          "title": "Astérix et le Chaudron"
+        },
+        {
+          "volume_number": 14,
+          "title": "Astérix en Hispanie"
+        },
+        {
+          "volume_number": 15,
+          "title": "La Zizanie"
+        }
+      ],
+      "keywords": [
+        "astérix",
+        "asterix",
+        "obélix",
+        "obelix",
+        "gaulois",
+        "potion magique",
+        "panoramix",
+        "idéfix"
+      ],
+      "variations": [
+        "astérix",
+        "asterix",
+        "astérics",
+        "asterics",
+        "astérik"
+      ],
+      "exclusions": [
+        "ferri conrad",
+        "albums récents",
+        "adaptations"
+      ],
+      "first_published": "1961",
+      "source": "curated_reference"
+    },
+    {
+      "key": "berserk",
+      "name": "Berserk",
+      "authors": [
+        "Kentaro Miura"
+      ],
+      "category": "manga",
+      "volumes": 41,
+      "volume_titles": [],
+      "keywords": [
+        "berserk",
+        "guts",
+        "griffith",
+        "casca",
+        "kentaro miura",
+        "dark fantasy"
+      ],
+      "variations": [
+        "berserk",
+        "bersek"
+      ],
+      "exclusions": [
+        "adaptations",
+        "films"
+      ],
+      "first_published": "1989",
+      "source": "curated_reference"
+    },
+    {
+      "key": "black_clover",
+      "name": "Black Clover",
+      "authors": [
+        "Yūki Tabata"
+      ],
+      "category": "manga",
+      "volumes": 35,
+      "volume_titles": [],
+      "keywords": [
+        "black clover",
+        "asta",
+        "yuno",
+        "noelle",
+        "bull noir",
+        "roi mage",
+        "tabata"
+      ],
+      "variations": [
+        "black clover",
+        "blackclover",
+        "bull noir"
+      ],
+      "exclusions": [
+        "sword of the wizard king",
+        "spin-offs"
+      ],
+      "first_published": "2015",
+      "source": "curated_reference"
+    },
+    {
+      "key": "blacksad",
+      "name": "Blacksad",
+      "authors": [
+        "Juan Díaz Canales",
+        "Juanjo Guarnido"
+      ],
+      "category": "bd",
+      "volumes": 6,
+      "volume_titles": [],
+      "keywords": [
+        "blacksad",
+        "john blacksad",
+        "chat noir",
+        "polar",
+        "guarnido"
+      ],
+      "variations": [
+        "blacksad",
+        "black sad"
+      ],
+      "exclusions": [
+        "adaptations",
+        "game"
+      ],
+      "first_published": "2000",
+      "source": "curated_reference"
+    },
+    {
+      "key": "blake_mortimer",
+      "name": "Blake et Mortimer",
+      "authors": [
+        "Edgar P. Jacobs"
+      ],
+      "category": "bd",
+      "volumes": 27,
+      "volume_titles": [],
+      "keywords": [
+        "blake",
+        "mortimer",
+        "francis blake",
+        "philip mortimer",
+        "jacobs"
+      ],
+      "variations": [
+        "blake et mortimer",
+        "blake mortimer",
+        "blake & mortimer"
+      ],
+      "exclusions": [
+        "autres auteurs récents"
+      ],
+      "first_published": "1946",
+      "source": "curated_reference"
+    },
+    {
+      "key": "bleach",
+      "name": "Bleach",
+      "authors": [
+        "Tite Kubo"
+      ],
+      "category": "manga",
+      "volumes": 74,
+      "volume_titles": [],
+      "keywords": [
+        "bleach",
+        "ichigo",
+        "rukia",
+        "shinigami",
+        "hollow",
+        "soul society"
+      ],
+      "variations": [
+        "bleach",
+        "blech"
+      ],
+      "exclusions": [
+        "burn the witch",
+        "novels",
+        "movies"
+      ],
+      "first_published": "2001",
+      "source": "curated_reference"
+    },
+    {
+      "key": "blue_lock",
+      "name": "Blue Lock",
+      "authors": [
+        "Muneyuki Kaneshiro",
+        "Yusuke Nomura"
+      ],
+      "category": "manga",
+      "volumes": 28,
+      "volume_titles": [],
+      "keywords": [
+        "blue lock",
+        "isagi",
+        "bachira",
+        "nagi",
+        "football",
+        "soccer",
+        "jinpachi ego"
+      ],
+      "variations": [
+        "blue lock",
+        "bluelock",
+        "blue rok"
+      ],
+      "exclusions": [
+        "blue lock episode nagi",
+        "spin-offs"
+      ],
+      "first_published": "2018",
+      "source": "curated_reference"
+    },
+    {
+      "key": "one_piece_spin_off",
+      "name": "Boruto",
+      "authors": [
+        "Ukyo Kodachi",
+        "Mikio Ikemoto"
+      ],
+      "category": "manga",
+      "volumes": 20,
+      "volume_titles": [],
+      "keywords": [
+        "boruto",
+        "naruto next generations",
+        "kawaki",
+        "ninja",
+        "technology"
+      ],
+      "variations": [
+        "boruto",
+        "boruto naruto next generations"
+      ],
+      "exclusions": [
+        "naruto",
+        "original"
+      ],
+      "first_published": "2016",
+      "source": "curated_reference"
+    },
+    {
+      "key": "boule_et_bill",
+      "name": "Boule et Bill",
+      "authors": [
+        "Jean Roba"
+      ],
+      "category": "bd",
+      "volumes": 40,
+      "volume_titles": [],
+      "keywords": [
+        "boule",
+        "bill",
+        "caroline",
+        "cocker",
+        "roba",
+        "tortue"
+      ],
+      "variations": [
+        "boule et bill",
+        "boule bill",
+        "boule & bill"
+      ],
+      "exclusions": [
+        "autres auteurs"
+      ],
+      "first_published": "1959",
+      "source": "curated_reference"
+    },
+    {
+      "key": "buck_danny",
+      "name": "Buck Danny",
+      "authors": [
+        "Victor Hubinon",
+        "Jean-Michel Charlier"
+      ],
+      "category": "bd",
+      "volumes": 58,
+      "volume_titles": [],
+      "keywords": [
+        "buck danny",
+        "aviation",
+        "pilote",
+        "guerre",
+        "hubinon",
+        "charlier"
+      ],
+      "variations": [
+        "buck danny",
+        "buck dany",
+        "danny"
+      ],
+      "exclusions": [
+        "autres auteurs"
+      ],
+      "first_published": "1947",
+      "source": "curated_reference"
+    },
+    {
+      "key": "chainsaw_man",
+      "name": "Chainsaw Man",
+      "authors": [
+        "Tatsuki Fujimoto"
+      ],
+      "category": "manga",
+      "volumes": 11,
+      "volume_titles": [],
+      "keywords": [
+        "chainsaw man",
+        "denji",
+        "makima",
+        "pochita",
+        "devil hunter"
+      ],
+      "variations": [
+        "chainsaw man",
+        "csm",
+        "chainsaw"
+      ],
+      "exclusions": [
+        "part 2",
+        "spin-offs"
+      ],
+      "first_published": "2018",
+      "source": "curated_reference"
+    },
+    {
+      "key": "cherub",
+      "name": "CHERUB",
+      "authors": [
+        "Robert Muchamore"
+      ],
+      "category": "roman",
+      "volumes": 17,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Le Recrutement"
+        },
+        {
+          "volume_number": 2,
+          "title": "Trafic"
+        },
+        {
+          "volume_number": 3,
+          "title": "Meurtres à la City"
+        },
+        {
+          "volume_number": 4,
+          "title": "Coup d'État"
+        },
+        {
+          "volume_number": 5,
+          "title": "Les Survivants"
+        },
+        {
+          "volume_number": 6,
+          "title": "Entraînement mortel"
+        },
+        {
+          "volume_number": 7,
+          "title": "Trahison"
+        },
+        {
+          "volume_number": 8,
+          "title": "Mad Dogs"
+        },
+        {
+          "volume_number": 9,
+          "title": "L'Enquête"
+        },
+        {
+          "volume_number": 10,
+          "title": "La Bombe"
+        },
+        {
+          "volume_number": 11,
+          "title": "Les 100 Jours"
+        },
+        {
+          "volume_number": 12,
+          "title": "Shadow Wave"
+        },
+        {
+          "volume_number": 13,
+          "title": "Larmes du soleil"
+        },
+        {
+          "volume_number": 14,
+          "title": "Couverture absolue"
+        },
+        {
+          "volume_number": 15,
+          "title": "Maximum Security"
+        },
+        {
+          "volume_number": 16,
+          "title": "Le Monde d'après"
+        },
+        {
+          "volume_number": 17,
+          "title": "Cherub - Hors-série"
+        }
+      ],
+      "keywords": [
+        "cherub",
+        "muchamore",
+        "espion",
+        "adolescent",
+        "agent secret",
+        "recrutement"
+      ],
+      "variations": [
+        "cherub",
+        "cherubs",
+        "shérub"
+      ],
+      "exclusions": [
+        "henderson boys",
+        "rock war"
+      ],
+      "first_published": "2004",
+      "source": "curated_reference"
+    },
+    {
+      "key": "kingkiller",
+      "name": "Chronique du Tueur de Roi",
+      "authors": [
+        "Patrick Rothfuss"
+      ],
+      "category": "roman",
+      "volumes": 3,
+      "volume_titles": [],
+      "keywords": [
+        "kingkiller",
+        "tueur de roi",
+        "kvothe",
+        "patrick rothfuss",
+        "nom du vent"
+      ],
+      "variations": [
+        "kingkiller",
+        "tueur de roi",
+        "chronique tueur roi",
+        "name of wind"
+      ],
+      "exclusions": [
+        "slow regard",
+        "lightning tree"
+      ],
+      "first_published": "2007",
+      "source": "curated_reference"
+    },
+    {
+      "key": "corto_maltese",
+      "name": "Corto Maltese",
+      "authors": [
+        "Hugo Pratt"
+      ],
+      "category": "bd",
+      "volumes": 12,
+      "volume_titles": [],
+      "keywords": [
+        "corto maltese",
+        "hugo pratt",
+        "marin",
+        "aventure",
+        "ballad"
+      ],
+      "variations": [
+        "corto maltese",
+        "corto",
+        "maltese"
+      ],
+      "exclusions": [
+        "autres auteurs",
+        "adaptations"
+      ],
+      "first_published": "1967",
+      "source": "curated_reference"
+    },
+    {
+      "key": "death_note",
+      "name": "Death Note",
+      "authors": [
+        "Tsugumi Ohba",
+        "Takeshi Obata"
+      ],
+      "category": "manga",
+      "volumes": 12,
+      "volume_titles": [],
+      "keywords": [
+        "death note",
+        "light yagami",
+        "l",
+        "kira",
+        "ryuk",
+        "shinigami"
+      ],
+      "variations": [
+        "death note",
+        "deathnote",
+        "death not"
+      ],
+      "exclusions": [
+        "light up",
+        "another note",
+        "films"
+      ],
+      "first_published": "2003",
+      "source": "curated_reference"
+    },
+    {
+      "key": "demon_slayer",
+      "name": "Demon Slayer",
+      "authors": [
+        "Koyoharu Gotouge"
+      ],
+      "category": "manga",
+      "volumes": 23,
+      "volume_titles": [],
+      "keywords": [
+        "demon slayer",
+        "tanjiro",
+        "nezuko",
+        "kimetsu no yaiba",
+        "hashira"
+      ],
+      "variations": [
+        "demon slayer",
+        "kimetsu no yaiba",
+        "kny"
+      ],
+      "exclusions": [
+        "spin-offs",
+        "films"
+      ],
+      "first_published": "2016",
+      "source": "curated_reference"
+    },
+    {
+      "key": "divergent",
+      "name": "Divergent",
+      "authors": [
+        "Veronica Roth"
+      ],
+      "category": "roman",
+      "volumes": 3,
+      "volume_titles": [],
+      "keywords": [
+        "divergent",
+        "tris",
+        "four",
+        "factions",
+        "dauntless",
+        "dystopia"
+      ],
+      "variations": [
+        "divergent",
+        "divergente"
+      ],
+      "exclusions": [
+        "four collection",
+        "prequel"
+      ],
+      "first_published": "2011",
+      "source": "curated_reference"
+    },
+    {
+      "key": "dr_stone",
+      "name": "Dr. Stone",
+      "authors": [
+        "Riichiro Inagaki",
+        "Boichi"
+      ],
+      "category": "manga",
+      "volumes": 26,
+      "volume_titles": [],
+      "keywords": [
+        "dr stone",
+        "senku",
+        "science",
+        "stone age",
+        "civilization"
+      ],
+      "variations": [
+        "dr stone",
+        "doctor stone",
+        "dr.stone"
+      ],
+      "exclusions": [
+        "spin-offs"
+      ],
+      "first_published": "2017",
+      "source": "curated_reference"
+    },
+    {
+      "key": "dragon_ball",
+      "name": "Dragon Ball",
+      "authors": [
+        "Akira Toriyama"
+      ],
+      "category": "manga",
+      "volumes": 42,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Son Goku"
+        },
+        {
+          "volume_number": 2,
+          "title": "Kamehameha"
+        },
+        {
+          "volume_number": 3,
+          "title": "L'Initiation"
+        },
+        {
+          "volume_number": 4,
+          "title": "Le Tournoi"
+        },
+        {
+          "volume_number": 5,
+          "title": "L'Ultime Combat"
+        },
+        {
+          "volume_number": 6,
+          "title": "L'Empire du Ruban Rouge"
+        },
+        {
+          "volume_number": 7,
+          "title": "La Menace"
+        },
+        {
+          "volume_number": 8,
+          "title": "Le Démon"
+        },
+        {
+          "volume_number": 9,
+          "title": "Sangohan"
+        },
+        {
+          "volume_number": 10,
+          "title": "Le Miraculé"
+        },
+        {
+          "volume_number": 11,
+          "title": "La Colère"
+        },
+        {
+          "volume_number": 12,
+          "title": "Les Saiyans"
+        },
+        {
+          "volume_number": 13,
+          "title": "L'Empire du Chaos"
+        },
+        {
+          "volume_number": 14,
+          "title": "Le Défi"
+        },
+        {
+          "volume_number": 15,
+          "title": "Chi-Chi"
+        }
+      ],
+      "keywords": [
+        "dragon ball",
+        "goku",
+        "vegeta",
+        "kamehameha",
+        "saiyan",
+        "piccolo",
+        "gohan"
+      ],
+      "variations": [
+        "dragon ball",
+        "dragonball",
+        "dragon bal",
+        "doragon boru"
+      ],
+      "exclusions": [
+        "dragon ball super",
+        "dragon ball gt",
+        "spin-offs",
+        "films"
+      ],
+      "first_published": "1984",
+      "source": "curated_reference"
+    },
+    {
+      "key": "dune",
+      "name": "Dune",
+      "authors": [
+        "Frank Herbert"
+      ],
+      "category": "roman",
+      "volumes": 6,
+      "volume_titles": [],
+      "keywords": [
+        "dune",
+        "arrakis",
+        "paul atreides",
+        "muad dib",
+        "spice",
+        "desert",
+        "herbert"
+      ],
+      "variations": [
+        "dune",
+        "dunes"
+      ],
+      "exclusions": [
+        "brian herbert",
+        "prequels"
+      ],
+      "first_published": "1965",
+      "source": "curated_reference"
+    },
+    {
+      "key": "dune_enriched",
+      "name": "Dune",
+      "authors": [
+        "Frank Herbert"
+      ],
+      "category": "roman",
+      "volumes": 6,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Dune"
+        },
+        {
+          "volume_number": 2,
+          "title": "Le Messie de Dune"
+        },
+        {
+          "volume_number": 3,
+          "title": "Les Enfants de Dune"
+        },
+        {
+          "volume_number": 4,
+          "title": "L'Empereur-Dieu de Dune"
+        },
+        {
+          "volume_number": 5,
+          "title": "Les Hérétiques de Dune"
+        },
+        {
+          "volume_number": 6,
+          "title": "La Maison des Mères"
+        }
+      ],
+      "keywords": [
+        "dune",
+        "arrakis",
+        "paul atreides",
+        "muad dib",
+        "épice",
+        "fremen",
+        "herbert",
+        "messie"
+      ],
+      "variations": [
+        "dune",
+        "dun",
+        "duune",
+        "cycles dune",
+        "cycle de dune",
+        "messie de dune",
+        "enfants de dune"
+      ],
+      "exclusions": [
+        "brian herbert",
+        "kevin anderson",
+        "prequel",
+        "sequel"
+      ],
+      "first_published": "1965",
+      "source": "curated_reference"
+    },
+    {
+      "key": "eragon",
+      "name": "Eragon",
+      "authors": [
+        "Christopher Paolini"
+      ],
+      "category": "roman",
+      "volumes": 4,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Eragon"
+        },
+        {
+          "volume_number": 2,
+          "title": "L'Aîné"
+        },
+        {
+          "volume_number": 3,
+          "title": "Brisingr"
+        },
+        {
+          "volume_number": 4,
+          "title": "Héritage"
+        }
+      ],
+      "keywords": [
+        "eragon",
+        "saphira",
+        "dragon",
+        "paolini",
+        "alagaësia",
+        "brisingr",
+        "galbatorix"
+      ],
+      "variations": [
+        "eragon",
+        "inheritance",
+        "heritage",
+        "l'aîné"
+      ],
+      "exclusions": [
+        "the fork",
+        "film"
+      ],
+      "first_published": "2003",
+      "source": "curated_reference"
+    },
+    {
+      "key": "fairy_tail",
+      "name": "Fairy Tail",
+      "authors": [
+        "Hiro Mashima"
+      ],
+      "category": "manga",
+      "volumes": 63,
+      "volume_titles": [],
+      "keywords": [
+        "fairy tail",
+        "natsu",
+        "lucy",
+        "erza",
+        "gray",
+        "magie",
+        "guilde",
+        "mashima"
+      ],
+      "variations": [
+        "fairy tail",
+        "fairytail",
+        "fairy tale"
+      ],
+      "exclusions": [
+        "fairy tail 100 years quest",
+        "edens zero"
+      ],
+      "first_published": "2006",
+      "source": "curated_reference"
+    },
+    {
+      "key": "mistborn",
+      "name": "Fils-des-Brumes",
+      "authors": [
+        "Brandon Sanderson"
+      ],
+      "category": "roman",
+      "volumes": 7,
+      "volume_titles": [],
+      "keywords": [
+        "mistborn",
+        "fils des brumes",
+        "vin",
+        "allomancy",
+        "sanderson"
+      ],
+      "variations": [
+        "mistborn",
+        "fils des brumes",
+        "fils-des-brumes"
+      ],
+      "exclusions": [
+        "wax and wayne",
+        "secret history"
+      ],
+      "first_published": "2006",
+      "source": "curated_reference"
+    },
+    {
+      "key": "mistborn_enriched",
+      "name": "Fils-des-Brumes",
+      "authors": [
+        "Brandon Sanderson"
+      ],
+      "category": "roman",
+      "volumes": 3,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "L'Empire Ultime"
+        },
+        {
+          "volume_number": 2,
+          "title": "Le Puits de l'Ascension"
+        },
+        {
+          "volume_number": 3,
+          "title": "Le Héros des Siècles"
+        }
+      ],
+      "keywords": [
+        "mistborn",
+        "fils des brumes",
+        "vin",
+        "allomancie",
+        "sanderson",
+        "empire ultime"
+      ],
+      "variations": [
+        "mistborn",
+        "fils des brumes",
+        "fils-des-brumes",
+        "empire ultime",
+        "allomancie"
+      ],
+      "exclusions": [
+        "wax and wayne",
+        "secret history",
+        "era 2"
+      ],
+      "first_published": "2006",
+      "source": "curated_reference"
+    },
+    {
+      "key": "foundation",
+      "name": "Fondation",
+      "authors": [
+        "Isaac Asimov"
+      ],
+      "category": "roman",
+      "volumes": 7,
+      "volume_titles": [],
+      "keywords": [
+        "fondation",
+        "asimov",
+        "empire galactique",
+        "psychohistoire",
+        "hari seldon",
+        "foundation"
+      ],
+      "variations": [
+        "fondation",
+        "foundation",
+        "fondations",
+        "cycle fondation"
+      ],
+      "exclusions": [
+        "robot series",
+        "empire series",
+        "apple tv"
+      ],
+      "first_published": "1951",
+      "source": "curated_reference"
+    },
+    {
+      "key": "fondation",
+      "name": "Fondation",
+      "authors": [
+        "Isaac Asimov"
+      ],
+      "category": "roman",
+      "volumes": 7,
+      "volume_titles": [],
+      "keywords": [
+        "fondation",
+        "foundation",
+        "asimov",
+        "psychohistoire",
+        "seldon",
+        "trantor"
+      ],
+      "variations": [
+        "fondation",
+        "foundation",
+        "fondations"
+      ],
+      "exclusions": [
+        "robots",
+        "empire"
+      ],
+      "first_published": "1951",
+      "source": "curated_reference"
+    },
+    {
+      "key": "fondation_enriched",
+      "name": "Fondation",
+      "authors": [
+        "Isaac Asimov"
+      ],
+      "category": "roman",
+      "volumes": 7,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Fondation"
+        },
+        {
+          "volume_number": 2,
+          "title": "Fondation et Empire"
+        },
+        {
+          "volume_number": 3,
+          "title": "Seconde Fondation"
+        },
+        {
+          "volume_number": 4,
+          "title": "Fondation foudroyée"
+        },
+        {
+          "volume_number": 5,
+          "title": "Terre et Fondation"
+        },
+        {
+          "volume_number": 6,
+          "title": "Prélude à Fondation"
+        },
+        {
+          "volume_number": 7,
+          "title": "L'Aube de Fondation"
+        }
+      ],
+      "keywords": [
+        "fondation",
+        "foundation",
+        "asimov",
+        "psychohistoire",
+        "hari seldon",
+        "empire galactique"
+      ],
+      "variations": [
+        "fondation",
+        "foundation",
+        "fondations",
+        "cycle fondation",
+        "fondation et empire",
+        "seconde fondation"
+      ],
+      "exclusions": [
+        "robot series",
+        "empire series"
+      ],
+      "first_published": "1951",
+      "source": "curated_reference"
+    },
+    {
+      "key": "fullmetal_alchemist",
+      "name": "Fullmetal Alchemist",
+      "authors": [
+        "Hiromu Arakawa"
+      ],
+      "category": "manga",
+      "volumes": 27,
+      "volume_titles": [],
+      "keywords": [
+        "fullmetal alchemist",
+        "edward elric",
+        "alphonse",
+        "alchemy",
+        "philosopher stone"
+      ],
+      "variations": [
+        "fullmetal alchemist",
+        "full metal alchemist",
+        "fma"
+      ],
+      "exclusions": [
+        "brotherhood",
+        "movies",
+        "novels"
+      ],
+      "first_published": "2001",
+      "source": "curated_reference"
+    },
+    {
+      "key": "gaston_lagaffe",
+      "name": "Gaston Lagaffe",
+      "authors": [
+        "André Franquin"
+      ],
+      "category": "bd",
+      "volumes": 19,
+      "volume_titles": [],
+      "keywords": [
+        "gaston",
+        "lagaffe",
+        "franquin",
+        "spirou",
+        "fantasio",
+        "prunelle",
+        "longtarin"
+      ],
+      "variations": [
+        "gaston lagaffe",
+        "gaston",
+        "gasthon",
+        "gastong"
+      ],
+      "exclusions": [
+        "continuations posthumes",
+        "adaptations"
+      ],
+      "first_published": "1957",
+      "source": "curated_reference"
+    },
+    {
+      "key": "hitchhiker",
+      "name": "H2G2 : Le Guide du voyageur galactique",
+      "authors": [
+        "Douglas Adams"
+      ],
+      "category": "roman",
+      "volumes": 5,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Le Guide du voyageur galactique"
+        },
+        {
+          "volume_number": 2,
+          "title": "Le Restaurant au bout de l'univers"
+        },
+        {
+          "volume_number": 3,
+          "title": "La Vie, l'univers et le reste"
+        },
+        {
+          "volume_number": 4,
+          "title": "Salut et encore merci pour le poisson"
+        },
+        {
+          "volume_number": 5,
+          "title": "Globalement inoffensive"
+        }
+      ],
+      "keywords": [
+        "hitchhiker",
+        "guide du voyageur",
+        "arthur dent",
+        "ford prefect",
+        "42",
+        "adams",
+        "h2g2"
+      ],
+      "variations": [
+        "guide du voyageur galactique",
+        "h2g2",
+        "hitchhiker's guide",
+        "hitchhikers guide",
+        "guide voyageur"
+      ],
+      "exclusions": [
+        "adaptations",
+        "radio"
+      ],
+      "first_published": "1979",
+      "source": "curated_reference"
+    },
+    {
+      "key": "haikyuu",
+      "name": "Haikyū!!",
+      "authors": [
+        "Haruichi Furudate"
+      ],
+      "category": "manga",
+      "volumes": 45,
+      "volume_titles": [],
+      "keywords": [
+        "haikyuu",
+        "hinata",
+        "kageyama",
+        "volley",
+        "karasuno",
+        "sport"
+      ],
+      "variations": [
+        "haikyuu",
+        "haikyu",
+        "haikyū"
+      ],
+      "exclusions": [
+        "spin-offs",
+        "films"
+      ],
+      "first_published": "2012",
+      "source": "curated_reference"
+    },
+    {
+      "key": "harry_potter",
+      "name": "Harry Potter",
+      "authors": [
+        "J.K. Rowling"
+      ],
+      "category": "roman",
+      "volumes": 7,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Harry Potter à l'école des sorciers"
+        },
+        {
+          "volume_number": 2,
+          "title": "Harry Potter et la chambre des secrets"
+        },
+        {
+          "volume_number": 3,
+          "title": "Harry Potter et le prisonnier d'Azkaban"
+        },
+        {
+          "volume_number": 4,
+          "title": "Harry Potter et la coupe de feu"
+        },
+        {
+          "volume_number": 5,
+          "title": "Harry Potter et l'ordre du phénix"
+        },
+        {
+          "volume_number": 6,
+          "title": "Harry Potter et le prince de sang-mêlé"
+        },
+        {
+          "volume_number": 7,
+          "title": "Harry Potter et les reliques de la mort"
+        }
+      ],
+      "keywords": [
+        "harry potter",
+        "poudlard",
+        "sorcier",
+        "hermione",
+        "ron",
+        "voldemort",
+        "hogwarts",
+        "wizard",
+        "magic"
+      ],
+      "variations": [
+        "harry potter",
+        "herry potter",
+        "harry poter",
+        "harrypotter",
+        "potter",
+        "harry pot",
+        "h potter",
+        "hp"
+      ],
+      "exclusions": [
+        "tales of beedle",
+        "quidditch through ages",
+        "fantastic beasts",
+        "cursed child",
+        "hogwarts legacy"
+      ],
+      "first_published": "1997",
+      "source": "curated_reference"
+    },
+    {
+      "key": "henderson_boys",
+      "name": "Henderson Boys",
+      "authors": [
+        "Robert Muchamore"
+      ],
+      "category": "roman",
+      "volumes": 6,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "L'Évasion"
+        },
+        {
+          "volume_number": 2,
+          "title": "Eagle Day"
+        },
+        {
+          "volume_number": 3,
+          "title": "Secret Army"
+        },
+        {
+          "volume_number": 4,
+          "title": "Grey Wolves"
+        },
+        {
+          "volume_number": 5,
+          "title": "The Prisoner"
+        },
+        {
+          "volume_number": 6,
+          "title": "One Shot Kill"
+        }
+      ],
+      "keywords": [
+        "henderson boys",
+        "muchamore",
+        "seconde guerre mondiale",
+        "espion",
+        "résistance"
+      ],
+      "variations": [
+        "henderson boys",
+        "henderson",
+        "henderson boy"
+      ],
+      "exclusions": [
+        "cherub"
+      ],
+      "first_published": "2009",
+      "source": "curated_reference"
+    },
+    {
+      "key": "hercule_poirot",
+      "name": "Hercule Poirot",
+      "authors": [
+        "Agatha Christie"
+      ],
+      "category": "roman",
+      "volumes": 39,
+      "volume_titles": [],
+      "keywords": [
+        "hercule poirot",
+        "poirot",
+        "agatha christie",
+        "cellules grises",
+        "detective"
+      ],
+      "variations": [
+        "hercule poirot",
+        "poirot",
+        "hercule"
+      ],
+      "exclusions": [
+        "miss marple",
+        "autres détectives"
+      ],
+      "first_published": "1920",
+      "source": "curated_reference"
+    },
+    {
+      "key": "hunger_games",
+      "name": "Hunger Games",
+      "authors": [
+        "Suzanne Collins"
+      ],
+      "category": "roman",
+      "volumes": 3,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Hunger Games"
+        },
+        {
+          "volume_number": 2,
+          "title": "L'Embrasement"
+        },
+        {
+          "volume_number": 3,
+          "title": "La Révolte"
+        }
+      ],
+      "keywords": [
+        "hunger games",
+        "katniss",
+        "panem",
+        "mockingjay",
+        "dystopia"
+      ],
+      "variations": [
+        "hunger games",
+        "hunger game",
+        "jeux de la faim"
+      ],
+      "exclusions": [
+        "ballad songbirds",
+        "prequel"
+      ],
+      "first_published": "2008",
+      "source": "curated_reference"
+    },
+    {
+      "key": "hunter_x_hunter",
+      "name": "Hunter × Hunter",
+      "authors": [
+        "Yoshihiro Togashi"
+      ],
+      "category": "manga",
+      "volumes": 37,
+      "volume_titles": [],
+      "keywords": [
+        "hunter x hunter",
+        "gon",
+        "killua",
+        "kurapika",
+        "leorio",
+        "nen"
+      ],
+      "variations": [
+        "hunter x hunter",
+        "hunter hunter",
+        "hxh"
+      ],
+      "exclusions": [
+        "movies",
+        "spin-offs"
+      ],
+      "first_published": "1998",
+      "source": "curated_reference"
+    },
+    {
+      "key": "iron_gold",
+      "name": "Iron Gold",
+      "authors": [
+        "Pierce Brown"
+      ],
+      "category": "roman",
+      "volumes": 4,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Iron Gold"
+        },
+        {
+          "volume_number": 2,
+          "title": "Dark Age"
+        },
+        {
+          "volume_number": 3,
+          "title": "Light Bringer"
+        },
+        {
+          "volume_number": 4,
+          "title": "Red God"
+        }
+      ],
+      "keywords": [
+        "iron gold",
+        "pierce brown",
+        "darrow",
+        "dark age",
+        "light bringer",
+        "red god",
+        "lysander"
+      ],
+      "variations": [
+        "iron gold",
+        "iron gold tetralogy",
+        "tétralogie iron gold",
+        "iron gold saga",
+        "red rising iron gold"
+      ],
+      "exclusions": [
+        "red rising",
+        "golden son",
+        "morning star"
+      ],
+      "first_published": "2018",
+      "source": "curated_reference"
+    },
+    {
+      "key": "jojo_bizarre_adventure",
+      "name": "JoJo's Bizarre Adventure",
+      "authors": [
+        "Hirohiko Araki"
+      ],
+      "category": "manga",
+      "volumes": 131,
+      "volume_titles": [],
+      "keywords": [
+        "jojo",
+        "bizarre adventure",
+        "joestar",
+        "stand",
+        "dio",
+        "araki"
+      ],
+      "variations": [
+        "jojo",
+        "jojo bizarre adventure",
+        "jjba"
+      ],
+      "exclusions": [
+        "spin-offs",
+        "novels"
+      ],
+      "first_published": "1987",
+      "source": "curated_reference"
+    },
+    {
+      "key": "jujutsu_kaisen",
+      "name": "Jujutsu Kaisen",
+      "authors": [
+        "Gege Akutami"
+      ],
+      "category": "manga",
+      "volumes": 24,
+      "volume_titles": [],
+      "keywords": [
+        "jujutsu kaisen",
+        "yuji itadori",
+        "sukuna",
+        "gojo",
+        "megumi",
+        "nobara"
+      ],
+      "variations": [
+        "jujutsu kaisen",
+        "jjk",
+        "jujutsu"
+      ],
+      "exclusions": [
+        "0 prequel",
+        "spin-offs"
+      ],
+      "first_published": "2018",
+      "source": "curated_reference"
+    },
+    {
+      "key": "farseer",
+      "name": "L'Assassin Royal",
+      "authors": [
+        "Robin Hobb"
+      ],
+      "category": "roman",
+      "volumes": 6,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "L'Apprenti Assassin"
+        },
+        {
+          "volume_number": 2,
+          "title": "L'Assassin du Roi"
+        },
+        {
+          "volume_number": 3,
+          "title": "La Voie Magique"
+        },
+        {
+          "volume_number": 4,
+          "title": "Le Prophète Blanc"
+        },
+        {
+          "volume_number": 5,
+          "title": "La Femme Solitaire"
+        },
+        {
+          "volume_number": 6,
+          "title": "Adieu et Retrouvailles"
+        }
+      ],
+      "keywords": [
+        "assassin royal",
+        "fitz",
+        "fou",
+        "royal",
+        "hobb",
+        "six duchés",
+        "art"
+      ],
+      "variations": [
+        "l'assassin royal",
+        "assassin royal",
+        "farseer",
+        "l assassin royal"
+      ],
+      "exclusions": [
+        "marchand",
+        "liveship"
+      ],
+      "first_published": "1995",
+      "source": "curated_reference"
+    },
+    {
+      "key": "attack_on_titan",
+      "name": "L'Attaque des Titans",
+      "authors": [
+        "Hajime Isayama"
+      ],
+      "category": "manga",
+      "volumes": 34,
+      "volume_titles": [],
+      "keywords": [
+        "attack on titan",
+        "attaque des titans",
+        "eren",
+        "mikasa",
+        "armin",
+        "titans",
+        "murs"
+      ],
+      "variations": [
+        "attack on titan",
+        "attaque des titans",
+        "attaque titans",
+        "shingeki no kyojin"
+      ],
+      "exclusions": [
+        "spin-offs",
+        "novels",
+        "guides"
+      ],
+      "first_published": "2009",
+      "source": "curated_reference"
+    },
+    {
+      "key": "mortal_instruments",
+      "name": "La Cité des Ténèbres",
+      "authors": [
+        "Cassandra Clare"
+      ],
+      "category": "roman",
+      "volumes": 6,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "La Cité des Ténèbres"
+        },
+        {
+          "volume_number": 2,
+          "title": "La Cité des Cendres"
+        },
+        {
+          "volume_number": 3,
+          "title": "La Cité de Verre"
+        },
+        {
+          "volume_number": 4,
+          "title": "La Cité des Anges Déchus"
+        },
+        {
+          "volume_number": 5,
+          "title": "La Cité des Âmes Perdues"
+        },
+        {
+          "volume_number": 6,
+          "title": "La Cité du Feu Céleste"
+        }
+      ],
+      "keywords": [
+        "mortal instruments",
+        "shadowhunters",
+        "clary",
+        "jace",
+        "nephilim",
+        "cassandra clare",
+        "cite des tenebres"
+      ],
+      "variations": [
+        "mortal instruments",
+        "cite des tenebres",
+        "shadowhunters",
+        "la cité des ténèbres"
+      ],
+      "exclusions": [
+        "infernal devices",
+        "dark artifices",
+        "film"
+      ],
+      "first_published": "2007",
+      "source": "curated_reference"
+    },
+    {
+      "key": "la_comedie_humaine",
+      "name": "La Comédie Humaine",
+      "authors": [
+        "Honoré de Balzac"
+      ],
+      "category": "roman",
+      "volumes": 95,
+      "volume_titles": [],
+      "keywords": [
+        "comédie humaine",
+        "balzac",
+        "rastignac",
+        "vautrin",
+        "goriot",
+        "illusions perdues"
+      ],
+      "variations": [
+        "comédie humaine",
+        "comedie humaine",
+        "la comédie humaine"
+      ],
+      "exclusions": [
+        "autres balzac"
+      ],
+      "first_published": "1829",
+      "source": "curated_reference"
+    },
+    {
+      "key": "la_passe_miroir",
+      "name": "La Passe-Miroir",
+      "authors": [
+        "Christelle Dabos"
+      ],
+      "category": "roman",
+      "volumes": 4,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Les Fiancés de l'Hiver"
+        },
+        {
+          "volume_number": 2,
+          "title": "Les Disparus du Clairdelune"
+        },
+        {
+          "volume_number": 3,
+          "title": "La Mémoire de Babel"
+        },
+        {
+          "volume_number": 4,
+          "title": "La Tempête des Échos"
+        }
+      ],
+      "keywords": [
+        "passe miroir",
+        "ophélie",
+        "thorn",
+        "arche",
+        "miroir",
+        "animiste",
+        "dabos"
+      ],
+      "variations": [
+        "la passe miroir",
+        "passe-miroir",
+        "passe miroir",
+        "fiancés de l hiver"
+      ],
+      "exclusions": [],
+      "first_published": "2013",
+      "source": "curated_reference"
+    },
+    {
+      "key": "first_law",
+      "name": "La Première Loi",
+      "authors": [
+        "Joe Abercrombie"
+      ],
+      "category": "roman",
+      "volumes": 6,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Le Nouvel Art de la Guerre"
+        },
+        {
+          "volume_number": 2,
+          "title": "Avant qu'ils soient pendus"
+        },
+        {
+          "volume_number": 3,
+          "title": "La Dernière Raison des rois"
+        },
+        {
+          "volume_number": 4,
+          "title": "Le Héros"
+        },
+        {
+          "volume_number": 5,
+          "title": "La Lame Elle-même"
+        },
+        {
+          "volume_number": 6,
+          "title": "Un peu de haine"
+        }
+      ],
+      "keywords": [
+        "first law",
+        "première loi",
+        "glokta",
+        "logen",
+        "bayaz",
+        "abercrombie",
+        "grimdark"
+      ],
+      "variations": [
+        "first law",
+        "la première loi",
+        "premiere loi",
+        "first law trilogy"
+      ],
+      "exclusions": [
+        "stand alone",
+        "age of madness"
+      ],
+      "first_published": "2006",
+      "source": "curated_reference"
+    },
+    {
+      "key": "la_roue_du_temps",
+      "name": "La Roue du Temps",
+      "authors": [
+        "Robert Jordan"
+      ],
+      "category": "roman",
+      "volumes": 14,
+      "volume_titles": [],
+      "keywords": [
+        "roue du temps",
+        "wheel of time",
+        "rand thor",
+        "jordan",
+        "aes sedai"
+      ],
+      "variations": [
+        "roue du temps",
+        "wheel of time",
+        "roue temps"
+      ],
+      "exclusions": [
+        "brandon sanderson",
+        "prequels"
+      ],
+      "first_published": "1990",
+      "source": "curated_reference"
+    },
+    {
+      "key": "wheel_time",
+      "name": "La Roue du Temps",
+      "authors": [
+        "Robert Jordan",
+        "Brandon Sanderson"
+      ],
+      "category": "roman",
+      "volumes": 14,
+      "volume_titles": [],
+      "keywords": [
+        "wheel of time",
+        "roue du temps",
+        "rand althor",
+        "dragon",
+        "jordan"
+      ],
+      "variations": [
+        "wheel of time",
+        "roue du temps",
+        "wot",
+        "wheel time"
+      ],
+      "exclusions": [
+        "new spring",
+        "companion",
+        "amazon"
+      ],
+      "first_published": "1990",
+      "source": "curated_reference"
+    },
+    {
+      "key": "dark_tower",
+      "name": "La Tour Sombre",
+      "authors": [
+        "Stephen King"
+      ],
+      "category": "roman",
+      "volumes": 8,
+      "volume_titles": [],
+      "keywords": [
+        "dark tower",
+        "tour sombre",
+        "roland",
+        "pistolero",
+        "gunslinger",
+        "stephen king"
+      ],
+      "variations": [
+        "dark tower",
+        "tour sombre",
+        "gunslinger"
+      ],
+      "exclusions": [
+        "wind through keyhole",
+        "prequel"
+      ],
+      "first_published": "1982",
+      "source": "curated_reference"
+    },
+    {
+      "key": "dark_tower_enriched",
+      "name": "La Tour Sombre",
+      "authors": [
+        "Stephen King"
+      ],
+      "category": "roman",
+      "volumes": 8,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Le Pistolero"
+        },
+        {
+          "volume_number": 2,
+          "title": "La Tour de Susannah"
+        },
+        {
+          "volume_number": 3,
+          "title": "Les Terres Perdues"
+        },
+        {
+          "volume_number": 4,
+          "title": "L'Assistant du Mal"
+        },
+        {
+          "volume_number": 5,
+          "title": "Magie et Cristal"
+        },
+        {
+          "volume_number": 6,
+          "title": "Loups de Calla"
+        },
+        {
+          "volume_number": 7,
+          "title": "Le Chant de Susannah"
+        },
+        {
+          "volume_number": 8,
+          "title": "La Tour Sombre"
+        }
+      ],
+      "keywords": [
+        "dark tower",
+        "tour sombre",
+        "roland",
+        "pistolero",
+        "gunslinger",
+        "stephen king",
+        "ka-tet"
+      ],
+      "variations": [
+        "dark tower",
+        "tour sombre",
+        "gunslinger",
+        "pistolero",
+        "la tour sombre"
+      ],
+      "exclusions": [
+        "wind through keyhole"
+      ],
+      "first_published": "1982",
+      "source": "curated_reference"
+    },
+    {
+      "key": "lanfeust",
+      "name": "Lanfeust de Troy",
+      "authors": [
+        "Christophe Arleston",
+        "Didier Tarquin"
+      ],
+      "category": "bd",
+      "volumes": 8,
+      "volume_titles": [],
+      "keywords": [
+        "lanfeust",
+        "troy",
+        "cixi",
+        "hébus",
+        "fantasy",
+        "arleston"
+      ],
+      "variations": [
+        "lanfeust de troy",
+        "lanfeust",
+        "troy"
+      ],
+      "exclusions": [
+        "trolls de troy",
+        "autres séries troy"
+      ],
+      "first_published": "1994",
+      "source": "curated_reference"
+    },
+    {
+      "key": "largo_winch",
+      "name": "Largo Winch",
+      "authors": [
+        "Jean Van Hamme",
+        "Philippe Francq"
+      ],
+      "category": "bd",
+      "volumes": 23,
+      "volume_titles": [],
+      "keywords": [
+        "largo winch",
+        "group w",
+        "milliardaire",
+        "thriller",
+        "van hamme"
+      ],
+      "variations": [
+        "largo winch",
+        "largo",
+        "winch"
+      ],
+      "exclusions": [
+        "films",
+        "adaptations"
+      ],
+      "first_published": "1990",
+      "source": "curated_reference"
+    },
+    {
+      "key": "enders_game",
+      "name": "Le Jeu d'Ender",
+      "authors": [
+        "Orson Scott Card"
+      ],
+      "category": "roman",
+      "volumes": 5,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Le Jeu d'Ender"
+        },
+        {
+          "volume_number": 2,
+          "title": "La Voix des Morts"
+        },
+        {
+          "volume_number": 3,
+          "title": "Xénocide"
+        },
+        {
+          "volume_number": 4,
+          "title": "Les Enfants de l'Esprit"
+        },
+        {
+          "volume_number": 5,
+          "title": "La Stratégie Ender"
+        }
+      ],
+      "keywords": [
+        "ender",
+        "wiggin",
+        "doryphores",
+        "card",
+        "buggers",
+        "battle school",
+        "jeu ender"
+      ],
+      "variations": [
+        "jeu d'ender",
+        "ender game",
+        "enders game",
+        "ender"
+      ],
+      "exclusions": [
+        "shadow series",
+        "bean"
+      ],
+      "first_published": "1985",
+      "source": "curated_reference"
+    },
+    {
+      "key": "maze_runner",
+      "name": "Le Labyrinthe",
+      "authors": [
+        "James Dashner"
+      ],
+      "category": "roman",
+      "volumes": 3,
+      "volume_titles": [],
+      "keywords": [
+        "maze runner",
+        "labyrinthe",
+        "thomas",
+        "blocards",
+        "wicked"
+      ],
+      "variations": [
+        "maze runner",
+        "labyrinthe",
+        "maze",
+        "runner"
+      ],
+      "exclusions": [
+        "prequel",
+        "fever code"
+      ],
+      "first_published": "2009",
+      "source": "curated_reference"
+    },
+    {
+      "key": "seigneur_anneaux",
+      "name": "Le Seigneur des Anneaux",
+      "authors": [
+        "J.R.R. Tolkien"
+      ],
+      "category": "roman",
+      "volumes": 3,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "La Communauté de l'Anneau"
+        },
+        {
+          "volume_number": 2,
+          "title": "Les Deux Tours"
+        },
+        {
+          "volume_number": 3,
+          "title": "Le Retour du Roi"
+        }
+      ],
+      "keywords": [
+        "seigneur des anneaux",
+        "tolkien",
+        "frodon",
+        "gandalf",
+        "terre du milieu",
+        "anneau unique",
+        "fellowship",
+        "ring"
+      ],
+      "variations": [
+        "seigneur des anneaux",
+        "seigneur anneaux",
+        "lord of rings",
+        "lotr",
+        "lord rings",
+        "sda",
+        "lord of the rings"
+      ],
+      "exclusions": [
+        "hobbit",
+        "silmarillion",
+        "unfinished tales",
+        "rings of power"
+      ],
+      "first_published": "1954",
+      "source": "curated_reference"
+    },
+    {
+      "key": "game_of_thrones",
+      "name": "Le Trône de Fer",
+      "authors": [
+        "George R.R. Martin"
+      ],
+      "category": "roman",
+      "volumes": 7,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Le Trône de Fer"
+        },
+        {
+          "volume_number": 2,
+          "title": "Le Donjon Rouge"
+        },
+        {
+          "volume_number": 3,
+          "title": "La Bataille des Rois"
+        },
+        {
+          "volume_number": 4,
+          "title": "L'Ombre Maléfique"
+        },
+        {
+          "volume_number": 5,
+          "title": "L'Invincible Forteresse"
+        },
+        {
+          "volume_number": 6,
+          "title": "Les Vents de l'Hiver"
+        },
+        {
+          "volume_number": 7,
+          "title": "Un Rêve de Printemps"
+        }
+      ],
+      "keywords": [
+        "game of thrones",
+        "trône de fer",
+        "westeros",
+        "stark",
+        "lannister",
+        "targaryen",
+        "ice and fire"
+      ],
+      "variations": [
+        "game of thrones",
+        "game of throne",
+        "trone de fer",
+        "got",
+        "throne de fer",
+        "asoiaf",
+        "song of ice and fire"
+      ],
+      "exclusions": [
+        "house of dragon",
+        "fire and blood",
+        "world of ice",
+        "tv series"
+      ],
+      "first_published": "1996",
+      "source": "curated_reference"
+    },
+    {
+      "key": "discworld",
+      "name": "Les Annales du Disque-Monde",
+      "authors": [
+        "Terry Pratchett"
+      ],
+      "category": "roman",
+      "volumes": 41,
+      "volume_titles": [],
+      "keywords": [
+        "discworld",
+        "disque monde",
+        "pratchett",
+        "rincewind",
+        "ankh morpork",
+        "vetinari"
+      ],
+      "variations": [
+        "discworld",
+        "disque monde",
+        "disque-monde",
+        "annales"
+      ],
+      "exclusions": [
+        "adaptations"
+      ],
+      "first_published": "1983",
+      "source": "curated_reference"
+    },
+    {
+      "key": "stormlight",
+      "name": "Les Archives de Roshar",
+      "authors": [
+        "Brandon Sanderson"
+      ],
+      "category": "roman",
+      "volumes": 10,
+      "volume_titles": [],
+      "keywords": [
+        "stormlight",
+        "roshar",
+        "kaladin",
+        "shallan",
+        "dalinar",
+        "spren"
+      ],
+      "variations": [
+        "stormlight archive",
+        "archives de roshar",
+        "stormlight"
+      ],
+      "exclusions": [
+        "edgedancer",
+        "dawnshard"
+      ],
+      "first_published": "2010",
+      "source": "curated_reference"
+    },
+    {
+      "key": "stormlight_enriched",
+      "name": "Les Archives de Roshar",
+      "authors": [
+        "Brandon Sanderson"
+      ],
+      "category": "roman",
+      "volumes": 10,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Le Chemin des Rois"
+        },
+        {
+          "volume_number": 2,
+          "title": "Les Mots Radieux"
+        },
+        {
+          "volume_number": 3,
+          "title": "Jurevent"
+        },
+        {
+          "volume_number": 4,
+          "title": "Le Rythme de la Guerre"
+        },
+        {
+          "volume_number": 5,
+          "title": "Wind and Truth"
+        }
+      ],
+      "keywords": [
+        "stormlight",
+        "roshar",
+        "kaladin",
+        "shallan",
+        "dalinar",
+        "spren",
+        "chemin des rois"
+      ],
+      "variations": [
+        "stormlight archive",
+        "archives de roshar",
+        "stormlight",
+        "chemin des rois",
+        "mots radieux"
+      ],
+      "exclusions": [
+        "edgedancer",
+        "dawnshard"
+      ],
+      "first_published": "2010",
+      "source": "curated_reference"
+    },
+    {
+      "key": "tintin",
+      "name": "Les Aventures de Tintin",
+      "authors": [
+        "Hergé"
+      ],
+      "category": "bd",
+      "volumes": 24,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Tintin au pays des Soviets"
+        },
+        {
+          "volume_number": 2,
+          "title": "Tintin au Congo"
+        },
+        {
+          "volume_number": 3,
+          "title": "Tintin en Amérique"
+        },
+        {
+          "volume_number": 4,
+          "title": "Les Cigares du pharaon"
+        },
+        {
+          "volume_number": 5,
+          "title": "Le Lotus bleu"
+        },
+        {
+          "volume_number": 6,
+          "title": "L'Oreille cassée"
+        },
+        {
+          "volume_number": 7,
+          "title": "L'Île noire"
+        },
+        {
+          "volume_number": 8,
+          "title": "Le Sceptre d'Ottokar"
+        },
+        {
+          "volume_number": 9,
+          "title": "Le Crabe aux pinces d'or"
+        },
+        {
+          "volume_number": 10,
+          "title": "L'Étoile mystérieuse"
+        },
+        {
+          "volume_number": 11,
+          "title": "Le Secret de la Licorne"
+        },
+        {
+          "volume_number": 12,
+          "title": "Le Trésor de Rackham le Rouge"
+        },
+        {
+          "volume_number": 13,
+          "title": "Les 7 Boules de cristal"
+        },
+        {
+          "volume_number": 14,
+          "title": "Le Temple du Soleil"
+        },
+        {
+          "volume_number": 15,
+          "title": "Tintin au pays de l'or noir"
+        }
+      ],
+      "keywords": [
+        "tintin",
+        "milou",
+        "capitaine haddock",
+        "tournesol",
+        "dupont",
+        "dupond",
+        "mille sabords"
+      ],
+      "variations": [
+        "tintin",
+        "tin tin",
+        "tentin",
+        "adventures tintin",
+        "aventures de tintin"
+      ],
+      "exclusions": [
+        "alph-art",
+        "adaptations",
+        "spielberg"
+      ],
+      "first_published": "1929",
+      "source": "curated_reference"
+    },
+    {
+      "key": "les_aventures_de_tintin",
+      "name": "Les Aventures de Tintin",
+      "authors": [
+        "Hergé"
+      ],
+      "category": "bd",
+      "volumes": 24,
+      "volume_titles": [],
+      "keywords": [
+        "tintin",
+        "milou",
+        "capitaine haddock",
+        "tournesol",
+        "dupond dupont",
+        "herge"
+      ],
+      "variations": [
+        "tintin",
+        "les aventures de tintin",
+        "adventures of tintin"
+      ],
+      "exclusions": [
+        "adaptations",
+        "films"
+      ],
+      "first_published": "1930",
+      "source": "curated_reference"
+    },
+    {
+      "key": "les_fourmis",
+      "name": "Les Fourmis",
+      "authors": [
+        "Bernard Werber"
+      ],
+      "category": "roman",
+      "volumes": 3,
+      "volume_titles": [],
+      "keywords": [
+        "fourmis",
+        "werber",
+        "jonathan wells",
+        "encyclopédie",
+        "myrmécologie"
+      ],
+      "variations": [
+        "les fourmis",
+        "fourmis",
+        "la fourmis"
+      ],
+      "exclusions": [
+        "autres werber"
+      ],
+      "first_published": "1991",
+      "source": "curated_reference"
+    },
+    {
+      "key": "luminaefiles",
+      "name": "Les Illuminae",
+      "authors": [
+        "Amie Kaufman",
+        "Jay Kristoff"
+      ],
+      "category": "roman",
+      "volumes": 3,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Les Illuminae"
+        },
+        {
+          "volume_number": 2,
+          "title": "Les Gemina"
+        },
+        {
+          "volume_number": 3,
+          "title": "Les Obsidio"
+        }
+      ],
+      "keywords": [
+        "illuminae",
+        "kady",
+        "ezra",
+        "aidan",
+        "kaufman",
+        "kristoff",
+        "espace"
+      ],
+      "variations": [
+        "illuminae",
+        "les illuminae",
+        "illuminae files"
+      ],
+      "exclusions": [],
+      "first_published": "2015",
+      "source": "curated_reference"
+    },
+    {
+      "key": "les_legendaires",
+      "name": "Les Légendaires",
+      "authors": [
+        "Patrick Sobral"
+      ],
+      "category": "bd",
+      "volumes": 23,
+      "volume_titles": [],
+      "keywords": [
+        "légendaires",
+        "danaël",
+        "jadina",
+        "gryf",
+        "razzia",
+        "sobral"
+      ],
+      "variations": [
+        "les légendaires",
+        "légendaires",
+        "legendaires"
+      ],
+      "exclusions": [
+        "spin-offs"
+      ],
+      "first_published": "2004",
+      "source": "curated_reference"
+    },
+    {
+      "key": "les_petits_hommes",
+      "name": "Les Petits Hommes",
+      "authors": [
+        "Pierre Seron"
+      ],
+      "category": "bd",
+      "volumes": 45,
+      "volume_titles": [],
+      "keywords": [
+        "petits hommes",
+        "eslapion",
+        "tignous",
+        "seron"
+      ],
+      "variations": [
+        "les petits hommes",
+        "petits hommes",
+        "petit homme"
+      ],
+      "exclusions": [
+        "autres auteurs"
+      ],
+      "first_published": "1970",
+      "source": "curated_reference"
+    },
+    {
+      "key": "les_rougon_macquart",
+      "name": "Les Rougon-Macquart",
+      "authors": [
+        "Émile Zola"
+      ],
+      "category": "roman",
+      "volumes": 20,
+      "volume_titles": [],
+      "keywords": [
+        "rougon macquart",
+        "zola",
+        "naturalisme",
+        "second empire",
+        "germinal"
+      ],
+      "variations": [
+        "rougon macquart",
+        "rougon-macquart",
+        "les rougon macquart"
+      ],
+      "exclusions": [
+        "autres zola"
+      ],
+      "first_published": "1871",
+      "source": "curated_reference"
+    },
+    {
+      "key": "gentleman_bastards",
+      "name": "Les Salauds Gentilshommes",
+      "authors": [
+        "Scott Lynch"
+      ],
+      "category": "roman",
+      "volumes": 7,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "La République des voleurs"
+        },
+        {
+          "volume_number": 2,
+          "title": "Les Mensonges de Locke Lamora"
+        },
+        {
+          "volume_number": 3,
+          "title": "L'Océan Écarlate"
+        }
+      ],
+      "keywords": [
+        "locke lamora",
+        "camorr",
+        "gentleman bastards",
+        "voleurs",
+        "lynch",
+        "jean tannen"
+      ],
+      "variations": [
+        "gentleman bastards",
+        "salauds gentilshommes",
+        "locke lamora",
+        "mensonges locke"
+      ],
+      "exclusions": [],
+      "first_published": "2006",
+      "source": "curated_reference"
+    },
+    {
+      "key": "les_schtroumpfs",
+      "name": "Les Schtroumpfs",
+      "authors": [
+        "Peyo"
+      ],
+      "category": "bd",
+      "volumes": 36,
+      "volume_titles": [],
+      "keywords": [
+        "schtroumpfs",
+        "peyo",
+        "gargamel",
+        "azrael",
+        "grand schtroumpf",
+        "schtroumpfette"
+      ],
+      "variations": [
+        "schtroumpfs",
+        "schtroumpf",
+        "les schtroumpfs",
+        "smurfs"
+      ],
+      "exclusions": [
+        "films",
+        "adaptations"
+      ],
+      "first_published": "1958",
+      "source": "curated_reference"
+    },
+    {
+      "key": "les_tuniques_bleues",
+      "name": "Les Tuniques Bleues",
+      "authors": [
+        "Lambil",
+        "Raoul Cauvin"
+      ],
+      "category": "bd",
+      "volumes": 65,
+      "volume_titles": [],
+      "keywords": [
+        "tuniques bleues",
+        "blutch",
+        "chesterfield",
+        "guerre secession",
+        "lambil"
+      ],
+      "variations": [
+        "tuniques bleues",
+        "les tuniques bleues",
+        "tunique bleue"
+      ],
+      "exclusions": [
+        "autres auteurs"
+      ],
+      "first_published": "1968",
+      "source": "curated_reference"
+    },
+    {
+      "key": "lucky_luke",
+      "name": "Lucky Luke",
+      "authors": [
+        "Morris",
+        "René Goscinny"
+      ],
+      "category": "bd",
+      "volumes": 76,
+      "volume_titles": [],
+      "keywords": [
+        "lucky luke",
+        "dalton",
+        "jolly jumper",
+        "rantanplan",
+        "cowboy",
+        "western",
+        "morris"
+      ],
+      "variations": [
+        "lucky luke",
+        "lucky luc",
+        "luke"
+      ],
+      "exclusions": [
+        "autres scénaristes récents"
+      ],
+      "first_published": "1946",
+      "source": "curated_reference"
+    },
+    {
+      "key": "malaussene",
+      "name": "Malaussène",
+      "authors": [
+        "Daniel Pennac"
+      ],
+      "category": "roman",
+      "volumes": 6,
+      "volume_titles": [],
+      "keywords": [
+        "malaussène",
+        "pennac",
+        "benjamin",
+        "belleville",
+        "polar",
+        "bouc émissaire"
+      ],
+      "variations": [
+        "malaussène",
+        "malaussene",
+        "malaussène",
+        "benjamin malaussène"
+      ],
+      "exclusions": [
+        "autres pennac"
+      ],
+      "first_published": "1985",
+      "source": "curated_reference"
+    },
+    {
+      "key": "marsupilami",
+      "name": "Marsupilami",
+      "authors": [
+        "André Franquin",
+        "Batem"
+      ],
+      "category": "bd",
+      "volumes": 38,
+      "volume_titles": [],
+      "keywords": [
+        "marsupilami",
+        "palombie",
+        "bobo",
+        "houba",
+        "franquin",
+        "batem"
+      ],
+      "variations": [
+        "marsupilami",
+        "marsupilami",
+        "marsu"
+      ],
+      "exclusions": [
+        "dessins animés"
+      ],
+      "first_published": "1987",
+      "source": "curated_reference"
+    },
+    {
+      "key": "michel_vaillant",
+      "name": "Michel Vaillant",
+      "authors": [
+        "Jean Graton"
+      ],
+      "category": "bd",
+      "volumes": 77,
+      "volume_titles": [],
+      "keywords": [
+        "michel vaillant",
+        "course",
+        "automobile",
+        "f1",
+        "formule 1",
+        "vaillante"
+      ],
+      "variations": [
+        "michel vaillant",
+        "michel vaillant",
+        "vaillant"
+      ],
+      "exclusions": [
+        "autres auteurs"
+      ],
+      "first_published": "1957",
+      "source": "curated_reference"
+    },
+    {
+      "key": "mob_psycho",
+      "name": "Mob Psycho 100",
+      "authors": [
+        "ONE"
+      ],
+      "category": "manga",
+      "volumes": 16,
+      "volume_titles": [],
+      "keywords": [
+        "mob psycho",
+        "mob",
+        "shigeo",
+        "reigen",
+        "psychic",
+        "esper"
+      ],
+      "variations": [
+        "mob psycho 100",
+        "mob psycho",
+        "mob"
+      ],
+      "exclusions": [
+        "one punch man",
+        "spin-offs"
+      ],
+      "first_published": "2012",
+      "source": "curated_reference"
+    },
+    {
+      "key": "my_hero_academia",
+      "name": "My Hero Academia",
+      "authors": [
+        "Kōhei Horikoshi"
+      ],
+      "category": "manga",
+      "volumes": 37,
+      "volume_titles": [],
+      "keywords": [
+        "my hero academia",
+        "deku",
+        "midoriya",
+        "all might",
+        "quirk",
+        "ua"
+      ],
+      "variations": [
+        "my hero academia",
+        "mha",
+        "boku no hero academia"
+      ],
+      "exclusions": [
+        "vigilantes",
+        "spin-offs",
+        "films"
+      ],
+      "first_published": "2014",
+      "source": "curated_reference"
+    },
+    {
+      "key": "naruto",
+      "name": "Naruto",
+      "authors": [
+        "Masashi Kishimoto"
+      ],
+      "category": "manga",
+      "volumes": 72,
+      "volume_titles": [],
+      "keywords": [
+        "naruto",
+        "sasuke",
+        "sakura",
+        "kakashi",
+        "ninja",
+        "konoha",
+        "hokage",
+        "bijuu"
+      ],
+      "variations": [
+        "naruto",
+        "narutoo",
+        "narotto",
+        "narouto"
+      ],
+      "exclusions": [
+        "boruto",
+        "novels",
+        "guides",
+        "spin-offs"
+      ],
+      "first_published": "1999",
+      "source": "curated_reference"
+    },
+    {
+      "key": "one_piece",
+      "name": "One Piece",
+      "authors": [
+        "Eiichiro Oda"
+      ],
+      "category": "manga",
+      "volumes": 105,
+      "volume_titles": [],
+      "keywords": [
+        "one piece",
+        "luffy",
+        "zoro",
+        "sanji",
+        "pirates",
+        "chapeau de paille",
+        "grand line",
+        "nakama"
+      ],
+      "variations": [
+        "one piece",
+        "one pece",
+        "onepiece",
+        "wan pisu"
+      ],
+      "exclusions": [
+        "spin-offs",
+        "novels",
+        "guides",
+        "databooks"
+      ],
+      "first_published": "1997",
+      "source": "curated_reference"
+    },
+    {
+      "key": "one_punch_man",
+      "name": "One Punch Man",
+      "authors": [
+        "ONE",
+        "Yusuke Murata"
+      ],
+      "category": "manga",
+      "volumes": 28,
+      "volume_titles": [],
+      "keywords": [
+        "one punch man",
+        "saitama",
+        "genos",
+        "héros",
+        "murata",
+        "association"
+      ],
+      "variations": [
+        "one punch man",
+        "onepunch man",
+        "opm"
+      ],
+      "exclusions": [
+        "mob psycho",
+        "spin-offs"
+      ],
+      "first_published": "2012",
+      "source": "curated_reference"
+    },
+    {
+      "key": "outlander",
+      "name": "Outlander",
+      "authors": [
+        "Diana Gabaldon"
+      ],
+      "category": "roman",
+      "volumes": 9,
+      "volume_titles": [],
+      "keywords": [
+        "outlander",
+        "claire",
+        "jamie",
+        "fraser",
+        "ecosse",
+        "voyage temps",
+        "gabaldon",
+        "highlander"
+      ],
+      "variations": [
+        "outlander",
+        "le chardon et le tartan",
+        "chardon tartan"
+      ],
+      "exclusions": [
+        "series",
+        "série tv",
+        "starz"
+      ],
+      "first_published": "1991",
+      "source": "curated_reference"
+    },
+    {
+      "key": "percy_jackson",
+      "name": "Percy Jackson",
+      "authors": [
+        "Rick Riordan"
+      ],
+      "category": "roman",
+      "volumes": 5,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Le Voleur de Foudre"
+        },
+        {
+          "volume_number": 2,
+          "title": "La Mer des Monstres"
+        },
+        {
+          "volume_number": 3,
+          "title": "Le Sort du Titan"
+        },
+        {
+          "volume_number": 4,
+          "title": "La Bataille du Labyrinthe"
+        },
+        {
+          "volume_number": 5,
+          "title": "Le Dernier Olympien"
+        }
+      ],
+      "keywords": [
+        "percy jackson",
+        "rick riordan",
+        "demi-dieu",
+        "olympe",
+        "camp",
+        "mythology"
+      ],
+      "variations": [
+        "percy jackson",
+        "percy jakson",
+        "percy",
+        "olympians"
+      ],
+      "exclusions": [
+        "heroes of olympus",
+        "kane chronicles",
+        "magnus chase"
+      ],
+      "first_published": "2005",
+      "source": "curated_reference"
+    },
+    {
+      "key": "percy_jackson_enriched",
+      "name": "Percy Jackson",
+      "authors": [
+        "Rick Riordan"
+      ],
+      "category": "roman",
+      "volumes": 5,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Le Voleur de Foudre"
+        },
+        {
+          "volume_number": 2,
+          "title": "La Mer des Monstres"
+        },
+        {
+          "volume_number": 3,
+          "title": "Le Sort du Titan"
+        },
+        {
+          "volume_number": 4,
+          "title": "La Bataille du Labyrinthe"
+        },
+        {
+          "volume_number": 5,
+          "title": "Le Dernier Olympien"
+        }
+      ],
+      "keywords": [
+        "percy jackson",
+        "rick riordan",
+        "demi-dieu",
+        "poseidon",
+        "olympe",
+        "voleur de foudre"
+      ],
+      "variations": [
+        "percy jackson",
+        "percy jakson",
+        "percy",
+        "olympians",
+        "voleur de foudre"
+      ],
+      "exclusions": [
+        "heroes of olympus",
+        "kane chronicles",
+        "magnus chase"
+      ],
+      "first_published": "2005",
+      "source": "curated_reference"
+    },
+    {
+      "key": "red_rising",
+      "name": "Red Rising",
+      "authors": [
+        "Pierce Brown"
+      ],
+      "category": "roman",
+      "volumes": 3,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Red Rising"
+        },
+        {
+          "volume_number": 2,
+          "title": "Golden Son"
+        },
+        {
+          "volume_number": 3,
+          "title": "Morning Star"
+        }
+      ],
+      "keywords": [
+        "red rising",
+        "darrow",
+        "pierce brown",
+        "mars",
+        "golds",
+        "reds",
+        "society",
+        "howler"
+      ],
+      "variations": [
+        "red rising",
+        "red rising trilogy",
+        "trilogie red rising",
+        "red rising saga"
+      ],
+      "exclusions": [
+        "iron gold",
+        "dark age",
+        "light bringer",
+        "red god"
+      ],
+      "first_published": "2014",
+      "source": "curated_reference"
+    },
+    {
+      "key": "san_antonio",
+      "name": "San-Antonio",
+      "authors": [
+        "Frédéric Dard"
+      ],
+      "category": "roman",
+      "volumes": 175,
+      "volume_titles": [],
+      "keywords": [
+        "san antonio",
+        "bérurier",
+        "pinaud",
+        "commissaire",
+        "polar",
+        "dard"
+      ],
+      "variations": [
+        "san antonio",
+        "san-antonio",
+        "sanantonio"
+      ],
+      "exclusions": [
+        "autres auteurs"
+      ],
+      "first_published": "1949",
+      "source": "curated_reference"
+    },
+    {
+      "key": "sas",
+      "name": "SAS",
+      "authors": [
+        "Gérard de Villiers"
+      ],
+      "category": "roman",
+      "volumes": 200,
+      "volume_titles": [],
+      "keywords": [
+        "sas",
+        "malko linge",
+        "gerard de villiers",
+        "espionnage",
+        "cia",
+        "thriller"
+      ],
+      "variations": [
+        "sas",
+        "malko",
+        "cias",
+        "de villiers"
+      ],
+      "exclusions": [],
+      "first_published": "1965",
+      "source": "curated_reference"
+    },
+    {
+      "key": "shadow_and_bone",
+      "name": "Shadow and Bone",
+      "authors": [
+        "Leigh Bardugo"
+      ],
+      "category": "roman",
+      "volumes": 3,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Shadow and Bone"
+        },
+        {
+          "volume_number": 2,
+          "title": "Siege and Storm"
+        },
+        {
+          "volume_number": 3,
+          "title": "Ruin and Rising"
+        }
+      ],
+      "keywords": [
+        "shadow and bone",
+        "alina",
+        "ravka",
+        "grisha",
+        "darkling",
+        "bardugo"
+      ],
+      "variations": [
+        "shadow and bone",
+        "grisha trilogy",
+        "grisha",
+        "ombre et os"
+      ],
+      "exclusions": [
+        "six of crows",
+        "king of scars",
+        "netflix"
+      ],
+      "first_published": "2012",
+      "source": "curated_reference"
+    },
+    {
+      "key": "sherlock_holmes",
+      "name": "Sherlock Holmes",
+      "authors": [
+        "Arthur Conan Doyle"
+      ],
+      "category": "roman",
+      "volumes": 56,
+      "volume_titles": [],
+      "keywords": [
+        "sherlock holmes",
+        "watson",
+        "baker street",
+        "moriarty",
+        "detective",
+        "conan doyle"
+      ],
+      "variations": [
+        "sherlock holmes",
+        "sherlock",
+        "holmes",
+        "detective holmes"
+      ],
+      "exclusions": [
+        "adaptations",
+        "pastiches"
+      ],
+      "first_published": "1887",
+      "source": "curated_reference"
+    },
+    {
+      "key": "six_of_crows",
+      "name": "Six of Crows",
+      "authors": [
+        "Leigh Bardugo"
+      ],
+      "category": "roman",
+      "volumes": 2,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Six of Crows"
+        },
+        {
+          "volume_number": 2,
+          "title": "Crooked Kingdom"
+        }
+      ],
+      "keywords": [
+        "six of crows",
+        "kaz brekker",
+        "inej",
+        "jesper",
+        "ketterdam",
+        "bardugo",
+        "dregs"
+      ],
+      "variations": [
+        "six of crows",
+        "six crows",
+        "6 crows",
+        "crooked kingdom"
+      ],
+      "exclusions": [
+        "shadow and bone",
+        "king of scars"
+      ],
+      "first_published": "2015",
+      "source": "curated_reference"
+    },
+    {
+      "key": "slam_dunk",
+      "name": "Slam Dunk",
+      "authors": [
+        "Takehiko Inoue"
+      ],
+      "category": "manga",
+      "volumes": 31,
+      "volume_titles": [],
+      "keywords": [
+        "slam dunk",
+        "hanamichi",
+        "sakuragi",
+        "rukawa",
+        "basketball",
+        "shohoku",
+        "inoue"
+      ],
+      "variations": [
+        "slam dunk",
+        "slamdunk"
+      ],
+      "exclusions": [
+        "the first slam dunk film",
+        "spin-offs"
+      ],
+      "first_published": "1990",
+      "source": "curated_reference"
+    },
+    {
+      "key": "spirou",
+      "name": "Spirou et Fantasio",
+      "authors": [
+        "André Franquin",
+        "Rob-Vel"
+      ],
+      "category": "bd",
+      "volumes": 55,
+      "volume_titles": [],
+      "keywords": [
+        "spirou",
+        "fantasio",
+        "marsupilami",
+        "spip",
+        "zorglub",
+        "champignac"
+      ],
+      "variations": [
+        "spirou et fantasio",
+        "spirou",
+        "spirou fantasio"
+      ],
+      "exclusions": [
+        "autres auteurs récents"
+      ],
+      "first_published": "1938",
+      "source": "curated_reference"
+    },
+    {
+      "key": "spy_x_family",
+      "name": "Spy x Family",
+      "authors": [
+        "Tatsuya Endo"
+      ],
+      "category": "manga",
+      "volumes": 12,
+      "volume_titles": [],
+      "keywords": [
+        "spy x family",
+        "loid",
+        "yor",
+        "anya",
+        "espion",
+        "assassin",
+        "télépathe"
+      ],
+      "variations": [
+        "spy x family",
+        "spy family",
+        "spyxfamily"
+      ],
+      "exclusions": [
+        "spin-offs"
+      ],
+      "first_published": "2019",
+      "source": "curated_reference"
+    },
+    {
+      "key": "sword_art_online",
+      "name": "Sword Art Online",
+      "authors": [
+        "Reki Kawahara"
+      ],
+      "category": "manga",
+      "volumes": 28,
+      "volume_titles": [],
+      "keywords": [
+        "sword art online",
+        "kirito",
+        "asuna",
+        "sao",
+        "vrmmorpg",
+        "aincrad"
+      ],
+      "variations": [
+        "sword art online",
+        "sao",
+        "sword art"
+      ],
+      "exclusions": [
+        "alternative",
+        "progressive",
+        "spin-offs"
+      ],
+      "first_published": "2012",
+      "source": "curated_reference"
+    },
+    {
+      "key": "earthsea",
+      "name": "Terremer",
+      "authors": [
+        "Ursula K. Le Guin"
+      ],
+      "category": "roman",
+      "volumes": 6,
+      "volume_titles": [],
+      "keywords": [
+        "earthsea",
+        "terremer",
+        "ged",
+        "mage",
+        "ursula le guin",
+        "archipel"
+      ],
+      "variations": [
+        "earthsea",
+        "terremer",
+        "terre mer",
+        "earthsea cycle"
+      ],
+      "exclusions": [
+        "dispossessed",
+        "left hand",
+        "film"
+      ],
+      "first_published": "1968",
+      "source": "curated_reference"
+    },
+    {
+      "key": "the_expanse",
+      "name": "The Expanse",
+      "authors": [
+        "James S.A. Corey"
+      ],
+      "category": "roman",
+      "volumes": 9,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Leviathan Wakes"
+        },
+        {
+          "volume_number": 2,
+          "title": "Caliban's War"
+        },
+        {
+          "volume_number": 3,
+          "title": "Abaddon's Gate"
+        },
+        {
+          "volume_number": 4,
+          "title": "Cibola Burn"
+        },
+        {
+          "volume_number": 5,
+          "title": "Nemesis Games"
+        },
+        {
+          "volume_number": 6,
+          "title": "Babylon's Ashes"
+        },
+        {
+          "volume_number": 7,
+          "title": "Persepolis Rising"
+        },
+        {
+          "volume_number": 8,
+          "title": "Tiamat's Wrath"
+        },
+        {
+          "volume_number": 9,
+          "title": "Leviathan Falls"
+        }
+      ],
+      "keywords": [
+        "expanse",
+        "holden",
+        "rocinante",
+        "belter",
+        "protomolecule",
+        "corey",
+        "amos"
+      ],
+      "variations": [
+        "the expanse",
+        "expanse",
+        "leviathan wakes"
+      ],
+      "exclusions": [
+        "amazon prime",
+        "tv series"
+      ],
+      "first_published": "2011",
+      "source": "curated_reference"
+    },
+    {
+      "key": "witcher",
+      "name": "The Witcher",
+      "authors": [
+        "Andrzej Sapkowski"
+      ],
+      "category": "roman",
+      "volumes": 8,
+      "volume_titles": [],
+      "keywords": [
+        "witcher",
+        "sorceleur",
+        "geralt",
+        "rivia",
+        "ciri",
+        "yennefer"
+      ],
+      "variations": [
+        "witcher",
+        "sorceleur",
+        "geralt de rivia",
+        "wiedźmin"
+      ],
+      "exclusions": [
+        "netflix",
+        "game",
+        "cd projekt"
+      ],
+      "first_published": "1986",
+      "source": "curated_reference"
+    },
+    {
+      "key": "witcher_enriched",
+      "name": "The Witcher",
+      "authors": [
+        "Andrzej Sapkowski"
+      ],
+      "category": "roman",
+      "volumes": 8,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Le Dernier Vœu"
+        },
+        {
+          "volume_number": 2,
+          "title": "L'Épée de la providence"
+        },
+        {
+          "volume_number": 3,
+          "title": "Le Sang des elfes"
+        },
+        {
+          "volume_number": 4,
+          "title": "Le Temps du mépris"
+        },
+        {
+          "volume_number": 5,
+          "title": "Le Baptême du feu"
+        },
+        {
+          "volume_number": 6,
+          "title": "La Tour de l'Hirondelle"
+        },
+        {
+          "volume_number": 7,
+          "title": "La Dame du lac"
+        },
+        {
+          "volume_number": 8,
+          "title": "Saison des Orages"
+        }
+      ],
+      "keywords": [
+        "witcher",
+        "sorceleur",
+        "geralt",
+        "ciri",
+        "yennefer",
+        "sapkowski",
+        "dernier vœu"
+      ],
+      "variations": [
+        "witcher",
+        "sorceleur",
+        "geralt de rivia",
+        "wiedźmin",
+        "dernier voeu",
+        "sang des elfes"
+      ],
+      "exclusions": [
+        "netflix",
+        "jeu",
+        "cd projekt"
+      ],
+      "first_published": "1993",
+      "source": "curated_reference"
+    },
+    {
+      "key": "thorgal",
+      "name": "Thorgal",
+      "authors": [
+        "Jean Van Hamme",
+        "Grzegorz Rosiński"
+      ],
+      "category": "bd",
+      "volumes": 38,
+      "volume_titles": [],
+      "keywords": [
+        "thorgal",
+        "aaricia",
+        "jolan",
+        "louve",
+        "viking",
+        "nordique"
+      ],
+      "variations": [
+        "thorgal",
+        "torgal"
+      ],
+      "exclusions": [
+        "spin-offs",
+        "autres auteurs"
+      ],
+      "first_published": "1977",
+      "source": "curated_reference"
+    },
+    {
+      "key": "throne_of_glass",
+      "name": "Throne of Glass",
+      "authors": [
+        "Sarah J. Maas"
+      ],
+      "category": "roman",
+      "volumes": 7,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Throne of Glass"
+        },
+        {
+          "volume_number": 2,
+          "title": "Crown of Midnight"
+        },
+        {
+          "volume_number": 3,
+          "title": "Heir of Fire"
+        },
+        {
+          "volume_number": 4,
+          "title": "Queen of Shadows"
+        },
+        {
+          "volume_number": 5,
+          "title": "Empire of Storms"
+        },
+        {
+          "volume_number": 6,
+          "title": "Tower of Dawn"
+        },
+        {
+          "volume_number": 7,
+          "title": "Kingdom of the Wicked"
+        }
+      ],
+      "keywords": [
+        "throne of glass",
+        "celaena",
+        "sardothien",
+        "aelin",
+        "assassin",
+        "maas"
+      ],
+      "variations": [
+        "throne of glass",
+        "tog",
+        "throne glass"
+      ],
+      "exclusions": [
+        "acotar",
+        "a court"
+      ],
+      "first_published": "2012",
+      "source": "curated_reference"
+    },
+    {
+      "key": "tokyo_ghoul",
+      "name": "Tokyo Ghoul",
+      "authors": [
+        "Sui Ishida"
+      ],
+      "category": "manga",
+      "volumes": 14,
+      "volume_titles": [],
+      "keywords": [
+        "tokyo ghoul",
+        "kaneki",
+        "goule",
+        "ccg",
+        "kagune",
+        "tokyo"
+      ],
+      "variations": [
+        "tokyo ghoul",
+        "tokyo goul",
+        "tg"
+      ],
+      "exclusions": [
+        "tokyo ghoul re",
+        "spin-offs"
+      ],
+      "first_published": "2011",
+      "source": "curated_reference"
+    },
+    {
+      "key": "tokyo_revengers",
+      "name": "Tokyo Revengers",
+      "authors": [
+        "Ken Wakui"
+      ],
+      "category": "manga",
+      "volumes": 31,
+      "volume_titles": [],
+      "keywords": [
+        "tokyo revengers",
+        "takemichi",
+        "mikey",
+        "draken",
+        "toman",
+        "gang",
+        "wakui"
+      ],
+      "variations": [
+        "tokyo revengers",
+        "tokyo revanger",
+        "tokyo revenge"
+      ],
+      "exclusions": [
+        "christmas showdown",
+        "tenjiku",
+        "spin-offs"
+      ],
+      "first_published": "2017",
+      "source": "curated_reference"
+    },
+    {
+      "key": "twilight",
+      "name": "Twilight",
+      "authors": [
+        "Stephenie Meyer"
+      ],
+      "category": "roman",
+      "volumes": 4,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Fascination"
+        },
+        {
+          "volume_number": 2,
+          "title": "Tentation"
+        },
+        {
+          "volume_number": 3,
+          "title": "Hésitation"
+        },
+        {
+          "volume_number": 4,
+          "title": "Révélation"
+        }
+      ],
+      "keywords": [
+        "twilight",
+        "bella",
+        "edward",
+        "vampire",
+        "werewolf",
+        "forks"
+      ],
+      "variations": [
+        "twilight",
+        "twilligt",
+        "fascination"
+      ],
+      "exclusions": [
+        "midnight sun",
+        "bree tanner"
+      ],
+      "first_published": "2005",
+      "source": "curated_reference"
+    },
+    {
+      "key": "vagabond",
+      "name": "Vagabond",
+      "authors": [
+        "Takehiko Inoue"
+      ],
+      "category": "manga",
+      "volumes": 37,
+      "volume_titles": [],
+      "keywords": [
+        "vagabond",
+        "miyamoto musashi",
+        "takehiko inoue",
+        "samurai",
+        "bushido"
+      ],
+      "variations": [
+        "vagabond",
+        "vagabon"
+      ],
+      "exclusions": [
+        "adaptations"
+      ],
+      "first_published": "1998",
+      "source": "curated_reference"
+    },
+    {
+      "key": "vinland_saga",
+      "name": "Vinland Saga",
+      "authors": [
+        "Makoto Yukimura"
+      ],
+      "category": "manga",
+      "volumes": 27,
+      "volume_titles": [],
+      "keywords": [
+        "vinland saga",
+        "thorfinn",
+        "askeladd",
+        "viking",
+        "yukimura"
+      ],
+      "variations": [
+        "vinland saga",
+        "vinland",
+        "viking saga"
+      ],
+      "exclusions": [
+        "adaptations"
+      ],
+      "first_published": "2005",
+      "source": "curated_reference"
+    },
+    {
+      "key": "xiii",
+      "name": "XIII",
+      "authors": [
+        "Jean Van Hamme",
+        "William Vance"
+      ],
+      "category": "bd",
+      "volumes": 27,
+      "volume_titles": [],
+      "keywords": [
+        "xiii",
+        "treize",
+        "jason fly",
+        "conspiracy",
+        "conspiration"
+      ],
+      "variations": [
+        "xiii",
+        "treize",
+        "13"
+      ],
+      "exclusions": [
+        "autres auteurs",
+        "reboot"
+      ],
+      "first_published": "1984",
+      "source": "curated_reference"
+    },
+    {
+      "key": "yoko_tsuno",
+      "name": "Yoko Tsuno",
+      "authors": [
+        "Roger Leloup"
+      ],
+      "category": "bd",
+      "volumes": 30,
+      "volume_titles": [],
+      "keywords": [
+        "yoko tsuno",
+        "science fiction",
+        "japon",
+        "electronique",
+        "leloup"
+      ],
+      "variations": [
+        "yoko tsuno",
+        "yoko",
+        "tsuno"
+      ],
+      "exclusions": [
+        "adaptations"
+      ],
+      "first_published": "1970",
+      "source": "curated_reference"
+    }
+  ]
+}

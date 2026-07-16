@@ -21,7 +21,7 @@ async def get_paginated_books(
     author: Optional[str] = Query(None, description="Filtre par auteur"),
     saga: Optional[str] = Query(None, description="Filtre par saga"),
     sort_by: str = Query("date_added", description="Champ de tri"),
-    sort_order: str = Query("desc", regex="^(asc|desc)$", description="Ordre de tri")
+    sort_order: str = Query("desc", pattern="^(asc|desc)$", description="Ordre de tri")
 ):
     """
     Récupère les livres avec pagination et cache
@@ -36,7 +36,7 @@ async def get_paginated_books(
     
     try:
         result = pagination_service.get_paginated_books(
-            user_id=current_user.id,
+            user_id=current_user["id"],
             limit=limit,
             offset=offset,
             category=category,
@@ -71,7 +71,7 @@ async def get_paginated_series(
     
     try:
         result = pagination_service.get_paginated_series(
-            user_id=current_user.id,
+            user_id=current_user["id"],
             limit=limit,
             offset=offset,
             category=category,
@@ -99,7 +99,7 @@ async def get_search_suggestions(
     
     try:
         suggestions = pagination_service.get_search_suggestions(
-            user_id=current_user.id,
+            user_id=current_user["id"],
             query=q,
             limit=limit
         )
@@ -119,7 +119,7 @@ async def invalidate_user_cache(
     """
     
     try:
-        pagination_service.invalidate_user_cache(current_user.id)
+        pagination_service.invalidate_user_cache(current_user["id"])
         return {"message": "Cache invalidé avec succès"}
         
     except Exception as e:

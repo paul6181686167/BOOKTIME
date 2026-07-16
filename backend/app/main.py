@@ -1,10 +1,38 @@
+from contextlib import asynccontextmanager
+import asyncio
+import logging
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from datetime import datetime
+from datetime import datetime, timezone
 from .db_config import Database
+
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Précharge l'index Wikidata statique au démarrage (évite 10–15 s au 1er clic)."""
+    def _warm_wikidata():
+        try:
+            from .static_wikidata import service
+
+            service.ensure_loaded()
+            st = service.status()
+            logger.info(
+                "Wikidata statique prêt : %s séries, standalone=%s",
+                st.get("series_count"),
+                st.get("standalone_count"),
+            )
+        except Exception as exc:
+            logger.warning("Préchargement Wikidata ignoré : %s", exc)
+
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _warm_wikidata)
+    yield
 
 # Utiliser le système de connexion avancé avec SSL fallbacks
 database = Database()
@@ -44,8 +72,15 @@ from .wikidata.routes import router as wikidata_router
 from .chapters.routes import router as chapters_router
 # Import du router Catalogue global (seed + découverte)
 from .catalog.routes import router as catalog_router
+from .static_wikidata.routes import router as static_wikidata_router
+from .google_books.routes import router as google_books_router
+from .series_verification.routes import router as series_verification_router
 
-app = FastAPI(title="BookTime API", description="Votre bibliothèque personnelle")
+app = FastAPI(
+    title="BookTime API",
+    description="Votre bibliothèque personnelle",
+    lifespan=lifespan,
+)
 
 # Configuration CORS Production
 import os
@@ -134,20 +169,23 @@ async def global_exception_handler(request: Request, exc: Exception):
 async def read_root():
     return {"message": "BookTime API - Version modulaire avec authentification"}
 
-@app.get("/ping")
-@app.get("/api/ping")
+@app.api_route("/ping", methods=["GET", "HEAD"])
+@app.api_route("/api/ping", methods=["GET", "HEAD"])
 async def ping():
     """
     Réveil Render / monitoring HTTP sans toucher la base.
     Utiliser cette URL dans UptimeRobot (pas /health) : réponse 200 immédiate même au cold start.
+    Accepte GET et HEAD : UptimeRobot utilise HEAD par défaut, ce qui renverrait
+    sinon un 405 Method Not Allowed (endpoint GET only).
     """
-    return {"ok": True, "ts": datetime.utcnow().isoformat()}
+    return {"ok": True, "ts": datetime.now(timezone.utc).isoformat()}
 
 
-@app.get("/health")
-@app.get("/api/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
+@app.api_route("/api/health", methods=["GET", "HEAD"])
 async def health():
-    """Health check complet (MongoDB) — pour diagnostics, pas pour ping fréquent."""
+    """Health check complet (MongoDB) — pour diagnostics, pas pour ping fréquent.
+    Accepte GET et HEAD (UptimeRobot utilise HEAD par défaut, sinon 405)."""
     import os
     
     # Vérifier mode mock Railway
@@ -155,7 +193,7 @@ async def health():
         return {
             "status": "ok", 
             "database": "mock_mode_railway", 
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "environment": os.environ.get("ENVIRONMENT", "production"),
             "version": "1.0.0",
             "warning": "Running in Railway Mock Mode - No real database connection"
@@ -166,7 +204,7 @@ async def health():
         return {
             "status": "ok", 
             "database": "connected", 
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "environment": os.environ.get("ENVIRONMENT", "development"),
             "version": "1.0.0"
         }
@@ -195,6 +233,9 @@ app.include_router(wikipedia_router)  # Session 87.5
 app.include_router(wikidata_router)    # Session 87.12
 app.include_router(chapters_router)    # Session 87.26 - Système chapitres individuels ✅
 app.include_router(catalog_router)    # Catalogue global livres populaires
+app.include_router(static_wikidata_router)  # Export statique Wikidata (séries + standalone)
+app.include_router(google_books_router)  # Google Books (3e source métadonnées)
+app.include_router(series_verification_router)  # Vérification croisée tomes (WD + OL + GB)
 
 if __name__ == "__main__":
     import uvicorn

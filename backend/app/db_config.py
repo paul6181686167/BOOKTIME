@@ -269,9 +269,14 @@ class MockCollection:
 
         return type('MockResult', (), {'modified_count': 0, 'matched_count': 0, 'upserted_id': None})()
         
-    def delete_one(self, *args, **kwargs):
-        """Mock delete_one - simule suppression"""
-        return type('MockResult', (), {'deleted_count': 1})()
+    def delete_one(self, filter=None, *args, **kwargs):
+        """Mock delete_one - supprime réellement le 1er doc correspondant (fidélité tests)."""
+        store = self._get_store()
+        for i, doc in enumerate(store):
+            if _doc_matches(doc, filter or {}):
+                del store[i]
+                return type('MockResult', (), {'deleted_count': 1})()
+        return type('MockResult', (), {'deleted_count': 0})()
         
     def count_documents(self, query=None, *args, **kwargs):
         """Mock count_documents - compte les docs correspondant au filtre"""

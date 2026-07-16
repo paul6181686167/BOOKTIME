@@ -12,9 +12,11 @@ Tests complets du module chapters :
 
 import pytest
 import asyncio
+from types import SimpleNamespace
 from unittest.mock import Mock, patch, AsyncMock
 from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 # Imports du module chapters
 import sys
@@ -28,9 +30,22 @@ from app.chapters.models import (
 )
 from app.chapters.integrations.anilist import AniListService
 from app.main import app
+from app.dependencies import get_current_user as deps_get_current_user
 
 # Client de test
 client = TestClient(app)
+
+
+@pytest.fixture
+def chapters_auth_override():
+    """JWT simulé pour les tests d'endpoints chapitres (override FastAPI)."""
+
+    def fake_user():
+        return SimpleNamespace(id="test-user", email="pytest@example.com")
+
+    app.dependency_overrides[deps_get_current_user] = fake_user
+    yield
+    app.dependency_overrides.pop(deps_get_current_user, None)
 
 
 class TestChapterService:
@@ -51,12 +66,14 @@ class TestChapterService:
             total_chapters_released=1100,
             current_chapters=[
                 Chapter(
+                    id="ch-1099-test",
                     chapter_number=1099,
                     title="Pacifista",
                     status=ChapterStatus.RELEASED,
                     release_date=datetime(2024, 1, 15)
                 ),
                 Chapter(
+                    id="ch-1100-test",
                     chapter_number=1100,
                     title="Thank You, Bonney",
                     status=ChapterStatus.RELEASED,
@@ -159,179 +176,172 @@ class TestChapterService:
                 assert isinstance(result["this_week"], list)
 
 
-class TestChapterEndpoints:
-    """Tests des endpoints API chapters"""
-    
+class TestChapterEndpointsPublic:
+    """Endpoints sans JWT."""
+
     def test_health_check_endpoint(self):
         """Test endpoint health check"""
         response = client.get("/api/chapters/health")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "ok"
         assert data["module"] == "chapters"
         assert "features" in data
         assert "series_chapters" in data["features"]
-    
+
     def test_get_series_chapters_unauthenticated(self):
         """Test endpoint série sans authentification"""
         response = client.get("/api/chapters/series/One Piece")
-        
-        # Devrait retourner 401 car authentification requise
+
         assert response.status_code == 401
-    
+
+
+@pytest.mark.usefixtures("chapters_auth_override")
+class TestChapterEndpoints:
+    """Tests des endpoints API chapters (JWT via dependency override)."""
+
     def test_get_series_chapters_authenticated(self):
         """Test endpoint série avec authentification"""
-        # Mock utilisateur authentifié
-        with patch('app.chapters.routes.get_current_user') as mock_auth:
-            mock_auth.return_value = {"id": "test-user", "name": "Test User"}
-            
-            with patch('app.chapters.routes.service.get_series_chapters') as mock_service:
-                mock_series = SeriesChapters(
-                    id="test-id",
-                    series_name="One Piece",
-                    current_chapters=[],
-                    total_chapters_released=1101
-                )
-                mock_service.return_value = mock_series
-                
-                response = client.get("/api/chapters/series/One Piece")
-                
-                assert response.status_code == 200
-                data = response.json()
-                assert data["success"] is True
-                assert data["data"]["series_name"] == "One Piece"
-    
+        with patch(
+            "app.chapters.routes.service.get_series_chapters", new_callable=AsyncMock
+        ) as mock_service:
+            mock_series = SeriesChapters(
+                id="test-id",
+                series_name="One Piece",
+                current_chapters=[],
+                total_chapters_released=1101,
+            )
+            mock_service.return_value = mock_series
+
+            response = client.get("/api/chapters/series/One Piece")
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["success"] is True
+            assert data["data"]["series_name"] == "One Piece"
+
     def test_refresh_series_chapters(self):
         """Test endpoint refresh série"""
-        with patch('app.chapters.routes.get_current_user') as mock_auth:
-            mock_auth.return_value = {"id": "test-user"}
-            
-            with patch('app.chapters.routes.service.refresh_series_chapters') as mock_refresh:
-                mock_refresh.return_value = True
-                
-                response = client.post("/api/chapters/series/One Piece/refresh")
-                
-                assert response.status_code == 200
-                data = response.json()
-                assert data["success"] is True
-                assert "updated_at" in data
-    
+        with patch(
+            "app.chapters.routes.service.refresh_series_chapters", new_callable=AsyncMock
+        ) as mock_refresh:
+            mock_refresh.return_value = True
+
+            response = client.post("/api/chapters/series/One Piece/refresh")
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["success"] is True
+            assert "updated_at" in data
+
     def test_get_upcoming_releases(self):
         """Test endpoint planning sorties"""
-        with patch('app.chapters.routes.get_current_user') as mock_auth:
-            mock_auth.return_value = {"id": "test-user"}
-            
-            with patch('app.chapters.routes.service.get_upcoming_releases') as mock_upcoming:
-                mock_upcoming.return_value = {
-                    "this_week": [
-                        {
-                            "series_name": "One Piece",
-                            "chapter_number": 1101,
-                            "estimated_date": "2024-01-29",
-                            "confidence": 0.95
-                        }
-                    ],
-                    "next_week": [],
-                    "this_month": []
-                }
-                
-                response = client.get("/api/chapters/releases/upcoming")
-                
-                assert response.status_code == 200
-                data = response.json()
-                assert "this_week" in data
-                assert len(data["this_week"]) == 1
-                assert data["this_week"][0]["series_name"] == "One Piece"
-    
+        with patch(
+            "app.chapters.routes.service.get_upcoming_releases", new_callable=AsyncMock
+        ) as mock_upcoming:
+            mock_upcoming.return_value = {
+                "this_week": [
+                    {
+                        "series_name": "One Piece",
+                        "chapter_number": 1101,
+                        "estimated_date": "2024-01-29",
+                        "confidence": 0.95,
+                    }
+                ],
+                "next_week": [],
+                "this_month": [],
+            }
+
+            response = client.get("/api/chapters/releases/upcoming")
+
+            assert response.status_code == 200
+            data = response.json()
+            assert "this_week" in data
+            assert len(data["this_week"]) == 1
+            assert data["this_week"][0]["series_name"] == "One Piece"
+
     def test_get_user_chapter_stats(self):
         """Test endpoint statistiques utilisateur"""
-        with patch('app.chapters.routes.get_current_user') as mock_auth:
-            mock_auth.return_value = {"id": "test-user"}
-            
-            response = client.get("/api/chapters/user/stats")
-            
-            assert response.status_code == 200
-            data = response.json()
-            assert data["success"] is True
-            assert "stats" in data
-            assert "predictions_accuracy" in data["stats"]
-    
+        response = client.get("/api/chapters/user/stats")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert "stats" in data
+        assert "predictions_accuracy" in data["stats"]
+
     def test_search_series_in_apis(self):
         """Test endpoint recherche série"""
-        with patch('app.chapters.routes.get_current_user') as mock_auth:
-            mock_auth.return_value = {"id": "test-user"}
-            
-            with patch('app.chapters.routes.service.search_series_in_apis') as mock_search:
-                mock_search.return_value = {
-                    "anilist_matches": [{"id": 30013, "title": "One Piece"}],
-                    "mangaupdates_matches": [{"id": 319, "title": "One Piece"}],
-                    "confidence_scores": {"anilist": 0.98, "mangaupdates": 0.95}
-                }
-                
-                response = client.get("/api/chapters/search/One Piece")
-                
-                assert response.status_code == 200
-                data = response.json()
-                assert "anilist_matches" in data
-                assert "confidence_scores" in data
-    
+        with patch(
+            "app.chapters.routes.service.search_series_in_apis", new_callable=AsyncMock
+        ) as mock_search:
+            mock_search.return_value = {
+                "anilist_matches": [{"id": 30013, "title": "One Piece"}],
+                "mangaupdates_matches": [{"id": 319, "title": "One Piece"}],
+                "confidence_scores": {"anilist": 0.98, "mangaupdates": 0.95},
+            }
+
+            response = client.get("/api/chapters/search/One Piece")
+
+            assert response.status_code == 200
+            data = response.json()
+            assert "anilist_matches" in data
+            assert "confidence_scores" in data
+
     def test_map_series_ids(self):
         """Test endpoint mapping IDs"""
-        with patch('app.chapters.routes.get_current_user') as mock_auth:
-            mock_auth.return_value = {"id": "test-user"}
-            
-            with patch('app.chapters.routes.service.map_series_ids') as mock_map:
-                mock_map.return_value = True
-                
-                payload = {
-                    "anilist_id": 30013,
-                    "mangaupdates_id": 319
-                }
-                
-                response = client.post("/api/chapters/series/One Piece/map-ids", json=payload)
-                
-                assert response.status_code == 200
-                data = response.json()
-                assert data["success"] is True
-                assert data["mapped_ids"]["anilist_id"] == 30013
-    
-    def test_get_integrations_status(self):
-        """Test endpoint statut intégrations"""
-        with patch('app.chapters.routes.get_current_user') as mock_auth:
-            mock_auth.return_value = {"id": "test-user"}
-            
-            with patch('app.chapters.routes.service.get_integration_status') as mock_status:
-                mock_status.return_value = {
-                    "anilist": {"status": "ok", "response_time": 150},
-                    "mangaupdates": {"status": "ok", "response_time": 890}
-                }
-                
-                response = client.get("/api/chapters/integrations/status")
-                
-                assert response.status_code == 200
-                data = response.json()
-                assert data["success"] is True
-                assert "integrations" in data
-                assert data["integrations"]["anilist"]["status"] == "ok"
-    
-    def test_update_predictions_config(self):
-        """Test endpoint configuration prédictions"""
-        with patch('app.chapters.routes.get_current_user') as mock_auth:
-            mock_auth.return_value = {"id": "test-user"}
-            
+        with patch(
+            "app.chapters.routes.service.map_series_ids", new_callable=AsyncMock
+        ) as mock_map:
+            mock_map.return_value = True
+
             payload = {
-                "enable_predictions": True,
-                "confidence_threshold": 0.85
+                "anilist_id": 30013,
+                "mangaupdates_id": 319,
             }
-            
-            response = client.put("/api/chapters/predictions/config", json=payload)
-            
+
+            response = client.post(
+                "/api/chapters/series/One Piece/map-ids", json=payload
+            )
+
             assert response.status_code == 200
             data = response.json()
             assert data["success"] is True
-            assert data["config"]["enable_predictions"] is True
-            assert data["config"]["confidence_threshold"] == 0.85
+            assert data["mapped_ids"]["anilist_id"] == 30013
+
+    def test_get_integrations_status(self):
+        """Test endpoint statut intégrations"""
+        with patch(
+            "app.chapters.routes.service.get_integration_status", new_callable=AsyncMock
+        ) as mock_status:
+            mock_status.return_value = {
+                "anilist": {"status": "ok", "response_time": 150},
+                "mangaupdates": {"status": "ok", "response_time": 890},
+            }
+
+            response = client.get("/api/chapters/integrations/status")
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["success"] is True
+            assert "integrations" in data
+            assert data["integrations"]["anilist"]["status"] == "ok"
+
+    def test_update_predictions_config(self):
+        """Test endpoint configuration prédictions"""
+        payload = {
+            "enable_predictions": True,
+            "confidence_threshold": 0.85,
+        }
+
+        response = client.put("/api/chapters/predictions/config", json=payload)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert data["config"]["enable_predictions"] is True
+        assert data["config"]["confidence_threshold"] == 0.85
 
 
 class TestAniListService:
@@ -450,6 +460,7 @@ class TestChapterModels:
     def test_chapter_model_creation(self):
         """Test création modèle Chapter"""
         chapter = Chapter(
+            id="ch-1101-test",
             chapter_number=1101,
             title="Heavy Rotation",
             release_date=datetime(2024, 1, 15),
@@ -461,7 +472,7 @@ class TestChapterModels:
         assert chapter.title == "Heavy Rotation"
         assert chapter.status == ChapterStatus.RELEASED
         assert chapter.page_count == 17
-        assert chapter.grouped_in_volume is None
+        assert chapter.volume_number is None
     
     def test_volume_model_creation(self):
         """Test création modèle Volume"""
@@ -513,7 +524,7 @@ class TestChapterModels:
         assert prediction.method == "weekly_pattern"
         
         # Test validation confidence (doit être entre 0 et 1)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             ChapterPrediction(
                 estimated_number=1103,
                 confidence=1.5,  # Invalide

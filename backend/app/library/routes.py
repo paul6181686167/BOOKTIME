@@ -3,6 +3,10 @@ from typing import Optional
 from ..database.connection import series_library_collection
 from ..security.jwt import get_current_user
 from ..models.series import SeriesLibraryCreate, VolumeData
+from .series_library_helpers import (
+    normalize_series_library_doc,
+    series_library_duplicate_query,
+)
 
 router = APIRouter(prefix="/api/library", tags=["library"])
 
@@ -14,20 +18,22 @@ async def create_series_library(
 ):
     """Créer ou mettre à jour une série dans la bibliothèque (upsert pour éviter les doublons)"""
     import uuid
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     user_id = current_user["id"]
     data = series_data.model_dump()
-    series_name = data.get("name", "")
+    series_name = (data.get("series_name") or data.get("name") or "").strip()
 
-    # Vérifier si la série existe déjà pour cet utilisateur
-    existing = series_library_collection.find_one({"user_id": user_id, "name": series_name})
+    # Vérifier si la série existe déjà pour cet utilisateur (clé canonique `series_name`, repli `name` legacy)
+    existing = series_library_collection.find_one(
+        series_library_duplicate_query(user_id, series_name)
+    )
     if existing:
         existing.pop("_id", None)
         return {
             "success": True,
             "message": "Série déjà dans ta bibliothèque",
-            "series": existing
+            "series": normalize_series_library_doc(existing),
         }
 
     series_id = str(uuid.uuid4())
@@ -35,8 +41,8 @@ async def create_series_library(
         "id": series_id,
         "user_id": user_id,
         **data,
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow()
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
     }
 
     series_library_collection.insert_one(series)
@@ -45,7 +51,7 @@ async def create_series_library(
     return {
         "success": True,
         "message": "Série ajoutée à ta bibliothèque",
-        "series": series
+        "series": normalize_series_library_doc(series),
     }
 
 @router.get("/series")
@@ -60,8 +66,8 @@ async def get_series_library(
         filter_dict["category"] = category
     
     series_list = list(series_library_collection.find(filter_dict, {"_id": 0}))
-    
-    return series_list
+
+    return [normalize_series_library_doc(s) for s in series_list]
 
 @router.put("/series/{series_id}/volume/{volume_number}")
 async def update_volume_status(
@@ -71,7 +77,7 @@ async def update_volume_status(
     current_user: dict = Depends(get_current_user)
 ):
     """Mettre à jour le statut d'un volume dans une série"""
-    from datetime import datetime
+    from datetime import datetime, timezone
     
     # Vérifier que la série appartient à l'utilisateur
     series = series_library_collection.find_one({
@@ -92,8 +98,8 @@ async def update_volume_status(
         {
             "$set": {
                 "volumes.$.is_read": volume_data.get("is_read", False),
-                "volumes.$.date_read": datetime.utcnow().isoformat() if volume_data.get("is_read") else None,
-                "updated_at": datetime.utcnow()
+                "volumes.$.date_read": datetime.now(timezone.utc).isoformat() if volume_data.get("is_read") else None,
+                "updated_at": datetime.now(timezone.utc)
             }
         }
     )
@@ -113,7 +119,7 @@ async def update_series_status(
     current_user: dict = Depends(get_current_user)
 ):
     """Mettre à jour le statut global d'une série"""
-    from datetime import datetime
+    from datetime import datetime, timezone
     
     new_status = series_data.get("series_status")
     if not new_status or new_status not in ["to_read", "reading", "completed"]:
@@ -127,7 +133,7 @@ async def update_series_status(
         {
             "$set": {
                 "series_status": new_status,
-                "updated_at": datetime.utcnow()
+                "updated_at": datetime.now(timezone.utc)
             }
         }
     )

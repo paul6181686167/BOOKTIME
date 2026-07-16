@@ -9,10 +9,14 @@ Définit les structures de données pour :
 - Prédictions et métadonnées
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class ChapterStatus(str, Enum):
@@ -63,8 +67,8 @@ class Chapter(BaseModel):
     page_count: Optional[int] = Field(None, description="Nombre de pages")
     translated_languages: List[str] = Field(default_factory=list, description="Langues de traduction disponibles")
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "ch-1101-uuid",
                 "chapter_number": 1101,
@@ -78,6 +82,7 @@ class Chapter(BaseModel):
                 "translated_languages": ["en", "fr"]
             }
         }
+    )
 
 
 class Volume(BaseModel):
@@ -93,8 +98,8 @@ class Volume(BaseModel):
     cover_url: Optional[str] = Field(None, description="URL de la couverture")
     page_count: Optional[int] = Field(None, description="Nombre de pages total")
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "volume_number": 108,
                 "chapters_range": "1095-1105",
@@ -106,6 +111,7 @@ class Volume(BaseModel):
                 "page_count": 192
             }
         }
+    )
 
 
 class ChapterPrediction(BaseModel):
@@ -115,8 +121,8 @@ class ChapterPrediction(BaseModel):
     confidence: float = Field(..., ge=0.0, le=1.0, description="Confiance de la prédiction (0-1)")
     method: str = Field(..., description="Méthode utilisée pour la prédiction")
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "estimated_number": 1102,
                 "estimated_date": "2024-01-22T00:00:00Z",
@@ -124,6 +130,7 @@ class ChapterPrediction(BaseModel):
                 "method": "weekly_pattern"
             }
         }
+    )
 
 
 class VolumePrediction(BaseModel):
@@ -165,7 +172,7 @@ class SeriesChapters(BaseModel):
     average_chapters_per_volume: Optional[float] = Field(None, description="Moyenne chapitres par volume")
     
     # Cache et timestamps
-    last_updated: datetime = Field(default_factory=datetime.utcnow, description="Dernière mise à jour")
+    last_updated: datetime = Field(default_factory=_utcnow, description="Dernière mise à jour")
     cache_expires: Optional[datetime] = Field(None, description="Expiration du cache")
     last_sync_anilist: Optional[datetime] = Field(None, description="Dernière sync AniList")
     last_sync_mangaupdates: Optional[datetime] = Field(None, description="Dernière sync MangaUpdates")
@@ -174,8 +181,8 @@ class SeriesChapters(BaseModel):
     enable_predictions: bool = Field(True, description="Activer les prédictions")
     auto_volume_grouping: bool = Field(True, description="Regroupement automatique en volumes")
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "uuid-string",
                 "series_name": "One Piece",
@@ -194,6 +201,7 @@ class SeriesChapters(BaseModel):
                 "auto_volume_grouping": True
             }
         }
+    )
 
 
 class SeriesChaptersResponse(BaseModel):
@@ -201,11 +209,11 @@ class SeriesChaptersResponse(BaseModel):
     success: bool = Field(True, description="Succès de l'opération")
     data: Optional[SeriesChapters] = Field(None, description="Données de la série")
     message: Optional[str] = Field(None, description="Message d'information")
-    last_updated: datetime = Field(default_factory=datetime.utcnow, description="Timestamp de la réponse")
+    last_updated: datetime = Field(default_factory=_utcnow, description="Timestamp de la réponse")
     cached: bool = Field(False, description="Données depuis le cache")
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "success": True,
                 "data": {
@@ -217,6 +225,7 @@ class SeriesChaptersResponse(BaseModel):
                 "cached": False
             }
         }
+    )
 
 
 class ChapterSearchResult(BaseModel):
@@ -225,8 +234,8 @@ class ChapterSearchResult(BaseModel):
     mangaupdates_matches: List[Dict[str, Any]] = Field(default_factory=list, description="Résultats MangaUpdates")
     confidence_scores: Dict[str, float] = Field(default_factory=dict, description="Scores de confiance")
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "anilist_matches": [
                     {"id": 30013, "title": "One Piece", "confidence": 0.98}
@@ -240,6 +249,7 @@ class ChapterSearchResult(BaseModel):
                 }
             }
         }
+    )
 
 
 class IntegrationStatus(BaseModel):
@@ -249,8 +259,8 @@ class IntegrationStatus(BaseModel):
     last_success: Optional[datetime] = Field(None, description="Dernière requête réussie")
     error_message: Optional[str] = Field(None, description="Message d'erreur si applicable")
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "status": "ok",
                 "response_time": 150,
@@ -258,6 +268,7 @@ class IntegrationStatus(BaseModel):
                 "error_message": None
             }
         }
+    )
 
 
 class UpcomingReleases(BaseModel):
@@ -266,8 +277,8 @@ class UpcomingReleases(BaseModel):
     next_week: List[Dict[str, Any]] = Field(default_factory=list, description="Sorties semaine prochaine") 
     this_month: List[Dict[str, Any]] = Field(default_factory=list, description="Sorties ce mois")
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "this_week": [
                     {
@@ -281,3 +292,4 @@ class UpcomingReleases(BaseModel):
                 "this_month": []
             }
         }
+    )

@@ -4,8 +4,12 @@ Modèles pour fonctionnalités sociales et communautaires
 """
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class PrivacyLevel(str, Enum):
@@ -49,8 +53,8 @@ class UserProfile(BaseModel):
     followers_count: int = 0
     following_count: int = 0
     books_count: int = 0
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
 
 
 class Follow(BaseModel):
@@ -58,13 +62,8 @@ class Follow(BaseModel):
     id: str
     follower_id: str  # Utilisateur qui suit
     following_id: str  # Utilisateur suivi
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
-
 
 class SocialActivity(BaseModel):
     """Activité sociale dans le feed"""
@@ -75,13 +74,8 @@ class SocialActivity(BaseModel):
     privacy_level: PrivacyLevel = PrivacyLevel.PUBLIC
     likes_count: int = 0
     comments_count: int = 0
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
-
 
 class SocialComment(BaseModel):
     """Commentaire sur une activité ou un livre"""
@@ -92,14 +86,9 @@ class SocialComment(BaseModel):
     content: str
     parent_comment_id: Optional[str] = None  # Pour les réponses
     likes_count: int = 0
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)
     updated_at: Optional[datetime] = None
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
-
 
 class SocialLike(BaseModel):
     """Like sur une activité ou commentaire"""
@@ -107,13 +96,8 @@ class SocialLike(BaseModel):
     user_id: str
     target_type: str  # "activity", "comment", "book"
     target_id: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
-
 
 class BookList(BaseModel):
     """Liste de livres partageable"""
@@ -127,14 +111,9 @@ class BookList(BaseModel):
     collaborator_ids: List[str] = []  # Utilisateurs autorisés à modifier
     followers_count: int = 0
     likes_count: int = 0
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
-
 
 class BookRecommendation(BaseModel):
     """Recommandation de livre entre utilisateurs"""
@@ -144,13 +123,8 @@ class BookRecommendation(BaseModel):
     book_id: str
     message: Optional[str] = None
     is_read: bool = False
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
-
 
 class SocialNotification(BaseModel):
     """Notification sociale"""
@@ -161,13 +135,8 @@ class SocialNotification(BaseModel):
     message: str
     data: Dict[str, Any] = {}  # Données contextuelles
     is_read: bool = False
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
-
 
 # Modèles pour les requêtes API
 class CreateProfileRequest(BaseModel):

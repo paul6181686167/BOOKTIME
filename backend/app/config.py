@@ -4,8 +4,12 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Charger .env depuis le dossier backend (parent de app/)
-_env_path = Path(__file__).resolve().parent.parent / ".env"
+_backend_dir = Path(__file__).resolve().parent.parent
+_env_path = _backend_dir / ".env"
+_env_local_path = _backend_dir / ".env.local"
 load_dotenv(_env_path)
+if _env_local_path.is_file():
+    load_dotenv(_env_local_path, override=True)
 load_dotenv()  # fallback cwd
 
 # Configuration MongoDB
@@ -49,10 +53,20 @@ OPEN_LIBRARY_BASE_URL = "https://openlibrary.org"
 OPEN_LIBRARY_SEARCH_URL = f"{OPEN_LIBRARY_BASE_URL}/search.json"
 OPEN_LIBRARY_COVERS_URL = "https://covers.openlibrary.org/b"
 
+# Google Books API (3e source métadonnées — clé dans .env)
+GOOGLE_BOOKS_API_KEY = os.getenv("GOOGLE_BOOKS_API_KEY", "").strip()
+
 # Configuration de pagination
 DEFAULT_LIMIT = 10
 MAX_LIMIT = 100
 DEFAULT_OFFSET = 0
+
+# Export statique Wikidata (généré à la racine BOOKTIME-main par extract_wikidata_series / post_extract)
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+WIKIDATA_SERIES_DB_PATH = Path(os.getenv("WIKIDATA_SERIES_DB_PATH", str(_REPO_ROOT / "wikidata_series_db.json")))
+WIKIDATA_STANDALONE_CACHE_PATH = Path(
+    os.getenv("WIKIDATA_STANDALONE_CACHE_PATH", str(_REPO_ROOT / "popular_standalone_books.json"))
+)
 
 # Configuration des catégories
 VALID_CATEGORIES = ["roman", "bd", "manga"]
