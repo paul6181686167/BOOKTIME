@@ -12,6 +12,22 @@ import unicodedata
 from typing import Any
 
 from ..config import WIKIDATA_SERIES_DB_PATH, WIKIDATA_STANDALONE_CACHE_PATH
+from ..db_config import Database
+
+# Collection MongoDB alimentee par scripts/import_wikidata_to_mongo.py.
+# Preferee au fichier (255 Mo) : evite l'OOM sur Render free (512 Mo de RAM).
+MONGO_COLLECTION = "wikidata_series"
+
+# Champs "lite" renvoyes pour la recherche / le top (sans works, allege le payload).
+_LITE_PROJECTION = {
+    "qid": 1,
+    "name": 1,
+    "name_fr": 1,
+    "name_en": 1,
+    "type": 1,
+    "work_count": 1,
+    "category": 1,
+}
 
 # Doit rester aligné avec extract_wikidata_series.norm (clés title_index).
 _LIGATURES = {"œ": "oe", "æ": "ae", "ø": "o", "ß": "ss"}
@@ -134,14 +150,52 @@ _standalone_doc: dict[str, Any] | None = None
 _standalone_loaded_once = False
 _load_error: str | None = None
 
+# Backend de donnees series : "mongo" (Atlas) ou "file" (wikidata_series_db.json).
+# Resolu une fois puis mis en cache.
+_backend: str | None = None
+_backend_lock = threading.Lock()
+
+
+def _resolve_backend() -> str:
+    """Choisit Mongo si la collection est peuplee, sinon le fichier local."""
+    global _backend
+    if _backend is not None:
+        return _backend
+    with _backend_lock:
+        if _backend is not None:
+            return _backend
+        resolved = "file"
+        try:
+            dbo = Database()
+            if not dbo.is_mock_mode():
+                if dbo.db[MONGO_COLLECTION].estimated_document_count() > 0:
+                    resolved = "mongo"
+        except Exception:
+            resolved = "file"
+        _backend = resolved
+        return _backend
+
+
+def _collection():
+    return Database().db[MONGO_COLLECTION]
+
+
+def _clean_lite(doc: dict[str, Any]) -> dict[str, Any]:
+    doc.pop("_id", None)
+    if not doc.get("category"):
+        doc["category"] = infer_series_category(doc)
+    return doc
+
 
 def clear_cache() -> None:
-    global _series_db, _standalone_doc, _standalone_loaded_once, _load_error
+    global _series_db, _standalone_doc, _standalone_loaded_once, _load_error, _backend
     with _lock:
         _series_db = None
         _standalone_doc = None
         _standalone_loaded_once = False
         _load_error = None
+    with _backend_lock:
+        _backend = None
 
 
 def _load_series_locked() -> None:
@@ -176,8 +230,10 @@ def _load_standalone_locked() -> None:
 
 def ensure_loaded() -> None:
     global _standalone_loaded_once
+    backend = _resolve_backend()
     with _lock:
-        if _series_db is None and _load_error is None:
+        # Le fichier series n'est charge que si Mongo n'est pas disponible.
+        if backend == "file" and _series_db is None and _load_error is None:
             _load_series_locked()
         if not _standalone_loaded_once:
             _standalone_loaded_once = True
@@ -186,15 +242,35 @@ def ensure_loaded() -> None:
 
 def status() -> dict[str, Any]:
     ensure_loaded()
+    backend = _resolve_backend()
+    with _lock:
+        st = _standalone_doc or {}
+        books = st.get("books") if isinstance(st, dict) else None
+        nb = len(books) if isinstance(books, list) else 0
+
+    if backend == "mongo":
+        try:
+            n = _collection().estimated_document_count()
+            load_error = None
+        except Exception as exc:
+            n = 0
+            load_error = str(exc)
+        return {
+            "backend": "mongo",
+            "collection": MONGO_COLLECTION,
+            "series_count": n,
+            "standalone_count": nb,
+            "standalone_cache_exists": WIKIDATA_STANDALONE_CACHE_PATH.is_file(),
+            "load_error": load_error,
+        }
+
     with _lock:
         by = (_series_db or {}).get("by_qid") or {}
         n = len(by)
         sample = next(iter(by.values()), {}) if by else {}
         has_pop = "popularity" in sample
-        st = _standalone_doc or {}
-        books = st.get("books") if isinstance(st, dict) else None
-        nb = len(books) if isinstance(books, list) else 0
         return {
+            "backend": "file",
             "series_db_path": str(WIKIDATA_SERIES_DB_PATH),
             "series_db_exists": WIKIDATA_SERIES_DB_PATH.is_file(),
             "standalone_cache_path": str(WIKIDATA_STANDALONE_CACHE_PATH),
@@ -207,6 +283,20 @@ def status() -> dict[str, Any]:
 
 
 def get_series(qid: str) -> dict[str, Any] | None:
+    if _resolve_backend() == "mongo":
+        try:
+            doc = _collection().find_one({"_id": qid})
+        except Exception:
+            doc = None
+        if not doc:
+            return None
+        doc.pop("_id", None)
+        doc.pop("title_keys", None)
+        doc.pop("search_blob", None)
+        if not doc.get("category"):
+            doc["category"] = infer_series_category(doc)
+        return doc
+
     ensure_loaded()
     with _lock:
         if not _series_db:
@@ -217,6 +307,52 @@ def get_series(qid: str) -> dict[str, Any] | None:
     return {**row, "category": infer_series_category(row)}
 
 
+def _search_mongo(qn: str, limit: int) -> list[dict[str, Any]]:
+    """Recherche Mongo : exact (3) > prefixe (2) > mots via index texte (1)."""
+    coll = _collection()
+    best: dict[str, tuple[int, dict[str, Any]]] = {}
+
+    def consider(doc: dict[str, Any], score: int) -> None:
+        qid = doc.get("qid") or doc.get("_id")
+        if not qid:
+            return
+        cur = best.get(qid)
+        if cur is None or score > cur[0]:
+            best[qid] = (score, doc)
+
+    try:
+        for doc in coll.find({"title_keys": qn}, _LITE_PROJECTION).limit(60):
+            consider(doc, 3)
+        prefix = {"$regex": f"^{re.escape(qn)}"}
+        for doc in coll.find({"title_keys": prefix}, _LITE_PROJECTION).limit(200):
+            consider(doc, 2)
+        # Match par mots (index texte) : trie par work_count pour faire remonter
+        # les series consistantes plutot que des homonymes a 0 tome.
+        text_cur = (
+            coll.find({"$text": {"$search": qn}}, _LITE_PROJECTION)
+            .sort("work_count", -1)
+            .limit(150)
+        )
+        for doc in text_cur:
+            consider(doc, 1)
+    except Exception:
+        # Un souci Mongo ne doit pas casser la recherche : on renvoie ce qu'on a.
+        pass
+
+    rows: list[dict[str, Any]] = []
+    for score, doc in best.values():
+        doc = _clean_lite(doc)
+        doc["_match"] = score
+        rows.append(doc)
+    rows.sort(
+        key=lambda r: (int(r.get("_match") or 0), int(r.get("work_count") or 0)),
+        reverse=True,
+    )
+    for r in rows:
+        r.pop("_match", None)
+    return rows[:limit]
+
+
 def search_series_by_title(*, q: str, limit: int) -> list[dict[str, Any]]:
     """
     Recherche sur title_index (titres normalisés FR/EN + titres d'œuvres).
@@ -225,6 +361,8 @@ def search_series_by_title(*, q: str, limit: int) -> list[dict[str, Any]]:
     qn = norm_title(q.strip())
     if len(qn) < 2:
         return []
+    if _resolve_backend() == "mongo":
+        return _search_mongo(qn, limit)
     ensure_loaded()
     with _lock:
         if not _series_db:
@@ -281,6 +419,18 @@ def search_series_by_title(*, q: str, limit: int) -> list[dict[str, Any]]:
 
 
 def top_series_by_popularity(*, limit: int) -> list[dict[str, Any]]:
+    if _resolve_backend() == "mongo":
+        try:
+            cur = (
+                _collection()
+                .find({}, _LITE_PROJECTION)
+                .sort("work_count", -1)
+                .limit(limit)
+            )
+            return [_clean_lite(doc) for doc in cur]
+        except Exception:
+            return []
+
     ensure_loaded()
     with _lock:
         if not _series_db:
