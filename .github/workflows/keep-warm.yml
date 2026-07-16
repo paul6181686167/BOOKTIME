@@ -1,0 +1,42 @@
+name: Keep backend warm
+
+# Empêche le cold start du backend Render (plan gratuit s'endort après ~15 min).
+# Ping l'endpoint /ping (réponse 200 immédiate, sans toucher la base) 24/7.
+
+on:
+  schedule:
+    # Toutes les 10 minutes (marge sous les 15 min d'inactivité de Render).
+    # Note : les crons GitHub Actions sont "best-effort" et peuvent être
+    # légèrement retardés en période de forte charge.
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {} # Permet un déclenchement manuel depuis l'onglet Actions.
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping backend /ping
+        run: |
+          # URL configurable via la variable de dépôt BACKEND_PING_URL
+          # (Settings > Secrets and variables > Actions > Variables).
+          # Fallback sur l'URL de production connue.
+          URL="${{ vars.BACKEND_PING_URL }}"
+          if [ -z "$URL" ]; then
+            URL="https://booktime-uo15.onrender.com/ping"
+          fi
+          echo "Ping: $URL"
+
+          # Render peut mettre jusqu'à ~60 s à se réveiller : on retente.
+          for attempt in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 90 "$URL" || echo "000")
+            echo "Tentative $attempt -> HTTP $code"
+            if [ "$code" = "200" ]; then
+              echo "Backend réveillé."
+              exit 0
+            fi
+            sleep 15
+          done
+
+          echo "Échec du réveil après plusieurs tentatives."
+          exit 1

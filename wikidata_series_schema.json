@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://booktime.local/schema/wikidata_series_raw_v1_1.json",
+  "title": "Booktime — export brut séries Wikidata (QLever)",
+  "description": "Fichier wikidata_series_raw.json : dictionnaire dont chaque clé est un QID d'entité « série » et la valeur décrit la série et ses volumes liés par P179.",
+  "type": "object",
+  "patternProperties": {
+    "^Q[0-9]+$": {
+      "$ref": "#/$defs/seriesRecord"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "seriesRecord": {
+      "type": "object",
+      "required": ["name_en", "name", "type", "works"],
+      "properties": {
+        "name_en": {
+          "type": "string",
+          "description": "Libellé EN de l'entité série (rdfs:label@en)."
+        },
+        "name_fr": {
+          "type": "string",
+          "description": "Libellé FR si présent (rdfs:label@fr), sinon chaîne vide."
+        },
+        "name": {
+          "type": "string",
+          "description": "Libellé prioritaire affiché (souvent FR après passe 1b, sinon EN)."
+        },
+        "type": {
+          "type": "string",
+          "description": "Libellé lisible du type d'entité (ex. book series, manga series)."
+        },
+        "main_subjects_en": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Thèmes principaux (P921 → libellés EN), optionnel."
+        },
+        "wikidata_sitelinks": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Nombre de liens interlangues Wikidata sur l'entité série (index enrichi post_extract_to_popularity.py)."
+        },
+        "popularity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Score 0–100 (série) : log1p(sitelinks), pool global avec volumes + standalone, winsor 99e puis min-max."
+        },
+        "works": {
+          "type": "array",
+          "description": "Volumes liés par P179 (peut être vide si Wikidata ne relie pas encore d'œuvre à cette série).",
+          "items": { "$ref": "#/$defs/workRecord" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "workRecord": {
+      "type": "object",
+      "required": ["title_fr", "title_en", "volume"],
+      "properties": {
+        "work_qid": {
+          "type": "string",
+          "pattern": "^Q[0-9]+$",
+          "description": "QID de l'œuvre / volume (schéma ≥ 1.1). Absent dans les exports antérieurs."
+        },
+        "link_source": {
+          "type": "string",
+          "enum": ["p179", "p527"],
+          "description": "p179 = œuvre déclare la série ; p527 = série déclare la partie (tome)."
+        },
+        "title_fr": { "type": "string", "description": "rdfs:label@fr (SAMPLE)." },
+        "title_en": { "type": "string", "description": "rdfs:label@en (SAMPLE)." },
+        "volume": {
+          "type": "string",
+          "description": "Numéro d'ordre dans la série (wdt:P1545), chaîne vide si absent."
+        },
+        "authors_en": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Auteurs (P50) avec libellé EN ; concaténés puis découpés (|)."
+        },
+        "publication_date": {
+          "type": "string",
+          "description": "Date ou littéral temps (P577), tel que renvoyé par QLever."
+        },
+        "language_qids": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^Q[0-9]+$" },
+          "description": "Langues de l'œuvre (P407), QIDs uniquement."
+        },
+        "genres_en": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Genres (P136) avec libellé EN."
+        },
+        "isbns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "ISBN (P213) ; plusieurs valeurs possibles."
+        },
+        "open_library_id": {
+          "type": "string",
+          "description": "Identifiant Open Library (P648), chaîne vide si absent."
+        },
+        "goodreads_work_id": {
+          "type": "string",
+          "description": "Goodreads work id (P8383)."
+        },
+        "goodreads_edition_id": {
+          "type": "string",
+          "description": "Goodreads edition id (P2963)."
+        },
+        "wikidata_sitelinks": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Sitelinks Wikidata sur l'œuvre / volume (index enrichi)."
+        },
+        "popularity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Score 0–100 (tome) : même loi que les séries (pool global log1p sitelinks)."
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

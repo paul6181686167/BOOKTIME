@@ -22,6 +22,7 @@
     "build": "CI=false react-scripts build",
     "test": "react-scripts test --verbose --coverage --watchAll=false",
     "test:watch": "react-scripts test",
+    "test:pipelines": "react-scripts test \"--testPathPattern=(sourceMerge|seriesLibraryService|openLibraryBookDisplay)\" --watchAll=false",
     "test:coverage": "react-scripts test --coverage --watchAll=false",
     "eject": "react-scripts eject",
     "test:e2e": "playwright test",

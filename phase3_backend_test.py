@@ -293,8 +293,8 @@ def test_external_integrations():
             print_info(f"Premier résultat: {books[0].get('title', 'N/A')} par {books[0].get('author', 'N/A')}")
             
             # Test de récupération des détails d'un livre
-            if "google_id" in books[0]:
-                volume_id = books[0]["google_id"]
+            if "google_books_id" in books[0]:
+                volume_id = books[0]["google_books_id"]
                 
                 success, response = make_request("GET", f"integrations/google-books/details/{volume_id}")
                 

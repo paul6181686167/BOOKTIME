@@ -1,0 +1,1892 @@
+{
+  "fellowship of ring": {
+    "series_name": "Le Seigneur des anneaux",
+    "volume": "1",
+    "method": "wd_series"
+  },
+  "return of king": {
+    "series_name": "Le Seigneur des anneaux",
+    "volume": "3",
+    "method": "wd_series"
+  },
+  "game of thrones": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "clash of kings": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "storm of swords": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "sword of destiny": {
+    "series_name": "Le Sorceleur",
+    "volume": null,
+    "method": "wd_series"
+  },
+  "blood of elves": {
+    "series_name": "Le Sorceleur",
+    "volume": "3",
+    "method": "wd_series"
+  },
+  "dernier vu": {
+    "series_name": "Le Sorceleur",
+    "volume": "1",
+    "method": "wd_series"
+  },
+  "name of wind": {
+    "series_name": "Chronique du tueur de roi",
+    "volume": "1",
+    "method": "wd_series"
+  },
+  "wise man s fear": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "sea of monsters": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "titan s curse": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "battle of labyrinth": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "caliban s war": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "abaddon s gate": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "well of ascension": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "hero of ages": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "way of kings": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "words of radiance": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "rhythm of war": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "eye of world": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "attack on titan vol 1": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "shingeki no kyojin vol 3": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "restaurant at end of universe": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "lion witch and wardrobe": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "girl with dragon tattoo": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "girl who played with fire": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "two towers": {
+    "series_name": "Le Seigneur des anneaux",
+    "volume": "2",
+    "method": "wd_series"
+  },
+  "harry potter and goblet of fire": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "hunger games": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "twilight": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "morning star": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "dune": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "last battle": {
+    "series_name": "Le Monde de Narnia",
+    "volume": "7",
+    "method": "wd_series"
+  },
+  "foundation": {
+    "series_name": "Cycle de Fondation",
+    "volume": "3",
+    "method": "wd_series"
+  },
+  "new moon": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "chronicles of narnia": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "mostly harmless": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "bleach": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "foundation and earth": {
+    "series_name": "Cycle de Fondation",
+    "volume": "7",
+    "method": "wd_series"
+  },
+  "final empire": {
+    "series_name": "Fils-des-brumes",
+    "volume": "1",
+    "method": "wd_series"
+  },
+  "dragonball doragon bo ru": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "naruto 5": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "naruto": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "dragons of autumn twilight": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "red rising": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "science of discworld": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "lightning thief": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 1": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "dragon ball z thank you": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 3": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 2": {
+    "series_name": "One Piece",
+    "volume": "2",
+    "method": "wd_series"
+  },
+  "one piece 7": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "dragon ball z": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "dragon ball vol 13": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 12": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 46": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 28": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 34": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "tokyo ghoul vol 13": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "death note vol 3": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 45": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 36": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 19": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 35": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 27": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 29": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 26": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 32": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 44": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "percy jackson and sea of monsters graphic novel": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "last olympian": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "death note 1": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 16": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 38": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 24": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 22": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "fullmetal alchemist volume 12": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 55": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "legend of drizzt boxed set books xi xiii": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "naruto vol 1": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 76": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "pool of twilight": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "one piece 48": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "fullmetal alchemist vol 15": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "death note vol 4": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "discworld graphic novels": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "twilight of gods": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "death note vol 2": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "fullmetal alchemist vol 5": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "entice me at twilight": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "death note vol 8": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "tale of two demon slayers": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "sword art online 3": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "thorgal tome 17": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "sword art online 1": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "sword art online": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "twilight graphic novel volume 1": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "fullmetal alchemist vol 18": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "death note vol 2 japanese": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "god devil and harry potter": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "yu gi oh millennium world volume 1 yu gi oh millennium world": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "bleach volume 9": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "bleach volume 1": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "bleach volume 10": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "dragon ball z vol 7": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "hagane no renkinjutsushi fullmetal alchemist vol 27": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "witchery": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "one piece vol 2 black cat pirates for whom bell tolls oath": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece vol 3 crap geezer i won t die tears": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "magic of twilight": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "fullmetal alchemist vol 22": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "fullmetal alchemist vol 21": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "dragon ball z 3 in 1 book 4": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "twilight graphic novel volume 2": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "death note": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "bleach volume 8": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "bleach volume 4": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "bleach volume 14": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "jk rowling s harry potter novels": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece vol 5 it s all right instinct straight ahead": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "thud novel of discworld": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "bleach vol 1 collector s edition": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "alice s adventures in wonderland": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "christmas carol": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "picture of dorian gray": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "adventures of huckleberry finn": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "robinson crusoe": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "scarlet letter": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "emma": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "frankenstein or modern prometheus": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "sense and sensibility": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "wonderful wizard of oz": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "treasure island": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "gulliver s travels": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "call of wild": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "secret garden": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "midsummer night s dream": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "prince": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "through looking glass": {
+    "series_name": "New Frontier",
+    "volume": null,
+    "method": "wd_series"
+  },
+  "wind in willows": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "anne of green gables": {
+    "series_name": "Anne of Green Gables",
+    "volume": "1",
+    "method": "wd_series"
+  },
+  "great gatsby": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "time machine": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "moby dick": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "moll flanders": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "man who was thursday": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "mysterious affair at styles": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "king solomon s mines": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "legend of sleepy hollow": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "romeo and juliet": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "metamorphosis": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "five children and it": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "adventures of tom sawyer": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "anne of avonlea": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "connecticut yankee in king arthur s court": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "der proce": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "princess and goblin": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "lost world": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "dracula": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "marvelous land of oz": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "book of dragons": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "ozma of oz": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "petit prince": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "jewel of seven stars": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "story of treasure seekers": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "animal farm": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "emerald city of oz": {
+    "series_name": "romans sur le pays d'Oz",
+    "volume": null,
+    "method": "wd_series"
+  },
+  "herland": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "dorothy and wizard in oz": {
+    "series_name": "romans sur le pays d'Oz",
+    "volume": null,
+    "method": "wd_series"
+  },
+  "lost princess of oz": {
+    "series_name": "romans sur le pays d'Oz",
+    "volume": null,
+    "method": "wd_series"
+  },
+  "flatland": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "castle of otranto": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "story of amulet": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "women in love": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "turn of screw": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "invisible man": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "alice s adventures in wonderland through looking glass": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "nineteen eighty four": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "road to oz": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "sea fairies": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "miserables": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "moonfleet": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "sky island": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "she": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "scarecrow of oz": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "at back of north wind": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "patchwork girl of oz": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "tik tok of oz": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "rinkitink in oz": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "princess and curdie": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "lilith": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "king in yellow": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "enchanted castle": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "phantastes": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "house of seven gables readalong": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "barchester towers": {
+    "series_name": "Les Chroniques du Barsetshire",
+    "volume": null,
+    "method": "wd_series"
+  },
+  "ayesha": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "hobbit": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "tin woodman of oz": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "war of worlds": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "orlando": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "magic city": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "peter pan": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "phoenix and carpet": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "last man": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "tour monde en quatre vingts jours": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "warlord of mars 3": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "love insurance": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "vingt mille lieues sous mers": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "strange case of dr jekyll and mr hyde": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "rainbow": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "magic world": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "financier": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "news from nowhere or epoch of rest being some chapters from utopian romance": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "awakening": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "rebours": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "secret agent": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "tom sawyer abroad": {
+    "series_name": "Tom Sawyer books",
+    "volume": null,
+    "method": "wd_series"
+  },
+  "sons and lovers": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "magician": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "love eternal": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "girl who played fire": {
+    "series_name": "Millénium",
+    "volume": "2",
+    "method": "wd_series"
+  },
+  "nemesis games": {
+    "series_name": "The Expanse",
+    "volume": "5",
+    "method": "wd_series"
+  },
+  "second foundation": {
+    "series_name": "Cycle de Fondation",
+    "volume": "5",
+    "method": "wd_series"
+  },
+  "knife dreams": {
+    "series_name": "La Roue du temps",
+    "volume": "11",
+    "method": "wd_series"
+  },
+  "foundation empire": {
+    "series_name": "Cycle de Fondation",
+    "volume": "4",
+    "method": "wd_series"
+  },
+  "eclipse": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "lion witch wardrobe": {
+    "series_name": "Le Monde de Narnia",
+    "volume": "1",
+    "method": "wd_series"
+  },
+  "cibola burn": {
+    "series_name": "The Expanse",
+    "volume": "4",
+    "method": "wd_series"
+  },
+  "abaddons gate": {
+    "series_name": "The Expanse",
+    "volume": "3",
+    "method": "wd_series"
+  },
+  "one piece 11": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "forward foundation": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "words radiance": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "silver chair": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "chapterhouse dune": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "dragon ball z dragon ball z": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "alloy law": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "live let die": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "dragon ball z vol 2": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "attack titan 6": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "my hero academia vol 18": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "clash kings": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "path daggers": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "jujutsu kaisen vol 5": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "leviathan wakes": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "moonraker": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "dune messiah": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "study scarlet": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "my hero academia": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "one piece 9": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "sign four": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "eye world": {
+    "series_name": "La Roue du temps",
+    "volume": "1",
+    "method": "wd_series"
+  },
+  "jujutsu kaisen 0": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "way kings": {
+    "series_name": "Les Archives de Roshar",
+    "volume": "1",
+    "method": "wd_series"
+  },
+  "children dune": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "rhythm war": {
+    "series_name": "Les Archives de Roshar",
+    "volume": "4",
+    "method": "wd_series"
+  },
+  "my hero academia vol 1": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "casino royale": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "naruto uzumaki naruto": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "naruto vol 16": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "xenocide": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "catching fire": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "titans curse": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "fires heaven": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "oathbringer": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "midnight tides malazan book fallen book 5": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "valis": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "long shadows": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "do not disturb": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "long dark tea time soul": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "destination unknown": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "darkness comes": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "fall house usher": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "big little lies": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "fear street sunburn": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "i am legend": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "comte monte cristo": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "cave time": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "king swords": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "hooky": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "thursday murder club": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "science fiction hall fame volume one": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "terrace sun": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "berserk vol 33": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "firekeepers daughter": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "unsuitable books": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "odessa file": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "diaspora": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "talons power": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "saving world other extreme sports": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "ruins": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "dark river": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "fight club": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "things we leave unfinished": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "lightlark": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "sleepwalker": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "island sheep": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "two can keep secret": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "girl room 105": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "dorothy wizard oz": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "voyager": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "pregnant greek tycoon": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "hundred thousand kingdoms": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "il fate del lago": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "pocket full rye": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "mystery stuttering parrot": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "holding up universe": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "awakening desire": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "2": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "before december": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "stepsister": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "seven keys baldpate": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "man brown suit": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "black cauldron": {
+    "series_name": "Les Chroniques de Prydain",
+    "volume": null,
+    "method": "wd_series"
+  },
+  "something wonderful": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "attack titan vol 2": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "hero ages": {
+    "series_name": "Fils-des-brumes",
+    "volume": "3",
+    "method": "wd_series"
+  },
+  "jujutsu kaisen vol 7": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "attack titan vol 3": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "jujutsu kaisen vol 1": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "foundation earth": {
+    "series_name": "Cycle de Fondation",
+    "volume": "7",
+    "method": "wd_series"
+  },
+  "children mind": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "poirot investigates": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "hound baskervilles": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "shadow rising": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one piece 6": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "restaurant end universe": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "dragon ball z vol 1": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "game thrones": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "god emperor dune": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "chronicles narnia": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "certain magic": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "eleanor park": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "dragonsinger": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "institute": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "fang": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "boyfriend": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "woman who rides like man": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "10": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "bonehunters": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "best served cold": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "stars like dust": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "one more river cross": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "plan b": {
+    "series_name": "Jack Reacher",
+    "volume": "27",
+    "method": "wd_series"
+  },
+  "broken angels": {
+    "series_name": "Takeshi Kovacs",
+    "volume": "2",
+    "method": "wd_series"
+  },
+  "silent vows": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "death masks": {
+    "series_name": "Les Dossiers Dresden",
+    "volume": "5",
+    "method": "wd_series"
+  },
+  "steelheart": {
+    "series_name": "The Reckoners",
+    "volume": "1",
+    "method": "wd_series"
+  },
+  "poison study": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "love games": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "three stigmata palmer eldritch": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "felix ever after": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "life is strange": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "comparative strangers": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "exit": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "once always": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "bride delta queen": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "pale horseman": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "dollhouse murders": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "king scars": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "grande ritorno nel regno della fantasia 2": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "buddha volume 1": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "duke i": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "handmaids tale": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "modern utopia": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "desire revenge": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "deepness sky zones thought": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "guest list": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "day jackal": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "roman masque fer": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "killing eve": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "into woods": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_standalone"
+  },
+  "alienist": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "posthumanism young adult fiction": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "trois mousquetaires": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "caves steel": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  },
+  "blind date": {
+    "series_name": null,
+    "volume": null,
+    "method": "wd_not_found"
+  }
+}

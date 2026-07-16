@@ -1,0 +1,143 @@
+{
+  "total": 3046,
+  "ol_series": 0,
+  "our_series": 33,
+  "TP": 0,
+  "FN": 0,
+  "TN": 3013,
+  "FP": 33,
+  "precision": 0.0,
+  "recall": 0,
+  "f1": 0,
+  "accuracy": 0.9891661195009849,
+  "wikidata_extra_on_sample": 0,
+  "fn_series": {},
+  "fp_examples": [
+    {
+      "title": "The Man Who Was Thursday",
+      "our_series": "Le Seigneur des Anneaux"
+    },
+    {
+      "title": "Harry Potter and the Philosopher's Stone",
+      "our_series": "Harry Potter"
+    },
+    {
+      "title": "Harry Potter and the Chamber of Secrets",
+      "our_series": "Harry Potter"
+    },
+    {
+      "title": "The Fellowship of the Ring",
+      "our_series": "Le Seigneur des Anneaux"
+    },
+    {
+      "title": "Harry Potter and the Prisoner of Azkaban",
+      "our_series": "Harry Potter"
+    },
+    {
+      "title": "The Two Towers",
+      "our_series": "Le Seigneur des Anneaux"
+    },
+    {
+      "title": "The Return of the King",
+      "our_series": "Le Seigneur des Anneaux"
+    },
+    {
+      "title": "The Lord of the Rings",
+      "our_series": "Le Seigneur des Anneaux"
+    },
+    {
+      "title": "Harry Potter and the Order of the Phoenix",
+      "our_series": "Harry Potter"
+    },
+    {
+      "title": "Harry Potter and the Goblet of Fire",
+      "our_series": "Harry Potter"
+    },
+    {
+      "title": "Harry Potter and the Half-Blood Prince",
+      "our_series": "Harry Potter"
+    },
+    {
+      "title": "Harry Potter and the Deathly Hallows",
+      "our_series": "Harry Potter"
+    },
+    {
+      "title": "The Hunger Games",
+      "our_series": "Hunger Games"
+    },
+    {
+      "title": "A Game of Thrones",
+      "our_series": "Le Trône de Fer"
+    },
+    {
+      "title": "Morning Star",
+      "our_series": "Red Rising"
+    },
+    {
+      "title": "Dune",
+      "our_series": "Dune"
+    },
+    {
+      "title": "Catching Fire",
+      "our_series": "Hunger Games"
+    },
+    {
+      "title": "Foundation",
+      "our_series": "Fondation"
+    },
+    {
+      "title": "A Clash of Kings",
+      "our_series": "Le Trône de Fer"
+    },
+    {
+      "title": "The Name of the Wind",
+      "our_series": "Chronique du Tueur de Roi"
+    },
+    {
+      "title": "A Storm of Swords",
+      "our_series": "Le Trône de Fer"
+    },
+    {
+      "title": "Second Foundation",
+      "our_series": "Fondation"
+    },
+    {
+      "title": "Foundation's Edge",
+      "our_series": "Fondation"
+    },
+    {
+      "title": "Foundation and Earth",
+      "our_series": "Fondation"
+    },
+    {
+      "title": "Forward the Foundation",
+      "our_series": "Fondation"
+    },
+    {
+      "title": "Red Rising",
+      "our_series": "Red Rising"
+    },
+    {
+      "title": "Novels (Hobbit / Lord of the Rings)",
+      "our_series": "Le Seigneur des Anneaux"
+    },
+    {
+      "title": "Golden Son",
+      "our_series": "Red Rising"
+    },
+    {
+      "title": "Morning Star",
+      "our_series": "Red Rising"
+    },
+    {
+      "title": "Mockingjay",
+      "our_series": "Hunger Games"
+    }
+  ],
+  "methods": {
+    "standalone": 3013,
+    "variation": 6,
+    "series_name_in_title": 4,
+    "volume_title": 23
+  }
+}

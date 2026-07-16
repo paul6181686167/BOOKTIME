@@ -1,0 +1,67 @@
+{
+  "the running man": {
+    "series_name": null,
+    "volume": null,
+    "method": "wikidata_not_found"
+  },
+  "1984": {
+    "series_name": null,
+    "volume": null,
+    "method": "wikidata_standalone"
+  },
+  "carrie": {
+    "series_name": null,
+    "volume": null,
+    "method": "wikidata_standalone"
+  },
+  "le grand meaulnes": {
+    "series_name": null,
+    "volume": null,
+    "method": "wikidata_standalone"
+  },
+  "the hitchhiker s guide to the galaxy": {
+    "series_name": "Le Guide du voyageur galactique",
+    "volume": "1",
+    "method": "wikidata_series"
+  },
+  "the restaurant at the end of the universe": {
+    "series_name": "Le Guide du voyageur galactique",
+    "volume": "2",
+    "method": "wikidata_series"
+  },
+  "a wrinkle in time": {
+    "series_name": "Time Quintet",
+    "volume": "1",
+    "method": "wikidata_series"
+  },
+  "the lion the witch and the wardrobe": {
+    "series_name": "Le Monde de Narnia",
+    "volume": "1",
+    "method": "wikidata_series"
+  },
+  "prince caspian": {
+    "series_name": "Le Monde de Narnia",
+    "volume": "2",
+    "method": "wikidata_series"
+  },
+  "ender s game": {
+    "series_name": "Cycle d'Ender",
+    "volume": "1",
+    "method": "wikidata_series"
+  },
+  "speaker for the dead": {
+    "series_name": "Cycle d'Ender",
+    "volume": "2",
+    "method": "wikidata_series"
+  },
+  "the girl with the dragon tattoo": {
+    "series_name": "Millénium",
+    "volume": "1",
+    "method": "wikidata_series"
+  },
+  "the girl who played with fire": {
+    "series_name": "Millénium",
+    "volume": "2",
+    "method": "wikidata_series"
+  }
+}

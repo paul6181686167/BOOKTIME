@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.4.0",
+  "format": "booktime_wikidata_series_raw",
+  "json_schema_file": "wikidata_series_schema.json",
+  "generated_at": "2026-06-14T20:01:36.113681+00:00",
+  "source_sparql_endpoint": "https://qlever.dev/api/wikidata",
+  "series_entities_count": 537627,
+  "wikidata_properties_documented": {
+    "series": [
+      "P31",
+      "P921",
+      "rdfs:label"
+    ],
+    "work": [
+      "P179",
+      "P527",
+      "P1545",
+      "rdfs:label",
+      "P50",
+      "P577",
+      "P407",
+      "P136",
+      "P213",
+      "P648",
+      "P8383",
+      "P2963"
+    ]
+  },
+  "index_policy": {
+    "file": "wikidata_series_db.json",
+    "includes_series_without_works": true,
+    "indexes_work_titles": false,
+    "description": "Toute série avec libellé FR ou EN est dans by_qid ; work_count indique les volumes liés (P179, P527, P361). title_index = noms de série uniquement (pas les titres de tomes)."
+  },
+  "note": "Reconstruction index uniquement ; champs volume dépendent du contenu du brut."
+}
