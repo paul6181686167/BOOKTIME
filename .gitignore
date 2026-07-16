@@ -58,6 +58,15 @@ temp/
 # Regénérer avec : python backend/scripts/seed_catalog.py
 backend/data/catalog_cache.json
 
+# Export Wikidata volumineux (> 100 MB → refusé par GitHub).
+# - wikidata_series_db.json : base runtime (sera importée dans MongoDB Atlas, cf. Étape 2).
+# - *_raw / *_checkpoint / *_work_formats : artefacts de génération, inutiles en prod.
+# Regénérer avec : python extract_wikidata_series.py puis post_extract_to_popularity.py
+wikidata_series_db.json
+wikidata_series_raw.json
+wikidata_extract_checkpoint.json
+wikidata_work_formats.json
+
 # Backups automatiques des scripts de seed (inutiles en prod)
 backend/data/backup_before_*.json
 backend/data/*_backup_*.json
