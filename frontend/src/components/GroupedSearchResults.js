@@ -8,7 +8,6 @@ import {
   PlusIcon,
   SparklesIcon
 } from '@heroicons/react/24/outline';
-import SeriesDetailModal from './SeriesDetailModal';
 
 const GroupedSearchResults = ({ 
   results = [], 

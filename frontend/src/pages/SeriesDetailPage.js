@@ -12,6 +12,9 @@ import {
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { API_BASE_URL } from '../config/environment';
+import { addSeriesToLibrary as saveSeriesToLibrary, generateVolumesList } from '../services/seriesLibraryService';
+import { EXTENDED_SERIES_DATABASE } from '../utils/seriesDatabaseExtended';
+import { enrichSeriesMetadata } from '../components/series/SeriesActions';
 
 const SeriesDetailPage = () => {
   const { seriesName } = useParams();
@@ -196,122 +199,74 @@ const SeriesDetailPage = () => {
   };
 
   const addSeriesToLibrary = async () => {
-    console.log('🔵 BOUTON BLEU AVEC FONCTIONNALITÉ BOUTON VIOLET !');
-    console.log('📊 État actuel:', { 
-      seriesName: series?.name, 
-      volumes: series?.volumes, 
-      isOwned, 
-      addingToLibrary 
-    });
-    
+    if (!series) return;
     try {
       setAddingToLibrary(true);
       const token = localStorage.getItem('token');
-      console.log('🔑 Token trouvé:', token ? 'OUI' : 'NON');
 
-      // Préparer les données série simplifiées et sécurisées
       const seriesData = {
-        name: series.name || "Série inconnue",
-        authors: series.authors || [series.author || "Auteur inconnu"],
-        category: series.category || "roman",
+        name: series.name || 'Série inconnue',
+        authors: series.authors || [series.author || 'Auteur inconnu'],
+        category: series.category || 'roman',
         volumes: series.volumes || 1,
-        first_published: series.first_published || ""
+        first_published: series.first_published || '',
+        description: series.description || '',
       };
-      
-      console.log('🚀 Ajout série à la bibliothèque:', seriesData);
-      
-      // Générer les volumes avec titres sécurisés
-      const volumes = [];
-      for (let i = 1; i <= seriesData.volumes; i++) {
-        volumes.push({
-          volume_number: i,
-          volume_title: `${seriesData.name} - Tome ${i}`,
-          is_read: false,
-          date_read: null
-        });
-      }
-      
-      console.log('📚 Volumes générés:', volumes);
-      
-      // Préparer le payload SIMPLIFIÉ et SÉCURISÉ
+
+      const libraryVolumes = generateVolumesList(
+        {
+          name: seriesData.name,
+          author: Array.isArray(seriesData.authors) ? seriesData.authors[0] : seriesData.authors,
+          authors: seriesData.authors,
+          category: seriesData.category,
+          total_volumes: seriesData.volumes,
+          volumes: seriesData.volumes,
+        },
+        EXTENDED_SERIES_DATABASE
+      );
+
+      const authors = seriesData.authors;
+      const enrichedMetadata = await enrichSeriesMetadata({ ...seriesData, authors });
+
+      const coverFromSeries = (series.cover_url || series.cover_image_url || '').trim();
+
       const seriesPayload = {
         series_name: String(seriesData.name),
-        authors: Array.isArray(seriesData.authors) ? seriesData.authors.map(a => String(a)) : [String(seriesData.authors[0] || "Auteur inconnu")],
+        author: String(seriesData.authors[0] || 'Auteur inconnu'),
+        authors: seriesData.authors.map((a) => String(a)),
         category: String(seriesData.category),
-        total_volumes: Number(volumes.length),
-        volumes: volumes,
-        description_fr: `La série ${seriesData.name}`,
-        cover_image_url: "",
-        first_published: String(seriesData.first_published),
-        last_published: "",
-        publisher: "",
-        series_status: "to_read"
+        total_volumes: Number(libraryVolumes.length),
+        volumes: libraryVolumes,
+        description_fr: enrichedMetadata.description_fr,
+        cover_image_url: coverFromSeries || enrichedMetadata.cover_image_url,
+        first_published: enrichedMetadata.first_published || String(seriesData.first_published),
+        last_published: enrichedMetadata.last_published || '',
+        publisher: enrichedMetadata.publisher || '',
+        series_status: 'to_read',
       };
-      
-      console.log('📋 Payload final sécurisé:', seriesPayload);
-      console.log('🌐 URL:', `${backendUrl}/api/series/library`);
 
-      // Appel API avec gestion d'erreur améliorée
-      const response = await fetch(`${backendUrl}/api/series/library`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(seriesPayload)
-      });
+      const result = await saveSeriesToLibrary(seriesPayload, token);
 
-      console.log('📥 Réponse reçue:', response.status, response.statusText);
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log('✅ Succès:', result);
-        
-        // Message de succès détaillé
+      if (result.success) {
         toast.success(
-          `✅ Série "${seriesData.name}" ajoutée avec ${volumes.length} tome${volumes.length > 1 ? 's' : ''} !`,
+          `Série "${seriesData.name}" ajoutée avec ${libraryVolumes.length} tome${libraryVolumes.length > 1 ? 's' : ''}.`,
           { duration: 4000 }
         );
-        
-        await loadSeriesDetails(); // Recharger pour mettre à jour l'état
-        console.log('🔄 Rechargement terminé');
+        await loadSeriesDetails();
       } else {
-        // GESTION SÉCURISÉE DES ERREURS
-        let errorMessage = 'Erreur lors de l\'ajout de la série';
-        
-        try {
-          const errorData = await response.json();
-          console.log('❌ Erreur response complète:', errorData);
-          
-          // Éviter de rendre les objets d'erreur dans React
-          if (errorData.detail) {
-            if (typeof errorData.detail === 'string') {
-              errorMessage = errorData.detail;
-            } else if (Array.isArray(errorData.detail)) {
-              // Erreurs de validation Pydantic
-              const validationErrors = errorData.detail.map(err => 
-                typeof err === 'object' ? err.msg || 'Erreur de validation' : err
-              );
-              errorMessage = `Erreurs de validation: ${validationErrors.join(', ')}`;
-            } else {
-              errorMessage = 'Erreur de validation des données';
-            }
-          }
-        } catch (parseError) {
-          console.log('❌ Erreur parsing response:', parseError);
-          errorMessage = `Erreur ${response.status}: ${response.statusText}`;
-        }
-        
-        toast.error(errorMessage);
+        toast.error(result.message || "Erreur lors de l'ajout de la série");
       }
     } catch (error) {
-      console.error('💥 Erreur catch:', error);
-      // ÉVITER DE RENDRE L'OBJET D'ERREUR
-      const errorMessage = error.message || 'Erreur lors de l\'ajout de la série';
-      toast.error(errorMessage);
+      console.error('Erreur ajout série (page détail):', error);
+      if (error.message && error.message.includes('409')) {
+        toast.error('Cette série est déjà dans ta bibliothèque');
+      } else if (error.message && error.message.includes('400')) {
+        toast.error('Données de série invalides');
+      } else {
+        toast.error(error.message || "Erreur lors de l'ajout de la série");
+      }
     } finally {
       setAddingToLibrary(false);
-      console.log('🏁 Fonction terminée');
     }
   };
 

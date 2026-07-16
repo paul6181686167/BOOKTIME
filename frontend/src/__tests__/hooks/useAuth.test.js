@@ -1,141 +1,122 @@
+import React from 'react';
 import { renderHook, act } from '@testing-library/react';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth, AuthProvider } from '../../hooks/useAuth';
 
-// Mock du service d'authentification
+// authService est une CLASSE (default export) : on mocke le constructeur pour
+// renvoyer une instance dont les méthodes sont des jest.fn() pilotables.
+const mockLogin = jest.fn();
+const mockRegister = jest.fn();
+const mockLogout = jest.fn();
+const mockGetCurrentUser = jest.fn();
+
 jest.mock('../../services/authService', () => ({
-  login: jest.fn(),
-  register: jest.fn(),
-  logout: jest.fn(),
-  getCurrentUser: jest.fn(),
-  isAuthenticated: jest.fn(),
+  __esModule: true,
+  default: class MockAuthService {
+    login(...args) {
+      return mockLogin(...args);
+    }
+    register(...args) {
+      return mockRegister(...args);
+    }
+    logout(...args) {
+      return mockLogout(...args);
+    }
+    getCurrentUser(...args) {
+      return mockGetCurrentUser(...args);
+    }
+  },
 }));
 
-describe('useAuth Hook', () => {
-  const mockAuthService = require('../../services/authService');
+const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
 
+describe('useAuth Hook', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorage.clear();
+    mockGetCurrentUser.mockReturnValue(null);
   });
 
-  test('initializes with null user and not loading', () => {
-    mockAuthService.getCurrentUser.mockResolvedValue(null);
-    
-    const { result } = renderHook(() => useAuth());
-    
+  test('lève une erreur hors AuthProvider', () => {
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    expect(() => renderHook(() => useAuth())).toThrow(
+      'useAuth must be used within an AuthProvider'
+    );
+    spy.mockRestore();
+  });
+
+  test('initialise avec user null et loading false après montage', () => {
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
     expect(result.current.user).toBeNull();
-    expect(result.current.loading).toBe(true); // Loading initially
+    expect(result.current.loading).toBe(false);
   });
 
-  test('loads user on mount', async () => {
-    const mockUser = { id: 'test-user', first_name: 'Test', last_name: 'User' };
-    mockAuthService.getCurrentUser.mockResolvedValue(mockUser);
-    
-    const { result, waitForNextUpdate } = renderHook(() => useAuth());
-    
-    await waitForNextUpdate();
-    
+  test('charge l’utilisateur courant au montage', () => {
+    const mockUser = { id: 'test-user', email: 'test@example.com' };
+    mockGetCurrentUser.mockReturnValue(mockUser);
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
     expect(result.current.user).toEqual(mockUser);
     expect(result.current.loading).toBe(false);
   });
 
-  test('handles login successfully', async () => {
-    const mockUser = { id: 'test-user', first_name: 'Test', last_name: 'User' };
-    const mockToken = 'test-token';
-    const loginData = { first_name: 'Test', last_name: 'User' };
-    
-    mockAuthService.login.mockResolvedValue({
-      access_token: mockToken,
-      user: mockUser
-    });
-    
-    const { result } = renderHook(() => useAuth());
-    
+  test('connexion réussie : met à jour user', async () => {
+    const mockUser = { id: 'test-user', email: 'test@example.com' };
+    mockLogin.mockResolvedValue({ success: true, user: mockUser });
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    let returned;
     await act(async () => {
-      await result.current.login(loginData);
+      returned = await result.current.login('test@example.com', 'pwd123');
     });
-    
-    expect(mockAuthService.login).toHaveBeenCalledWith(loginData);
+
+    expect(mockLogin).toHaveBeenCalledWith('test@example.com', 'pwd123');
     expect(result.current.user).toEqual(mockUser);
-    expect(localStorage.setItem).toHaveBeenCalledWith('token', mockToken);
+    expect(returned).toEqual({ success: true, user: mockUser });
   });
 
-  test('handles login failure', async () => {
-    const loginData = { first_name: 'Test', last_name: 'User' };
-    const errorMessage = 'Invalid credentials';
-    
-    mockAuthService.login.mockRejectedValue(new Error(errorMessage));
-    
-    const { result } = renderHook(() => useAuth());
-    
+  test('connexion échouée : user reste null', async () => {
+    mockLogin.mockResolvedValue({ success: false, error: 'Invalid credentials' });
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    let returned;
     await act(async () => {
-      await expect(result.current.login(loginData)).rejects.toThrow(errorMessage);
+      returned = await result.current.login('bad@example.com', 'wrong');
     });
-    
+
     expect(result.current.user).toBeNull();
+    expect(returned).toEqual({ success: false, error: 'Invalid credentials' });
   });
 
-  test('handles register successfully', async () => {
-    const mockUser = { id: 'test-user', first_name: 'Test', last_name: 'User' };
-    const mockToken = 'test-token';
-    const registerData = { first_name: 'Test', last_name: 'User' };
-    
-    mockAuthService.register.mockResolvedValue({
-      access_token: mockToken,
-      user: mockUser
-    });
-    
-    const { result } = renderHook(() => useAuth());
-    
+  test('inscription réussie : met à jour user', async () => {
+    const mockUser = { id: 'new-user', email: 'new@example.com' };
+    mockRegister.mockResolvedValue({ success: true, user: mockUser });
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
     await act(async () => {
-      await result.current.register(registerData);
+      await result.current.register('new@example.com', 'pwd123');
     });
-    
-    expect(mockAuthService.register).toHaveBeenCalledWith(registerData);
+
+    expect(mockRegister).toHaveBeenCalledWith('new@example.com', 'pwd123');
     expect(result.current.user).toEqual(mockUser);
-    expect(localStorage.setItem).toHaveBeenCalledWith('token', mockToken);
   });
 
-  test('handles logout', async () => {
-    const mockUser = { id: 'test-user', first_name: 'Test', last_name: 'User' };
-    localStorage.setItem('token', 'test-token');
-    
-    const { result } = renderHook(() => useAuth());
-    
-    // Set initial user
+  test('déconnexion : réinitialise user et appelle le service', async () => {
+    const mockUser = { id: 'test-user', email: 'test@example.com' };
+    mockGetCurrentUser.mockReturnValue(mockUser);
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    expect(result.current.user).toEqual(mockUser);
+
     act(() => {
-      result.current.setUser(mockUser);
+      result.current.logout();
     });
-    
-    await act(async () => {
-      await result.current.logout();
-    });
-    
-    expect(mockAuthService.logout).toHaveBeenCalled();
-    expect(result.current.user).toBeNull();
-    expect(localStorage.removeItem).toHaveBeenCalledWith('token');
-  });
 
-  test('handles authentication check', () => {
-    mockAuthService.isAuthenticated.mockReturnValue(true);
-    localStorage.setItem('token', 'test-token');
-    
-    const { result } = renderHook(() => useAuth());
-    
-    expect(result.current.isAuthenticated()).toBe(true);
-  });
-
-  test('handles token expiration', async () => {
-    const expiredError = {
-      response: { status: 401, data: { detail: 'Token expired' } }
-    };
-    mockAuthService.getCurrentUser.mockRejectedValue(expiredError);
-    
-    const { result, waitForNextUpdate } = renderHook(() => useAuth());
-    
-    await waitForNextUpdate();
-    
+    expect(mockLogout).toHaveBeenCalled();
     expect(result.current.user).toBeNull();
-    expect(result.current.loading).toBe(false);
   });
 });

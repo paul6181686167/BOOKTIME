@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
 import { API_BASE_URL } from '../../config/environment';
+import { wakeBackend, isBackendRemote } from '../../utils/backendWake';
 
 // Login Page Component
 function LoginPage() {
@@ -15,22 +16,34 @@ function LoginPage() {
   const [forgotSent, setForgotSent] = useState(false);
   const loadingStartRef = useRef(null);
 
-  // Réveil automatique du backend Render (free tier s'endort après 15 min)
+  const [backendReady, setBackendReady] = useState(!isBackendRemote());
+
+  // Réveil Render (plan gratuit) ou vérif backend local
   useEffect(() => {
-    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
-    fetch(`${backendUrl}/health`, { method: 'GET', signal: AbortSignal.timeout(30000) })
-      .then(r => r.json())
-      .then(d => {
-        if (d.database !== 'connected') {
-          toast('Connexion en cours…', { icon: '⏳', duration: 4000 });
-        }
-      })
-      .catch(() => {
-        // Render en cours de réveil — on réessaie silencieusement dans 10s
-        setTimeout(() => {
-          fetch(`${backendUrl}/health`, { method: 'GET', signal: AbortSignal.timeout(30000) }).catch(() => {});
-        }, 10000);
-      });
+    let cancelled = false;
+    const toastId = isBackendRemote() ? 'backend-wake' : null;
+    if (toastId) {
+      toast.loading('Réveil du serveur (30–60 s la 1ère fois)…', { id: toastId });
+    }
+    wakeBackend({
+      onProgress: (msg) => {
+        if (toastId) toast.loading(msg, { id: toastId });
+      },
+    }).then((result) => {
+      if (cancelled) return;
+      if (result.ok) {
+        setBackendReady(true);
+        if (toastId) toast.success('Serveur prêt', { id: toastId, duration: 2500 });
+      } else if (toastId) {
+        toast.error(
+          'Serveur distant lent ou indisponible. Lance le backend en local (voir TESTER_LOCAL.md).',
+          { id: toastId, duration: 8000 }
+        );
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -121,6 +134,10 @@ function LoginPage() {
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
             Votre bibliothèque personnelle
+          </p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 font-mono">
+            API : {API_BASE_URL}
+            {!backendReady && isBackendRemote() ? ' · réveil…' : ''}
           </p>
         </div>
 

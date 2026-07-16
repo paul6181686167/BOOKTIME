@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../config/environment';
+import { mapMergedVolumeRowsToLibraryVolumes } from '../utils/sourceMerge';
 // Service pour gérer les séries en bibliothèque
 
 const API_BASE = API_BASE_URL
@@ -98,6 +99,44 @@ export const deleteSeriesFromLibrary = async (seriesId, token) => {
 
 // Générer la liste des tomes avec titres depuis le référentiel
 export const generateVolumesList = (seriesData, extendedSeriesDatabase) => {
+  const parseVol = (vol, fallbackIndex) => {
+    if (vol == null || vol === '') return fallbackIndex;
+    const m = String(vol).match(/\d+/);
+    if (!m) return fallbackIndex;
+    const n = parseInt(m[0], 10);
+    return Number.isNaN(n) ? fallbackIndex : n;
+  };
+
+  if (
+    Array.isArray(seriesData.mergedLibraryVolumes) &&
+    seriesData.mergedLibraryVolumes.length > 0
+  ) {
+    return mapMergedVolumeRowsToLibraryVolumes(seriesData.name || '', seriesData.mergedLibraryVolumes);
+  }
+
+  if (
+    seriesData.fromStaticWikidata &&
+    Array.isArray(seriesData.staticWikidataDetail?.works) &&
+    seriesData.staticWikidataDetail.works.length > 0
+  ) {
+    const sorted = [...seriesData.staticWikidataDetail.works].sort((a, b) => {
+      const na = parseVol(a.volume, 9999);
+      const nb = parseVol(b.volume, 9999);
+      return na - nb;
+    });
+    return sorted.map((w, i) => {
+      const title = w.title_fr || w.title_en || `${seriesData.name} - Tome ${i + 1}`;
+      const volume_number = parseVol(w.volume, i + 1);
+      return {
+        volume_number,
+        volume_title: title,
+        is_read: false,
+        date_read: null,
+        wikidata_work_qid: w.work_qid || null,
+      };
+    });
+  }
+
   try {
     const seriesKey = normalizeString(seriesData.name);
     

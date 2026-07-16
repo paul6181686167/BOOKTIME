@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { MagnifyingGlassIcon, BookOpenIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import { bookService } from '../services/bookService';
 import toast from 'react-hot-toast';
+import { displayBookTitleFrFirst } from '../utils/openLibraryBookDisplay';
 
 const OpenLibrarySearch = ({ onImport, onClose, defaultCategory = 'roman' }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -18,12 +19,13 @@ const OpenLibrarySearch = ({ onImport, onClose, defaultCategory = 'roman' }) => 
     setSearching(true);
     try {
       const data = await bookService.searchOpenLibrary(searchQuery, 15);
-      setResults(data.books || []);
+      const raw = data.books || [];
+      setResults(raw.map((b) => ({ ...b, display_title: displayBookTitleFrFirst(b) })));
       
-      if (!data.books || data.books.length === 0) {
+      if (!raw.length) {
         toast.error('Aucun livre trouvé pour cette recherche');
       } else {
-        toast.success(`${data.books.length} livre${data.books.length > 1 ? 's' : ''} trouvé${data.books.length > 1 ? 's' : ''}`);
+        toast.success(`${raw.length} livre${raw.length > 1 ? 's' : ''} trouvé${raw.length > 1 ? 's' : ''}`);
       }
     } catch (error) {
       console.error('Erreur de recherche:', error);
@@ -37,7 +39,7 @@ const OpenLibrarySearch = ({ onImport, onClose, defaultCategory = 'roman' }) => 
     setImporting(prev => ({ ...prev, [book.ol_key]: true }));
     try {
       const importedBook = await bookService.importFromOpenLibrary(book.ol_key, category);
-      toast.success(`"${book.title}" importé avec succès !`);
+      toast.success(`"${displayBookTitleFrFirst(book)}" importé avec succès !`);
       onImport(importedBook);
     } catch (error) {
       console.error('Erreur d\'import:', error);
@@ -147,7 +149,7 @@ const OpenLibrarySearch = ({ onImport, onClose, defaultCategory = 'roman' }) => 
                     {book.cover_url ? (
                       <img
                         src={book.cover_url}
-                        alt={book.title}
+                        alt={book.display_title || book.title}
                         className="w-16 h-20 object-cover rounded"
                         onError={(e) => {
                           e.target.style.display = 'none';
@@ -164,8 +166,8 @@ const OpenLibrarySearch = ({ onImport, onClose, defaultCategory = 'roman' }) => 
 
                   {/* Book Info */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate" title={book.title}>
-                      {book.title}
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate" title={book.display_title || book.title}>
+                      {book.display_title || book.title}
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400 truncate" title={book.author}>
                       {book.author}

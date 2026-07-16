@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import BookActions from '../components/books/BookActions';
+import { openStaticWikidataSeriesModal } from '../utils/openStaticWikidataSeries';
 
 // Hook personnalisé pour gérer l'état des livres
 export const useBooks = () => {
@@ -28,7 +29,11 @@ export const useBooks = () => {
   };
 
   // Fonction pour gérer le clic sur un item (livre ou série)
-  const handleItemClick = (item, seriesActions) => {
+  const handleItemClick = async (item, seriesActions) => {
+    if (item.isSeriesCard && item.wikidata_qid && item.isStaticWikidataCard) {
+      await openStaticWikidataSeriesModal(item, seriesActions.setSelectedSeries, seriesActions.setShowSeriesModal);
+      return;
+    }
     if (item.isSeriesCard) {
       seriesActions.setSelectedSeries(item);
       seriesActions.setShowSeriesModal(true);

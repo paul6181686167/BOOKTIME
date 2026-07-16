@@ -71,20 +71,51 @@ export const integrationsService = {
   // === GOOGLE BOOKS INTEGRATION ===
 
   /**
-   * Recherche des livres sur Google Books
-   * @param {string} query - Terme de recherche
-   * @param {number} maxResults - Nombre maximum de résultats
-   * @returns {Promise<Object>} Résultats de recherche
+   * Recherche des livres sur Google Books (canonical : `/api/google-books/volumes`).
+   * Enveloppe au format legacy du modal Intégrations (`data.books`).
    */
   async searchGoogleBooks(query, maxResults = 20) {
     try {
-      const response = await api.get('/api/integrations/google-books/search', {
-        params: {
-          query: query,
-          max_results: maxResults
-        }
+      const response = await api.get('/api/google-books/volumes', {
+        params: { q: query, limit: maxResults },
       });
-      return response.data;
+      const body = response.data;
+      const books = (body.items || []).map((it) => ({
+        title: it.title || '',
+        author: (it.authors || []).join(', '),
+        category: 'roman',
+        description: (it.description || '').slice(0, 1000),
+        cover_url: (it.thumbnail || '').replace(/^http:\/\//, 'https://'),
+        isbn: it.isbn_10 || '',
+        isbn13: it.isbn_13 || '',
+        publication_year:
+          it.published_date && /^\d{4}/.test(it.published_date)
+            ? parseInt(it.published_date.slice(0, 4), 10)
+            : 0,
+        publisher: it.publisher || '',
+        total_pages: it.page_count || 0,
+        language: it.language || 'fr',
+        source: 'google_books',
+        google_books_id: it.google_books_id,
+        metadata: {
+          google_books_id: it.google_books_id,
+          published_date: it.published_date,
+          subtitle: it.subtitle,
+          preview_link: it.preview_link,
+          info_link: it.info_link,
+        },
+      }));
+      return {
+        success: true,
+        message: `Recherche Google Books terminée: ${books.length} livres trouvés`,
+        data: {
+          books,
+          query: body.query,
+          results_count: books.length,
+          source: 'google_books',
+        },
+        searched_at: new Date().toISOString(),
+      };
     } catch (error) {
       console.error('Erreur lors de la recherche Google Books:', error);
       throw new Error('Erreur lors de la recherche Google Books');
@@ -92,14 +123,45 @@ export const integrationsService = {
   },
 
   /**
-   * Récupère les détails d'un livre Google Books
-   * @param {string} volumeId - ID du volume Google Books
-   * @returns {Promise<Object>} Détails du livre
+   * Détail d'un volume Google Books (canonical : `/api/google-books/volume/{id}`).
    */
   async getGoogleBookDetails(volumeId) {
     try {
-      const response = await api.get(`/api/integrations/google-books/details/${volumeId}`);
-      return response.data;
+      const response = await api.get(
+        `/api/google-books/volume/${encodeURIComponent(volumeId)}`
+      );
+      const it = response.data;
+      const book = {
+        title: it.title || '',
+        author: (it.authors || []).join(', '),
+        category: 'roman',
+        description: (it.description || '').slice(0, 1000),
+        cover_url: (it.thumbnail || '').replace(/^http:\/\//, 'https://'),
+        isbn: it.isbn_10 || '',
+        isbn13: it.isbn_13 || '',
+        publication_year:
+          it.published_date && /^\d{4}/.test(it.published_date)
+            ? parseInt(it.published_date.slice(0, 4), 10)
+            : 0,
+        publisher: it.publisher || '',
+        total_pages: it.page_count || 0,
+        language: it.language || 'fr',
+        source: 'google_books',
+        google_books_id: it.google_books_id,
+        metadata: {
+          google_books_id: it.google_books_id,
+          published_date: it.published_date,
+          subtitle: it.subtitle,
+          preview_link: it.preview_link,
+          info_link: it.info_link,
+        },
+      };
+      return {
+        success: true,
+        message: 'Détails du livre Google Books récupérés',
+        data: { book, source: 'google_books' },
+        retrieved_at: new Date().toISOString(),
+      };
     } catch (error) {
       console.error('Erreur lors de la récupération des détails Google Books:', error);
       throw new Error('Erreur lors de la récupération des détails Google Books');

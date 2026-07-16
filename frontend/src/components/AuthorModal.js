@@ -3,6 +3,7 @@ import { XMarkIcon, UserIcon, BookOpenIcon, CalendarIcon, QueueListIcon, Chevron
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { API_BASE_URL } from '../config/environment';
 import { EXTENDED_SERIES_DATABASE } from '../utils/seriesDatabaseExtended';
+import { buildMergedLibraryVolumeRowsFromOlBooks } from '../utils/openLibraryBookDisplay';
 
 // Cherche une série dans la base statique par nom (insensible à la casse)
 const findSeriesInDB = (name) => {
@@ -616,7 +617,20 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
                                 )}
                                 {onAddSeries && (
                                   <button
-                                    onClick={() => onAddSeries({ name: series.name, author, books: series.books || [] })}
+                                    onClick={() => {
+                                      const books = series.books || [];
+                                      const mergedLibraryVolumes = buildMergedLibraryVolumeRowsFromOlBooks(books);
+                                      onAddSeries({
+                                        name: series.name,
+                                        author,
+                                        books,
+                                        category: series.category || 'roman',
+                                        total_volumes: series.volumes ?? books.length,
+                                        ...(mergedLibraryVolumes
+                                          ? { mergedLibraryVolumes }
+                                          : {}),
+                                      });
+                                    }}
                                     className="text-xs px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
                                   >
                                     + Ajouter

@@ -23,6 +23,7 @@
     "start": "react-scripts start",
     "build": "CI=false react-scripts build",
     "test": "react-scripts test",
+    "test:pipelines": "react-scripts test \"--testPathPattern=(sourceMerge|seriesLibraryService|openLibraryBookDisplay|searchSourcePipeline)\" --watchAll=false",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

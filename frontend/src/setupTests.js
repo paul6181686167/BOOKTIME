@@ -3,7 +3,7 @@
 // expect(element).toHaveTextContent(/react/i)
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
-import { API_BASE_URL } from '../config/environment';
+import { API_BASE_URL } from './config/environment';
 
 // Configuration globale pour les tests
 global.ResizeObserver = class ResizeObserver {

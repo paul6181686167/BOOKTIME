@@ -106,19 +106,39 @@ export const handleAddSeriesToLibrary = async (seriesData, {
     
     // Générer les volumes avec titres depuis le référentiel
     const volumes = seriesLibraryService.generateVolumesList(seriesData, EXTENDED_SERIES_DATABASE);
-    
-    const enrichedMetadata = await enrichSeriesMetadata(seriesData);
-    
+
+    let authors = seriesData.authors || (seriesData.author ? [seriesData.author] : []);
+    if (
+      (!authors || authors.length === 0) &&
+      seriesData.staticWikidataDetail?.works?.length
+    ) {
+      const set = new Set();
+      seriesData.staticWikidataDetail.works.forEach((w) => {
+        (w.authors_en || []).forEach((a) => {
+          if (a) set.add(a);
+        });
+      });
+      authors = [...set];
+    }
+
+    const enrichedMetadata = await enrichSeriesMetadata({ ...seriesData, authors });
+
+    let coverFromMerge = '';
+    if (Array.isArray(seriesData.mergedLibraryVolumes)) {
+      const hit = seriesData.mergedLibraryVolumes.find((r) => r.cover_url);
+      if (hit?.cover_url) coverFromMerge = hit.cover_url;
+    }
+
     // Préparer les données de la série avec toutes les métadonnées
     const seriesPayload = {
       series_name: seriesData.name,
-      author: seriesData.author || (seriesData.authors && seriesData.authors[0]) || '',
-      authors: seriesData.authors || (seriesData.author ? [seriesData.author] : []),
+      author: seriesData.author || authors[0] || '',
+      authors,
       category: seriesData.category || 'roman',
       total_volumes: volumes.length,
       volumes: volumes,
       description_fr: enrichedMetadata.description_fr,
-      cover_image_url: enrichedMetadata.cover_image_url,
+      cover_image_url: coverFromMerge || enrichedMetadata.cover_image_url,
       first_published: enrichedMetadata.first_published || seriesData.first_published || '',
       last_published: enrichedMetadata.last_published || '',
       publisher: enrichedMetadata.publisher || '',

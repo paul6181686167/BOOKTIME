@@ -1,5 +1,7 @@
 import { bookService } from '../../services/bookService';
 import { toast } from 'react-hot-toast';
+import { openStaticWikidataSeriesModal } from '../../utils/openStaticWikidataSeries';
+import { attributeBookToSeries } from '../../utils/seriesAttribution';
 
 // Composant BookActions pour gérer toutes les actions liées aux livres
 const BookActions = {
@@ -98,47 +100,25 @@ const BookActions = {
     }));
 
 
-    // 🔍 SESSION 82.2 - CORRECTION RCA : Utiliser SeriesDetector pour détection complète
-    // Import dynamique du SeriesDetector
-    let SeriesDetector;
-    try {
-      SeriesDetector = require('../../utils/seriesDetector').SeriesDetector;
-    } catch (e) {
-      console.warn('SeriesDetector non disponible, fallback vers détection saga uniquement');
-      SeriesDetector = null;
-    }
-    
+    // 🔍 Attribution unifiée recherche + bibliothèque : ordre curé → saga.
+    // (Wikidata réservé à la recherche : pas d'appel réseau par livre côté bibliothèque.)
     const booksWithSeriesMarked = booksList.map(book => {
-      // Méthode 1 : Champ saga existant (priorité haute)
-      if (book.saga && book.saga.trim()) {
+      const attr = attributeBookToSeries(book);
+      if (attr) {
         return {
           ...book,
           belongsToSeries: true,
-          detectedSeriesName: book.saga.trim(),
-          detectionMethod: 'existing_saga_field',
-          confidence: 100
+          detectedSeriesKey: attr.seriesKey,
+          detectedSeriesName: attr.seriesName,
+          detectionMethod: attr.method || attr.source,
+          confidence: attr.confidence != null ? attr.confidence : (attr.source === 'saga' ? 100 : 90)
         };
       }
-      
-      // Méthode 2 : Détection intelligente (seuil plus strict si pas de saga = éviter faux positifs)
-      if (SeriesDetector) {
-        const detection = SeriesDetector.detectBookSeries(book);
-        const minConfidence = 90; // Livre sans saga : seuil élevé pour éviter de masquer des standalone
-        if (detection.belongsToSeries && detection.confidence >= minConfidence) {
-          return {
-            ...book,
-            belongsToSeries: true,
-            detectedSeriesName: detection.seriesName,
-            detectionMethod: detection.method,
-            confidence: detection.confidence
-          };
-        }
-      }
-      
-      // Méthode 3 : Livre standalone
+      // Livre standalone
       return {
         ...book,
         belongsToSeries: false,
+        detectedSeriesKey: null,
         detectedSeriesName: null,
         detectionMethod: 'standalone',
         confidence: 0
@@ -149,7 +129,7 @@ const BookActions = {
     booksWithSeriesMarked.forEach(book => {
       if (book.belongsToSeries) {
         // 📚 LIVRE APPARTENANT À UNE SÉRIE - REGROUPEMENT DANS VIGNETTE SÉRIE
-        const seriesKey = book.detectedSeriesName.toLowerCase().trim();
+        const seriesKey = book.detectedSeriesKey || book.detectedSeriesName.toLowerCase().trim();
         if (!seriesGroups[seriesKey]) {
           seriesGroups[seriesKey] = {
             id: `library-series-${seriesKey}`,
@@ -315,9 +295,14 @@ const BookActions = {
   },
 
   // Fonction pour gérer le clic sur un item (livre ou série)
-  handleItemClick(item, actions) {
+  async handleItemClick(item, actions) {
     const { setSelectedSeries, setShowSeriesModal, setSelectedBook, setShowBookModal } = actions;
-    
+
+    if (item.isSeriesCard && item.wikidata_qid && item.isStaticWikidataCard) {
+      await openStaticWikidataSeriesModal(item, setSelectedSeries, setShowSeriesModal);
+      return;
+    }
+
     if (item.isSeriesCard) {
       setSelectedSeries(item);
       setShowSeriesModal(true);

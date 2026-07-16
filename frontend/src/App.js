@@ -483,12 +483,12 @@ function MainApp() {
   };
 
   // Gestionnaires de clic
-  const handleSeriesClick = (series) => {
+  const handleSeriesClick = async (series) => {
     // PHASE 2.4 - Analytics séries
     userAnalytics.trackSeriesInteraction('view', series);
     userAnalytics.trackInteraction('series_click', 'series_card', { seriesName: series.name });
     
-    searchHook.handleSeriesClick(series, seriesHook);
+    await searchHook.handleSeriesClick(series, seriesHook);
   };
 
   const handleItemClick = (item) => {
@@ -623,9 +623,34 @@ function MainApp() {
   const displayedBooks = useMemo(() => {
     if (searchHook.isSearchMode) {
       // Recalcule isOwned à chaque fois que la bibliothèque change (ex. après suppression)
-      const refreshed = recomputeOwnership(searchHook.openLibraryResults, unifiedContent.books);
-      const rawBooks = (refreshed || []).filter(item => !item.isSeriesCard);
-      return BookActions.createUnifiedDisplay(rawBooks, getCategoryBadgeFromBook, [], {});
+      const refreshed = recomputeOwnership(searchHook.openLibraryResults, unifiedContent.books) || [];
+      // Les cartes série sont déjà construites/dédupliquées par SearchLogic (source unique
+      // de vérité du regroupement recherche) : on les CONSERVE telles quelles.
+      const searchSeriesCards = refreshed
+        .filter(item => item.isSeriesCard)
+        .sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
+      // Les livres restants (réellement standalone) passent dans le regroupement unifié
+      // pour capter d'éventuelles séries résiduelles, sans dupliquer une carte existante.
+      const rawBooks = refreshed.filter(item => !item.isSeriesCard);
+      const unified = BookActions.createUnifiedDisplay(rawBooks, getCategoryBadgeFromBook, [], {});
+
+      const seenSeriesNames = new Set(
+        searchSeriesCards.map(c => (c.name || c.title || '').toLowerCase().trim()).filter(Boolean)
+      );
+      const extraSeriesCards = [];
+      const standaloneBooks = [];
+      unified.forEach(item => {
+        if (item.isSeriesCard) {
+          const key = (item.name || item.title || '').toLowerCase().trim();
+          if (!key || seenSeriesNames.has(key)) return;
+          seenSeriesNames.add(key);
+          extraSeriesCards.push(item);
+        } else {
+          standaloneBooks.push(item);
+        }
+      });
+
+      return [...searchSeriesCards, ...extraSeriesCards, ...standaloneBooks];
     }
     return createUnifiedDisplay(filteredBooks || []);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1120,7 +1145,21 @@ function AppWithAuth() {
     );
   }
 
-  return user ? <AppContent /> : <LoginPage />;
+  if (user) return <AppContent />;
+  // LoginPage hors de AppContent : on monte ici un Toaster dédié, sinon les
+  // messages (erreur de connexion, etc.) ne s'afficheraient jamais.
+  return (
+    <>
+      <LoginPage />
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          style: { marginBottom: 'calc(4rem + env(safe-area-inset-bottom))' },
+        }}
+        containerStyle={{ bottom: 0 }}
+      />
+    </>
+  );
 }
 
 export default App;

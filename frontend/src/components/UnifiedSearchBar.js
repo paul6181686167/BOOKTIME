@@ -10,6 +10,7 @@ import {
   ClockIcon,
   BookmarkIcon
 } from '@heroicons/react/24/outline';
+import { displayBookTitleFrFirst } from '../utils/openLibraryBookDisplay';
 
 const UnifiedSearchBar = React.memo(({ 
   searchTerm, 
@@ -136,13 +137,14 @@ const UnifiedSearchBar = React.memo(({
     const sagaMap = new Map();   // clé = nom saga
 
     books.forEach(book => {
-      const titleMatch = book.title && book.title.toLowerCase().includes(term);
+      const disp = displayBookTitleFrFirst(book);
+      const titleMatch = disp && disp.toLowerCase().includes(term);
       const originalMatch = book.original_title && book.original_title.toLowerCase().includes(term);
       if (titleMatch || originalMatch) {
         bookSuggestions.push({
           type: 'book',
-          text: book.title,
-          subtitle: book.original_title && book.original_title !== book.title
+          text: disp,
+          subtitle: book.original_title && book.original_title !== disp
             ? `${book.original_title} · par ${book.author}`
             : `par ${book.author}`,
           icon: BookOpenIcon,

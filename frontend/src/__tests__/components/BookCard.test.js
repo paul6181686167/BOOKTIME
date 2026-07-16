@@ -3,6 +3,10 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import BookCard from '../../components/BookCard';
 
+// LanguageIndicator dépend d'un contexte de langue ; on l'isole pour tester
+// uniquement le rendu propre de BookCard.
+jest.mock('../../components/LanguageIndicator', () => () => null);
+
 const mockBook = {
   id: 'test-book-1',
   title: 'Test Book',
@@ -14,130 +18,76 @@ const mockBook = {
   rating: 4,
   cover_url: 'https://example.com/cover.jpg',
   saga: 'Test Saga',
-  volume_number: 1
+  volume_number: 1,
 };
 
 describe('BookCard Component', () => {
-  const mockOnClick = jest.fn();
+  const mockOnBookClick = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  test('renders book information correctly', () => {
-    render(<BookCard book={mockBook} onClick={mockOnClick} />);
-    
+  test('affiche titre et auteur', () => {
+    render(<BookCard book={mockBook} onBookClick={mockOnBookClick} />);
     expect(screen.getByText('Test Book')).toBeInTheDocument();
     expect(screen.getByText('Test Author')).toBeInTheDocument();
-    expect(screen.getByText('Test Saga - Tome 1')).toBeInTheDocument();
   });
 
-  test('renders book cover image', () => {
-    render(<BookCard book={mockBook} onClick={mockOnClick} />);
-    
-    const coverImage = screen.getByAltText('Test Book cover');
-    expect(coverImage).toBeInTheDocument();
-    expect(coverImage).toHaveAttribute('src', mockBook.cover_url);
+  test('affiche la couverture avec le titre en alt', () => {
+    render(<BookCard book={mockBook} onBookClick={mockOnBookClick} />);
+    const cover = screen.getByAltText('Test Book');
+    expect(cover).toBeInTheDocument();
+    expect(cover).toHaveAttribute('src', mockBook.cover_url);
   });
 
-  test('renders progress bar for reading books', () => {
-    render(<BookCard book={mockBook} onClick={mockOnClick} />);
-    
-    // Should show progress (150/300 = 50%)
-    expect(screen.getByText('150 / 300 pages')).toBeInTheDocument();
-  });
-
-  test('renders status badge', () => {
-    render(<BookCard book={mockBook} onClick={mockOnClick} />);
-    
-    // Should show "En cours" status
+  test('affiche le statut "En cours" pour un livre en lecture', () => {
+    render(<BookCard book={mockBook} onBookClick={mockOnBookClick} />);
     expect(screen.getByText('En cours')).toBeInTheDocument();
   });
 
-  test('renders category badge', () => {
-    render(<BookCard book={mockBook} onClick={mockOnClick} />);
-    
-    // Should show category badge
-    expect(screen.getByText('Roman')).toBeInTheDocument();
+  test('affiche la progression pages pour un livre en cours', () => {
+    render(<BookCard book={mockBook} onBookClick={mockOnBookClick} />);
+    expect(screen.getByText('150 / 300')).toBeInTheDocument();
+    expect(screen.getByText('300 pages')).toBeInTheDocument();
   });
 
-  test('renders rating stars', () => {
-    render(<BookCard book={mockBook} onClick={mockOnClick} />);
-    
-    // Should show 4 stars
-    const stars = screen.getAllByText('★');
-    expect(stars).toHaveLength(4);
+  test('affiche la saga', () => {
+    render(<BookCard book={mockBook} onBookClick={mockOnBookClick} />);
+    expect(screen.getByText('📖 Test Saga')).toBeInTheDocument();
   });
 
-  test('handles click events', async () => {
-    render(<BookCard book={mockBook} onClick={mockOnClick} />);
-    
-    const card = screen.getByText('Test Book').closest('div');
-    await userEvent.click(card);
-    
-    expect(mockOnClick).toHaveBeenCalledWith(mockBook);
+  test('affiche les étoiles de notation (rating > 0)', () => {
+    const { container } = render(<BookCard book={mockBook} onBookClick={mockOnBookClick} />);
+    // 5 emplacements d'étoiles (remplies + vides) sont rendus quand rating > 0.
+    const starSlots = container.querySelectorAll('.w-3.h-3 svg');
+    expect(starSlots.length).toBe(5);
   });
 
-  test('renders completed book correctly', () => {
-    const completedBook = {
-      ...mockBook,
-      status: 'completed',
-      current_page: 300,
-      rating: 5
-    };
+  test('déclenche onBookClick au clic', async () => {
+    render(<BookCard book={mockBook} onBookClick={mockOnBookClick} />);
+    await userEvent.click(screen.getByText('Test Book'));
+    expect(mockOnBookClick).toHaveBeenCalledWith(mockBook);
+  });
 
-    render(<BookCard book={completedBook} onClick={mockOnClick} />);
-    
+  test('affiche un livre terminé correctement', () => {
+    const completedBook = { ...mockBook, status: 'completed', current_page: 300, rating: 5 };
+    render(<BookCard book={completedBook} onBookClick={mockOnBookClick} />);
     expect(screen.getByText('Terminé')).toBeInTheDocument();
-    expect(screen.getByText('300 / 300 pages')).toBeInTheDocument();
-    
-    // Should show 5 stars
-    const stars = screen.getAllByText('★');
-    expect(stars).toHaveLength(5);
   });
 
-  test('renders to-read book correctly', () => {
-    const toReadBook = {
-      ...mockBook,
-      status: 'to_read',
-      current_page: 0,
-      rating: 0
-    };
-
-    render(<BookCard book={toReadBook} onClick={mockOnClick} />);
-    
+  test('affiche un livre à lire correctement', () => {
+    const toReadBook = { ...mockBook, status: 'to_read', current_page: 0, rating: 0 };
+    const { container } = render(<BookCard book={toReadBook} onBookClick={mockOnBookClick} />);
     expect(screen.getByText('À lire')).toBeInTheDocument();
-    expect(screen.getByText('0 / 300 pages')).toBeInTheDocument();
-    
-    // Should show no stars
-    const stars = screen.queryAllByText('★');
-    expect(stars).toHaveLength(0);
+    // rating = 0 -> pas de bloc d'étoiles.
+    expect(container.querySelectorAll('.w-3.h-3 svg').length).toBe(0);
   });
 
-  test('renders book without saga', () => {
-    const bookWithoutSaga = {
-      ...mockBook,
-      saga: '',
-      volume_number: null
-    };
-
-    render(<BookCard book={bookWithoutSaga} onClick={mockOnClick} />);
-    
-    expect(screen.getByText('Test Book')).toBeInTheDocument();
-    expect(screen.getByText('Test Author')).toBeInTheDocument();
-    expect(screen.queryByText('Test Saga')).not.toBeInTheDocument();
-  });
-
-  test('renders placeholder when no cover image', () => {
-    const bookWithoutCover = {
-      ...mockBook,
-      cover_url: ''
-    };
-
-    render(<BookCard book={bookWithoutCover} onClick={mockOnClick} />);
-    
-    // Should show placeholder div
-    const placeholder = screen.getByText('📖');
-    expect(placeholder).toBeInTheDocument();
+  test('affiche le placeholder quand pas de couverture', () => {
+    const bookWithoutCover = { ...mockBook, cover_url: '' };
+    render(<BookCard book={bookWithoutCover} onBookClick={mockOnBookClick} />);
+    expect(screen.getByText('Pas de couverture')).toBeInTheDocument();
+    expect(screen.getByText('📚')).toBeInTheDocument();
   });
 });

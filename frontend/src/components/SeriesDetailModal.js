@@ -4,9 +4,7 @@ import {
   CheckCircleIcon,
   ClockIcon,
   PlusIcon,
-  MagnifyingGlassIcon,
   ExclamationTriangleIcon,
-  SparklesIcon,
   XMarkIcon,
   TrashIcon
 } from '@heroicons/react/24/outline';
@@ -17,6 +15,43 @@ import TomeDropdown from './TomeDropdown'; // ← AJOUT : Import du nouveau comp
 import ChapterSection from './ChapterSection'; // ← NOUVEAU : Import du composant chapitres
 import toast from 'react-hot-toast';
 import { API_BASE_URL } from '../config/environment';
+import { displayBookTitleFrFirst, mergeOpenLibraryBooksByVolume, sortOpenLibraryBooksByVolume } from '../utils/openLibraryBookDisplay';
+import {
+  mergeStaticWdWorksWithOpenLibrary,
+  enrichVolumeRowsGoogleBooksIsbnThenIntitle,
+  mapLiveWikidataVolumesToWorks,
+} from '../utils/sourceMerge';
+import { DEFAULT_SERIES_MODAL_GOOGLE_BOOKS } from '../utils/searchSourcePipeline';
+
+function parseVolumeFromWork(vol) {
+  if (vol == null || vol === '') return null;
+  const m = String(vol).match(/\d+/);
+  if (!m) return null;
+  const n = parseInt(m[0], 10);
+  return Number.isNaN(n) ? null : n;
+}
+
+function mapStaticWikidataWorksToOlBooks(works) {
+  return (works || []).map((w, i) => {
+    const titleFr = w.title_fr || '';
+    const titleEn = w.title_en || '';
+    const primary = titleFr || titleEn || 'Œuvre';
+    const vn = parseVolumeFromWork(w.volume);
+    return {
+      title: primary,
+      display_title: displayBookTitleFrFirst({
+        title: primary,
+        original_title: titleFr && titleEn && titleFr !== titleEn ? titleEn : undefined,
+      }),
+      volume_number: vn != null ? vn : i + 1,
+      first_publish_year: w.publication_date ? parseInt(String(w.publication_date).slice(0, 4), 10) : null,
+      cover_url: null,
+      ol_key: null,
+      work_qid: w.work_qid,
+      isFromStaticWikidata: true,
+    };
+  });
+}
 
 const SeriesDetailModal = ({ 
   series, 
@@ -31,9 +66,6 @@ const SeriesDetailModal = ({
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedTomes, setSelectedTomes] = useState(new Set());
-  const [autoCompleting, setAutoCompleting] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [missingAnalysis, setMissingAnalysis] = useState(null);
   const [isSeriesOwned, setIsSeriesOwned] = useState(false);
   const [seriesStatus, setSeriesStatus] = useState('to_read');
   // tomeStatuses : { "1": { status: "non_lu"|"en_cours"|"lu", currentPage: null|number }, ... }
@@ -45,8 +77,15 @@ const SeriesDetailModal = ({
       .map(([k]) => Number(k))
   );
   const [missingPreviousWarning, setMissingPreviousWarning] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showWdRaw, setShowWdRaw] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  // États du bouton "Ajouter à ma bibliothèque" (alignés sur ceux des livres individuels)
+  const [isAdding, setIsAdding] = useState(false);
+  const [addDone, setAddDone] = useState(false);
+  // Vérification croisée multi-sources (Référence + Wikidata + Open Library + Google Books).
+  const [verification, setVerification] = useState(null);
+  const [verifying, setVerifying] = useState(false);
   const onUpdateDebounceRef = useRef(null);
 
   const handleDeleteSeries = async () => {
@@ -212,6 +251,20 @@ const SeriesDetailModal = ({
 
   // Fonction pour enrichir les données de série avec les métadonnées de référence
   const enrichSeriesData = (series) => {
+    if (!series?.name && !series?.fromStaticWikidata) return series;
+
+    if (series.fromStaticWikidata && series.staticWikidataDetail) {
+      const works = series.staticWikidataDetail.works || [];
+      const nVol = works.length || series.staticWikidataDetail.work_count || 0;
+      return {
+        ...series,
+        volumes: nVol,
+        volume_titles: {},
+        referenceFound: false,
+        fromFallbackBooks: true,
+      };
+    }
+
     if (!series?.name) return series;
     
     // Rechercher dans la base de données de référence
@@ -593,15 +646,22 @@ const SeriesDetailModal = ({
     setTomeStatuses({});
     setOlBooks([]);
     setMissingPreviousWarning(null);
+    setShowWdRaw(false);
+    setVerification(null);
+    // Réinitialiser : on ne considère une série comme possédée qu'après vérification réelle.
+    setIsSeriesOwned(false);
 
     if (series.isOwnedSeries || series.isLibrarySeries) {
       setIsSeriesOwned(true);
     } else {
+      // NB : on ne se fie PAS à series.books — pour une carte issue de la recherche,
+      // ce champ contient les tomes du CATALOGUE (Wikidata/OpenLibrary), pas les livres
+      // que l'utilisateur possède. La possession se vérifie via la bibliothèque de séries
+      // puis, à défaut, via l'API (livres de l'utilisateur filtrés par saga).
       const inLibrary = (userSeriesLibrary || []).some(
         s => (s.series_name || s.name || '').toLowerCase().trim() === (series.name || '').toLowerCase().trim()
       );
-      const hasBooks = (series.books || []).length > 0;
-      if (inLibrary || hasBooks) {
+      if (inLibrary) {
         setIsSeriesOwned(true);
       } else {
         // Passer le signal pour annuler si le modal est fermé avant la réponse
@@ -617,6 +677,9 @@ const SeriesDetailModal = ({
       if (!enrichedSeries?.referenceFound) {
         await loadOLSeriesBooks();
       }
+      if (cancelled) return;
+      // Vérification croisée en arrière-plan (n'empêche pas l'affichage du modal).
+      loadVolumeVerification(abortController.signal);
     };
     loadAll();
 
@@ -644,52 +707,148 @@ const SeriesDetailModal = ({
     }
   };
 
+  // Vérification croisée du nombre de tomes / titres sur plusieurs sources.
+  const loadVolumeVerification = async (signal) => {
+    if (!series?.name) return;
+    try {
+      setVerifying(true);
+      const token = localStorage.getItem('token');
+      const qid = series.wikidata_qid || series.staticWikidataDetail?.qid || '';
+      const params = new URLSearchParams({ name: series.name });
+      if (series.author) params.set('author', series.author);
+      if (qid) params.set('qid', qid);
+      const res = await fetch(`${API_BASE_URL}/api/series/verify-volumes?${params.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        signal,
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!signal?.aborted) setVerification(data);
+    } catch (error) {
+      if (error?.name !== 'AbortError') {
+        console.warn('Vérification des tomes indisponible:', error);
+      }
+    } finally {
+      if (!signal?.aborted) setVerifying(false);
+    }
+  };
+
   // Charger les tomes depuis Wikidata (priorité) puis OL (fallback)
   const [olBooks, setOlBooks] = useState([]);
   const loadOLSeriesBooks = async () => {
+    if (series?.fromStaticWikidata && series.staticWikidataDetail) {
+      const works = series.staticWikidataDetail.works || [];
+      const baseMapped = works.length > 0 ? mapStaticWikidataWorksToOlBooks(works) : [];
+      if (!series?.name) {
+        setOlBooks(baseMapped);
+        return;
+      }
+      try {
+        const token = localStorage.getItem('token');
+        const olParams = new URLSearchParams({ name: series.name, limit: '30' });
+        if (series.author) olParams.append('author', series.author);
+        const olRes = await fetch(`${API_BASE_URL}/api/openlibrary/series-books?${olParams}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        let olClean = [];
+        if (olRes.ok) {
+          const olData = await olRes.json();
+          olClean = (olData.books || []).filter((b) => {
+            const t = (b.title || '').toLowerCase();
+            return (
+              !t.includes('box set') &&
+              !t.includes('collection') &&
+              !t.includes('omnibus') &&
+              !t.includes('vol. 1-') &&
+              t.length < 80
+            );
+          });
+        }
+        const merged = mergeStaticWdWorksWithOpenLibrary(works, mergeOpenLibraryBooksByVolume(olClean));
+        const gbAuthor =
+          series.author || (works[0] && (works[0].authors_en || [])[0]) || '';
+        const withGb = await enrichVolumeRowsGoogleBooksIsbnThenIntitle(merged, {
+          maxIsbn: DEFAULT_SERIES_MODAL_GOOGLE_BOOKS.maxIsbn,
+          maxIntitle: DEFAULT_SERIES_MODAL_GOOGLE_BOOKS.maxIntitle,
+          authorName: gbAuthor,
+          fetchBook: (path) =>
+            fetch(`${API_BASE_URL}${path}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+        });
+        setOlBooks(
+          withGb.map((b) => ({
+            ...b,
+            display_title: displayBookTitleFrFirst(b),
+          }))
+        );
+      } catch (e) {
+        console.warn('Series OL merge (static WD) failed:', e);
+        setOlBooks(baseMapped);
+      }
+      return;
+    }
     if (!series?.name) return;
     try {
       const token = localStorage.getItem('token');
 
-      // ── Priorité 1 : Wikidata (données structurées, ordre garanti) ──
-      const wdParams = new URLSearchParams({ name: series.name });
-      if (series.author) wdParams.append('author', series.author);
-      const wdRes = await fetch(`${API_BASE_URL}/api/wikidata/series/by-name/volumes?${wdParams}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (wdRes.ok) {
-        const wdData = await wdRes.json();
-        if (wdData.found && wdData.volumes?.length > 0) {
-          // Convertir au format interne { title, volume_number, first_publish_year, cover_url }
-          const vols = wdData.volumes.map((v, i) => ({
-            title: v.title,
-            volume_number: v.volume_number || (i + 1),
-            first_publish_year: v.publication_year,
-            cover_url: null,
-            ol_key: null,
-          }));
-          setOlBooks(vols);
-          return;
-        }
-      }
-
-      // ── Fallback 2 : Open Library ──
       const olParams = new URLSearchParams({ name: series.name, limit: '20' });
       if (series.author) olParams.append('author', series.author);
       const olRes = await fetch(`${API_BASE_URL}/api/openlibrary/series-books?${olParams}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
+      let olClean = [];
       if (olRes.ok) {
         const olData = await olRes.json();
-        // Filtrer les coffrets / collections (titres trop longs ou contenant "box set", "collection", "vol. 1-")
-        const clean = (olData.books || []).filter(b => {
+        olClean = (olData.books || []).filter((b) => {
           const t = (b.title || '').toLowerCase();
-          return !t.includes('box set') && !t.includes('collection') &&
-                 !t.includes('omnibus') && !t.includes('vol. 1-') &&
-                 t.length < 80;
+          return (
+            !t.includes('box set') &&
+            !t.includes('collection') &&
+            !t.includes('omnibus') &&
+            !t.includes('vol. 1-') &&
+            t.length < 80
+          );
         });
-        setOlBooks(clean);
       }
+      const olMerged = mergeOpenLibraryBooksByVolume(olClean);
+
+      const wdParams = new URLSearchParams({ name: series.name });
+      if (series.author) wdParams.append('author', series.author);
+      const wdRes = await fetch(`${API_BASE_URL}/api/wikidata/series/by-name/volumes?${wdParams}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      let merged;
+      if (wdRes.ok) {
+        const wdData = await wdRes.json();
+        if (wdData.found && wdData.volumes?.length > 0) {
+          merged = mergeStaticWdWorksWithOpenLibrary(
+            mapLiveWikidataVolumesToWorks(wdData.volumes),
+            olMerged
+          );
+        } else {
+          merged = mergeStaticWdWorksWithOpenLibrary([], olMerged);
+        }
+      } else {
+        merged = mergeStaticWdWorksWithOpenLibrary([], olMerged);
+      }
+
+      const withGb = await enrichVolumeRowsGoogleBooksIsbnThenIntitle(merged, {
+        maxIsbn: DEFAULT_SERIES_MODAL_GOOGLE_BOOKS.maxIsbn,
+        maxIntitle: DEFAULT_SERIES_MODAL_GOOGLE_BOOKS.maxIntitle,
+        authorName: series.author || '',
+        fetchBook: (path) =>
+          fetch(`${API_BASE_URL}${path}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+      });
+      setOlBooks(
+        withGb.map((b) => ({
+          ...b,
+          display_title: displayBookTitleFrFirst(b),
+        }))
+      );
     } catch (e) {
       console.warn('Series books fetch failed:', e);
     }
@@ -704,43 +863,6 @@ const SeriesDetailModal = ({
     } catch (error) {
       console.error('Erreur lors de la mise à jour du tome:', error);
       toast.error('Erreur lors de la mise à jour');
-    }
-  };
-
-  const handleAutoComplete = async () => {
-    try {
-      setAutoCompleting(true);
-      const maxVolume = Math.max(...books.map(b => b.volume_number || 0));
-      const targetVolume = Math.max(maxVolume + 10, 20);
-
-      const result = await bookService.autoCompleteSaga(series.name, targetVolume);
-      await loadSeriesBooks();
-      if (onUpdate) onUpdate();
-      toast.success(`${result.created_books?.length || 0} nouveaux tomes ajoutés !`);
-    } catch (error) {
-      console.error('Erreur lors de l\'auto-complétion:', error);
-      toast.error('Erreur lors de l\'auto-complétion');
-    } finally {
-      setAutoCompleting(false);
-    }
-  };
-
-  const handleAnalyzeMissing = async () => {
-    try {
-      setAnalyzing(true);
-      const analysis = await bookService.analyzeMissingVolumes(series.name);
-      setMissingAnalysis(analysis);
-      
-      if (analysis.missing_volumes.length > 0) {
-        toast.success(`${analysis.missing_volumes.length} tome(s) manquant(s) détecté(s)`);
-      } else {
-        toast.success('Aucun tome manquant détecté');
-      }
-    } catch (error) {
-      console.error('Erreur lors de l\'analyse:', error);
-      toast.error('Erreur lors de l\'analyse');
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -816,17 +938,23 @@ const SeriesDetailModal = ({
                   {series?.name}
                 </h2>
                 <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-2">
-                  par{' '}
-                  <button 
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (onAuthorClick) onAuthorClick(series?.author);
-                    }}
-                    className="text-left text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors underline"
-                  >
-                    {series?.author}
-                  </button>
+                  {series?.author ? (
+                    <>
+                      par{' '}
+                      <button 
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onAuthorClick) onAuthorClick(series?.author);
+                        }}
+                        className="text-left text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors underline"
+                      >
+                        {series?.author}
+                      </button>
+                    </>
+                  ) : (
+                    <span className="text-gray-500 dark:text-gray-400">Référentiel Wikidata statique</span>
+                  )}
                 </p>
                 <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
                   <span className={`px-2 py-1 rounded-full font-medium ${getStatusBadge(seriesStatus)}`}>
@@ -835,71 +963,83 @@ const SeriesDetailModal = ({
                   <span className="text-gray-500 dark:text-gray-400 whitespace-nowrap">
                     📚 {enrichedSeries?.volumes || olBooks.length || books.length || (series?.books?.length) || 0} tome(s)
                   </span>
-                  <span className="text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                    🏆 {series?.completion_percentage || 0}%
-                  </span>
+                  {series.fromStaticWikidata && series.staticWikidataDetail && (
+                    <>
+                      <a
+                        href={`https://www.wikidata.org/wiki/${series.wikidata_qid || series.staticWikidataDetail.qid}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                      >
+                        Wikidata ↗
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => setShowWdRaw((v) => !v)}
+                        className="text-gray-600 dark:text-gray-400 hover:underline"
+                      >
+                        {showWdRaw ? 'Masquer JSON' : 'JSON brut'}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
             
             <div className="flex w-full flex-col gap-2 md:w-auto md:shrink-0 md:items-end">
-              {/* Bouton Ajouter — pleine largeur sur mobile */}
-              {onAddSeries && (
+              {/* Bouton Ajouter — identique à celui des livres individuels (pleine largeur sur mobile) */}
+              {onAddSeries && !isSeriesOwned && (
                 <button
                   type="button"
                   onClick={async () => {
-                    if (isSeriesOwned) return;
+                    if (isAdding || addDone) return;
+                    setIsAdding(true);
                     try {
-                      await onAddSeries(series);
-                      setTimeout(() => { checkIfSeriesOwned(); }, 1000);
+                      await onAddSeries({ ...series, mergedLibraryVolumes: olBooks });
+                      setAddDone(true);
+                      setTimeout(() => {
+                        checkIfSeriesOwned();
+                        setIsAdding(false);
+                        setAddDone(false);
+                      }, 1000);
                     } catch (error) {
                       console.error('Erreur lors de l\'ajout de la série:', error);
+                      toast.error(error.message || 'Erreur lors de l\'ajout de la série');
+                      setIsAdding(false);
                     }
                   }}
-                  disabled={isSeriesOwned}
-                  className={`w-full md:w-auto px-4 py-3 md:py-2 text-sm font-medium rounded-xl md:rounded-md transition-colors flex items-center justify-center gap-2 ${
-                    isSeriesOwned
-                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 cursor-default'
-                      : 'text-white bg-green-600 hover:bg-green-700 active:bg-green-800 cursor-pointer'
+                  disabled={isAdding || addDone}
+                  className={`btn-ripple w-full md:w-auto md:min-w-[180px] px-4 py-3 md:py-2 text-sm font-semibold text-white rounded-xl md:rounded-lg transition-all flex items-center justify-center gap-2 ${
+                    addDone
+                      ? 'bg-green-500 cursor-default'
+                      : isAdding
+                      ? 'bg-green-500 cursor-not-allowed opacity-80'
+                      : 'bg-green-600 hover:bg-green-700 hover:shadow-md active:bg-green-800'
                   }`}
                 >
-                  <span>{isSeriesOwned ? '✓' : '+'}</span>
-                  <span className="truncate">{isSeriesOwned ? 'Dans ma bibliothèque' : 'Ajouter à ma bibliothèque'}</span>
+                  {addDone ? (
+                    <>
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Ajouté !</span>
+                    </>
+                  ) : isAdding ? (
+                    <>
+                      <span className="btn-spinner" />
+                      <span>Ajout en cours…</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                      </svg>
+                      <span>Ajouter à ma bibliothèque</span>
+                    </>
+                  )}
                 </button>
               )}
 
-              {/* Bouton Retirer — visible si la série ou ses livres sont dans la bibliothèque */}
-              {(isSeriesOwned || series.isOwnedSeries || series.isLibrarySeries || series.isSeriesCard || (series.books && series.books.length > 0) || books.length > 0) && (
-                confirmDelete ? (
-                  <div className="flex items-center gap-1 w-full md:w-auto">
-                    <span className="text-xs text-red-600 dark:text-red-400 font-medium whitespace-nowrap">Confirmer ?</span>
-                    <button
-                      onClick={handleDeleteSeries}
-                      disabled={deleting}
-                      className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 transition-colors font-medium"
-                    >
-                      {deleting ? '…' : 'Oui'}
-                    </button>
-                    <button
-                      onClick={() => setConfirmDelete(false)}
-                      className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-300 transition-colors"
-                    >
-                      Non
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setConfirmDelete(true)}
-                    title="Retirer de ma bibliothèque"
-                    className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-3 md:py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl md:rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                    <span className="truncate">Retirer de ma bibliothèque</span>
-                  </button>
-                )
-              )}
-              
               <button
                 type="button"
                 onClick={onClose}
@@ -911,6 +1051,14 @@ const SeriesDetailModal = ({
             </div>
           </div>
         </div>
+
+        {showWdRaw && series.staticWikidataDetail && (
+          <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6">
+            <pre className="max-h-56 overflow-auto rounded bg-gray-50 p-3 text-left text-[10px] leading-snug text-gray-800 dark:bg-gray-900 dark:text-gray-200 sm:text-xs">
+              {JSON.stringify(series.staticWikidataDetail, null, 2)}
+            </pre>
+          </div>
+        )}
 
         {/* Section Résumé de la série */}
         {enrichedSeries?.description && (
@@ -963,67 +1111,19 @@ const SeriesDetailModal = ({
           )}
         </div>
 
-        {/* Actions Bar */}
-        <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6 sm:py-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center space-x-3">
-              {selectedTomes.size > 0 && (
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {selectedTomes.size} sélectionné(s)
-                  </span>
-                  <button
-                    onClick={() => setSelectedTomes(new Set())}
-                    className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-                  >
-                    Désélectionner
-                  </button>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex items-center justify-end gap-2 self-end sm:self-auto">
-              <button
-                type="button"
-                onClick={handleAnalyzeMissing}
-                disabled={analyzing}
-                className="p-2 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-full transition-colors"
-                title="Analyser les tomes manquants"
-              >
-                {analyzing ? (
-                  <div className="w-5 h-5 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <MagnifyingGlassIcon className="w-5 h-5" />
-                )}
-              </button>
-              
-              <button
-                type="button"
-                onClick={handleAutoComplete}
-                disabled={autoCompleting}
-                className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
-                title="Auto-compléter la série"
-              >
-                {autoCompleting ? (
-                  <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <SparklesIcon className="w-5 h-5" />
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Missing Volumes Analysis */}
-        {missingAnalysis && missingAnalysis.missing_volumes.length > 0 && (
-          <div className="border-b border-orange-200 bg-orange-50 px-4 py-3 dark:border-orange-800 dark:bg-orange-900/20 sm:px-6">
-            <div className="flex items-center space-x-2 text-orange-800 dark:text-orange-300">
-              <ExclamationTriangleIcon className="w-4 h-4" />
-              <span className="text-sm font-medium">
-                {missingAnalysis.missing_volumes.length} tome(s) manquant(s) : 
-                {missingAnalysis.missing_volumes.slice(0, 10).join(', ')}
-                {missingAnalysis.missing_volumes.length > 10 && '...'}
+        {/* Actions Bar — affichée uniquement lorsqu'il y a une sélection de tomes */}
+        {selectedTomes.size > 0 && (
+          <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6 sm:py-4">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {selectedTomes.size} sélectionné(s)
               </span>
+              <button
+                onClick={() => setSelectedTomes(new Set())}
+                className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+              >
+                Désélectionner
+              </button>
             </div>
           </div>
         )}
@@ -1067,11 +1167,12 @@ const SeriesDetailModal = ({
                 }
 
                 // Source : Wikidata ou OL → construire un enrichedSeries synthétique
-                const booksToShow = olBooks.length > 0 ? olBooks : (series.books || []);
+                const booksToShowRaw = olBooks.length > 0 ? olBooks : (series.books || []);
+                const booksToShow = mergeOpenLibraryBooksByVolume([...booksToShowRaw]).sort(sortOpenLibraryBooksByVolume);
                 const syntheticVolumeTitles = {};
                 booksToShow.forEach((b, i) => {
                   const num = b.volume_number || (i + 1);
-                  syntheticVolumeTitles[num] = b.title || `${series.name} - Tome ${num}`;
+                  syntheticVolumeTitles[num] = displayBookTitleFrFirst(b) || `${series.name} - Tome ${num}`;
                 });
                 const syntheticSeries = {
                   ...enrichedSeries,
@@ -1080,10 +1181,10 @@ const SeriesDetailModal = ({
                 };
                 return booksToShow.map((book, index) => {
                   const tomeNumber = book.volume_number || (index + 1);
-                  const tomeTitle = syntheticVolumeTitles[tomeNumber] || book.title;
+                  const tomeTitle = syntheticVolumeTitles[tomeNumber] || displayBookTitleFrFirst(book);
                   return (
                     <TomeDropdown
-                      key={tomeNumber}
+                      key={book.ol_key || book.id || `tome-${tomeNumber}-${index}`}
                       tomeNumber={tomeNumber}
                       tomeTitle={tomeTitle}
                       seriesData={syntheticSeries}
@@ -1154,6 +1255,42 @@ const SeriesDetailModal = ({
             seriesName={series.name} 
             onClose={() => {/* Optionnel: logique fermeture section */}} 
           />
+        )}
+
+        {/* Bouton Retirer — identique à celui du modal livre individuel, placé en bas */}
+        {(isSeriesOwned || series.isOwnedSeries || series.isLibrarySeries || series.isSeriesCard || (series.books && series.books.length > 0) || books.length > 0) && (
+          <div className="px-4 sm:px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+            {confirmDelete ? (
+              <div className="flex items-center justify-between bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3">
+                <span className="text-sm text-red-700 dark:text-red-300 font-medium">
+                  Retirer définitivement cette série ?
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    className="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={handleDeleteSeries}
+                    disabled={deleting}
+                    className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors font-medium disabled:opacity-50"
+                  >
+                    {deleting ? 'Suppression…' : 'Confirmer'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              >
+                <TrashIcon className="h-4 w-4" />
+                Retirer de ma bibliothèque
+              </button>
+            )}
+          </div>
         )}
 
       </div>

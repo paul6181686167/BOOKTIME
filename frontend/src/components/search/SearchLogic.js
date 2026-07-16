@@ -17,22 +17,21 @@ import { calculateRelevanceScore, getRelevanceLevel } from './RelevanceEngine';
 import { AutoSeriesDetector } from '../../hooks/useAutoSeriesDetection';
 import SeriesDetector from '../../utils/seriesDetector';
 import { API_BASE_URL } from '../../config/environment';
-import { EXTENDED_SERIES_DATABASE } from '../../utils/seriesDatabaseExtended';
-
-// Index plat : titre de tome (lowercase) → { seriesKey, seriesData, volumeNumber }
-const buildVolumeTitleIndex = () => {
-  const index = {};
-  for (const category of Object.values(EXTENDED_SERIES_DATABASE)) {
-    for (const [key, s] of Object.entries(category)) {
-      if (!s.volume_titles) continue;
-      for (const [num, title] of Object.entries(s.volume_titles)) {
-        index[title.toLowerCase().trim()] = { seriesKey: key, seriesData: s, volumeNumber: Number(num) };
-      }
-    }
-  }
-  return index;
-};
-const VOLUME_TITLE_INDEX = buildVolumeTitleIndex();
+import { displayBookTitleFrFirst, mergeOpenLibraryBooksByVolume } from '../../utils/openLibraryBookDisplay';
+import { openStaticWikidataSeriesModal } from '../../utils/openStaticWikidataSeries';
+import {
+  dedupeWikidataStaticSeriesOverOpenLibrary,
+  dedupeSeriesCardsByName,
+  inferCategoryFromWikidataSearchEntry,
+} from '../../utils/searchSourcePipeline';
+import {
+  attributeBookToSeries,
+  attachBookToQuerySeries,
+  buildWikidataSeriesMatcher,
+  enrichWikidataCardFromCurated,
+  findCuratedSeriesByQuery,
+  resolveSeriesTotalBooks,
+} from '../../utils/seriesAttribution';
 
 // FONCTION PRINCIPALE DE RECHERCHE OPEN LIBRARY
 export const searchOpenLibrary = async (query, {
@@ -58,6 +57,13 @@ export const searchOpenLibrary = async (query, {
     
     const token = localStorage.getItem('token');
     const backendUrl = API_BASE_URL;
+
+    const wdPromise = fetch(
+      `${backendUrl}/api/static-wikidata/series/search?q=${encodeURIComponent(query.trim())}&limit=10`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
     
     // RECHERCHE GLOBALE : pas de filtre par catégorie, 40 résultats (double-pass OL côté backend)
     const response = await fetch(`${backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}&limit=40`, {
@@ -66,6 +72,60 @@ export const searchOpenLibrary = async (query, {
         'Content-Type': 'application/json'
       }
     });
+
+    // ── Wikidata statique : cartes "spotlight" + matcher (indépendant du succès OL) ──
+    // Les cartes Wikidata/curées doivent s'afficher même si Open Library échoue ou renvoie [].
+    let wikidataSpotlight = [];
+    let wikidataMatcher = () => null;
+    try {
+      let wdData = await wdPromise;
+      let rows = wdData?.results || [];
+      let fromSearch = rows.length > 0;
+      if (!rows.length) {
+        const topR = await fetch(
+          `${backendUrl}/api/static-wikidata/series/top/by-popularity?limit=4`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (topR.ok) {
+          wdData = await topR.json();
+          rows = wdData?.results || [];
+          fromSearch = false;
+        }
+      }
+      // Le matcher ne s'appuie que sur les vraies correspondances de recherche
+      // (pas sur les tendances génériques) pour ne pas rattacher des livres au hasard.
+      wikidataMatcher = buildWikidataSeriesMatcher(fromSearch ? rows : []);
+      wikidataSpotlight = (rows || []).map((entry, i) => {
+        const name = entry.name_fr || entry.name || entry.name_en || entry.label || entry.qid;
+        // Auteur + nombre de tomes faisant autorité depuis le référentiel curé (par nom).
+        const curated = enrichWikidataCardFromCurated(name, {
+          author: entry.author_label || entry.author || '',
+          totalBooks: entry.work_count || 0,
+          category: inferCategoryFromWikidataSearchEntry(entry),
+        });
+        return {
+          isSeriesCard: true,
+          isStaticWikidataCard: true,
+          wikidata_qid: entry.qid,
+          id: `series_wd_${entry.qid}`,
+          name,
+          author: curated.author,
+          category: curated.category || inferCategoryFromWikidataSearchEntry(entry),
+          cover_url: null,
+          totalBooks: curated.totalBooks,
+          completedBooks: 0,
+          progressPercent: 0,
+          books: [],
+          description: fromSearch
+            ? `Wikidata · ${entry.work_count ?? 0} œuvre(s) · pop. ${entry.popularity ?? '—'}/100`
+            : `Wikidata · tendances · pop. ${entry.popularity ?? '—'}/100`,
+          relevanceScore: fromSearch ? 45000 - i * 100 : 40000,
+          fromOpenLibrary: false,
+        };
+      });
+    } catch (_) {
+      /* optionnel */
+    }
 
     if (response.ok) {
       const data = await response.json();
@@ -81,55 +141,79 @@ export const searchOpenLibrary = async (query, {
       // ── 2. Enrichir chaque livre (ownership + badge) ─────────────────────
       const enriched = uniqueBooks.map(book => {
         const categoryBadge = getCategoryBadgeFromBook(book);
+        const display_title = displayBookTitleFrFirst(book);
+        const withDisplay = { ...book, display_title };
         return {
-          ...book,
+          ...withDisplay,
           isFromOpenLibrary: true,
-          isOwned: detectBookOwnership(book, books),
+          isOwned: detectBookOwnership(withDisplay, books),
           id: `ol_${book.ol_key}`,
           categoryBadge,
           category: book.category || categoryBadge.key || 'roman',
         };
       });
 
-      // ── 3. Détection de séries depuis les résultats OL ───────────────────
-      // Stratégie 1 (priorité) : champ `saga` renvoyé par Open Library
-      // Stratégie 2 (fallback) : plusieurs livres du même auteur avec mots du query
+      // ── 3. ATTRIBUTION UNIQUE : chaque livre → une série (curé → Wikidata → saga) ──
+      // Tout livre attribué est exclu des standalone (corrige LOTR : carte WD + tomes).
+      const wdSpotlightByQid = new Map(
+        wikidataSpotlight.filter(c => c.wikidata_qid).map(c => [c.wikidata_qid, c])
+      );
+      const seriesGroups = new Map(); // seriesKey → { attr, books: [] }
+      const attributedIds = new Set();
 
-      const olSeriesCards = [];
-      const olSeriesBookIds = new Set();
+      // Série curée correspondant à la requête (rattachement inter-langues par auteur).
+      const querySeries = findCuratedSeriesByQuery(query);
 
-      // -- Stratégie 1 : grouper par champ saga (source OL fiable) --
-      const sagaGroups = {};
       enriched.forEach(book => {
-        if (!book.saga) return;
-        // Normaliser le nom de saga pour regrouper "Red Rising #1" et "Red Rising #2"
-        const key = book.saga.toLowerCase().trim();
-        if (!sagaGroups[key]) sagaGroups[key] = { name: book.saga, author: book.author, books: [], category: book.category };
-        sagaGroups[key].books.push(book);
+        // Ordre : curé (titre/variations/volume_titles) → Wikidata → saga,
+        // puis repli sur la série de la requête (auteur + hors exclusions).
+        let attr = attributeBookToSeries(book, { wikidataMatcher });
+        if (!attr && querySeries) attr = attachBookToQuerySeries(book, querySeries);
+        if (!attr) return;
+        if (!seriesGroups.has(attr.seriesKey)) seriesGroups.set(attr.seriesKey, { attr, books: [] });
+        seriesGroups.get(attr.seriesKey).books.push(book);
+        if (book.ol_key) attributedIds.add(book.ol_key);
       });
 
-      Object.values(sagaGroups).forEach(group => {
-        if (group.books.length < 1) return; // même 1 livre suffit si OL le dit dans une série
-        group.books.forEach(b => olSeriesBookIds.add(b.ol_key));
-        olSeriesCards.push({
+      // ── 4. Construire une carte série par groupe ─────────────────────────
+      const seriesCards = [];
+      seriesGroups.forEach(({ attr, books: groupBooks }) => {
+        const merged = mergeOpenLibraryBooksByVolume(groupBooks);
+        const cover = merged.find(b => b.cover_url)?.cover_url || null;
+        const author = groupBooks.find(b => b.author)?.author || '';
+
+        if (attr.source === 'wikidata') {
+          // Rattacher les tomes à la carte spotlight Wikidata existante (pas de doublon)
+          const card = wdSpotlightByQid.get(attr.wikidata_qid);
+          if (card) {
+            card.books = merged;
+            if (!card.cover_url && cover) card.cover_url = cover;
+            if (!card.author && author) card.author = author;
+            if (!card.totalBooks) card.totalBooks = merged.length;
+            return;
+          }
+        }
+
+        seriesCards.push({
           isSeriesCard: true,
-          id: `series_ol_${group.name.toLowerCase().replace(/\s+/g, '_')}`,
-          name: group.name,
-          author: group.author,
-          category: group.category,
-          cover_url: group.books.find(b => b.cover_url)?.cover_url || null,
-          totalBooks: group.books.length,
-          books: group.books,
-          description: `Série de ${group.books.length} livre(s) de ${group.author}`,
-          relevanceScore: 100000,
-          fromOpenLibrary: true,
+          id: `series_${attr.source}_${attr.seriesKey}`,
+          name: attr.seriesName,
+          author,
+          category: attr.seriesData?.category || groupBooks[0]?.category || 'roman',
+          cover_url: cover,
+          totalBooks: resolveSeriesTotalBooks(attr.seriesData, merged.length),
+          books: merged,
+          description: attr.seriesData?.description || `Série de ${attr.seriesName}`,
+          relevanceScore: attr.source === 'saga' ? 100000 : 96000,
+          fromStaticDB: attr.source === 'curated',
+          fromOpenLibrary: attr.source === 'saga',
         });
       });
 
-      // -- Stratégie 2 (fallback) : auteur + mots du query pour les livres sans saga --
-      const noSagaBooks = enriched.filter(b => !olSeriesBookIds.has(b.ol_key));
+      // ── 5. Heuristique de repli : auteur + mots du query (livres non attribués) ──
+      const remaining = enriched.filter(b => !attributedIds.has(b.ol_key));
       const authorGroups = {};
-      noSagaBooks.forEach(book => {
+      remaining.forEach(book => {
         if (!book.author) return;
         const key = book.author.toLowerCase().trim();
         if (!authorGroups[key]) authorGroups[key] = { author: book.author, books: [], category: book.category };
@@ -140,90 +224,71 @@ export const searchOpenLibrary = async (query, {
       Object.values(authorGroups).forEach(group => {
         if (group.books.length < 2) return;
         const matchingBooks = queryWords.length > 0
-          ? group.books.filter(b => queryWords.some(w => b.title.toLowerCase().includes(w)))
+          ? group.books.filter(b => {
+              const blob = `${b.display_title || ''} ${b.title || ''}`.toLowerCase();
+              return queryWords.some(w => blob.includes(w));
+            })
           : group.books;
         if (matchingBooks.length < 2) return;
 
         const seriesName = queryWords.length > 0 ? query.trim() : group.author;
-        matchingBooks.forEach(b => olSeriesBookIds.add(b.ol_key));
+        matchingBooks.forEach(b => {
+          if (b.ol_key) attributedIds.add(b.ol_key);
+        });
+        const mergedMatching = mergeOpenLibraryBooksByVolume(matchingBooks);
 
-        olSeriesCards.push({
+        seriesCards.push({
           isSeriesCard: true,
           id: `series_author_${seriesName.toLowerCase().replace(/\s+/g, '_')}`,
           name: seriesName,
           author: group.author,
           category: group.category,
-          cover_url: matchingBooks.find(b => b.cover_url)?.cover_url || null,
-          totalBooks: matchingBooks.length,
-          books: matchingBooks,
-          description: `Série de ${matchingBooks.length} livres de ${group.author}`,
+          cover_url: mergedMatching.find(b => b.cover_url)?.cover_url || null,
+          totalBooks: mergedMatching.length,
+          books: mergedMatching,
+          description: `Série de ${mergedMatching.length} tome(s) de ${group.author}`,
           relevanceScore: 90000,
           fromOpenLibrary: true,
         });
       });
 
-      // ── 4. Regroupement des livres orphelins par la base statique ────────
-      // Si un titre correspond exactement à un volume d'une série connue → carte série
-      const staticFromOrphans = {};
-      enriched.forEach(book => {
-        if (olSeriesBookIds.has(book.ol_key)) return;
-        const match = VOLUME_TITLE_INDEX[book.title?.toLowerCase().trim()];
-        if (!match) return;
-        const { seriesKey, seriesData } = match;
-        if (!staticFromOrphans[seriesKey]) {
-          staticFromOrphans[seriesKey] = {
-            isSeriesCard: true,
-            id: `series_static_${seriesKey}`,
-            name: seriesData.name,
-            author: book.author,
-            category: seriesData.category || book.category,
-            cover_url: book.cover_url || null,
-            totalBooks: seriesData.volumes || 1,
-            books: [],
-            description: seriesData.description || '',
-            relevanceScore: 95000,
-            fromStaticDB: true,
-          };
-        }
-        staticFromOrphans[seriesKey].books.push(book);
-        olSeriesBookIds.add(book.ol_key);
-      });
-
-      // ── 5. Séries de la base statique (legacy query-based) ──────────────
-      const staticSeriesCards = generateSeriesCardsForSearch(query, data.books);
-
-      // ── 6. Livres individuels (hors séries détectées) ────────────────────
-      const standaloneBooks = enriched.filter(b => !olSeriesBookIds.has(b.ol_key));
-
-      // ── 7. Fusion + tri : séries d'abord, puis livres ───────────────────
-      const allSeriesNames = new Set(olSeriesCards.map(c => c.name.toLowerCase()));
-
-      // Cartes depuis la base statique (orphelins reconnus)
-      const orphanSeriesCards = Object.values(staticFromOrphans).filter(
-        c => !allSeriesNames.has(c.name.toLowerCase())
-      );
-      orphanSeriesCards.forEach(c => allSeriesNames.add(c.name.toLowerCase()));
-
-      // Cartes legacy (query-based) — dédoublonner
+      // ── 6. Séries de la base statique (legacy query-based) — dédoublonnées ──
+      const allSeriesNames = new Set([
+        ...seriesCards.map(c => (c.name || '').toLowerCase()),
+        ...wikidataSpotlight.map(c => (c.name || '').toLowerCase()),
+      ]);
+      const staticSeriesCards = generateSeriesCardsForSearch(query, data.books) || [];
       const dedupedStatic = staticSeriesCards.filter(
         c => !allSeriesNames.has((c.name || '').toLowerCase())
       );
 
-      const finalResults = [
-        ...olSeriesCards,
-        ...orphanSeriesCards,
+      // ── 7. Livres individuels (réellement hors série) ────────────────────
+      const standaloneBooks = enriched.filter(b => !attributedIds.has(b.ol_key));
+
+      // ── 8. Fusion + dédup (priorité Wikidata sur les doublons) ───────────
+      let finalResults = [
+        ...seriesCards,
         ...dedupedStatic,
+        ...wikidataSpotlight,
         ...standaloneBooks,
       ];
+      finalResults = dedupeWikidataStaticSeriesOverOpenLibrary(finalResults);
+      finalResults = dedupeSeriesCardsByName(finalResults);
 
+      const totalSeries = finalResults.filter(c => c.isSeriesCard).length;
       setOpenLibraryResults(finalResults);
       toast.success(
         `${standaloneBooks.length} livre(s)` +
-        (olSeriesCards.length > 0 ? ` + ${olSeriesCards.length} série(s) détectée(s)` : '') +
+        (totalSeries > 0 ? ` + ${totalSeries} série(s)` : '') +
         ` trouvé(s)`
       );
     } else {
-      toast.error('Erreur lors de la recherche Open Library');
+      // Open Library indisponible : afficher au moins les cartes Wikidata/tendances.
+      if (wikidataSpotlight.length > 0) {
+        setOpenLibraryResults(dedupeWikidataStaticSeriesOverOpenLibrary([...wikidataSpotlight]));
+      } else {
+        toast.error('Erreur lors de la recherche Open Library');
+      }
     }
   } catch (error) {
     console.error('Erreur recherche Open Library:', error);
@@ -247,7 +312,7 @@ const detectBookOwnership = (book, books) => {
     
     const localTitle = normalizeString(localBook.title);
     const localAuthor = normalizeString(localBook.author);
-    const openLibTitle = normalizeString(book.title);
+    const openLibTitle = normalizeString(book.display_title || book.title);
     const openLibAuthor = normalizeString(book.author);
     
     // Vérification par ol_key d'abord (plus précise)
@@ -320,8 +385,9 @@ export const handleAddFromOpenLibrary = async (openLibraryBook, {
     const autoDetector = new AutoSeriesDetector();
     
     // Préparer les données du livre pour la détection
+    const addTitle = openLibraryBook.display_title || openLibraryBook.title;
     const bookData = {
-      title: openLibraryBook.title,
+      title: addTitle,
       author: openLibraryBook.author,
       category: targetCategory,
       cover_url: openLibraryBook.cover_url || "",
@@ -372,7 +438,7 @@ export const handleAddFromOpenLibrary = async (openLibraryBook, {
       window.dispatchEvent(new CustomEvent('backToLibrary', {
         detail: {
           reason: 'book_added_success',
-          bookTitle: openLibraryBook.title,
+          bookTitle: addTitle,
           targetCategory,
         }
       }));
@@ -427,7 +493,11 @@ export const backToLibrary = (setIsSearchMode, setOpenLibraryResults, setLastSea
 // Gestionnaires de clics sur éléments
 
 // Gestionnaire de clic sur série pour afficher la fiche dédiée
-export const handleSeriesClick = (series, setSelectedSeries, setShowSeriesModal) => {
+export const handleSeriesClick = async (series, setSelectedSeries, setShowSeriesModal) => {
+  if (series.wikidata_qid && series.isStaticWikidataCard) {
+    await openStaticWikidataSeriesModal(series, setSelectedSeries, setShowSeriesModal);
+    return;
+  }
   if (series.isLibrarySeries) {
     // Série de bibliothèque : créer une fiche dédiée locale
     // Pour l'instant, on peut montrer une modal avec les livres de la série
@@ -449,9 +519,9 @@ export const handleBookClick = (book, setSelectedBook, setShowBookModal) => {
 };
 
 // Gestionnaire de clic conditionnel (livre ou série)
-export const handleItemClick = (item, setSelectedSeries, setShowSeriesModal, setSelectedBook, setShowBookModal) => {
+export const handleItemClick = async (item, setSelectedSeries, setShowSeriesModal, setSelectedBook, setShowBookModal) => {
   if (item.isSeriesCard) {
-    handleSeriesClick(item, setSelectedSeries, setShowSeriesModal);
+    await handleSeriesClick(item, setSelectedSeries, setShowSeriesModal);
   } else {
     handleBookClick(item, setSelectedBook, setShowBookModal);
   }

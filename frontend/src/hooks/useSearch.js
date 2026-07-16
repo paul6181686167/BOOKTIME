@@ -87,8 +87,8 @@ export const useSearch = () => {
   };
 
   // Gestionnaire de clic sur série
-  const handleSeriesClick = (series, seriesActions) => {
-    SearchLogic.handleSeriesClick(series, seriesActions.setSelectedSeries, seriesActions.setShowSeriesModal);
+  const handleSeriesClick = async (series, seriesActions) => {
+    await SearchLogic.handleSeriesClick(series, seriesActions.setSelectedSeries, seriesActions.setShowSeriesModal);
   };
 
   // Gestionnaire stable pour éviter les re-rendus excessifs

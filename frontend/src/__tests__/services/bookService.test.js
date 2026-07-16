@@ -1,8 +1,11 @@
 import { bookService } from '../../services/bookService';
 
-// Mock axios
-jest.mock('axios', () => ({
-  create: jest.fn(() => ({
+// Instance axios mock unique (singleton) : axios.create() doit renvoyer TOUJOURS
+// le même objet, sinon les mocks posés dans les tests n'interceptent pas l'instance
+// réellement utilisée par bookService.js. Le singleton est construit DANS la factory
+// (la factory jest.mock est hoistée avant l'initialisation des variables du module).
+jest.mock('axios', () => {
+  const api = {
     get: jest.fn(),
     post: jest.fn(),
     put: jest.fn(),
@@ -11,152 +14,113 @@ jest.mock('axios', () => ({
       request: { use: jest.fn() },
       response: { use: jest.fn() },
     },
-  })),
-}));
+  };
+  const create = jest.fn(() => api);
+  return { __esModule: true, default: { create }, create };
+});
+
+// eslint-disable-next-line global-require
+const mockApi = require('axios').create();
 
 describe('BookService', () => {
-  const mockAxios = require('axios').create();
-
   beforeEach(() => {
     jest.clearAllMocks();
     localStorage.setItem('token', 'test-token');
   });
 
-  test('getBooks returns books data', async () => {
+  test('getBooks charge tous les livres via /api/books/all', async () => {
     const mockBooksData = [
       { id: 1, title: 'Book 1', author: 'Author 1' },
-      { id: 2, title: 'Book 2', author: 'Author 2' }
+      { id: 2, title: 'Book 2', author: 'Author 2' },
     ];
-
-    mockAxios.get.mockResolvedValue({ data: mockBooksData });
+    mockApi.get.mockResolvedValue({ data: mockBooksData });
 
     const result = await bookService.getBooks();
 
-    expect(mockAxios.get).toHaveBeenCalledWith('/api/books');
+    expect(mockApi.get).toHaveBeenCalledWith('/api/books/all', { params: { limit: 1000 } });
     expect(result).toEqual(mockBooksData);
   });
 
-  test('getBooks with filters', async () => {
-    const mockBooksData = [
-      { id: 1, title: 'Book 1', author: 'Author 1', category: 'roman' }
-    ];
+  test('getBooks transmet category et status en paramètres', async () => {
+    mockApi.get.mockResolvedValue({ data: [] });
 
-    mockAxios.get.mockResolvedValue({ data: mockBooksData });
+    await bookService.getBooks('roman', 'reading');
 
-    const result = await bookService.getBooks({ category: 'roman', status: 'reading' });
-
-    expect(mockAxios.get).toHaveBeenCalledWith('/api/books', {
-      params: { category: 'roman', status: 'reading' }
+    expect(mockApi.get).toHaveBeenCalledWith('/api/books/all', {
+      params: { category: 'roman', status: 'reading', limit: 1000 },
     });
-    expect(result).toEqual(mockBooksData);
   });
 
-  test('addBook creates new book', async () => {
-    const newBook = {
-      title: 'New Book',
-      author: 'New Author',
-      category: 'roman'
-    };
+  test('getBookById récupère un livre', async () => {
+    const book = { id: 'abc', title: 'Test' };
+    mockApi.get.mockResolvedValue({ data: book });
 
-    const mockResponse = {
-      id: 'new-book-id',
-      ...newBook,
-      date_added: '2024-01-01T00:00:00Z'
-    };
+    const result = await bookService.getBookById('abc');
 
-    mockAxios.post.mockResolvedValue({ data: mockResponse });
+    expect(mockApi.get).toHaveBeenCalledWith('/api/books/abc');
+    expect(result).toEqual(book);
+  });
 
-    const result = await bookService.addBook(newBook);
+  test('createBook crée un livre', async () => {
+    const newBook = { title: 'New Book', author: 'New Author', category: 'roman' };
+    const mockResponse = { id: 'new-id', ...newBook };
+    mockApi.post.mockResolvedValue({ data: mockResponse });
 
-    expect(mockAxios.post).toHaveBeenCalledWith('/api/books', newBook);
+    const result = await bookService.createBook(newBook);
+
+    expect(mockApi.post).toHaveBeenCalledWith('/api/books', newBook);
     expect(result).toEqual(mockResponse);
   });
 
-  test('updateBook updates existing book', async () => {
+  test('updateBook met à jour un livre', async () => {
     const bookId = 'test-book-id';
-    const updateData = {
-      status: 'completed',
-      rating: 5,
-      review: 'Excellent book!'
-    };
-
-    const mockResponse = {
-      id: bookId,
-      title: 'Test Book',
-      ...updateData,
-      updated_at: '2024-01-01T00:00:00Z'
-    };
-
-    mockAxios.put.mockResolvedValue({ data: mockResponse });
+    const updateData = { status: 'completed', rating: 5 };
+    const mockResponse = { id: bookId, ...updateData };
+    mockApi.put.mockResolvedValue({ data: mockResponse });
 
     const result = await bookService.updateBook(bookId, updateData);
 
-    expect(mockAxios.put).toHaveBeenCalledWith(`/api/books/${bookId}`, updateData);
+    expect(mockApi.put).toHaveBeenCalledWith(`/api/books/${bookId}`, updateData);
     expect(result).toEqual(mockResponse);
   });
 
-  test('deleteBook removes book', async () => {
+  test('deleteBook supprime un livre', async () => {
     const bookId = 'test-book-id';
-
-    mockAxios.delete.mockResolvedValue({ data: { message: 'Book deleted' } });
+    mockApi.delete.mockResolvedValue({ data: { message: 'Book deleted' } });
 
     const result = await bookService.deleteBook(bookId);
 
-    expect(mockAxios.delete).toHaveBeenCalledWith(`/api/books/${bookId}`);
+    expect(mockApi.delete).toHaveBeenCalledWith(`/api/books/${bookId}`);
     expect(result).toEqual({ message: 'Book deleted' });
   });
 
-  test('getStats returns statistics', async () => {
-    const mockStats = {
-      total_books: 10,
-      completed_books: 5,
-      reading_books: 3,
-      to_read_books: 2,
-      categories: {
-        roman: 5,
-        bd: 3,
-        manga: 2
-      }
-    };
-
-    mockAxios.get.mockResolvedValue({ data: mockStats });
+  test('getStats récupère les statistiques', async () => {
+    const mockStats = { total_books: 10, completed_books: 5 };
+    mockApi.get.mockResolvedValue({ data: mockStats });
 
     const result = await bookService.getStats();
 
-    expect(mockAxios.get).toHaveBeenCalledWith('/api/stats');
+    expect(mockApi.get).toHaveBeenCalledWith('/api/stats');
     expect(result).toEqual(mockStats);
   });
 
-  test('searchBooks returns search results', async () => {
-    const searchQuery = 'test query';
-    const mockSearchResults = [
-      { id: 1, title: 'Test Book 1', author: 'Author 1' },
-      { id: 2, title: 'Test Book 2', author: 'Author 2' }
-    ];
+  test('searchBooksGrouped recherche avec query', async () => {
+    const mockResults = { total_books: 2, results: [] };
+    mockApi.get.mockResolvedValue({ data: mockResults });
 
-    mockAxios.get.mockResolvedValue({ data: mockSearchResults });
+    const result = await bookService.searchBooksGrouped('test query');
 
-    const result = await bookService.searchBooks(searchQuery);
-
-    expect(mockAxios.get).toHaveBeenCalledWith('/api/books/search', {
-      params: { q: searchQuery }
+    expect(mockApi.get).toHaveBeenCalledWith('/api/books/search-grouped', {
+      params: { q: 'test query' },
     });
-    expect(result).toEqual(mockSearchResults);
+    expect(result).toEqual(mockResults);
   });
 
-  test('handles API errors gracefully', async () => {
-    const errorMessage = 'Network Error';
-    mockAxios.get.mockRejectedValue(new Error(errorMessage));
+  test('propage une erreur métier en cas d’échec API', async () => {
+    mockApi.get.mockRejectedValue(new Error('Network Error'));
 
-    await expect(bookService.getBooks()).rejects.toThrow(errorMessage);
-  });
-
-  test('handles authentication errors', async () => {
-    const authError = {
-      response: { status: 401, data: { detail: 'Token expired' } }
-    };
-    mockAxios.get.mockRejectedValue(authError);
-
-    await expect(bookService.getBooks()).rejects.toEqual(authError);
+    await expect(bookService.getBooks()).rejects.toThrow(
+      'Erreur lors de la récupération des livres'
+    );
   });
 });

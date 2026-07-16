@@ -7,8 +7,19 @@
  * Détection intelligente URL backend selon environnement
  */
 const getBackendURL = () => {
-  if (window.location.hostname.includes('emergentagent.com')) {
+  if (typeof window !== 'undefined' && window.location.hostname.includes('emergentagent.com')) {
     return window.location.origin;
+  }
+  // En dev local : toujours le backend local (évite Render endormi par erreur)
+  if (
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ) {
+    return (
+      process.env.REACT_APP_API_URL ||
+      process.env.REACT_APP_BACKEND_URL ||
+      'http://localhost:8001'
+    );
   }
   if (process.env.REACT_APP_BACKEND_URL) {
     return process.env.REACT_APP_BACKEND_URL;

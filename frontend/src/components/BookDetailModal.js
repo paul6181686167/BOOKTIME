@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { XMarkIcon, StarIcon, TrashIcon, PencilIcon, LanguageIcon, SparklesIcon, BookmarkIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { XMarkIcon, StarIcon, TrashIcon, BookmarkIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon, BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 import LanguageSelector from './LanguageSelector';
-import { getLanguageByCode } from '../constants/languages';
 import { API_BASE_URL } from '../config/environment';
+import { displayBookTitleFrFirst } from '../utils/openLibraryBookDisplay';
 import confetti from 'canvas-confetti';
 
 // Déclenche les confettis de célébration
@@ -21,31 +21,8 @@ const launchConfetti = () => {
   fire(0.1,  { spread: 120, startVelocity: 45 });
 };
 
-// Service Open Library pour l'enrichissement
-const openLibraryService = {
-  async enrichBook(bookId) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/books/${bookId}/enrich`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Erreur HTTP: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Erreur lors de l\'enrichissement:', error);
-      throw error;
-    }
-  }
-};
-
 const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibrary, onAuthorClick }) => {
+  const titleMain = useMemo(() => displayBookTitleFrFirst(book), [book]);
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('details'); // 'details' | 'notes'
   const [bouncing, setBouncing] = useState(null); // id du bouton en train de bouncer
@@ -65,7 +42,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   });
   const [pageInput, setPageInput] = useState(book.current_page || 0);
   const [isLoading, setIsLoading] = useState(false);
-  const [enriching, setEnriching] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [addDone, setAddDone] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -183,25 +159,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     }
   };
 
-  const handleEnrich = async () => {
-    setEnriching(true);
-    try {
-      const result = await openLibraryService.enrichBook(book.id);
-      if (result.message) {
-        toast.success(result.message);
-        if (result.book) {
-          // Rafraîchir via le callback parent (pas de reload complet)
-          onUpdate?.(book.id, result.book);
-        }
-      }
-    } catch (error) {
-      console.error('Erreur lors de l\'enrichissement:', error);
-      toast.error(error.message || 'Erreur lors de l\'enrichissement du livre');
-    } finally {
-      setEnriching(false);
-    }
-  };
-
   // Fonction pour ajouter un livre depuis Open Library
   const handleAddFromOpenLibrary = async () => {
     if (!onAddFromOpenLibrary || !book.isFromOpenLibrary || isAdding) return;
@@ -232,10 +189,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     return statusOptions.find(s => s.value === status) || statusOptions[0];
   };
 
-  const getLanguageInfo = (languageCode) => {
-    return getLanguageByCode(languageCode);
-  };
-
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content-wide modal-animate w-full md:w-auto" onClick={(e) => e.stopPropagation()}>
@@ -249,7 +202,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
         <div className="px-4 md:px-0 pt-2 md:pt-0">
         <div className="flex flex-col gap-4 mb-4 md:flex-row md:items-start md:justify-between md:gap-6">
           <div className="min-w-0 flex-1">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2 break-words">{book.title}</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2 break-words">{titleMain}</h2>
             <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 mb-4">
               par{' '}
               <button 
@@ -306,25 +259,25 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
 
             {/* Saisie rapide de la page (visible dès qu'En cours, page optionnelle) */}
             {(!book.isFromOpenLibrary || book.isOwned) && !isEditing && book.status === 'reading' && (
-              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+              <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800/40 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-medium text-blue-700 dark:text-blue-300">Progression de lecture</h3>
+                  <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400">Progression de lecture</h3>
                   {book.total_pages > 0 && pageInput > 0 && (
-                    <span className="text-sm font-bold text-blue-700 dark:text-blue-300">
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
                       {Math.round(((pageInput || 0) / book.total_pages) * 100)}%
                     </span>
                   )}
                 </div>
                 {book.total_pages > 0 && pageInput > 0 && (
-                  <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2 mb-3">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mb-3">
                     <div
-                      className="bg-blue-500 h-2 rounded-full reading-progress-bar transition-all duration-300"
+                      className="bg-blue-500 h-1.5 rounded-full reading-progress-bar transition-all duration-300"
                       style={{ width: `${Math.min(100, Math.round(((pageInput || 0) / book.total_pages) * 100))}%` }}
                     />
                   </div>
                 )}
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-blue-600 dark:text-blue-400">Page</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Page</span>
                   <input
                     ref={pageInputRef}
                     type="number"
@@ -335,67 +288,24 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                     onKeyDown={(e) => e.key === 'Enter' && handlePageSave()}
                     min="0"
                     max={book.total_pages || undefined}
-                    className="w-24 px-2 py-1 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 text-center"
+                    className="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 text-center"
                   />
                   {book.total_pages > 0 && (
-                    <span className="text-sm text-blue-600 dark:text-blue-400">/ {book.total_pages}</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">/ {book.total_pages}</span>
                   )}
-                  <button
-                    onClick={handlePageSave}
-                    className={`btn-ripple ml-auto px-3 py-1 text-sm font-medium bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white rounded-md transition-colors ${bouncing === 'page-save' ? 'btn-bounce' : ''}`}
-                  >
-                    ✓ Sauvegarder
-                  </button>
+                  {(parseInt(pageInput) || 0) !== (book.current_page || 0) && (
+                    <button
+                      onClick={handlePageSave}
+                      className={`btn-ripple ml-auto px-3 py-1 text-sm font-medium bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white rounded-md transition-colors ${bouncing === 'page-save' ? 'btn-bounce' : ''}`}
+                    >
+                      ✓ Sauvegarder
+                    </button>
+                  )}
                 </div>
               </div>
             )}
 
 
-            {/* Informations linguistiques */}
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-4">
-              <div className="flex items-center gap-2 mb-3">
-                <LanguageIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                <h3 className="text-sm font-medium text-gray-900 dark:text-white">Informations linguistiques</h3>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-600 dark:text-gray-400">Langue originale:</span>
-                  <div className="flex items-center gap-1 mt-1">
-                    <span>{getLanguageInfo(book.original_language).flag}</span>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {getLanguageInfo(book.original_language).name}
-                    </span>
-                  </div>
-                </div>
-                
-                <div>
-                  <span className="text-gray-600 dark:text-gray-400">Langue de lecture:</span>
-                  <div className="flex items-center gap-1 mt-1">
-                    <span>{getLanguageInfo(book.reading_language).flag}</span>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {getLanguageInfo(book.reading_language).name}
-                    </span>
-                  </div>
-                </div>
-                
-                <div>
-                  <span className="text-gray-600 dark:text-gray-400">Traductions:</span>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {book.available_translations && book.available_translations.length > 0 ? (
-                      book.available_translations.map(lang => (
-                        <span key={lang} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs rounded">
-                          <span>{getLanguageInfo(lang).flag}</span>
-                          <span>{getLanguageInfo(lang).name}</span>
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-gray-500 dark:text-gray-400 text-xs">Aucune traduction renseignée</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
           
           <div className="flex w-full flex-col gap-2 shrink-0 md:w-auto md:items-end">
@@ -436,37 +346,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             )}
             
             <div className="flex flex-row flex-wrap items-center justify-end gap-1 md:gap-2">
-            {/* Boutons pour les livres locaux ou possédés */}
-            {(!book.isFromOpenLibrary || book.isOwned) && (
-              <>
-                <button
-                  onClick={handleEnrich}
-                  disabled={enriching}
-                  className="p-2 text-blue-400 dark:text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50"
-                  title="Enrichir avec Open Library"
-                >
-                  {enriching ? (
-                    <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <SparklesIcon className="h-5 w-5" />
-                  )}
-                </button>
-                <button
-                  onClick={() => setIsEditing(!isEditing)}
-                  className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                >
-                  <PencilIcon className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={() => setConfirmDelete(true)}
-                  title="Retirer de ma bibliothèque"
-                  className="p-2 text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                >
-                  <TrashIcon className="h-5 w-5" />
-                </button>
-              </>
-            )}
-            
             <button
               type="button"
               onClick={onClose}
@@ -548,7 +427,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               {book.cover_url ? (
                 <img 
                   src={book.cover_url} 
-                  alt={book.title}
+                  alt={titleMain}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -796,7 +675,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             {/* Informations supplémentaires */}
             <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
-                {book.original_title && book.original_title !== book.title && (
+                {book.original_title && book.original_title !== titleMain && (
                   <div className="col-span-2">
                     <h4 className="font-medium text-gray-700 dark:text-gray-300">Titre original</h4>
                     <p className="text-gray-600 dark:text-gray-400 italic">{book.original_title}</p>
