@@ -159,6 +159,12 @@ class RecommendationService:
                 if norm_title:
                     owned_titles.add(norm_title)
                     owned_keys.add(self._book_key(title, author))
+
+            # Prioriser les meilleurs scores pour les suggestions « aimé »
+            high_rated_books.sort(
+                key=lambda b: (b.get('rating') or 0, 1 if b.get('status') == 'completed' else 0),
+                reverse=True,
+            )
             
             # Favoris pondérés par l'affinité (pas juste le nombre de livres)
             favorite_authors = [
@@ -197,7 +203,7 @@ class RecommendationService:
                 'favorite_authors': favorite_authors,
                 'favorite_categories': favorite_categories,
                 'reading_patterns': reading_patterns,
-                'high_rated_books': high_rated_books[:10],  # Top 10 livres bien notés
+                'high_rated_books': high_rated_books[:12],  # Top livres bien notés (≥4)
                 'completed_books': completed_books[:10],     # Top 10 livres terminés
                 'author_counts': dict(author_counts.most_common(10)),
                 'category_counts': dict(category_counts.most_common(5)),
@@ -272,8 +278,10 @@ class RecommendationService:
             series_recommendations = await self._recommend_by_series(user_profile, limit // 3)
             recommendations.extend(series_recommendations)
             
-            # 4. Recommandations basées sur la similarité
-            similarity_recommendations = await self._recommend_by_similarity(user_profile, limit // 4)
+            # 4. Similaires aux livres bien notés (onglet « Parce que vous avez aimé »)
+            similarity_recommendations = await self._recommend_by_similarity(
+                user_profile, max(10, limit // 3)
+            )
             recommendations.extend(similarity_recommendations)
             
             return recommendations
@@ -403,44 +411,87 @@ class RecommendationService:
             return []
     
     async def _recommend_by_similarity(self, user_profile: Dict, limit: int) -> List[RecommendationItem]:
-        """Recommandations basées sur la similarité avec d'autres utilisateurs"""
-        recommendations = []
-        
+        """Livres similaires aux titres bien notés (≥ 4) de l'utilisateur via Open Library."""
+        recommendations: List[RecommendationItem] = []
+
         try:
-            # Trouver des utilisateurs similaires
-            similar_users = await self._find_similar_users(user_profile)
-            
-            for similar_user in similar_users[:3]:  # Top 3 utilisateurs similaires
-                # Récupérer leurs livres bien notés
-                similar_books = list(self.db.books.find({
-                    "user_id": similar_user['user_id'],
-                    "rating": {"$gte": 4}
-                }))
-                
+            seeds = list(user_profile.get('high_rated_books') or [])
+            # Repli : livres terminés correctement notés si peu de coups de cœur
+            if len(seeds) < 2:
+                for book in user_profile.get('completed_books') or []:
+                    if (book.get('rating') or 0) >= 3:
+                        key = self._book_key(book.get('title', ''), book.get('author', ''))
+                        if not any(
+                            self._book_key(s.get('title', ''), s.get('author', '')) == key
+                            for s in seeds
+                        ):
+                            seeds.append(book)
+                    if len(seeds) >= 5:
+                        break
+
+            if not seeds:
+                seeds = list(user_profile.get('completed_books') or [])[:3]
+
+            if not seeds:
+                return []
+
+            per_seed = max(3, (limit // max(1, min(5, len(seeds)))) + 1)
+
+            for seed in seeds[:5]:
+                seed_title = (seed.get('title') or '').strip()
+                seed_author = (seed.get('author') or '').strip()
+                seed_rating = seed.get('rating') or 0
+                if not seed_title:
+                    continue
+
+                similar_books = await self.openlibrary_service.search_similar_books(
+                    seed_title, seed_author, limit=per_seed
+                )
+
+                short_title = seed_title if len(seed_title) <= 42 else seed_title[:39] + '…'
+                if seed_rating:
+                    reason = f"Parce que tu as aimé « {short_title} » ({seed_rating}/5)"
+                else:
+                    reason = f"Parce que tu as aimé « {short_title} »"
+
+                # Confiance plus haute si la note seed est excellente
+                base_confidence = 0.72 + 0.04 * min(5, float(seed_rating or 4))
+
                 for book in similar_books:
-                    # Écarter les livres déjà possédés ou rejetés
-                    if not await self._should_skip(user_profile, str(book.get('_id', '')), book.get('title', ''), book.get('author', '')):
-                        rec = RecommendationItem(
-                            book_id=str(book.get('_id', '')),
-                            title=book.get('title', ''),
-                            author=book.get('author', ''),
-                            category=book.get('category', 'roman'),
-                            cover_url=book.get('cover_url'),
-                            confidence_score=0.5,  # Confiance moyenne pour similarité
-                            reasons=[f"Apprécié par des lecteurs similaires"],
-                            source='algorithm_similarity',
-                            metadata=book
-                        )
-                        recommendations.append(rec)
-                        
-                        if len(recommendations) >= limit:
-                            break
-                
-                if len(recommendations) >= limit:
-                    break
-            
+                    title = book.get('title', '')
+                    author = book.get('author', '')
+                    if await self._should_skip(
+                        user_profile, book.get('ol_key', ''), title, author
+                    ):
+                        continue
+
+                    # Éviter de recommander un autre livre du même auteur seed
+                    # (déjà couvert par l'onglet « Parce que vous lisez »)
+                    if seed_author and self._normalize_author(author) == self._normalize_author(seed_author):
+                        continue
+
+                    rec = RecommendationItem(
+                        book_id=book.get('ol_key', ''),
+                        title=title,
+                        author=author,
+                        category=book.get('category', 'roman'),
+                        cover_url=book.get('cover_url'),
+                        confidence_score=min(0.95, base_confidence),
+                        reasons=[reason],
+                        source='algorithm_similarity',
+                        metadata={
+                            **book,
+                            'seed_title': seed_title,
+                            'seed_rating': seed_rating,
+                        },
+                    )
+                    recommendations.append(rec)
+
+                    if len(recommendations) >= limit:
+                        return recommendations[:limit]
+
             return recommendations[:limit]
-            
+
         except Exception as e:
             logger.error(f"Erreur recommandations similarité: {str(e)}")
             return []
@@ -509,6 +560,11 @@ class RecommendationService:
                 # Bonus pour les séries (fort signal de pertinence)
                 if rec.source == 'algorithm_series':
                     base_score += 0.15
+
+                # Bonus pour les similaires aux coups de cœur
+                if rec.source == 'algorithm_similarity':
+                    seed_rating = (rec.metadata or {}).get('seed_rating') or 0
+                    base_score += 0.12 + 0.02 * min(5, float(seed_rating or 0))
 
                 # Bonus léger pour les livres bien enrichis (description présente)
                 if rec.metadata and rec.metadata.get('description'):

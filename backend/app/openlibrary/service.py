@@ -311,6 +311,123 @@ class OpenLibraryService:
     def _extract_isbn(self, isbn_list: List[str]) -> Optional[str]:
         """Extrait le premier ISBN"""
         return isbn_list[0] if isbn_list else None
+
+    async def search_similar_books(
+        self, title: str, author: str = "", limit: int = 8
+    ) -> List[Dict]:
+        """
+        Trouve des livres similaires à un titre bien noté via les sujets Open Library.
+        """
+        if not title or not title.strip():
+            return []
+
+        try:
+            session = await self._get_session()
+            url = f"{self.base_url}/search.json"
+            seed_title = title.strip()
+            seed_norm = seed_title.lower()[:50]
+
+            # 1) Récupérer les sujets du livre seed
+            seed_params = {
+                "q": seed_title[:80],
+                "limit": 5,
+                "fields": "title,author_name,cover_i,first_publish_year,key,subject,ratings_average",
+            }
+            if author:
+                seed_params["author"] = author.split(",")[0].strip()
+
+            subjects: List[str] = []
+            async with session.get(url, params=seed_params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    preferred_kw = (
+                        "fiction", "novel", "literature", "fantasy", "mystery",
+                        "thriller", "romance", "science fiction", "horror",
+                        "historical", "adventure", "young adult", "crime",
+                        "detective", "manga", "comics", "bande", "polar",
+                    )
+                    for doc in data.get("docs", []):
+                        doc_subjects = doc.get("subject") or []
+                        preferred = [
+                            s for s in doc_subjects
+                            if any(k in s.lower() for k in preferred_kw) and 3 < len(s) < 50
+                        ]
+                        if preferred:
+                            subjects = preferred[:5]
+                            break
+                        fallback = [s for s in doc_subjects if 3 < len(s) < 40][:5]
+                        if fallback:
+                            subjects = fallback
+                            break
+
+            books: List[Dict] = []
+            seen_keys = set()
+
+            def _append_doc(doc: Dict) -> bool:
+                t = (doc.get("title") or "").strip()
+                if not t:
+                    return False
+                t_norm = t.lower()
+                if seed_norm and (seed_norm in t_norm or t_norm[:40] in seed_norm):
+                    return False
+                key = doc.get("key") or f"{t}|{','.join(doc.get('author_name') or [])}"
+                if key in seen_keys:
+                    return False
+                seen_keys.add(key)
+                books.append({
+                    "title": t,
+                    "author": ", ".join(doc.get("author_name") or []),
+                    "cover_url": self._get_cover_url(doc.get("cover_i")),
+                    "publication_year": doc.get("first_publish_year"),
+                    "ol_key": doc.get("key", ""),
+                    "category": self._determine_category(doc.get("subject") or []),
+                    "rating": doc.get("ratings_average", 0),
+                    "subjects": (doc.get("subject") or [])[:5],
+                })
+                return True
+
+            # 2) Recherche par sujets
+            for subject in subjects[:3]:
+                if len(books) >= limit:
+                    break
+                params = {
+                    "subject": subject,
+                    "limit": limit + 8,
+                    "sort": "rating desc",
+                    "fields": "title,author_name,cover_i,first_publish_year,key,subject,ratings_average",
+                }
+                async with session.get(url, params=params) as response:
+                    if response.status != 200:
+                        continue
+                    data = await response.json()
+                    for doc in data.get("docs", []):
+                        _append_doc(doc)
+                        if len(books) >= limit:
+                            break
+
+            # 3) Repli : mots significatifs du titre
+            if len(books) < limit:
+                words = [w for w in seed_title.replace(":", " ").split() if len(w) > 3][:4]
+                if words:
+                    params = {
+                        "q": " ".join(words),
+                        "limit": limit + 8,
+                        "sort": "rating desc",
+                        "fields": "title,author_name,cover_i,first_publish_year,key,subject,ratings_average",
+                    }
+                    async with session.get(url, params=params) as response:
+                        if response.status == 200:
+                            data = await response.json()
+                            for doc in data.get("docs", []):
+                                _append_doc(doc)
+                                if len(books) >= limit:
+                                    break
+
+            return books[:limit]
+
+        except Exception as e:
+            logger.error(f"Erreur recherche similaires pour « {title} »: {str(e)}")
+            return []
     
     async def close(self):
         """Ferme la session HTTP"""

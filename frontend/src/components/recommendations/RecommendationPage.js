@@ -153,7 +153,7 @@ const SECTION_CONFIG = {
   algorithm_similarity: {
     icon: SparklesIcon,
     color: 'purple',
-    title: () => 'Livres similaires à ce que tu as terminé',
+    title: () => 'Similaires à tes coups de cœur',
   },
   algorithm_category: {
     icon: SparklesIcon,
@@ -593,14 +593,19 @@ const RecommendationPage = () => {
     }
   }, [isLoading, totalRecs, activeTab]);
 
-  const ORDER = [
-    'algorithm_series',
-    'algorithm_author',
-    'algorithm_similarity',
-    'algorithm_category',
-    'algorithm_genre',
-    'popular',
-  ];
+  const ORDER =
+    activeTab === 'aime'
+      ? ['algorithm_similarity', 'algorithm_category', 'popular']
+      : activeTab === 'lisez'
+        ? ['algorithm_author', 'algorithm_series', 'popular']
+        : [
+            'algorithm_series',
+            'algorithm_author',
+            'algorithm_similarity',
+            'algorithm_category',
+            'algorithm_genre',
+            'popular',
+          ];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
