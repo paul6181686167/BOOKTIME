@@ -23,6 +23,7 @@ import {
 } from '../utils/sourceMerge';
 import { DEFAULT_SERIES_MODAL_GOOGLE_BOOKS } from '../utils/searchSourcePipeline';
 import { isVolumeUnreleased, countReleasedVolumes } from '../utils/volumeRelease';
+import AddToCollectionMenu from './common/AddToCollectionMenu';
 
 function parseVolumeFromWork(vol) {
   if (vol == null || vol === '') return null;
@@ -108,6 +109,7 @@ const SeriesDetailModal = ({
   const [showWdRaw, setShowWdRaw] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showCollectionMenu, setShowCollectionMenu] = useState(false);
   // États du bouton "Ajouter à ma bibliothèque" (alignés sur ceux des livres individuels)
   const [isAdding, setIsAdding] = useState(false);
   const [addDone, setAddDone] = useState(false);
@@ -181,6 +183,20 @@ const SeriesDetailModal = ({
     }
   };
 
+  const normalizeTomeStatuses = (raw) => {
+    const out = {};
+    Object.entries(raw || {}).forEach(([k, v]) => {
+      if (!v || typeof v !== 'object') return;
+      out[String(k)] = {
+        status: v.status || 'non_lu',
+        currentPage: v.currentPage ?? v.current_page ?? null,
+        rating: v.rating ?? 0,
+        review: v.review || '',
+      };
+    });
+    return out;
+  };
+
   // ✅ NOUVELLE FONCTION : Charger les préférences de lecture depuis la base de données
   const loadReadingPreferences = async (seriesName) => {
     try {
@@ -197,11 +213,11 @@ const SeriesDetailModal = ({
         const data = await response.json();
         // Reconstituer tomeStatuses depuis tome_statuses (nouveau) ou read_tomes (legacy)
         if (data.tome_statuses && Object.keys(data.tome_statuses).length > 0) {
-          return data.tome_statuses;
+          return normalizeTomeStatuses(data.tome_statuses);
         }
         // Fallback legacy : read_tomes → statut "lu"
         const legacy = {};
-        (data.read_tomes || []).forEach(n => { legacy[String(n)] = { status: 'lu', currentPage: null }; });
+        (data.read_tomes || []).forEach(n => { legacy[String(n)] = { status: 'lu', currentPage: null, rating: 0, review: '' }; });
         return legacy;
       } else {
         return {};
@@ -422,15 +438,61 @@ const SeriesDetailModal = ({
     }
   };
 
+  // Note / avis d'un tome lu
+  const handleTomeFeedbackChange = async (tomeNumber, { rating, review }) => {
+    const prev = tomeStatuses[String(tomeNumber)] || { status: 'lu', currentPage: null };
+    const newStatuses = {
+      ...tomeStatuses,
+      [String(tomeNumber)]: {
+        ...prev,
+        status: prev.status || 'lu',
+        rating: rating ?? prev.rating ?? 0,
+        review: review ?? prev.review ?? '',
+      },
+    };
+    setTomeStatuses(newStatuses);
+
+    if (enrichedSeries?.name) {
+      await saveReadingPreferences(enrichedSeries.name, newStatuses);
+
+      const token = localStorage.getItem('token');
+      const booksInSeries = series?.books || [];
+      const matchingBook = booksInSeries.find(
+        (b) =>
+          (b.volume_number || 0) === tomeNumber ||
+          booksInSeries.indexOf(b) + 1 === tomeNumber
+      );
+      if (matchingBook?.id) {
+        await fetch(`${API_BASE_URL}/api/books/${matchingBook.id}`, {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            rating: rating ?? prev.rating ?? 0,
+            review: review ?? prev.review ?? '',
+          }),
+        }).catch(() => {});
+      }
+    }
+  };
+
   // Changer le statut d'un tome (non_lu | en_cours | lu) + page optionnelle
   const handleTomeStatusChange = async (tomeNumber, newStatus, currentPage = null) => {
     if (isVolumeUnreleased(enrichedSeries, tomeNumber)) {
       toast.error('Ce volume n’est pas encore sorti');
       return;
     }
+    const prev = tomeStatuses[String(tomeNumber)] || {};
     const newStatuses = {
       ...tomeStatuses,
-      [String(tomeNumber)]: { status: newStatus, currentPage }
+      [String(tomeNumber)]: {
+        status: newStatus,
+        currentPage,
+        rating: prev.rating || 0,
+        review: prev.review || '',
+      },
     };
     setTomeStatuses(newStatuses);
 
@@ -530,7 +592,13 @@ const SeriesDetailModal = ({
     
     const newStatuses = { ...tomeStatuses };
     missingPreviousWarning.missingTomes.forEach(tomeNumber => {
-      newStatuses[String(tomeNumber)] = { status: 'lu', currentPage: null };
+      const prev = newStatuses[String(tomeNumber)] || {};
+      newStatuses[String(tomeNumber)] = {
+        status: 'lu',
+        currentPage: null,
+        rating: prev.rating || 0,
+        review: prev.review || '',
+      };
     });
     setTomeStatuses(newStatuses);
     
@@ -1223,7 +1291,10 @@ const SeriesDetailModal = ({
                         seriesData={enrichedSeries}
                         tomeStatus={tomeStatuses[String(tomeNumber)]?.status || 'non_lu'}
                         currentPage={tomeStatuses[String(tomeNumber)]?.currentPage || null}
+                        rating={tomeStatuses[String(tomeNumber)]?.rating || 0}
+                        review={tomeStatuses[String(tomeNumber)]?.review || ''}
                         onStatusChange={handleTomeStatusChange}
+                        onFeedbackChange={handleTomeFeedbackChange}
                         onToggleRead={handleTomeReadToggle}
                       />
                     );
@@ -1254,7 +1325,10 @@ const SeriesDetailModal = ({
                       seriesData={syntheticSeries}
                       tomeStatus={tomeStatuses[String(tomeNumber)]?.status || 'non_lu'}
                       currentPage={tomeStatuses[String(tomeNumber)]?.currentPage || null}
+                      rating={tomeStatuses[String(tomeNumber)]?.rating || 0}
+                      review={tomeStatuses[String(tomeNumber)]?.review || ''}
                       onStatusChange={handleTomeStatusChange}
+                      onFeedbackChange={handleTomeFeedbackChange}
                       onToggleRead={handleTomeReadToggle}
                     />
                   );
@@ -1321,9 +1395,33 @@ const SeriesDetailModal = ({
           />
         )}
 
-        {/* Bouton Retirer — identique à celui du modal livre individuel, placé en bas */}
+        {/* Collection + Retirer */}
         {(isSeriesOwned || series.isOwnedSeries || series.isLibrarySeries || series.isSeriesCard || (series.books && series.books.length > 0) || books.length > 0) && (
-          <div className="px-4 sm:px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="px-4 sm:px-6 py-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
+            {(isSeriesOwned || series.isOwnedSeries || series.isLibrarySeries) && (series.id || series._id) && (
+              <div>
+                {showCollectionMenu ? (
+                  <AddToCollectionMenu
+                    item={{
+                      type: 'series',
+                      id: series.id || series._id,
+                      title: series.name || series.series_name || 'Série',
+                      author: series.author || series.authors?.[0] || '',
+                      cover_url: series.cover_url || series.cover_image_url || null,
+                    }}
+                    onClose={() => setShowCollectionMenu(false)}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowCollectionMenu(true)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                  >
+                    Ajouter à une collection
+                  </button>
+                )}
+              </div>
+            )}
             {confirmDelete ? (
               <div className="flex items-center justify-between bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3">
                 <span className="text-sm text-red-700 dark:text-red-300 font-medium">

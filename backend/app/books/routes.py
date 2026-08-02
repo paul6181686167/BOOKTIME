@@ -464,6 +464,44 @@ async def resolve_french_paperback_pages(
     }
 
 
+@router.get("/resolve-synopsis")
+async def resolve_book_synopsis(
+    title: str = Query(..., min_length=1),
+    author: str = Query(""),
+    isbn: str = Query(""),
+    ol_key: str = Query(""),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Résout résumé + pages sans id livre (séries rétrogradées / livres sans fiche books).
+    """
+    from ..utils.book_synopsis import fetch_book_synopsis, is_usable_synopsis
+
+    result = fetch_book_synopsis(
+        title=title,
+        author=author,
+        isbn=isbn,
+        ol_key=ol_key,
+    )
+    description = (result.get("description") or "").strip()
+    if not is_usable_synopsis(description):
+        description = ""
+    pages = result.get("pages")
+    try:
+        pages = int(pages) if pages is not None else None
+        if pages is not None and pages <= 0:
+            pages = None
+    except (TypeError, ValueError):
+        pages = None
+    return {
+        "description": description,
+        "pages": pages,
+        "source": result.get("source") or "none",
+        "ol_key": result.get("ol_key") or ol_key or None,
+        "found": bool(description or pages),
+    }
+
+
 @router.get("/{book_id}")
 async def get_book(book_id: str, current_user: dict = Depends(get_current_user)):
     """Obtenir un livre par son ID"""
@@ -560,7 +598,7 @@ async def get_book_synopsis(
     Résumé / 4ᵉ de couverture (Google Books prioritaire, puis Open Library).
     Persiste la description sur le livre si elle était vide.
     """
-    from ..utils.book_synopsis import fetch_book_synopsis
+    from ..utils.book_synopsis import fetch_book_synopsis, is_usable_synopsis
 
     book = books_collection.find_one(
         {"id": book_id, "user_id": current_user["id"]}, {"_id": 0}
@@ -569,6 +607,8 @@ async def get_book_synopsis(
         raise HTTPException(status_code=404, detail="Livre non trouvé")
 
     existing_desc = (book.get("description") or "").strip()
+    if not is_usable_synopsis(existing_desc):
+        existing_desc = ""
     existing_pages = book.get("total_pages")
     has_pages = isinstance(existing_pages, (int, float)) and int(existing_pages) > 0
 
@@ -587,7 +627,10 @@ async def get_book_synopsis(
         isbn=book.get("isbn") or book.get("isbn13") or "",
         ol_key=book.get("ol_key") or "",
     )
-    description = existing_desc or (result.get("description") or "").strip()
+    fetched_desc = (result.get("description") or "").strip()
+    if not is_usable_synopsis(fetched_desc):
+        fetched_desc = ""
+    description = existing_desc or fetched_desc
     pages = int(existing_pages) if has_pages else result.get("pages")
     if pages is not None:
         try:

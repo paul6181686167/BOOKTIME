@@ -142,6 +142,29 @@ def _is_secondary_literature(title: str) -> bool:
     return bool(_SECONDARY_LIT.search(title or ""))
 
 
+# Faux « résumés » stockés sur series_library (métadonnées Wikidata / compteurs)
+_PLACEHOLDER_SYNOPSIS = re.compile(
+    r"(?is)^\s*("
+    r"wikidata\b|"
+    r"s[ée]rie\s+de\s+\d+\s+tome|"
+    r"s[ée]rie\s+(roman|bd|manga)\b|"
+    r"collection\s+de\s+\d+\s+livre"
+    r")"
+)
+
+
+def is_usable_synopsis(text: str | None) -> bool:
+    """True si le texte ressemble à une 4ᵉ de couverture, pas à une meta technique."""
+    t = (text or "").strip()
+    if len(t) < 28:
+        return False
+    if _PLACEHOLDER_SYNOPSIS.search(t):
+        return False
+    if re.search(r"(?i)wikidata\s*[·•|]", t):
+        return False
+    return True
+
+
 def _title_match_score(query: str, candidate: str) -> int:
     """
     Score de proximité titre (0–100).
@@ -653,22 +676,42 @@ def _from_google_books(
         t = (title or "").strip()
         a = (author or "").split(",")[0].strip()
         q = f'intitle:"{t}" inauthor:"{a}"' if t and a else f'intitle:"{t}"'
-        raw = gb.search_volumes(q, max_results=8, lang_restrict=prefer_lang or "fr", print_type="books")
+
+        def _scan(raw: dict) -> str:
+            best = ""
+            for item in raw.get("items") or []:
+                vi = (item or {}).get("volumeInfo") or {}
+                vi_title = str(vi.get("title") or "")
+                if t and _title_match_score(t, vi_title) < 50:
+                    continue
+                if _is_secondary_literature(vi_title):
+                    continue
+                desc = _clean(vi.get("description") or "")
+                if desc and len(desc) > len(best):
+                    best = desc[:2000]
+                    if not out.get("pages"):
+                        pc = vi.get("pageCount")
+                        if (
+                            isinstance(pc, (int, float))
+                            and int(pc) > 0
+                            and _plausible_novel_pages(int(pc))
+                        ):
+                            out["pages"] = int(pc)
+            return best
+
+        # FR d'abord, puis sans filtre langue (beaucoup de 4ᵉ n'existent qu'en EN)
+        langs: list[str | None] = []
+        if prefer_lang:
+            langs.append(prefer_lang)
+        langs.append(None)
         best_desc = ""
-        for item in raw.get("items") or []:
-            vi = (item or {}).get("volumeInfo") or {}
-            vi_title = str(vi.get("title") or "")
-            if t and _title_match_score(t, vi_title) < 50:
-                continue
-            if _is_secondary_literature(vi_title):
-                continue
-            desc = _clean(vi.get("description") or "")
-            if desc and len(desc) > len(best_desc):
-                best_desc = desc[:2000]
-                if not out.get("pages"):
-                    pc = vi.get("pageCount")
-                    if isinstance(pc, (int, float)) and int(pc) > 0 and _plausible_novel_pages(int(pc)):
-                        out["pages"] = int(pc)
+        for lang in langs:
+            raw = gb.search_volumes(
+                q, max_results=8, lang_restrict=lang, print_type="books"
+            )
+            best_desc = _scan(raw)
+            if is_usable_synopsis(best_desc):
+                break
         out["description"] = best_desc
     except Exception as exc:
         logger.debug("GB fallback fail: %s", exc)

@@ -103,6 +103,8 @@ const BookActions = {
           saga: '',
           total_pages: series.total_pages || null,
           current_page: series.current_page ?? null,
+          rating: series.rating || 0,
+          review: series.review || '',
         });
         return;
       }

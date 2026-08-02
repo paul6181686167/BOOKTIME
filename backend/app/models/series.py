@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List, Dict, Any
 
 class VolumeData(BaseModel):
@@ -6,6 +6,8 @@ class VolumeData(BaseModel):
     volume_title: str
     is_read: bool = False
     date_read: Optional[str] = None
+    rating: Optional[int] = None
+    review: Optional[str] = None
 
 class SeriesLibraryCreate(BaseModel):
     series_name: str
@@ -21,9 +23,13 @@ class SeriesLibraryCreate(BaseModel):
     series_status: str = "to_read"
 
 class TomeStatus(BaseModel):
-    """Statut d'un tome individuel."""
+    """Statut d'un tome individuel (accepte camelCase du frontend)."""
+    model_config = ConfigDict(populate_by_name=True, extra="ignore")
+
     status: str = "non_lu"   # "non_lu" | "en_cours" | "lu"
-    current_page: Optional[int] = None
+    current_page: Optional[int] = Field(default=None, alias="currentPage")
+    rating: Optional[int] = None
+    review: Optional[str] = None
 
 class SeriesReadingPreferences(BaseModel):
     series_name: str

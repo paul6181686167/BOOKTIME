@@ -1,18 +1,50 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronDownIcon, ChevronUpIcon, BookOpenIcon, CalendarIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronDownIcon, ChevronUpIcon, BookOpenIcon, CalendarIcon, DocumentTextIcon, StarIcon } from '@heroicons/react/24/outline';
+import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { isVolumeUnreleased } from '../utils/volumeRelease';
 
 // tomeStatus : 'non_lu' | 'en_cours' | 'lu'
 // onStatusChange(tomeNumber, status, currentPage)
-const TomeDropdown = ({ tomeNumber, tomeTitle, seriesData, tomeStatus = 'non_lu', currentPage = null, onToggleRead, onStatusChange }) => {
+// onFeedbackChange(tomeNumber, { rating, review })
+const TomeDropdown = ({
+  tomeNumber,
+  tomeTitle,
+  seriesData,
+  tomeStatus = 'non_lu',
+  currentPage = null,
+  rating = 0,
+  review = '',
+  onToggleRead,
+  onStatusChange,
+  onFeedbackChange,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [pageInput, setPageInput] = useState(currentPage || '');
+  const [localRating, setLocalRating] = useState(rating || 0);
+  const [localReview, setLocalReview] = useState(review || '');
   const unreleased = isVolumeUnreleased(seriesData, tomeNumber);
 
   // Synchroniser pageInput si currentPage change depuis le parent
   useEffect(() => {
     setPageInput(currentPage ?? '');
   }, [currentPage]);
+
+  useEffect(() => {
+    setLocalRating(rating || 0);
+  }, [rating]);
+
+  useEffect(() => {
+    setLocalReview(review || '');
+  }, [review]);
+
+  // Ouvrir la mini-fiche seulement au passage vers « Lu » (pas au chargement)
+  const prevStatusRef = useRef(tomeStatus);
+  useEffect(() => {
+    if (prevStatusRef.current !== 'lu' && tomeStatus === 'lu') {
+      setIsOpen(true);
+    }
+    prevStatusRef.current = tomeStatus;
+  }, [tomeStatus]);
 
   // Rétrocompatibilité : si onStatusChange absent, utiliser onToggleRead (booléen)
   const handleStatusChange = (newStatus) => {
@@ -245,6 +277,48 @@ const TomeDropdown = ({ tomeNumber, tomeTitle, seriesData, tomeStatus = 'non_lu'
 
           {tomeInfo.description && (
             <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{tomeInfo.description}</p>
+          )}
+
+          {/* Note & avis — uniquement si le tome est marqué lu */}
+          {isRead && (
+            <div className="pt-2 border-t border-gray-200 dark:border-gray-600 space-y-2">
+              <div>
+                <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Note</p>
+                <div className="flex space-x-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => {
+                        setLocalRating(star);
+                        onFeedbackChange?.(tomeNumber, { rating: star, review: localReview });
+                      }}
+                      className="h-5 w-5"
+                    >
+                      {star <= localRating ? (
+                        <StarSolidIcon className="h-5 w-5 text-yellow-400" />
+                      ) : (
+                        <StarIcon className="h-5 w-5 text-gray-300 dark:text-gray-600" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Avis</p>
+                <textarea
+                  value={localReview}
+                  onChange={(e) => setLocalReview(e.target.value)}
+                  onBlur={() => {
+                    if ((localReview || '') === (review || '')) return;
+                    onFeedbackChange?.(tomeNumber, { rating: localRating, review: localReview });
+                  }}
+                  rows={3}
+                  placeholder="Qu'avez-vous pensé de ce tome ?"
+                  className="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-booktime-500 resize-none"
+                />
+              </div>
+            </div>
           )}
 
           {(tomeInfo.publisher || tomeInfo.isbn) && (

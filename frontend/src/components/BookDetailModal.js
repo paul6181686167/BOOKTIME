@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { XMarkIcon, StarIcon, TrashIcon, BookmarkIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
-import { StarIcon as StarSolidIcon, BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid';
+import { XMarkIcon, StarIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 import LanguageSelector from './LanguageSelector';
 import { API_BASE_URL } from '../config/environment';
 import { displayBookTitleFrFirst } from '../utils/openLibraryBookDisplay';
+import { isUsableSynopsis } from '../utils/synopsisQuality';
+import AddToCollectionMenu from './common/AddToCollectionMenu';
 import confetti from 'canvas-confetti';
 
 // Déclenche les confettis de célébration
@@ -24,7 +26,6 @@ const launchConfetti = () => {
 const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibrary, onAuthorClick }) => {
   const titleMain = useMemo(() => displayBookTitleFrFirst(book), [book]);
   const [isEditing, setIsEditing] = useState(false);
-  const [activeTab, setActiveTab] = useState('details'); // 'details' | 'notes'
   const [bouncing, setBouncing] = useState(null); // id du bouton en train de bouncer
   const [olDetails, setOlDetails] = useState(null); // détails enrichis depuis OL
   const [olLoading, setOlLoading] = useState(false);
@@ -33,7 +34,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     current_page: book.current_page || 0,
     rating: book.rating || 0,
     review: book.review || '',
-    notes: book.notes || '',
     original_language: book.original_language || 'français',
     available_translations: book.available_translations || [],
     reading_language: book.reading_language || 'français',
@@ -48,12 +48,18 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   const [isAdding, setIsAdding] = useState(false);
   const [addDone, setAddDone] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showCollectionMenu, setShowCollectionMenu] = useState(false);
   const pageInputRef = useRef(null);
   const pagesFetchDoneRef = useRef(null);
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
 
   const totalPages = resolvedTotalPages || book.total_pages || 0;
+  const displaySynopsis = isUsableSynopsis(olDetails?.description)
+    ? olDetails.description
+    : isUsableSynopsis(book.description)
+      ? book.description
+      : '';
 
   useEffect(() => {
     setEditData({
@@ -61,7 +67,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
       current_page: book.current_page || 0,
       rating: book.rating || 0,
       review: book.review || '',
-      notes: book.notes || '',
       original_language: book.original_language || 'français',
       available_translations: book.available_translations || [],
       reading_language: book.reading_language || 'français',
@@ -73,13 +78,18 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     pagesFetchDoneRef.current = null;
   }, [book]);
 
-  // Charger résumé + nombre de pages (poche FR) si manquants
+  // Charger résumé + nombre de pages (poche FR) si manquants / faux résumés
   useEffect(() => {
-    const needsDesc = !(book.description || '').trim();
+    const storedDesc = (book.description || '').trim();
+    const needsDesc = !isUsableSynopsis(storedDesc);
     const needsPages = !(book.total_pages > 0);
     if (!needsDesc && !needsPages) {
       setOlDetails(null);
       return;
+    }
+    // Ne pas afficher un faux résumé Wikidata / « Série de N tomes »
+    if (needsDesc && storedDesc) {
+      setOlDetails((prev) => (prev?.description ? prev : null));
     }
 
     let cancelled = false;
@@ -89,14 +99,25 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     if (pagesFetchDoneRef.current === fetchKey) return;
     pagesFetchDoneRef.current = fetchKey;
 
-    const applyPages = async (pages) => {
+    const applyMeta = async ({ description, pages } = {}) => {
+      const patch = {};
+      if (needsDesc && isUsableSynopsis(description)) {
+        if (!cancelled) setOlDetails({ description: description.trim() });
+        patch.description = description.trim();
+      }
       const n = parseInt(pages, 10);
-      if (!n || n <= 0 || cancelled) return;
-      setResolvedTotalPages(n);
-      // Persister surtout les fiches series_library (synopsis le fait déjà pour les vrais livres)
-      if (book.isDemotedSeries && book.id && onUpdateRef.current) {
+      if (needsPages && n > 0) {
+        if (!cancelled) setResolvedTotalPages(n);
+        patch.total_pages = n;
+      }
+      if (
+        Object.keys(patch).length &&
+        book.id &&
+        !book.isFromOpenLibrary &&
+        onUpdateRef.current
+      ) {
         try {
-          await onUpdateRef.current(book.id, { total_pages: n });
+          await onUpdateRef.current(book.id, patch);
         } catch (_) {
           /* ignore */
         }
@@ -114,20 +135,18 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
           );
           if (r.ok) {
             const data = await r.json();
-            if (!cancelled && needsDesc && data?.description) {
-              setOlDetails({ description: data.description });
-            }
-            if (needsPages && data?.pages) {
-              await applyPages(data.pages);
-            }
-            if (!needsPages || data?.pages) {
-              if (!needsDesc || data?.description) return;
-            }
+            await applyMeta({
+              description: data?.description,
+              pages: data?.pages,
+            });
+            const gotDesc = !needsDesc || isUsableSynopsis(data?.description);
+            const gotPages = !needsPages || data?.pages;
+            if (gotDesc && gotPages) return;
           }
         }
 
-        // 2) Résolution poche FR par titre (séries rétrogradées / repli)
-        if (needsPages && (book.title || '').trim()) {
+        // 2) Résolution par titre (séries rétrogradées / repli)
+        if ((needsDesc || needsPages) && (book.title || '').trim()) {
           const params = new URLSearchParams({
             title: book.title || '',
             author: book.author || '',
@@ -135,16 +154,21 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
           if (book.isbn) params.set('isbn', book.isbn);
           if (book.ol_key) params.set('ol_key', book.ol_key);
           const r = await fetch(
-            `${API_BASE_URL}/api/books/resolve-pages?${params}`,
+            `${API_BASE_URL}/api/books/resolve-synopsis?${params}`,
             { headers }
           );
           if (r.ok) {
             const data = await r.json();
-            if (data?.pages) await applyPages(data.pages);
+            await applyMeta({
+              description: data?.description,
+              pages: data?.pages,
+            });
+            const gotDesc = !needsDesc || isUsableSynopsis(data?.description);
+            if (gotDesc) return;
           }
         }
 
-        // 3) Fallback description OL
+        // 3) Fallback description OL par clé
         if (needsDesc && !cancelled) {
           const olKey = book.ol_key;
           if (olKey && (book.isFromOpenLibrary || String(olKey).includes('works/'))) {
@@ -154,7 +178,9 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             });
             if (r.ok) {
               const data = await r.json();
-              if (!cancelled && data) setOlDetails(data);
+              if (!cancelled && isUsableSynopsis(data?.description)) {
+                await applyMeta({ description: data.description });
+              }
             }
           }
         }
@@ -287,8 +313,29 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     }
   };
 
-  const handleRatingClick = (rating) => {
-    setEditData(prev => ({ ...prev, rating }));
+  const displayStatus = editData.status || book.status;
+
+  const handleRatingClick = async (rating) => {
+    setEditData((prev) => ({ ...prev, rating }));
+    // Note saisissable dès que le livre est terminé (sans mode édition complet)
+    if ((editData.status || book.status) === 'completed' && book?.id && !book.isFromOpenLibrary) {
+      try {
+        await onUpdate(book.id, { rating });
+      } catch (_) {
+        toast.error('Erreur lors de la sauvegarde de la note');
+      }
+    }
+  };
+
+  const handleReviewSave = async () => {
+    if ((editData.status || book.status) !== 'completed' || !book?.id || book.isFromOpenLibrary) return;
+    const review = editData.review || '';
+    if (review === (book.review || '')) return;
+    try {
+      await onUpdate(book.id, { review });
+    } catch (_) {
+      toast.error("Erreur lors de la sauvegarde de l'avis");
+    }
   };
 
   const getProgressPercentage = () => {
@@ -296,8 +343,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     const currentPage = isEditing ? editData.current_page : book.current_page;
     return Math.min(100, (currentPage / totalPages) * 100);
   };
-
-  const displayStatus = editData.status || book.status;
 
   const getCurrentStatus = () => {
     return statusOptions.find(s => s.value === displayStatus) || statusOptions[0];
@@ -344,13 +389,13 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             </div>
 
             {/* Résumé / 4ᵉ de couverture — au-dessus du statut (comme les fiches séries) */}
-            {(book.description || olDetails?.description) ? (
+            {displaySynopsis ? (
               <div className="mb-4">
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Résumé
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed whitespace-pre-line">
-                  {book.description || olDetails?.description}
+                  {displaySynopsis}
                 </p>
               </div>
             ) : olLoading ? (
@@ -500,68 +545,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
           </div>
         </div>
 
-        {/* Onglets Détails / Notes */}
-        {(
-          <div className="flex space-x-1 mb-5 border-b border-gray-200 dark:border-gray-700">
-            <button
-              onClick={() => setActiveTab('details')}
-              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors flex items-center gap-2 ${
-                activeTab === 'details'
-                  ? 'bg-white dark:bg-gray-800 text-booktime-600 border-b-2 border-booktime-500'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-              }`}
-            >
-              <BookmarkIcon className="h-4 w-4" />
-              Détails
-            </button>
-            <button
-              onClick={() => setActiveTab('notes')}
-              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors flex items-center gap-2 ${
-                activeTab === 'notes'
-                  ? 'bg-white dark:bg-gray-800 text-booktime-600 border-b-2 border-booktime-500'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-              }`}
-            >
-              <ChatBubbleLeftIcon className="h-4 w-4" />
-              Notes & Citations
-              {book.notes && <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />}
-            </button>
-          </div>
-        )}
-
-        {/* Onglet Notes */}
-        {activeTab === 'notes' && (
-          <div className="animate-fadeIn">
-            <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-              <p className="text-xs text-yellow-700 dark:text-yellow-400">
-                💡 Notez ici vos passages préférés, citations marquantes, pensées ou réflexions sur ce livre.
-              </p>
-            </div>
-            <textarea
-              value={isEditing ? editData.notes : (book.notes || '')}
-              onChange={(e) => isEditing && setEditData(prev => ({ ...prev, notes: e.target.value }))}
-              readOnly={!isEditing}
-              rows={12}
-              placeholder={isEditing ? "Écrivez vos notes, citations et réflexions sur ce livre..." : "Aucune note pour ce livre. Cliquez sur ✏️ pour en ajouter."}
-              className={`w-full px-4 py-3 border rounded-lg text-sm leading-relaxed resize-none transition-colors ${
-                isEditing
-                  ? 'border-blue-300 dark:border-blue-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-booktime-500'
-                  : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 cursor-default'
-              }`}
-            />
-            {!isEditing && !book.notes && (
-              <button
-                onClick={() => { setIsEditing(true); setTimeout(() => {}, 50); }}
-                className="mt-3 w-full py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 dark:text-gray-400 hover:border-booktime-400 hover:text-booktime-600 transition-colors text-sm"
-              >
-                + Ajouter une note
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Onglet Détails */}
-        {activeTab === 'details' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Image de couverture */}
           <div className="md:col-span-1">
@@ -732,44 +715,42 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               </div>
             )}
 
-            {/* Note */}
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Note</h3>
-              <div className="flex space-x-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => isEditing && handleRatingClick(star)}
-                    className={`h-6 w-6 ${isEditing ? 'cursor-pointer' : 'cursor-default'}`}
-                    disabled={!isEditing}
-                  >
-                    {star <= (isEditing ? editData.rating : book.rating) ? (
-                      <StarSolidIcon className="h-6 w-6 text-yellow-400" />
-                    ) : (
-                      <StarIcon className="h-6 w-6 text-gray-300 dark:text-gray-600" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
+            {/* Note & avis — visibles uniquement une fois le livre terminé */}
+            {displayStatus === 'completed' && (
+              <>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Note</h3>
+                  <div className="flex space-x-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => handleRatingClick(star)}
+                        className="h-6 w-6 cursor-pointer"
+                      >
+                        {star <= (editData.rating || book.rating || 0) ? (
+                          <StarSolidIcon className="h-6 w-6 text-yellow-400" />
+                        ) : (
+                          <StarIcon className="h-6 w-6 text-gray-300 dark:text-gray-600" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            {/* Avis */}
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Avis</h3>
-              {isEditing ? (
-                <textarea
-                  value={editData.review}
-                  onChange={(e) => setEditData(prev => ({ ...prev, review: e.target.value }))}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-booktime-500 transition-colors"
-                  placeholder="Qu'avez-vous pensé de ce livre ?"
-                />
-              ) : (
-                <p className="text-gray-600 dark:text-gray-400">
-                  {book.review || 'Aucun avis pour le moment.'}
-                </p>
-              )}
-            </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Avis</h3>
+                  <textarea
+                    value={editData.review}
+                    onChange={(e) => setEditData((prev) => ({ ...prev, review: e.target.value }))}
+                    onBlur={handleReviewSave}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-booktime-500 transition-colors"
+                    placeholder="Qu'avez-vous pensé de ce livre ?"
+                  />
+                </div>
+              </>
+            )}
 
             {/* Sujets / Genres — depuis OL enrichi */}
             {(olDetails?.subjects?.length > 0 || book.subjects?.length > 0) && (
@@ -824,7 +805,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             </div>
           </div>
         </div>
-        )} {/* Fin onglet Détails */}
 
         {/* Boutons d'action */}
         {isEditing ? (
@@ -856,10 +836,34 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             </button>
           </div>
         ) : (
-          /* Bouton Retirer - visible en mode lecture */
-          !book.isFromOpenLibrary && onDelete && (
-            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-              {confirmDelete ? (
+          /* Collection + Retirer */
+          !book.isFromOpenLibrary && (
+            <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
+              {book.id && (
+                <div>
+                  {showCollectionMenu ? (
+                    <AddToCollectionMenu
+                      item={{
+                        type: book.isDemotedSeries ? 'series' : 'book',
+                        id: book.id,
+                        title: titleMain || book.title,
+                        author: book.author || '',
+                        cover_url: book.cover_url || null,
+                      }}
+                      onClose={() => setShowCollectionMenu(false)}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowCollectionMenu(true)}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                    >
+                      Ajouter à une collection
+                    </button>
+                  )}
+                </div>
+              )}
+              {onDelete && (confirmDelete ? (
                 <div className="flex items-center justify-between bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3">
                   <span className="text-sm text-red-700 dark:text-red-300 font-medium">
                     Retirer définitivement ce livre ?
@@ -888,7 +892,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                   <TrashIcon className="h-4 w-4" />
                   Retirer de ma bibliothèque
                 </button>
-              )}
+              ))}
             </div>
           )
         )}

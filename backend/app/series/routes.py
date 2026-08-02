@@ -545,7 +545,11 @@ async def save_series_reading_preferences(
         read_tomes = preferences.read_tomes or []
         tome_statuses_raw = {}
         if preferences.tome_statuses:
-            tome_statuses_raw = {k: v.dict() for k, v in preferences.tome_statuses.items()}
+            # by_alias=True → currentPage pour le frontend
+            tome_statuses_raw = {
+                k: v.model_dump(by_alias=True, exclude_none=False)
+                for k, v in preferences.tome_statuses.items()
+            }
             # Recalculer read_tomes depuis tome_statuses
             read_tomes = [int(k) for k, v in preferences.tome_statuses.items() if v.status == "lu"]
 

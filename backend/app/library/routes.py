@@ -94,19 +94,33 @@ async def update_volume_status(
         raise HTTPException(status_code=404, detail="Série non trouvée")
     
     # Mettre à jour le volume
+    vol_set: dict = {
+        "volumes.$.is_read": volume_data.get("is_read", False),
+        "volumes.$.date_read": datetime.now(timezone.utc).isoformat() if volume_data.get("is_read") else None,
+        "updated_at": datetime.now(timezone.utc),
+    }
+    if "rating" in volume_data:
+        raw_rating = volume_data.get("rating")
+        if raw_rating is None or raw_rating == "":
+            vol_set["volumes.$.rating"] = None
+        else:
+            try:
+                rating_i = int(raw_rating)
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=400, detail="rating invalide")
+            if rating_i < 0 or rating_i > 5:
+                raise HTTPException(status_code=400, detail="rating invalide")
+            vol_set["volumes.$.rating"] = rating_i
+    if "review" in volume_data:
+        vol_set["volumes.$.review"] = (volume_data.get("review") or "")[:4000]
+
     result = series_library_collection.update_one(
         {
             "id": series_id,
             "user_id": current_user["id"],
             "volumes.volume_number": volume_number
         },
-        {
-            "$set": {
-                "volumes.$.is_read": volume_data.get("is_read", False),
-                "volumes.$.date_read": datetime.now(timezone.utc).isoformat() if volume_data.get("is_read") else None,
-                "updated_at": datetime.now(timezone.utc)
-            }
-        }
+        {"$set": vol_set},
     )
     
     if result.modified_count == 0:
@@ -123,20 +137,51 @@ async def update_series_status(
     series_data: dict,
     current_user: dict = Depends(get_current_user)
 ):
-    """Mettre à jour le statut global et/ou la page courante d'une série (livre rétrogradé inclus)."""
+    """Mettre à jour statut, pages et/ou résumé d'une série (livre rétrogradé inclus)."""
     from datetime import datetime, timezone
     
     new_status = series_data.get("series_status")
     has_page = "current_page" in series_data
     has_total = "total_pages" in series_data
+    has_desc = "description_fr" in series_data or "description" in series_data
+    has_rating = "rating" in series_data
+    has_review = "review" in series_data
     if new_status is not None and new_status not in ["to_read", "reading", "completed"]:
         raise HTTPException(status_code=400, detail="Statut invalide")
-    if new_status is None and not has_page and not has_total:
+    if (
+        new_status is None
+        and not has_page
+        and not has_total
+        and not has_desc
+        and not has_rating
+        and not has_review
+    ):
         raise HTTPException(status_code=400, detail="Aucune mise à jour fournie")
 
     update_fields: dict = {"updated_at": datetime.now(timezone.utc)}
     if new_status is not None:
         update_fields["series_status"] = new_status
+    if has_desc:
+        raw_desc = series_data.get("description_fr")
+        if raw_desc is None:
+            raw_desc = series_data.get("description")
+        desc = (raw_desc or "").strip()
+        if desc:
+            update_fields["description_fr"] = desc[:4000]
+    if has_rating:
+        raw_rating = series_data.get("rating")
+        if raw_rating is None or raw_rating == "":
+            update_fields["rating"] = None
+        else:
+            try:
+                rating_i = int(raw_rating)
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=400, detail="rating invalide")
+            if rating_i < 0 or rating_i > 5:
+                raise HTTPException(status_code=400, detail="rating invalide")
+            update_fields["rating"] = rating_i
+    if has_review:
+        update_fields["review"] = (series_data.get("review") or "")[:4000]
     if has_page:
         raw_page = series_data.get("current_page")
         if raw_page is None or raw_page == "":

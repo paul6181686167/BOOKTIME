@@ -391,6 +391,11 @@ function MainApp() {
           if (bookData.status) next.series_status = bookData.status;
           if (bookData.current_page !== undefined) next.current_page = bookData.current_page;
           if (bookData.total_pages !== undefined) next.total_pages = bookData.total_pages;
+          if (bookData.description !== undefined) {
+            next.description_fr = bookData.description;
+          }
+          if (bookData.rating !== undefined) next.rating = bookData.rating;
+          if (bookData.review !== undefined) next.review = bookData.review;
           return next;
         })
       );
@@ -415,6 +420,11 @@ function MainApp() {
         if (bookData.total_pages !== undefined) {
           payload.total_pages = bookData.total_pages;
         }
+        if (bookData.description !== undefined) {
+          payload.description_fr = bookData.description;
+        }
+        if (bookData.rating !== undefined) payload.rating = bookData.rating;
+        if (bookData.review !== undefined) payload.review = bookData.review;
         if (Object.keys(payload).length === 0) return;
         await seriesLibraryService.updateSeriesLibraryEntry(bookId, payload, token);
         await unifiedContent.loadUnifiedContent({
@@ -1063,6 +1073,27 @@ function MainApp() {
         <ProfileModal
           isOpen={showProfileModal}
           onClose={() => setShowProfileModal(false)}
+          onAuthorClick={handleAuthorClick}
+          libraryBooks={unifiedContent.books || []}
+          librarySeries={unifiedContent.userSeriesLibrary || []}
+          onOpenBook={(bookId) => {
+            const book = (unifiedContent.books || []).find((b) => b.id === bookId);
+            if (book) {
+              booksHook.setSelectedBook(book);
+              booksHook.setShowBookModal(true);
+            }
+          }}
+          onOpenSeries={(seriesId) => {
+            const series = (unifiedContent.userSeriesLibrary || []).find((s) => s.id === seriesId);
+            if (series) {
+              handleSeriesClick({
+                ...series,
+                name: series.series_name || series.name,
+                isOwnedSeries: true,
+                isLibrarySeries: true,
+              });
+            }
+          }}
         />
       )}
       
