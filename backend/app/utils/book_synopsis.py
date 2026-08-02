@@ -783,6 +783,14 @@ def _ol_work_description_only(ol_key: str) -> str:
         return ""
 
 
+_FILM_OR_ADAPTATION = re.compile(
+    r"(?i)\b("
+    r"film|cin[eé]ma|cin[eé]matographique|television|t[eé]l[eé]vision|"
+    r"s[eé]rie t[eé]l[eé]|adaptation (au cin[eé]|t[eé]l[eé])|episode|réalisateur"
+    r")\b"
+)
+
+
 def _description_from_wikipedia(
     title: str, author: str = "", *, langs: tuple[str, ...] = ("fr", "en")
 ) -> str:
@@ -791,7 +799,14 @@ def _description_from_wikipedia(
     if not t:
         return ""
     a = (author or "").split(",")[0].strip()
-    queries = [f"{t} {a}".strip(), t]
+    # Favoriser les pages livres / romans (évite les films homonymes)
+    queries = [
+        f"{t} {a} roman".strip(),
+        f"{t} {a} livre".strip(),
+        f"{t} {a}".strip(),
+        f"{t} roman",
+        t,
+    ]
     for lang in langs:
         for q in queries:
             try:
@@ -801,7 +816,7 @@ def _description_from_wikipedia(
                         "action": "query",
                         "list": "search",
                         "srsearch": q,
-                        "srlimit": 5,
+                        "srlimit": 6,
                         "format": "json",
                     },
                     timeout=8,
@@ -813,9 +828,19 @@ def _description_from_wikipedia(
                 page_title = None
                 for hit in hits:
                     ht = str(hit.get("title") or "")
+                    snippet = str(hit.get("snippet") or "")
                     if _is_secondary_literature(ht):
                         continue
+                    if _FILM_OR_ADAPTATION.search(ht) and not re.search(
+                        r"(?i)\b(roman|novel|livre|book)\b", ht
+                    ):
+                        continue
                     if _title_match_score(t, ht) < 50 and t.lower() not in ht.lower():
+                        continue
+                    # Rejeter les hits clairement film si le titre du livre matche aussi un film
+                    if _FILM_OR_ADAPTATION.search(snippet) and not re.search(
+                        r"(?i)\b(roman|novel|novella|récit|livre)\b", snippet
+                    ):
                         continue
                     page_title = ht
                     break
@@ -839,13 +864,21 @@ def _description_from_wikipedia(
                 pages = (er.json().get("query") or {}).get("pages") or {}
                 for page in pages.values():
                     extract = _clean(page.get("extract") or "")
-                    if is_usable_synopsis(extract):
-                        # Couper les intros trop longues
-                        if len(extract) > 1200:
-                            cut = extract[:1200]
-                            sp = cut.rfind(". ")
-                            extract = (cut[: sp + 1] if sp > 400 else cut) + ("…" if sp > 400 else "")
-                        return extract
+                    if not is_usable_synopsis(extract):
+                        continue
+                    # Intro film → ignorer
+                    head = extract[:280]
+                    if _FILM_OR_ADAPTATION.search(head) and not re.search(
+                        r"(?i)\b(roman|novel|novella|récit)\b", head
+                    ):
+                        continue
+                    if len(extract) > 1200:
+                        cut = extract[:1200]
+                        sp = cut.rfind(". ")
+                        extract = (cut[: sp + 1] if sp > 400 else cut) + (
+                            "…" if sp > 400 else ""
+                        )
+                    return extract
             except Exception as exc:
                 logger.debug("Wikipedia synopsis fail %s: %s", lang, exc)
     return ""

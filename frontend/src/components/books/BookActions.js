@@ -5,6 +5,7 @@ import {
   attributeBookToSeries,
   evaluateOwnedSeriesForDisplay,
 } from '../../utils/seriesAttribution';
+import { isUsableSynopsis } from '../../utils/synopsisQuality';
 
 // Composant BookActions pour gérer toutes les actions liées aux livres
 const BookActions = {
@@ -93,11 +94,16 @@ const BookActions = {
           isSeriesCard: false,
           isDemotedSeries: true,
           title: name,
-          author: series.authors?.[0] || 'Auteur inconnu',
+          author: (Array.isArray(series.authors) && series.authors[0])
+            || series.author
+            || '',
           category: series.category || 'roman',
           status: series.series_status || 'to_read',
           cover_url: series.cover_image_url || series.cover_url || null,
-          description: series.description_fr || '',
+          // Ignorer les faux résumés Wikidata / compteurs de tomes
+          description: isUsableSynopsis(series.description_fr)
+            ? series.description_fr
+            : '',
           date_added: series.created_at,
           updated_at: series.updated_at,
           saga: '',

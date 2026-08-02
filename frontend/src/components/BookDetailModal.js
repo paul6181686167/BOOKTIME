@@ -51,6 +51,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   const [showCollectionMenu, setShowCollectionMenu] = useState(false);
   const pageInputRef = useRef(null);
   const pagesFetchDoneRef = useRef(null);
+  const metaReqIdRef = useRef(0);
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
 
@@ -75,45 +76,53 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     });
     setPageInput(book.current_page || 0);
     setResolvedTotalPages(book.total_pages > 0 ? book.total_pages : null);
+    // Nouveau livre → reset résumé enrichi (sauf si déjà une vraie 4ᵉ en base)
+    setOlDetails(
+      isUsableSynopsis(book.description) ? { description: book.description.trim() } : null
+    );
     pagesFetchDoneRef.current = null;
+    metaReqIdRef.current += 1;
   }, [book]);
 
-  // Charger résumé (rapide) + pages poche FR si manquants / faux résumés
+  // Charger résumé (rapide) + pages poche FR si manquants / faux résumés.
+  // Important : ne PAS dépendre de book.description — la persistance du résumé
+  // relançait l'effet, annulait le fetch et laissait « Aucun résumé » pour les
+  // fiches series_library rétrogradées (ex-vignettes 0/0 tomes).
   useEffect(() => {
     const storedDesc = (book.description || '').trim();
     const needsDesc = !isUsableSynopsis(storedDesc);
     const needsPages = !(book.total_pages > 0);
     if (!needsDesc && !needsPages) {
-      setOlDetails(null);
       return;
     }
-    // Ne pas afficher un faux résumé Wikidata / « Série de N tomes »
-    if (needsDesc && storedDesc) {
-      setOlDetails((prev) => (isUsableSynopsis(prev?.description) ? prev : null));
-    }
 
-    let cancelled = false;
+    const reqId = ++metaReqIdRef.current;
     const token = localStorage.getItem('token');
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     const fetchKey = `${book.id}|${book.title}|p=${needsPages}|d=${needsDesc}`;
     if (pagesFetchDoneRef.current === fetchKey) return;
 
+    const isLive = () => metaReqIdRef.current === reqId;
+
     const applyMeta = async ({ description, pages } = {}) => {
       const patch = {};
       if (needsDesc && isUsableSynopsis(description)) {
-        if (!cancelled) setOlDetails({ description: description.trim() });
-        patch.description = description.trim();
+        const text = description.trim();
+        // Afficher tout de suite même si une persistance concurrente tourne
+        setOlDetails({ description: text });
+        patch.description = text;
       }
       const n = parseInt(pages, 10);
       if (needsPages && n > 0) {
-        if (!cancelled) setResolvedTotalPages(n);
+        setResolvedTotalPages(n);
         patch.total_pages = n;
       }
       if (
         Object.keys(patch).length &&
         book.id &&
         !book.isFromOpenLibrary &&
-        onUpdateRef.current
+        onUpdateRef.current &&
+        isLive()
       ) {
         try {
           await onUpdateRef.current(book.id, patch);
@@ -121,7 +130,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
           /* ignore */
         }
       }
-      return patch;
     };
 
     const loadMeta = async () => {
@@ -135,7 +143,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             `${API_BASE_URL}/api/books/${book.id}/synopsis?persist=true`,
             { headers }
           );
-          if (r.ok) {
+          if (r.ok && isLive()) {
             const data = await r.json();
             await applyMeta({
               description: data?.description,
@@ -146,39 +154,39 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
           }
         }
 
-        // 2) Résumé rapide par titre (séries rétrogradées / repli) — sans poche
-        if (!gotDesc && (book.title || '').trim()) {
+        // 2) Résumé rapide par titre (séries rétrogradées / ex-0/0 tomes)
+        if (!gotDesc && isLive() && (book.title || '').trim()) {
           const params = new URLSearchParams({
             title: book.title || '',
-            author: book.author || '',
+            author: book.author && book.author !== 'Auteur inconnu' ? book.author : '',
             include_pages: 'false',
           });
           if (book.isbn) params.set('isbn', book.isbn);
           if (book.ol_key) params.set('ol_key', book.ol_key);
           const r = await fetch(
             `${API_BASE_URL}/api/books/resolve-synopsis?${params}`,
-            { headers }
+            { headers, cache: 'no-store' }
           );
-          if (r.ok) {
+          if (r.ok && isLive()) {
             const data = await r.json();
             await applyMeta({ description: data?.description });
             gotDesc = isUsableSynopsis(data?.description);
           }
         }
 
-        // 3) Pages poche FR à part (plus lent, n'empêche pas d'afficher le résumé)
-        if (!gotPages && (book.title || '').trim()) {
+        // 3) Pages poche FR à part
+        if (!gotPages && isLive() && (book.title || '').trim()) {
           const params = new URLSearchParams({
             title: book.title || '',
-            author: book.author || '',
+            author: book.author && book.author !== 'Auteur inconnu' ? book.author : '',
           });
           if (book.isbn) params.set('isbn', book.isbn);
           if (book.ol_key) params.set('ol_key', book.ol_key);
           const r = await fetch(
             `${API_BASE_URL}/api/books/resolve-pages?${params}`,
-            { headers }
+            { headers, cache: 'no-store' }
           );
-          if (r.ok) {
+          if (r.ok && isLive()) {
             const data = await r.json();
             if (data?.pages) {
               await applyMeta({ pages: data.pages });
@@ -188,16 +196,17 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
         }
 
         // 4) Fallback OL par clé
-        if (!gotDesc && !cancelled) {
+        if (!gotDesc && isLive()) {
           const olKey = book.ol_key;
           if (olKey && (book.isFromOpenLibrary || String(olKey).includes('works/'))) {
             const stripped = olKey.startsWith('/') ? olKey.slice(1) : olKey;
             const r = await fetch(`${API_BASE_URL}/api/openlibrary/book/${stripped}`, {
               headers,
+              cache: 'no-store',
             });
-            if (r.ok) {
+            if (r.ok && isLive()) {
               const data = await r.json();
-              if (!cancelled && isUsableSynopsis(data?.description)) {
+              if (isUsableSynopsis(data?.description)) {
                 await applyMeta({ description: data.description });
                 gotDesc = true;
               }
@@ -205,22 +214,26 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
           }
         }
 
-        // Ne verrouiller que si on a obtenu ce qu'il fallait (sinon retry à la réouverture)
-        if ((!needsDesc || gotDesc) && (!needsPages || gotPages)) {
-          pagesFetchDoneRef.current = fetchKey;
-        } else {
-          pagesFetchDoneRef.current = null;
+        if (isLive()) {
+          if ((!needsDesc || gotDesc) && (!needsPages || gotPages)) {
+            pagesFetchDoneRef.current = fetchKey;
+          } else {
+            pagesFetchDoneRef.current = null;
+          }
         }
       } catch (_) {
-        pagesFetchDoneRef.current = null;
+        if (isLive()) pagesFetchDoneRef.current = null;
       } finally {
-        if (!cancelled) setOlLoading(false);
+        if (isLive()) setOlLoading(false);
       }
     };
 
     loadMeta();
     return () => {
-      cancelled = true;
+      // Invalide seulement si un nouveau cycle n'a pas déjà pris le relais
+      if (metaReqIdRef.current === reqId) {
+        metaReqIdRef.current += 1;
+      }
     };
   }, [
     book.id,
@@ -228,10 +241,10 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     book.author,
     book.isbn,
     book.ol_key,
-    book.description,
     book.total_pages,
     book.isFromOpenLibrary,
     book.isDemotedSeries,
+    // volontairement sans book.description (persistance ne doit pas annuler l'affichage)
   ]);
 
   // Micro-bounce sur un bouton
