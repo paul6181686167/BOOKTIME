@@ -127,7 +127,10 @@ class RecommendationService:
             for book in books:
                 author = (book.get('author') or '').strip()
                 category = (book.get('category') or '').strip()
-                rating = book.get('rating') or 0
+                try:
+                    rating = float(book.get('rating') or 0)
+                except (TypeError, ValueError):
+                    rating = 0.0
                 status = book.get('status')
 
                 # Poids d'affinité : privilégie ce qui est terminé et bien noté,
@@ -624,13 +627,57 @@ class RecommendationService:
     _INTERNAL_PROFILE_KEYS = (
         'owned_keys', 'owned_titles', 'author_affinity',
         'category_affinity', 'disliked_book_ids',
+        # Docs Mongo bruts (ObjectId / datetime) → cassent la sérialisation JSON
+        'high_rated_books', 'completed_books',
     )
 
+    def _public_book_summary(self, book: Dict) -> Dict:
+        """Résumé JSON-safe d'un livre pour l'API profil."""
+        if not isinstance(book, dict):
+            return {}
+        return {
+            'title': book.get('title') or '',
+            'author': book.get('author') or '',
+            'rating': book.get('rating'),
+            'status': book.get('status'),
+            'category': book.get('category') or 'roman',
+            'cover_url': book.get('cover_url'),
+        }
+
     def _strip_internal(self, profile: Dict) -> Dict:
-        """Retire les données internes de scoring d'un profil avant de l'exposer."""
+        """Retire les données internes / non sérialisables avant exposition API."""
         if not isinstance(profile, dict):
             return profile
-        return {k: v for k, v in profile.items() if k not in self._INTERNAL_PROFILE_KEYS}
+        out = {k: v for k, v in profile.items() if k not in self._INTERNAL_PROFILE_KEYS}
+        # Versions publiques (sans ObjectId Mongo)
+        if 'high_rated_books' in profile:
+            out['high_rated_books'] = [
+                self._public_book_summary(b) for b in (profile.get('high_rated_books') or [])[:12]
+            ]
+        if 'completed_books' in profile:
+            out['completed_books'] = [
+                self._public_book_summary(b) for b in (profile.get('completed_books') or [])[:10]
+            ]
+        return out
+
+    def _json_safe(self, value):
+        """Convertit récursivement ObjectId / datetime en types JSON-safe."""
+        try:
+            from bson import ObjectId
+        except ImportError:
+            ObjectId = type(None)  # noqa: N806
+
+        if value is None or isinstance(value, (str, int, float, bool)):
+            return value
+        if isinstance(value, datetime):
+            return value.isoformat()
+        if ObjectId is not type(None) and isinstance(value, ObjectId):
+            return str(value)
+        if isinstance(value, dict):
+            return {str(k): self._json_safe(v) for k, v in value.items()}
+        if isinstance(value, (list, tuple, set)):
+            return [self._json_safe(v) for v in value]
+        return str(value)
 
     def _format_recommendation(self, rec: RecommendationItem) -> Dict:
         """Formate une recommandation pour l'API"""
@@ -643,7 +690,7 @@ class RecommendationService:
             'confidence_score': round(rec.confidence_score, 2),
             'reasons': rec.reasons,
             'source': rec.source,
-            'metadata': rec.metadata
+            'metadata': self._json_safe(rec.metadata or {}),
         }
     
     async def _should_skip(self, user_profile: Dict, book_id: str, title: str, author: str) -> bool:

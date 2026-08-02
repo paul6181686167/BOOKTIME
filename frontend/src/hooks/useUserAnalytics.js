@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { API_BASE_URL } from '../config/environment';
 
 /**
  * PHASE 2.4 - MONITORING ET ANALYTICS
@@ -261,13 +262,33 @@ const useUserAnalytics = () => {
     // Sauvegarde locale (en développement)
     localStorage.setItem(`analytics_${analyticsRef.current.sessionId}`, JSON.stringify(sessionData));
 
-    // En production, envoyer au backend
+    // En production, envoyer au backend (chemin + payload alignés sur /api/monitoring/analytics)
     if (process.env.NODE_ENV === 'production') {
-      fetch('/api/analytics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sessionData)
-      }).catch(err => console.error('Failed to send analytics:', err));
+      try {
+        const data = analyticsRef.current;
+        const features =
+          data.mostUsedFeatures instanceof Map
+            ? Object.fromEntries(data.mostUsedFeatures)
+            : data.mostUsedFeatures || {};
+        const payload = {
+          sessionId: data.sessionId,
+          sessionDuration: report.sessionDuration || 0,
+          pageViews: data.pageViews || [],
+          interactions: data.interactions || [],
+          searchQueries: data.searchQueries || [],
+          booksInteractions: data.booksInteractions || [],
+          seriesInteractions: data.seriesInteractions || [],
+          categoryPreferences: data.categoryPreferences || {},
+          mostUsedFeatures: features,
+        };
+        fetch(`${API_BASE_URL}/api/monitoring/analytics`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }).catch(() => {});
+      } catch {
+        // analytics non bloquant
+      }
     }
 
     console.log('💾 Analytics data saved');

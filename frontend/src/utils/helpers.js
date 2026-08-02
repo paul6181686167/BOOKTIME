@@ -322,9 +322,15 @@ export const classNames = (...classes) => {
  */
 export const resolveOpenLibraryCoverUrl = (entity) => {
   if (!entity || typeof entity !== 'object') return null;
+
+  // Couvertures invalides fréquentes : /b/id/OL…W (clé work ≠ id numérique)
+  const isInvalidOlCover = (url) =>
+    /\/b\/(?:id|olid)\/OL\d+W/i.test(url) || /\/b\/id\/\d{10,13}-/i.test(url);
+
   const u = entity.cover_url;
   if (u && String(u).trim() && !String(u).includes('undefined')) {
-    return String(u).trim();
+    const url = String(u).trim();
+    if (!isInvalidOlCover(url)) return url;
   }
   if (entity.cover_i != null && Number.isFinite(Number(entity.cover_i))) {
     return `https://covers.openlibrary.org/b/id/${Number(entity.cover_i)}-M.jpg`;
@@ -334,15 +340,17 @@ export const resolveOpenLibraryCoverUrl = (entity) => {
     raw = entity.id.replace(/^ol_/, '/works/');
   }
   raw = String(raw);
-  const m = raw.match(/(OL\d+W)/i);
-  if (m) {
-    return `https://covers.openlibrary.org/b/olid/${m[1]}-M.jpg?default=false`;
+  // Les covers /b/olid/ marchent pour les éditions (OL…M), pas les works (OL…W)
+  const edition = raw.match(/(OL\d+M)\b/i);
+  if (edition) {
+    return `https://covers.openlibrary.org/b/olid/${edition[1]}-M.jpg`;
   }
   let isbn = entity.isbn || entity.isbn13 || entity.isbn10;
   if (Array.isArray(isbn)) isbn = isbn[0];
   isbn = String(isbn || '').replace(/[^0-9X]/gi, '');
   if (isbn.length >= 10) {
-    return `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`;
+    // Sans default=false : OL renvoie une image par défaut au lieu d'un 404
+    return `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`;
   }
   return null;
 };
