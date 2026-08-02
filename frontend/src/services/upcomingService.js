@@ -25,7 +25,64 @@ async function apiFetch(path, options = {}) {
 
 export const upcomingService = {
   /**
-   * Récupère tous les livres "à venir" de l'utilisateur (status = upcoming).
+   * Agrégat unifié des prochaines sorties (prochains tomes, chapitres manga,
+   * livres surveillés), groupé par échéance. Source de vérité du panneau.
+   * @param {boolean} refresh - ignore le cache serveur et recalcule.
+   */
+  async getUpcoming(refresh = false) {
+    try {
+      return await apiFetch(`/api/upcoming${refresh ? '?refresh=true' : ''}`);
+    } catch (err) {
+      console.warn('upcomingService.getUpcoming error:', err);
+      return {
+        items: [],
+        groups: { available: [], this_week: [], this_month: [], later: [], unknown: [] },
+        counts: { total: 0 },
+      };
+    }
+  },
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Réglages de notification
+  // ──────────────────────────────────────────────────────────────────────────
+
+  async getNotificationSettings() {
+    try {
+      return await apiFetch('/api/settings/notifications');
+    } catch {
+      return { notif_upcoming: 'in_app' };
+    }
+  },
+
+  async setNotificationMode(mode) {
+    return apiFetch('/api/settings/notifications', {
+      method: 'PUT',
+      body: JSON.stringify({ notif_upcoming: mode }),
+    });
+  },
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Notifications in-app
+  // ──────────────────────────────────────────────────────────────────────────
+
+  async getNotifications(limit = 50) {
+    try {
+      return await apiFetch(`/api/notifications?limit=${limit}`);
+    } catch {
+      return { notifications: [], unread: 0 };
+    }
+  },
+
+  async markNotificationRead(id) {
+    return apiFetch(`/api/notifications/${id}/read`, { method: 'POST' });
+  },
+
+  async markAllNotificationsRead() {
+    return apiFetch('/api/notifications/read-all', { method: 'POST' });
+  },
+
+  /**
+   * Récupère les livres surveillés de l'utilisateur (watchlist).
    */
   async getUpcomingBooks() {
     try {
@@ -39,7 +96,7 @@ export const upcomingService = {
   },
 
   /**
-   * Ajoute un livre dans "À venir" (status upcoming).
+   * Ajoute un livre dans la liste de surveillance (watchlist).
    */
   async addUpcomingBook(bookData) {
     const payload = {
@@ -47,11 +104,13 @@ export const upcomingService = {
       author: bookData.author || bookData.authors?.[0] || 'Auteur inconnu',
       category: bookData.category || 'roman',
       cover_url: bookData.cover_url || bookData.cover || '',
+      saga: bookData.series_name || bookData.saga || '',
+      volume_number: bookData.next_volume || bookData.volume || null,
       ol_key: bookData.book_id || bookData.ol_key || '',
       status: 'upcoming',
-      publish_date: bookData.published_date || bookData.publish_date || null,
-      source: bookData.source || 'upcoming',
-      metadata: bookData.metadata || {},
+      watchlist: true,
+      publish_date: bookData.date || bookData.published_date || bookData.publish_date || null,
+      date_confidence: bookData.date_confidence || null,
     };
 
     return apiFetch('/api/books', {
@@ -61,12 +120,12 @@ export const upcomingService = {
   },
 
   /**
-   * Migre un livre "à venir" vers "À lire" une fois sorti.
+   * Migre un livre surveillé vers "À lire" une fois sorti.
    */
   async migrateToRead(bookId) {
     return apiFetch(`/api/books/${bookId}`, {
       method: 'PUT',
-      body: JSON.stringify({ status: 'to_read' }),
+      body: JSON.stringify({ status: 'to_read', watchlist: false }),
     });
   },
 
@@ -75,64 +134,6 @@ export const upcomingService = {
    */
   async removeUpcomingBook(bookId) {
     return apiFetch(`/api/books/${bookId}`, { method: 'DELETE' });
-  },
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // Calcul des prochains tomes de séries
-  // ──────────────────────────────────────────────────────────────────────────
-
-  /**
-   * À partir des séries dans la bibliothèque, calcule les "prochains tomes" potentiels.
-   * Retourne une liste de suggestions (sans appel API supplémentaire).
-   */
-  computeNextTomes(userBooks = []) {
-    const seriesMap = {};
-
-    userBooks.forEach((book) => {
-      const saga = book.saga || book.series_name;
-      if (!saga) return;
-      const vol = book.volume_number || book.tome || null;
-      if (!seriesMap[saga]) {
-        seriesMap[saga] = {
-          name: saga,
-          author: book.author || '',
-          category: book.category || 'roman',
-          cover_url: book.cover_url || '',
-          volumes: [],
-        };
-      }
-      if (vol) seriesMap[saga].volumes.push(parseInt(vol, 10));
-    });
-
-    const suggestions = [];
-    Object.values(seriesMap).forEach((series) => {
-      if (series.volumes.length === 0) return;
-      const maxVol = Math.max(...series.volumes);
-      suggestions.push({
-        type: 'next_tome',
-        series_name: series.name,
-        title: `${series.name} — Tome ${maxVol + 1}`,
-        author: series.author,
-        category: series.category,
-        cover_url: series.cover_url,
-        reason: `Suite de ${series.name}`,
-        next_volume: maxVol + 1,
-      });
-    });
-
-    return suggestions;
-  },
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // Auteurs suivis (via localStorage)
-  // ──────────────────────────────────────────────────────────────────────────
-
-  getFollowedAuthors() {
-    try {
-      return JSON.parse(localStorage.getItem('booktime_following') || '[]');
-    } catch {
-      return [];
-    }
   },
 
   // ──────────────────────────────────────────────────────────────────────────

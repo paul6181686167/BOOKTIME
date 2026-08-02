@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import ErrorBoundary from './components/monitoring/ErrorBoundary';
+import { registerServiceWorker } from './utils/registerServiceWorker';
 
 // Supprimer les logs en production
 if (process.env.NODE_ENV === 'production') {
@@ -21,3 +22,5 @@ root.render(
     </ErrorBoundary>
   </React.StrictMode>
 );
+
+registerServiceWorker();

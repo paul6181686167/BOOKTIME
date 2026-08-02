@@ -35,6 +35,13 @@ class VolumeStatus(str, Enum):
     EXPECTED = "expected"      # ✅ AJOUTÉ : Volume attendu mais pas encore de chapitres
 
 
+class DateConfidence(str, Enum):
+    """Niveau de fiabilité d'une date de sortie de tome."""
+    CONFIRMED = "confirmed"   # Date officielle (Wikidata / Google Books)
+    ESTIMATED = "estimated"   # Date déduite (heuristique)
+    UNKNOWN = "unknown"       # Aucune date fiable
+
+
 class ReleaseSchedule(str, Enum):
     """Types de planning de sortie"""
     WEEKLY = "weekly"
@@ -90,14 +97,35 @@ class Volume(BaseModel):
     volume_number: int = Field(..., description="Numéro du volume")
     chapters_range: str = Field(..., description="Range des chapitres (ex: '1095-1105')")
     chapters_included: List[float] = Field(default_factory=list, description="Liste des numéros de chapitres")
-    release_date: Optional[datetime] = Field(None, description="Date de sortie du volume")
+    release_date: Optional[datetime] = Field(None, description="Date de sortie (estimée ou confirmée) du volume")
     status: VolumeStatus = Field(VolumeStatus.UPCOMING, description="Statut du volume")
-    
+
+    # Sortie officielle confirmée (Wikidata / Google Books), distincte de l'estimation.
+    confirmed_release_date: Optional[datetime] = Field(
+        None, description="Date de publication officielle confirmée du tome"
+    )
+    date_confidence: DateConfidence = Field(
+        DateConfidence.UNKNOWN, description="Fiabilité de la date de sortie"
+    )
+    date_source: Optional[str] = Field(
+        None, description="Source de la date confirmée (ex: 'wikidata', 'google_books')"
+    )
+
     # Métadonnées
     isbn: Optional[str] = Field(None, description="ISBN du volume")
     cover_url: Optional[str] = Field(None, description="URL de la couverture")
     page_count: Optional[int] = Field(None, description="Nombre de pages total")
-    
+
+    def is_released(self, as_of: Optional[datetime] = None) -> bool:
+        """
+        Vrai si le tome est réellement sorti : une date **confirmée** existe et
+        est déjà passée. Les dates simplement estimées ne suffisent pas.
+        """
+        if self.date_confidence != DateConfidence.CONFIRMED or not self.confirmed_release_date:
+            return False
+        reference = as_of or datetime.now(self.confirmed_release_date.tzinfo)
+        return self.confirmed_release_date <= reference
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -105,7 +133,10 @@ class Volume(BaseModel):
                 "chapters_range": "1095-1105",
                 "chapters_included": [1095, 1096, 1097, 1098, 1099, 1100, 1101, 1102, 1103, 1104, 1105],
                 "release_date": "2024-03-15T00:00:00Z",
-                "status": "upcoming",
+                "confirmed_release_date": "2024-03-15T00:00:00Z",
+                "date_confidence": "confirmed",
+                "date_source": "wikidata",
+                "status": "released",
                 "isbn": "978-4-08-883066-2",
                 "cover_url": None,
                 "page_count": 192

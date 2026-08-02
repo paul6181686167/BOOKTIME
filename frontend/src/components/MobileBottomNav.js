@@ -21,7 +21,7 @@ const NAV_ITEMS = [
 
 const MobileBottomNav = ({ activeTab, onTabChange }) => {
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 safe-area-bottom">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-700 safe-area-bottom">
       <div className="flex items-stretch h-14">
         {NAV_ITEMS.map(({ id, label, Icon, IconActive }) => {
           const isActive = activeTab === id;

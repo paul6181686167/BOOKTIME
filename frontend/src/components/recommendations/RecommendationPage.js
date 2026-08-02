@@ -15,9 +15,53 @@ import {
   PlusIcon,
   CheckIcon,
   ClockIcon,
+  HandThumbUpIcon,
+  HandThumbDownIcon,
 } from '@heroicons/react/24/outline';
+import {
+  HandThumbUpIcon as HandThumbUpIconSolid,
+  HandThumbDownIcon as HandThumbDownIconSolid,
+} from '@heroicons/react/24/solid';
 import { recommendationService } from '../../services/recommendationService';
 import { API_BASE_URL } from '../../config/environment';
+
+// ── Cache (sessionStorage) ────────────────────────────────────────────────
+// Évite de recalculer les recommandations à chaque visite de la page.
+const CACHE_PREFIX = 'booktime_reco_cache_';
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+function readCache(tab) {
+  try {
+    const raw = sessionStorage.getItem(CACHE_PREFIX + tab);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || Date.now() - parsed.timestamp > CACHE_TTL_MS) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(tab, sections, userProfile) {
+  try {
+    sessionStorage.setItem(
+      CACHE_PREFIX + tab,
+      JSON.stringify({ timestamp: Date.now(), sections, userProfile })
+    );
+  } catch {
+    // quota dépassé ou storage indisponible → on ignore
+  }
+}
+
+function clearRecoCache() {
+  try {
+    Object.keys(sessionStorage)
+      .filter((k) => k.startsWith(CACHE_PREFIX))
+      .forEach((k) => sessionStorage.removeItem(k));
+  } catch {
+    // ignore
+  }
+}
 
 function catalogPath(bookId) {
   if (!bookId) return null;
@@ -63,7 +107,7 @@ const SECTION_CONFIG = {
     icon: UserIcon,
     color: 'blue',
     title: (items) => {
-      const author = items[0]?.reason?.replace('Parce que vous aimez ', '').replace('Parce que vous lisez ', '') || '';
+      const author = items[0]?.author || '';
       return author ? `Parce que tu lis ${author}` : 'Parce que tu aimes cet auteur';
     },
   },
@@ -99,10 +143,11 @@ const COLOR_CLASSES = {
 
 // ── Book Card ─────────────────────────────────────────────────────────────
 
-const BookCard = ({ book, onAdd, onNotInterested, userBooks = [] }) => {
+const BookCard = ({ book, onAdd, onNotInterested, onFeedback, userBooks = [] }) => {
   const navigate = useNavigate();
   const [adding, setAdding] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [feedback, setFeedback] = useState(null);
   const path = catalogPath(book.book_id || book.ol_key);
 
   const alreadyIn = userBooks.some(
@@ -132,6 +177,23 @@ const BookCard = ({ book, onAdd, onNotInterested, userBooks = [] }) => {
       await onNotInterested(book.book_id);
     } catch {
       // silently ignore
+    }
+  };
+
+  const handleFeedback = async (type) => {
+    if (feedback) return;
+    setFeedback(type);
+    try {
+      await onFeedback?.(book.book_id, type);
+    } catch {
+      // silently ignore
+    }
+    if (type === 'like') {
+      toast.success('Merci ! On t\'en proposera plus comme ça');
+    } else {
+      toast.success('Noté, on affinera tes suggestions');
+      // Un dislike masque la carte après un court instant
+      setTimeout(() => setDismissed(true), 400);
     }
   };
 
@@ -199,6 +261,44 @@ const BookCard = ({ book, onAdd, onNotInterested, userBooks = [] }) => {
           </div>
         )}
 
+        {/* Feedback like / dislike */}
+        {book.book_id && !alreadyIn && (
+          <div className="flex items-center gap-2 mt-1">
+            <button
+              onClick={() => handleFeedback('like')}
+              disabled={!!feedback}
+              title="J'aime cette suggestion"
+              className={`p-1.5 rounded-full transition-colors ${
+                feedback === 'like'
+                  ? 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400'
+                  : 'text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
+              } disabled:cursor-default`}
+            >
+              {feedback === 'like' ? (
+                <HandThumbUpIconSolid className="h-4 w-4" />
+              ) : (
+                <HandThumbUpIcon className="h-4 w-4" />
+              )}
+            </button>
+            <button
+              onClick={() => handleFeedback('dislike')}
+              disabled={!!feedback}
+              title="Pas pour moi"
+              className={`p-1.5 rounded-full transition-colors ${
+                feedback === 'dislike'
+                  ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400'
+                  : 'text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
+              } disabled:cursor-default`}
+            >
+              {feedback === 'dislike' ? (
+                <HandThumbDownIconSolid className="h-4 w-4" />
+              ) : (
+                <HandThumbDownIcon className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+        )}
+
         {/* Bouton */}
         <div className="mt-auto pt-2">
           {alreadyIn ? (
@@ -228,7 +328,7 @@ const BookCard = ({ book, onAdd, onNotInterested, userBooks = [] }) => {
 
 // ── Section ───────────────────────────────────────────────────────────────
 
-const RecommendationSection = ({ source, items, onAdd, onNotInterested, userBooks }) => {
+const RecommendationSection = ({ source, items, onAdd, onNotInterested, onFeedback, userBooks }) => {
   const cfg = SECTION_CONFIG[source] || SECTION_CONFIG['popular'];
   const colors = COLOR_CLASSES[cfg.color];
   const Icon = cfg.icon;
@@ -264,6 +364,7 @@ const RecommendationSection = ({ source, items, onAdd, onNotInterested, userBook
             book={book}
             onAdd={onAdd}
             onNotInterested={onNotInterested}
+            onFeedback={onFeedback}
             userBooks={userBooks}
           />
         ))}
@@ -271,6 +372,34 @@ const RecommendationSection = ({ source, items, onAdd, onNotInterested, userBook
     </div>
   );
 };
+
+// ── Skeletons de chargement ───────────────────────────────────────────────
+
+const SkeletonCard = () => (
+  <div className="flex flex-col bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-pulse">
+    <div className="h-44 bg-gray-200 dark:bg-gray-700" />
+    <div className="flex flex-col flex-1 p-3 gap-2">
+      <div className="h-3.5 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+      <div className="h-3.5 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+      <div className="h-2.5 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-1" />
+      <div className="h-7 bg-gray-200 dark:bg-gray-700 rounded-lg mt-3" />
+    </div>
+  </div>
+);
+
+const SkeletonSection = () => (
+  <div className="mb-10">
+    <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
+      <div className="h-5 w-5 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+      <div className="h-4 w-56 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+    </div>
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <SkeletonCard key={i} />
+      ))}
+    </div>
+  </div>
+);
 
 // ── Main Page ─────────────────────────────────────────────────────────────
 
@@ -295,13 +424,24 @@ const RecommendationPage = () => {
       .catch(() => {});
   }, []);
 
-  const loadRecommendations = useCallback(async (tab) => {
+  const loadRecommendations = useCallback(async (tab, { force = false } = {}) => {
+    // Utilise le cache si disponible et non expiré (sauf rafraîchissement forcé)
+    if (!force) {
+      const cached = readCache(tab);
+      if (cached) {
+        setSections(cached.sections || {});
+        if (cached.userProfile) setUserProfile(cached.userProfile);
+        setIsLoading(false);
+        return;
+      }
+    }
+
     setIsLoading(true);
     try {
       const category = tab === 'all' ? categoryForApi(appTab) : tab === 'graphic_novel' ? null : tab;
 
       const [personalizedRes, popularRes, profileRes] = await Promise.allSettled([
-        recommendationService.getPersonalized({ limit: 30, category }),
+        recommendationService.getPersonalized({ limit: 30, category, refresh: force }),
         recommendationService.getPopular({ limit: 12, category }),
         recommendationService.getUserProfile(),
       ]);
@@ -314,7 +454,13 @@ const RecommendationPage = () => {
         recs.forEach((r) => {
           const src = r.source || 'algorithm_category';
           if (!grouped[src]) grouped[src] = [];
-          grouped[src].push(r);
+          // Le backend renvoie `reasons` (tableau) ; la carte affiche `reason`
+          // et `score`. On normalise ici pour afficher la justification.
+          grouped[src].push({
+            ...r,
+            reason: r.reason || (Array.isArray(r.reasons) ? r.reasons[0] : undefined),
+            score: r.score ?? r.confidence_score,
+          });
         });
       }
 
@@ -325,11 +471,14 @@ const RecommendationPage = () => {
         }
       }
 
+      let profile = null;
       if (profileRes.status === 'fulfilled' && profileRes.value?.success) {
-        setUserProfile(profileRes.value.data);
+        profile = profileRes.value.data;
+        setUserProfile(profile);
       }
 
       setSections(grouped);
+      writeCache(tab, grouped, profile);
     } catch (err) {
       console.error('Erreur chargement recommandations:', err);
       toast.error('Erreur lors du chargement');
@@ -338,17 +487,33 @@ const RecommendationPage = () => {
     }
   }, [appTab]);
 
-  // Rechargement à chaque visite (pas de cache)
   useEffect(() => {
     loadRecommendations(activeTab);
   }, [activeTab, loadRecommendations]);
 
+  const handleRefresh = useCallback(() => {
+    clearRecoCache();
+    loadRecommendations(activeTab, { force: true });
+  }, [activeTab, loadRecommendations]);
+
   const handleAdd = async (book) => {
     await recommendationService.addRecommendedBook(book);
+    setUserBooks((prev) => [...prev, book]);
+    // Le livre ajouté ne doit plus être recommandé : on invalide le cache
+    clearRecoCache();
   };
 
   const handleNotInterested = async (bookId) => {
     if (bookId) await recommendationService.markAsNotInterested(bookId);
+    // Le contenu affiché change : on invalide le cache pour la prochaine visite
+    clearRecoCache();
+  };
+
+  const handleFeedback = async (bookId, type) => {
+    if (!bookId) return;
+    await recommendationService.submitFeedback(bookId, type);
+    // Le feedback influence les prochaines recos : on invalide le cache
+    clearRecoCache();
   };
 
   const totalRecs = Object.values(sections).reduce((s, arr) => s + arr.length, 0);
@@ -405,7 +570,7 @@ const RecommendationPage = () => {
         </div>
 
         <button
-          onClick={() => loadRecommendations(activeTab)}
+          onClick={handleRefresh}
           disabled={isLoading}
           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50"
         >
@@ -451,9 +616,9 @@ const RecommendationPage = () => {
 
       {/* Contenu */}
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-3">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-600 border-t-transparent" />
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Calcul de tes recommandations...</p>
+        <div>
+          <SkeletonSection />
+          <SkeletonSection />
         </div>
       ) : totalRecs === 0 ? (
         <div>
@@ -481,6 +646,7 @@ const RecommendationPage = () => {
                     book={{ ...book, book_id: book.ol_key }}
                     onAdd={handleAdd}
                     onNotInterested={handleNotInterested}
+                    onFeedback={handleFeedback}
                     userBooks={userBooks}
                   />
                 ))}
@@ -498,6 +664,7 @@ const RecommendationPage = () => {
                 items={sections[src]}
                 onAdd={handleAdd}
                 onNotInterested={handleNotInterested}
+                onFeedback={handleFeedback}
                 userBooks={userBooks}
               />
             ) : null
@@ -512,6 +679,7 @@ const RecommendationPage = () => {
                 items={sections[src]}
                 onAdd={handleAdd}
                 onNotInterested={handleNotInterested}
+                onFeedback={handleFeedback}
                 userBooks={userBooks}
               />
             ))}

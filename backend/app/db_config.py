@@ -162,6 +162,12 @@ def _doc_matches(doc, query):
             elif "$in" in v:
                 if doc.get(k) not in v["$in"]:
                     return False
+            elif "$ne" in v:
+                if doc.get(k) == v["$ne"]:
+                    return False
+            elif "$nin" in v:
+                if doc.get(k) in v["$nin"]:
+                    return False
             else:
                 if doc.get(k) != v:
                     return False

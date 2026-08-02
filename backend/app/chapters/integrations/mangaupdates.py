@@ -2,464 +2,436 @@
 Service d'intégration MangaUpdates
 =================================
 
-Intégration avec MangaUpdates (Baka-Updates) pour :
+Intégration avec l'API publique v1 de MangaUpdates (Baka-Updates) pour :
 - Recherche de séries manga
-- Récupération dates releases
-- Tracking sorties chapitres
-- Données communauté curées
+- Récupération des métadonnées de série (dernier chapitre, statut...)
+- Récupération des sorties (scanlations) au niveau chapitre
+
+⚠️ Rappel important sur la nature des données MangaUpdates :
+MangaUpdates traque les **sorties de scanlation au niveau chapitre**. Le champ
+`release_date` d'une sortie est la date de **scanlation du chapitre**, PAS la date
+de publication officielle du tome (tankōbon). Le champ `volume` n'est renseigné
+que lorsqu'un tome a été explicitement étiqueté (souvent tardivement, voire jamais
+pour les chapitres récents). Les dates de sortie *officielles de tomes* doivent
+donc venir d'une autre source (Wikidata / Google Books).
+
+API sans clé, mais avec rate limiting : un cache mémoire fronte les appels.
 """
 
-import aiohttp
+import re
 import asyncio
 import logging
-from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
-import re
-from urllib.parse import quote_plus
-import json
-import random
-import random
+from typing import Any, Dict, List, Optional
+
+import aiohttp
 
 logger = logging.getLogger(__name__)
 
 
 class MangaUpdatesService:
     """
-    Service d'intégration avec MangaUpdates
-    
-    Fonctionnalités :
-    - Recherche séries par nom
-    - Récupération historique releases
-    - Prédictions basées sur patterns
-    - Cache intelligent
-    - Scraping respectueux avec rate limiting
+    Client de l'API v1 MangaUpdates.
+
+    Interface publique (consommée par ``ChapterService``) :
+    - ``search_series(name, limit)``
+    - ``get_series(series_id)``
+    - ``get_series_releases(series_id, days_back)``
+    - ``get_recent_releases_by_name(name, days_back)``
+    - ``predict_next_release(name)``
+    - ``health_check()``
     """
-    
+
     BASE_URL = "https://www.mangaupdates.com"
-    API_BASE = "https://api.mangaupdates.com/v1"  # API officielle si disponible
-    
+    API_BASE = "https://api.mangaupdates.com/v1"
+
     def __init__(self):
-        self.session = None
-        self.rate_limit_delay = 2.0  # Délai respectueux entre requêtes
+        self.session: Optional[aiohttp.ClientSession] = None
+        self.rate_limit_delay = 1.0  # Délai respectueux entre requêtes
         self.last_request_time = datetime.min
-        self.cache = {}
+        self.cache: Dict[str, tuple] = {}
         self.cache_duration = timedelta(hours=4)
-        
-        # Patterns pour extraction données
-        self.release_patterns = {
-            'chapter': re.compile(r'c\.?(\d+(?:\.\d+)?)', re.IGNORECASE),
-            'volume': re.compile(r'v\.?(\d+)', re.IGNORECASE),
-            'date': re.compile(r'(\d{1,2}/\d{1,2}/\d{4})')
-        }
-    
+
+        # Patterns d'extraction depuis les champs texte MangaUpdates.
+        self._chapter_num_re = re.compile(r"(\d+(?:\.\d+)?)")
+        self._volume_total_re = re.compile(r"(\d+)\s*volume", re.IGNORECASE)
+
+    # ── Session / HTTP ────────────────────────────────────────────────────────
+
     async def _ensure_session(self):
-        """Initialise la session HTTP avec headers respectueux"""
         if self.session is None:
             timeout = aiohttp.ClientTimeout(total=30)
             self.session = aiohttp.ClientSession(
                 timeout=timeout,
                 headers={
-                    'User-Agent': 'BOOKTIME-Chapters/1.0 (Educational Purpose)',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                    'Accept-Language': 'en-US,en;q=0.5',
-                    'Accept-Encoding': 'gzip, deflate',
-                    'Connection': 'keep-alive',
-                    'Upgrade-Insecure-Requests': '1'
-                }
+                    "User-Agent": "BOOKTIME-Chapters/1.0",
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                },
             )
-    
+
     async def _rate_limit(self):
-        """Rate limiting respectueux"""
         now = datetime.now()
         elapsed = (now - self.last_request_time).total_seconds()
-        
         if elapsed < self.rate_limit_delay:
-            wait_time = self.rate_limit_delay - elapsed
-            await asyncio.sleep(wait_time)
-        
+            await asyncio.sleep(self.rate_limit_delay - elapsed)
         self.last_request_time = datetime.now()
-    
-    async def _make_request(self, url: str, params: Dict[str, Any] = None) -> Optional[str]:
+
+    async def _request(
+        self, method: str, path: str, json_body: Optional[Dict[str, Any]] = None
+    ) -> Optional[Any]:
         """
-        Effectue une requête HTTP vers MangaUpdates
-        
-        Args:
-            url: URL complète ou relative
-            params: Paramètres GET
-            
-        Returns:
-            Contenu HTML/JSON ou None
+        Effectue une requête vers l'API v1 MangaUpdates et renvoie le JSON décodé
+        (ou None en cas d'échec). Gère le rate limit (429) avec un backoff simple.
         """
         await self._ensure_session()
         await self._rate_limit()
-        
-        if not url.startswith('http'):
-            url = f"{self.BASE_URL}{url}"
-        
+
+        url = path if path.startswith("http") else f"{self.API_BASE}{path}"
+
         try:
-            async with self.session.get(url, params=params) as response:
+            async with self.session.request(method, url, json=json_body) as response:
                 if response.status == 200:
-                    return await response.text()
-                elif response.status == 429:
-                    # Rate limit
-                    logger.warning("Rate limit MangaUpdates, attente...")
+                    return await response.json()
+                if response.status == 429:
+                    logger.warning("Rate limit MangaUpdates atteint, attente 30s...")
                     await asyncio.sleep(30)
-                    return await self._make_request(url, params)
-                else:
-                    logger.error(f"Erreur HTTP MangaUpdates: {response.status}")
-                    return None
-                    
-        except aiohttp.ClientError as e:
-            logger.error(f"Erreur connexion MangaUpdates: {str(e)}")
+                    return await self._request(method, path, json_body)
+                logger.error("Erreur HTTP MangaUpdates %s sur %s", response.status, url)
+                return None
+        except aiohttp.ClientError as exc:
+            logger.error("Erreur connexion MangaUpdates: %s", exc)
             return None
-        except Exception as e:
-            logger.error(f"Erreur inattendue MangaUpdates: {str(e)}")
+        except Exception as exc:  # pragma: no cover - robustesse réseau
+            logger.error("Erreur inattendue MangaUpdates: %s", exc)
             return None
-    
+
+    # ── Recherche de séries ───────────────────────────────────────────────────
+
     async def search_series(self, series_name: str, limit: int = 5) -> List[Dict[str, Any]]:
         """
-        Recherche une série sur MangaUpdates
-        
-        Args:
-            series_name: Nom de la série
-            limit: Nombre maximum de résultats
-            
-        Returns:
-            Liste des séries trouvées
+        Recherche une série via ``POST /v1/series/search``.
+
+        Retourne une liste normalisée de dicts : ``id``, ``title``,
+        ``latest_chapter``, ``total_volumes`` (si connu), ``year``, ``mu_url``,
+        ``confidence``.
         """
-        # Cache
-        cache_key = f"search_{series_name.lower()}_{limit}"
-        cached_result = self._get_from_cache(cache_key)
-        if cached_result:
-            return cached_result
-        
-        try:
-            # Recherche via page search
-            search_url = "/series.html"
-            params = {
-                'search': series_name,
-                'stype': 'title'
-            }
-            
-            html_content = await self._make_request(search_url, params)
-            if not html_content:
-                return []
-            
-            # Parsing des résultats (simulation - remplacer par parsing HTML réel)
-            results = await self._parse_search_results(html_content, series_name, limit)
-            
-            # Cache
-            self._save_to_cache(cache_key, results)
-            
-            logger.info(f"MangaUpdates: {len(results)} résultats pour '{series_name}'")
-            return results
-            
-        except Exception as e:
-            logger.error(f"Erreur recherche MangaUpdates '{series_name}': {str(e)}")
+        if not series_name or not isinstance(series_name, str):
             return []
-    
-    async def get_series_releases(self, series_id: int, days_back: int = 30) -> List[Dict[str, Any]]:
+
+        cache_key = f"search_{series_name.lower()}_{limit}"
+        cached = self._get_from_cache(cache_key)
+        if cached is not None:
+            return cached
+
+        data = await self._request(
+            "POST",
+            "/series/search",
+            {"search": series_name, "perpage": max(1, min(limit, 50))},
+        )
+        if not data:
+            return []
+
+        results: List[Dict[str, Any]] = []
+        for item in data.get("results", []) or []:
+            record = item.get("record") or {}
+            series_id = record.get("series_id")
+            title = record.get("title") or ""
+            if not series_id or not title:
+                continue
+
+            results.append(
+                {
+                    "id": series_id,
+                    "title": title,
+                    "latest_chapter": self._parse_chapter_number(record.get("latest_chapter")),
+                    "total_volumes": self._parse_total_volumes(record),
+                    "year": record.get("year"),
+                    "type": (record.get("type") or "").lower(),
+                    "mu_url": record.get("url") or f"{self.BASE_URL}/series/{series_id}",
+                    "confidence": self._search_confidence(series_name, record, item),
+                }
+            )
+
+        results.sort(key=lambda r: r["confidence"], reverse=True)
+        results = results[:limit]
+        self._save_to_cache(cache_key, results)
+        logger.info("MangaUpdates: %d résultats pour '%s'", len(results), series_name)
+        return results
+
+    async def get_series(self, series_id: int) -> Optional[Dict[str, Any]]:
+        """Récupère le profil d'une série via ``GET /v1/series/{id}``."""
+        cache_key = f"series_{series_id}"
+        cached = self._get_from_cache(cache_key)
+        if cached is not None:
+            return cached
+
+        record = await self._request("GET", f"/series/{series_id}")
+        if not record:
+            return None
+
+        result = {
+            "id": record.get("series_id", series_id),
+            "title": record.get("title") or "",
+            "latest_chapter": self._parse_chapter_number(record.get("latest_chapter")),
+            "total_volumes": self._parse_total_volumes(record),
+            "year": record.get("year"),
+            "status_text": record.get("status") or "",
+            "mu_url": record.get("url") or f"{self.BASE_URL}/series/{series_id}",
+        }
+        self._save_to_cache(cache_key, result, duration=timedelta(hours=12))
+        return result
+
+    # ── Sorties (chapitres) ───────────────────────────────────────────────────
+
+    async def get_series_releases(
+        self, series_id: int, days_back: int = 30
+    ) -> List[Dict[str, Any]]:
         """
-        Récupère l'historique des releases pour une série
-        
-        Args:
-            series_id: ID MangaUpdates de la série
-            days_back: Nombre de jours d'historique à récupérer
-            
-        Returns:
-            Liste des releases récentes
+        Récupère les sorties (scanlations) récentes d'une série.
+
+        MangaUpdates ne propose pas de recherche de sorties par ``series_id`` :
+        on recherche par titre puis on filtre sur l'``id`` de série présent dans
+        les métadonnées de chaque sortie.
         """
         cache_key = f"releases_{series_id}_{days_back}"
-        cached_result = self._get_from_cache(cache_key)
-        if cached_result:
-            return cached_result
-        
-        try:
-            # URL releases pour la série
-            releases_url = f"/releases.html"
-            params = {
-                'search': str(series_id),
-                'stype': 'series'
-            }
-            
-            html_content = await self._make_request(releases_url, params)
-            if not html_content:
-                return []
-            
-            # Parsing des releases
-            releases = await self._parse_releases(html_content, days_back)
-            
-            # Cache avec durée plus courte pour les releases
-            self._save_to_cache(cache_key, releases, duration=timedelta(hours=1))
-            
-            logger.info(f"MangaUpdates: {len(releases)} releases pour série {series_id}")
-            return releases
-            
-        except Exception as e:
-            logger.error(f"Erreur récupération releases série {series_id}: {str(e)}")
+        cached = self._get_from_cache(cache_key)
+        if cached is not None:
+            return cached
+
+        series = await self.get_series(series_id)
+        if not series or not series.get("title"):
             return []
-    
-    async def get_recent_releases_by_name(self, series_name: str, days_back: int = 30) -> List[Dict[str, Any]]:
-        """
-        Récupère les releases récentes par nom de série
-        
-        Args:
-            series_name: Nom de la série
-            days_back: Nombre de jours d'historique
-            
-        Returns:
-            Liste des releases trouvées
-        """
-        cache_key = f"releases_name_{series_name.lower()}_{days_back}"
-        cached_result = self._get_from_cache(cache_key)
-        if cached_result:
-            return cached_result
-        
-        try:
-            # Rechercher la série d'abord
-            series_results = await self.search_series(series_name, limit=1)
-            if not series_results:
-                return []
-            
-            # Prendre le premier résultat
-            series = series_results[0]
-            series_id = series.get('id')
-            
-            if not series_id:
-                return []
-            
-            # Récupérer les releases
-            releases = await self.get_series_releases(series_id, days_back)
-            
-            # Enrichir avec infos série
-            for release in releases:
-                release['series_info'] = {
-                    'name': series.get('title'),
-                    'id': series_id,
-                    'mu_url': series.get('mu_url')
-                }
-            
-            self._save_to_cache(cache_key, releases, duration=timedelta(hours=1))
-            
-            return releases
-            
-        except Exception as e:
-            logger.error(f"Erreur récupération releases '{series_name}': {str(e)}")
+
+        releases = await self._search_releases(series["title"], series_id, days_back)
+        self._save_to_cache(cache_key, releases, duration=timedelta(hours=1))
+        logger.info("MangaUpdates: %d sorties pour série %s", len(releases), series_id)
+        return releases
+
+    async def _search_releases(
+        self, title: str, series_id: Optional[int], days_back: int
+    ) -> List[Dict[str, Any]]:
+        """Appelle ``POST /v1/releases/search`` et normalise/filtre le résultat."""
+        data = await self._request(
+            "POST",
+            "/releases/search",
+            {"search": title, "perpage": 50},
+        )
+        if not data:
             return []
-    
-    async def health_check(self) -> bool:
-        """
-        Vérifie la connectivité avec MangaUpdates
-        
-        Returns:
-            True si accessible
-        """
-        try:
-            html_content = await self._make_request("/")
-            return bool(html_content and "mangaupdates" in html_content.lower())
-        except Exception:
-            return False
-    
-    # Méthodes privées de parsing
-    
-    async def _parse_search_results(self, html_content: str, query: str, limit: int) -> List[Dict[str, Any]]:
-        """
-        Parse les résultats de recherche HTML
-        
-        Pour une implémentation réelle, utiliser BeautifulSoup ou lxml
-        Ici on simule avec des données example
-        """
-        # SIMULATION - À remplacer par parsing HTML réel
-        
-        # Exemples de séries populaires pour simulation avec données actualisées 2025
-        mock_results = [
-            {
-                'id': 319,
-                'title': 'One Piece',
-                'alternative_titles': ['ワンピース'],
-                'type': 'Manga',
-                'year': 1997,
-                'status': 'Ongoing',
-                'latest_chapter': 1155,  # ✅ CORRIGÉ : Chapitre le plus récent
-                'latest_release_date': '2025-01-15',  # ✅ CORRIGÉ : Date récente
-                'total_volumes': 112,  # ✅ CORRIGÉ : Nombre total de tomes actualisé
-                'groups': ['Viz Media', 'TCB Scans'],
-                'mu_url': f'{self.BASE_URL}/series.html?id=319',
-                'confidence': 0.95 if 'one piece' in query.lower() else 0.1
-            },
-            {
-                'id': 35,
-                'title': 'Naruto',
-                'alternative_titles': ['ナルト'],
-                'type': 'Manga', 
-                'year': 1999,
-                'status': 'Complete',
-                'latest_chapter': 700,
-                'latest_release_date': '2014-11-10',
-                'groups': ['Viz Media'],
-                'mu_url': f'{self.BASE_URL}/series.html?id=35',
-                'confidence': 0.95 if 'naruto' in query.lower() else 0.1
-            },
-            {
-                'id': 1214,
-                'title': 'Attack on Titan',
-                'alternative_titles': ['進撃の巨人', 'Shingeki no Kyojin'],
-                'type': 'Manga',
-                'year': 2009,
-                'status': 'Complete',
-                'latest_chapter': 139,
-                'latest_release_date': '2021-04-09',
-                'groups': ['Kodansha'],
-                'mu_url': f'{self.BASE_URL}/series.html?id=1214',
-                'confidence': 0.95 if any(term in query.lower() for term in ['attack', 'titan', 'shingeki']) else 0.1
-            }
-        ]
-        
-        # Filtrer et trier par confiance
-        relevant_results = [r for r in mock_results if r['confidence'] > 0.5]
-        relevant_results.sort(key=lambda x: x['confidence'], reverse=True)
-        
-        return relevant_results[:limit]
-    
-    async def _parse_releases(self, html_content: str, days_back: int) -> List[Dict[str, Any]]:
-        """
-        Parse l'historique des releases HTML
-        
-        SIMULATION - À remplacer par parsing HTML réel
-        """
-        # Simulation de releases récentes One Piece actualisées 2025
-        now = datetime.now()
-        
-        # ✅ CORRIGÉ : Générer chapitres récents à partir de 1155 (le plus récent)
-        base_chapter = 1155  # Chapitre le plus récent
-        
-        mock_releases = []
-        for i in range(min(days_back // 7, 15)):  # Plus de releases récentes (jusqu'à 15 semaines)
-            release_date = now - timedelta(days=i*7)
-            chapter_num = base_chapter - i  # Partir de 1155 et décrémenter
-            
-            # ✅ AJOUT : Calcul volume correct basé sur 10 chapitres par tome
-            volume_num = min(112, max(1, ((chapter_num - 1) // 10) + 1))
-            
-            mock_releases.append({
-                'chapter_number': chapter_num,
-                'title': f"Chapter {chapter_num}",
-                'release_date': release_date.strftime('%Y-%m-%d'),
-                'groups': ['TCB Scans', 'Viz Media'],
-                'volume': volume_num,  # ✅ CORRIGÉ : Volume calculé correctement
-                'raw_text': f"One Piece c.{chapter_num} by TCB Scans",
-                'confidence': 0.9
-            })
-        
-        # ✅ AJOUT : Ajouter des chapitres sans tome (1144-1155 mentionnés par l'utilisateur)
-        orphan_chapters = [1144, 1145, 1146, 1147, 1148, 1149, 1150, 1151, 1152, 1153, 1154, 1155]
-        for chapter_num in orphan_chapters:
-            if chapter_num >= base_chapter - len(mock_releases):  # Éviter les doublons
-                release_date = now - timedelta(days=random.randint(1, 30))
-                mock_releases.append({
-                    'chapter_number': chapter_num,
-                    'title': f"Chapter {chapter_num}",
-                    'release_date': release_date.strftime('%Y-%m-%d'),
-                    'groups': ['TCB Scans'],
-                    'volume': None,  # ✅ Pas encore assigné à un tome
-                    'raw_text': f"One Piece c.{chapter_num} by TCB Scans (not yet collected)",
-                    'confidence': 0.95
-                })
-        
-        # Trier par numéro de chapitre décroissant
-        mock_releases.sort(key=lambda x: x['chapter_number'], reverse=True)
-        
-        return mock_releases
-    
-    async def predict_next_release(self, series_name: str) -> Optional[Dict[str, Any]]:
-        """
-        Prédit la prochaine sortie basée sur l'historique
-        
-        Args:
-            series_name: Nom de la série
-            
-        Returns:
-            Prédiction de la prochaine sortie
-        """
-        try:
-            # Récupérer historique releases
-            recent_releases = await self.get_recent_releases_by_name(series_name, days_back=60)
-            
-            if len(recent_releases) < 2:
-                return None
-            
-            # Analyser pattern temporel
-            release_dates = []
-            for release in recent_releases:
+
+        cutoff = datetime.now() - timedelta(days=days_back) if days_back else None
+        out: List[Dict[str, Any]] = []
+
+        for item in data.get("results", []) or []:
+            record = item.get("record") or {}
+
+            # Filtrage sur la série cible via les métadonnées de la sortie.
+            if series_id is not None and not self._release_matches_series(item, series_id):
+                continue
+
+            chapter_number = self._parse_chapter_number(record.get("chapter"))
+            if chapter_number is None:
+                continue
+
+            release_iso = self._parse_release_date(record.get("release_date"))
+            if cutoff and release_iso:
                 try:
-                    date_obj = datetime.strptime(release['release_date'], '%Y-%m-%d')
-                    release_dates.append(date_obj)
+                    if datetime.strptime(release_iso, "%Y-%m-%d") < cutoff:
+                        continue
+                except ValueError:
+                    pass
+
+            groups = [
+                g.get("name")
+                for g in (record.get("groups") or [])
+                if isinstance(g, dict) and g.get("name")
+            ]
+
+            out.append(
+                {
+                    "chapter_number": chapter_number,
+                    "title": record.get("title") or f"Chapter {chapter_number}",
+                    "release_date": release_iso,
+                    "volume": self._parse_volume(record.get("volume")),
+                    "groups": groups,
+                    "raw_text": f"{record.get('title', '')} v{record.get('volume', '')} c{record.get('chapter', '')}",
+                }
+            )
+
+        out.sort(key=lambda r: r["chapter_number"], reverse=True)
+        return out
+
+    async def get_recent_releases_by_name(
+        self, series_name: str, days_back: int = 30
+    ) -> List[Dict[str, Any]]:
+        """Récupère les sorties récentes à partir d'un nom de série."""
+        cache_key = f"releases_name_{series_name.lower()}_{days_back}"
+        cached = self._get_from_cache(cache_key)
+        if cached is not None:
+            return cached
+
+        matches = await self.search_series(series_name, limit=1)
+        if not matches:
+            return []
+
+        series = matches[0]
+        releases = await self.get_series_releases(series["id"], days_back)
+        for release in releases:
+            release["series_info"] = {
+                "name": series.get("title"),
+                "id": series.get("id"),
+                "mu_url": series.get("mu_url"),
+            }
+
+        self._save_to_cache(cache_key, releases, duration=timedelta(hours=1))
+        return releases
+
+    async def predict_next_release(self, series_name: str) -> Optional[Dict[str, Any]]:
+        """Prédit la prochaine sortie à partir de l'historique des intervalles."""
+        try:
+            recent = await self.get_recent_releases_by_name(series_name, days_back=120)
+            dates: List[datetime] = []
+            for release in recent:
+                iso = release.get("release_date")
+                if not iso:
+                    continue
+                try:
+                    dates.append(datetime.strptime(iso, "%Y-%m-%d"))
                 except ValueError:
                     continue
-            
-            if len(release_dates) < 2:
+
+            if len(dates) < 2:
                 return None
-            
-            # Trier par date
-            release_dates.sort()
-            
-            # Calculer intervalle moyen
-            intervals = []
-            for i in range(1, len(release_dates)):
-                interval = (release_dates[i] - release_dates[i-1]).days
-                intervals.append(interval)
-            
+
+            dates.sort()
+            intervals = [
+                (dates[i] - dates[i - 1]).days
+                for i in range(1, len(dates))
+                if (dates[i] - dates[i - 1]).days > 0
+            ]
             if not intervals:
                 return None
-            
+
             avg_interval = sum(intervals) / len(intervals)
-            
-            # Prédire prochaine sortie
-            last_release = max(release_dates)
+            last_release = max(dates)
             predicted_date = last_release + timedelta(days=avg_interval)
-            
-            # Confiance basée sur régularité
+
             variance = sum((x - avg_interval) ** 2 for x in intervals) / len(intervals)
-            confidence = max(0.1, min(0.9, 1.0 - (variance / (avg_interval * avg_interval))))
-            
+            confidence = max(0.1, min(0.9, 1.0 - (variance / (avg_interval * avg_interval)))) if avg_interval else 0.1
+
             return {
-                'predicted_date': predicted_date.strftime('%Y-%m-%d'),
-                'confidence': confidence,
-                'average_interval_days': avg_interval,
-                'last_release_date': last_release.strftime('%Y-%m-%d'),
-                'pattern': 'weekly' if 6 <= avg_interval <= 8 else 'irregular',
-                'data_points': len(release_dates)
+                "predicted_date": predicted_date.strftime("%Y-%m-%d"),
+                "confidence": confidence,
+                "average_interval_days": avg_interval,
+                "last_release_date": last_release.strftime("%Y-%m-%d"),
+                "pattern": "weekly" if 6 <= avg_interval <= 8 else "irregular",
+                "data_points": len(dates),
             }
-            
-        except Exception as e:
-            logger.error(f"Erreur prédiction release '{series_name}': {str(e)}")
+        except Exception as exc:  # pragma: no cover
+            logger.error("Erreur prédiction release '%s': %s", series_name, exc)
             return None
-    
-    def _get_from_cache(self, key: str) -> Optional[Any]:
-        """Récupère du cache"""
-        if key in self.cache:
-            cached_data, timestamp = self.cache[key]
-            if datetime.now() - timestamp < self.cache_duration:
-                return cached_data
-            else:
-                del self.cache[key]
+
+    async def health_check(self) -> bool:
+        """Vérifie l'accessibilité de l'API (série One Piece, id 15090100540)."""
+        try:
+            data = await self._request("GET", "/series/15090100540")
+            return bool(data and data.get("title"))
+        except Exception:
+            return False
+
+    # ── Parsing / helpers ─────────────────────────────────────────────────────
+
+    def _parse_chapter_number(self, raw: Any) -> Optional[float]:
+        """Extrait un numéro de chapitre depuis un champ hétérogène (str/int)."""
+        if raw is None:
+            return None
+        if isinstance(raw, (int, float)):
+            try:
+                return float(raw)
+            except (TypeError, ValueError):
+                return None
+        match = self._chapter_num_re.search(str(raw))
+        if not match:
+            return None
+        try:
+            return float(match.group(1))
+        except ValueError:
+            return None
+
+    def _parse_volume(self, raw: Any) -> Optional[int]:
+        """Extrait un numéro de tome depuis le champ ``volume`` (souvent vide)."""
+        if raw is None:
+            return None
+        if isinstance(raw, int):
+            return raw
+        match = re.search(r"\d+", str(raw))
+        return int(match.group(0)) if match else None
+
+    def _parse_total_volumes(self, record: Dict[str, Any]) -> Optional[int]:
+        """Devine le nombre total de tomes depuis le texte de statut, si présent."""
+        status = record.get("status") or ""
+        match = self._volume_total_re.search(str(status))
+        return int(match.group(1)) if match else None
+
+    def _parse_release_date(self, raw: Any) -> Optional[str]:
+        """Normalise une date de sortie MangaUpdates en 'YYYY-MM-DD'."""
+        if not raw:
+            return None
+        s = str(raw).strip()
+        # Formats courants renvoyés par l'API.
+        for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%SZ"):
+            try:
+                return datetime.strptime(s.split("T")[0] if "T" in s else s, "%Y-%m-%d").strftime("%Y-%m-%d")
+            except ValueError:
+                continue
         return None
-    
+
+    def _release_matches_series(self, release_item: Dict[str, Any], series_id: int) -> bool:
+        """Vrai si la sortie appartient à la série ciblée (via métadonnées)."""
+        metadata = release_item.get("metadata") or {}
+        series_meta = metadata.get("series")
+        if series_meta is None:
+            # Pas de métadonnées de série : on ne peut pas garantir → on exclut.
+            return False
+        if isinstance(series_meta, dict):
+            return series_meta.get("series_id") == series_id
+        # Certains variantes renvoient directement l'id.
+        try:
+            return int(series_meta) == int(series_id)
+        except (TypeError, ValueError):
+            return False
+
+    def _search_confidence(
+        self, query: str, record: Dict[str, Any], item: Dict[str, Any]
+    ) -> float:
+        """Score de confiance basique par similarité de titre."""
+        q = (query or "").lower().strip()
+        title = (record.get("title") or "").lower().strip()
+        hit_title = (item.get("hit_title") or "").lower().strip()
+
+        if q and (q == title or q == hit_title):
+            return 1.0
+        if q and (q in title or title in q or (hit_title and q in hit_title)):
+            return 0.85
+        return 0.4
+
+    def _get_from_cache(self, key: str) -> Optional[Any]:
+        if key in self.cache:
+            value, timestamp = self.cache[key]
+            if datetime.now() - timestamp < self.cache_duration:
+                return value
+            del self.cache[key]
+        return None
+
     def _save_to_cache(self, key: str, value: Any, duration: timedelta = None) -> None:
-        """Sauvegarde en cache"""
-        if duration is None:
-            duration = self.cache_duration
-        
         self.cache[key] = (value, datetime.now())
-        
-        # Nettoyage cache si trop gros
         if len(self.cache) > 500:
-            sorted_items = sorted(self.cache.items(), key=lambda x: x[1][1])
-            for old_key, _ in sorted_items[:50]:
+            oldest = sorted(self.cache.items(), key=lambda kv: kv[1][1])
+            for old_key, _ in oldest[:50]:
                 del self.cache[old_key]
-    
+
     async def close(self):
-        """Ferme la session HTTP"""
         if self.session:
             await self.session.close()
             self.session = None

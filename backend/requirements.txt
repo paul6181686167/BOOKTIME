@@ -37,6 +37,9 @@ beautifulsoup4>=4.12.2
 pydantic>=2.11.0
 redis>=6.2.0
 
+# --- Planification (rafraîchissement "prochaines sorties") ---
+APScheduler>=3.10.0,<4.0.0
+
 # --- Machine Learning (recommandations Phase 3.4) ---
 # numpy>=1.26 : pip choisit 2.x sous Python >=3.13, 1.26.x sous Python plus ancien.
 scikit-learn>=1.5.0

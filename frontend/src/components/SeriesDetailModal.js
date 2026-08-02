@@ -31,6 +31,33 @@ function parseVolumeFromWork(vol) {
   return Number.isNaN(n) ? null : n;
 }
 
+/** volumes peut être un nombre (référentiel) ou un tableau (série bibliothèque). */
+function resolveVolumesCount(volumes, fallback = 0) {
+  if (typeof volumes === 'number' && Number.isFinite(volumes)) return volumes;
+  if (Array.isArray(volumes)) return volumes.length;
+  return fallback;
+}
+
+function volumeTitlesFromLibraryVolumes(volumes) {
+  if (!Array.isArray(volumes)) return null;
+  const map = {};
+  volumes.forEach((v, i) => {
+    const num = v?.volume_number ?? i + 1;
+    map[num] = v?.volume_title || v?.title || `Tome ${num}`;
+  });
+  return Object.keys(map).length ? map : null;
+}
+
+function normalizeSeriesVolumesField(seriesData) {
+  if (!seriesData || !Array.isArray(seriesData.volumes)) return seriesData;
+  return {
+    ...seriesData,
+    volumes: seriesData.volumes.length,
+    volume_titles:
+      seriesData.volume_titles || volumeTitlesFromLibraryVolumes(seriesData.volumes) || {},
+  };
+}
+
 function mapStaticWikidataWorksToOlBooks(works) {
   return (works || []).map((w, i) => {
     const titleFr = w.title_fr || '';
@@ -231,7 +258,10 @@ const SeriesDetailModal = ({
       const hasRead = entries.some(v => v.status === 'lu');
       const hasInProgress = entries.some(v => v.status === 'en_cours');
       const readCount = entries.filter(v => v.status === 'lu').length;
-      const totalTomes = enrichedSeries?.volumes || (series?.books?.length) || 0;
+      const totalTomes = resolveVolumesCount(
+        enrichedSeries?.volumes,
+        series?.books?.length || 0
+      );
 
       let derivedStatus = 'to_read';
       if (hasInProgress || (hasRead && (totalTomes === 0 || readCount < totalTomes))) {
@@ -251,7 +281,9 @@ const SeriesDetailModal = ({
 
   // Fonction pour enrichir les données de série avec les métadonnées de référence
   const enrichSeriesData = (series) => {
-    if (!series?.name && !series?.fromStaticWikidata) return series;
+    if (!series?.name && !series?.fromStaticWikidata) {
+      return normalizeSeriesVolumesField(series);
+    }
 
     if (series.fromStaticWikidata && series.staticWikidataDetail) {
       const works = series.staticWikidataDetail.works || [];
@@ -265,7 +297,7 @@ const SeriesDetailModal = ({
       };
     }
 
-    if (!series?.name) return series;
+    if (!series?.name) return normalizeSeriesVolumesField(series);
     
     // Rechercher dans la base de données de référence
     const seriesName = series.name.toLowerCase();
@@ -295,6 +327,15 @@ const SeriesDetailModal = ({
         referenceFound: true
       };
     }
+
+    // Série bibliothèque : volumes = [{ volume_number, volume_title, is_read, date_read }, ...]
+    if (Array.isArray(series.volumes) && series.volumes.length > 0) {
+      return {
+        ...normalizeSeriesVolumesField(series),
+        referenceFound: false,
+        fromFallbackBooks: true,
+      };
+    }
     
     // Fallback : utiliser series.books (résultats OL ou Wikidata) pour déduire les volumes
     const fallbackBooks = series.books || [];
@@ -313,7 +354,7 @@ const SeriesDetailModal = ({
       };
     }
     
-    return series;
+    return normalizeSeriesVolumesField(series);
   };
 
   // ✅ NOUVELLE FONCTION : Calculer et mettre à jour automatiquement le statut de la série
@@ -325,7 +366,7 @@ const SeriesDetailModal = ({
 
     // ✅ CORRECTION : Permettre le calcul même si la série n'est pas encore "officiellement" possédée
     // L'utilisateur peut marquer des tomes comme lus avant d'ajouter la série à sa bibliothèque
-    const totalTomes = enrichedSeries.volumes;
+    const totalTomes = resolveVolumesCount(enrichedSeries.volumes);
     const readTomesCount = newReadTomes.size;
     
 
@@ -410,7 +451,10 @@ const SeriesDetailModal = ({
     // Statut : en_cours si au moins 1 tome lu ou en cours
     const hasInProgress = Object.values(newStatuses).some(v => v.status === 'en_cours');
     const hasRead = newReadSet.size > 0;
-    const totalTomes = enrichedSeries?.volumes || olBooks.length || (series?.books?.length) || 0;
+    const totalTomes = resolveVolumesCount(
+      enrichedSeries?.volumes,
+      olBooks.length || (series?.books?.length) || 0
+    );
     let autoStatus = 'to_read';
     if (hasInProgress || (hasRead && newReadSet.size < totalTomes)) autoStatus = 'reading';
     else if (hasRead && totalTomes > 0 && newReadSet.size >= totalTomes) autoStatus = 'completed';
@@ -480,7 +524,10 @@ const SeriesDetailModal = ({
     // Recalcul du statut agrégé
     const readCount = Object.values(newStatuses).filter(v => v.status === 'lu').length;
     const hasInProgress = Object.values(newStatuses).some(v => v.status === 'en_cours');
-    const totalTomes = enrichedSeries?.volumes || (series?.books?.length) || 0;
+    const totalTomes = resolveVolumesCount(
+      enrichedSeries?.volumes,
+      series?.books?.length || 0
+    );
     let bulkStatus = 'to_read';
     if (hasInProgress || (readCount > 0 && readCount < totalTomes)) bulkStatus = 'reading';
     else if (readCount > 0 && totalTomes > 0 && readCount >= totalTomes) bulkStatus = 'completed';
@@ -961,7 +1008,10 @@ const SeriesDetailModal = ({
                     {getStatusLabel(seriesStatus)}
                   </span>
                   <span className="text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                    📚 {enrichedSeries?.volumes || olBooks.length || books.length || (series?.books?.length) || 0} tome(s)
+                    📚 {resolveVolumesCount(
+                      enrichedSeries?.volumes,
+                      olBooks.length || books.length || (series?.books?.length) || 0
+                    )} tome(s)
                   </span>
                   {series.fromStaticWikidata && series.staticWikidataDetail && (
                     <>
@@ -1141,13 +1191,14 @@ const SeriesDetailModal = ({
             </button>
           </div>
           
-          {(enrichedSeries?.volumes && enrichedSeries.volumes > 0) || olBooks.length > 0 ? (
+          {(resolveVolumesCount(enrichedSeries?.volumes) > 0) || olBooks.length > 0 ? (
             <div className="space-y-1">
               {(() => {
+                const volumeCount = resolveVolumesCount(enrichedSeries?.volumes);
                 // Construire la liste finale : préférence enrichedSeries (base statique) > olBooks (Wikidata/OL)
-                if (enrichedSeries?.volumes > 0 && !enrichedSeries.fromFallbackBooks) {
+                if (volumeCount > 0 && !enrichedSeries.fromFallbackBooks) {
                   // Source : EXTENDED_SERIES_DATABASE → style TomeDropdown exact comme Harry Potter
-                  return Array.from({ length: enrichedSeries.volumes }, (_, index) => {
+                  return Array.from({ length: volumeCount }, (_, index) => {
                     const tomeNumber = index + 1;
                     const tomeTitle = enrichedSeries.volume_titles?.[tomeNumber] || `${enrichedSeries.name} - Tome ${tomeNumber}`;
                     const isRead = readTomes.has(tomeNumber);

@@ -4,11 +4,21 @@
  */
 
 /**
+ * IP privée LAN (ex. 192.168.x.x) — accès depuis un autre PC du réseau
+ */
+const isPrivateLanHost = (hostname) =>
+  /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(hostname || '');
+
+/**
  * Détection intelligente URL backend selon environnement
  */
 const getBackendURL = () => {
   if (typeof window !== 'undefined' && window.location.hostname.includes('emergentagent.com')) {
     return window.location.origin;
+  }
+  // Accès LAN : même machine hôte, port backend
+  if (typeof window !== 'undefined' && isPrivateLanHost(window.location.hostname)) {
+    return `http://${window.location.hostname}:8001`;
   }
   // En dev local : toujours le backend local (évite Render endormi par erreur)
   if (

@@ -75,6 +75,8 @@ import BookActions from './components/books/BookActions';
 import BookGrid from './components/books/BookGrid';
 import MobileBottomNav from './components/MobileBottomNav';
 import MobileSearchOverlay from './components/MobileSearchOverlay';
+import PwaInstallPrompt from './components/PwaInstallPrompt';
+import OfflineBanner from './components/OfflineBanner';
 
 import './App.css';
 import './styles/optimized.css';
@@ -749,7 +751,7 @@ function MainApp() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto pb-16 md:pb-0">
+      <main className="max-w-7xl mx-auto pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
         <div className="px-4 sm:px-6 lg:px-8">
           {/* Mode recherche */}
           {searchHook.isSearchMode && (
@@ -1106,6 +1108,9 @@ function MainApp() {
         activeTab={mobileTab}
         onTabChange={handleMobileTabChange}
       />
+
+      <PwaInstallPrompt />
+      <OfflineBanner />
     </div>
   );
 }

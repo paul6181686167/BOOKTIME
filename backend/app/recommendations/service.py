@@ -13,6 +13,7 @@ from collections import Counter, defaultdict
 import logging
 from dataclasses import dataclass
 import math
+import re
 
 from ..database.connection import client
 from ..openlibrary.service import OpenLibraryService
@@ -77,7 +78,7 @@ class RecommendationService:
             
             return {
                 'recommendations': [self._format_recommendation(rec) for rec in final_recommendations],
-                'user_profile': user_profile,
+                'user_profile': self._strip_internal(user_profile),
                 'algorithm_info': {
                     'total_analyzed': len(algorithm_recommendations),
                     'total_enriched': len(enriched_recommendations),
@@ -110,40 +111,81 @@ class RecommendationService:
                     'reading_patterns': {}
                 }
             
-            # Analyser les auteurs préférés
+            # Comptages bruts (pour affichage) + affinités pondérées (pour le scoring)
             author_counts = Counter()
             category_counts = Counter()
+            author_affinity = defaultdict(float)
+            category_affinity = defaultdict(float)
             high_rated_books = []
             completed_books = []
+
+            # Index de toute la bibliothèque pour une déduplication fiable
+            owned_keys = set()   # clé titre|auteur normalisée
+            owned_titles = set() # titre normalisé seul (repli)
             
             for book in books:
-                # Compter les auteurs
-                author = book.get('author', '').strip()
+                author = (book.get('author') or '').strip()
+                category = (book.get('category') or '').strip()
+                rating = book.get('rating') or 0
+                status = book.get('status')
+
+                # Poids d'affinité : privilégie ce qui est terminé et bien noté,
+                # pénalise ce qui est mal noté.
+                weight = 1.0
+                if status == 'completed':
+                    weight += 1.0
+                if rating >= 4:
+                    weight += 1.5
+                elif rating == 3:
+                    weight += 0.3
+                elif 1 <= rating <= 2:
+                    weight -= 1.0
+
                 if author:
                     author_counts[author] += 1
-                
-                # Compter les catégories
-                category = book.get('category', '').strip()
+                    author_affinity[author] += weight
                 if category:
                     category_counts[category] += 1
-                
-                # Livres bien notés (rating >= 4)
-                rating = book.get('rating', 0)
+                    category_affinity[category] += weight
+
                 if rating >= 4:
                     high_rated_books.append(book)
-                
-                # Livres terminés
-                if book.get('status') == 'completed':
+                if status == 'completed':
                     completed_books.append(book)
+
+                # Indexer pour la déduplication (toute la bibliothèque)
+                title = book.get('title') or ''
+                norm_title = self._normalize_title(title)
+                if norm_title:
+                    owned_titles.add(norm_title)
+                    owned_keys.add(self._book_key(title, author))
             
-            # Extraire les favoris
-            favorite_authors = [author for author, count in author_counts.most_common(5)]
-            favorite_categories = [cat for cat, count in category_counts.most_common(3)]
+            # Favoris pondérés par l'affinité (pas juste le nombre de livres)
+            favorite_authors = [
+                a for a, w in sorted(author_affinity.items(), key=lambda x: x[1], reverse=True)
+                if w > 0
+            ][:5]
+            favorite_categories = [
+                c for c, w in sorted(category_affinity.items(), key=lambda x: x[1], reverse=True)
+                if w > 0
+            ][:3]
+
+            # Normaliser les affinités entre 0 et 1 pour le scoring
+            max_author_w = max(author_affinity.values(), default=1.0) or 1.0
+            max_cat_w = max(category_affinity.values(), default=1.0) or 1.0
+            author_affinity_norm = {
+                a: max(0.0, min(1.0, w / max_author_w)) for a, w in author_affinity.items()
+            }
+            category_affinity_norm = {
+                c: max(0.0, min(1.0, w / max_cat_w)) for c, w in category_affinity.items()
+            }
+
+            # Feedback négatif : livres à ne plus recommander
+            disliked_book_ids = self._load_disliked_ids(user_id)
             
-            # Analyser les patterns de lecture
             reading_patterns = {
                 'completion_rate': len(completed_books) / len(books) if books else 0,
-                'average_rating': sum(book.get('rating', 0) for book in books) / len(books) if books else 0,
+                'average_rating': sum((b.get('rating') or 0) for b in books) / len(books) if books else 0,
                 'high_rated_count': len(high_rated_books),
                 'preferred_languages': self._extract_languages(books),
                 'series_preference': self._analyze_series_preference(books)
@@ -158,12 +200,60 @@ class RecommendationService:
                 'high_rated_books': high_rated_books[:10],  # Top 10 livres bien notés
                 'completed_books': completed_books[:10],     # Top 10 livres terminés
                 'author_counts': dict(author_counts.most_common(10)),
-                'category_counts': dict(category_counts.most_common(5))
+                'category_counts': dict(category_counts.most_common(5)),
+                # Données internes pour un scoring plus pertinent (non affichées)
+                'owned_keys': list(owned_keys),
+                'owned_titles': list(owned_titles),
+                'author_affinity': author_affinity_norm,
+                'category_affinity': category_affinity_norm,
+                'disliked_book_ids': list(disliked_book_ids),
             }
             
         except Exception as e:
             logger.error(f"Erreur lors de l'analyse de la bibliothèque: {str(e)}")
             return {'has_books': False, 'error': str(e)}
+
+    def _normalize_title(self, title: str) -> str:
+        """Normalise un titre pour la comparaison (casse, ponctuation, espaces).
+
+        Conserve les numéros de tome afin de ne pas confondre deux tomes
+        différents d'une même série.
+        """
+        if not title:
+            return ''
+        t = title.lower().strip()
+        t = re.sub(r'[^a-z0-9àâäéèêëïîôöùûüç ]', ' ', t)
+        t = re.sub(r'\s+', ' ', t).strip()
+        return t
+
+    def _normalize_author(self, author: str) -> str:
+        """Normalise un nom d'auteur pour la comparaison."""
+        if not author:
+            return ''
+        a = author.lower().strip()
+        a = re.sub(r'[^a-z0-9àâäéèêëïîôöùûüç ]', ' ', a)
+        a = re.sub(r'\s+', ' ', a).strip()
+        return a
+
+    def _book_key(self, title: str, author: str) -> str:
+        """Clé unique normalisée titre|auteur."""
+        return f"{self._normalize_title(title)}|{self._normalize_author(author)}"
+
+    def _load_disliked_ids(self, user_id: str) -> set:
+        """Charge les identifiants de livres à exclure d'après le feedback négatif."""
+        try:
+            cursor = self.db.recommendation_feedback.find({
+                "user_id": user_id,
+                "feedback": {"$in": ["dislike", "not_interested"]}
+            })
+            return {
+                doc.get('recommendation_id')
+                for doc in cursor
+                if doc.get('recommendation_id')
+            }
+        except Exception as e:
+            logger.warning(f"Impossible de charger le feedback négatif: {str(e)}")
+            return set()
     
     async def _generate_algorithm_recommendations(self, user_profile: Dict, limit: int) -> List[RecommendationItem]:
         """Génère des recommandations basées sur l'algorithme"""
@@ -204,8 +294,8 @@ class RecommendationService:
                 author_books = await self.openlibrary_service.search_books_by_author(author, limit=5)
                 
                 for book in author_books:
-                    # Vérifier si l'utilisateur n'a pas déjà ce livre
-                    if not await self._user_has_book(user_profile, book.get('title', ''), author):
+                    # Écarter les livres déjà possédés ou rejetés
+                    if not await self._should_skip(user_profile, book.get('ol_key', ''), book.get('title', ''), author):
                         rec = RecommendationItem(
                             book_id=book.get('ol_key', ''),
                             title=book.get('title', ''),
@@ -213,7 +303,7 @@ class RecommendationService:
                             category=book.get('category', 'roman'),
                             cover_url=book.get('cover_url'),
                             confidence_score=0.8,  # Haute confiance pour auteurs favoris
-                            reasons=[f"Vous avez apprécié d'autres livres de {author}"],
+                            reasons=[f"Tu as aimé d'autres livres de {author}"],
                             source='algorithm_author',
                             metadata=book
                         )
@@ -243,8 +333,8 @@ class RecommendationService:
                 popular_books = await self.openlibrary_service.search_popular_books(category, limit=8)
                 
                 for book in popular_books:
-                    # Vérifier si l'utilisateur n'a pas déjà ce livre
-                    if not await self._user_has_book(user_profile, book.get('title', ''), book.get('author', '')):
+                    # Écarter les livres déjà possédés ou rejetés
+                    if not await self._should_skip(user_profile, book.get('ol_key', ''), book.get('title', ''), book.get('author', '')):
                         rec = RecommendationItem(
                             book_id=book.get('ol_key', ''),
                             title=book.get('title', ''),
@@ -252,7 +342,7 @@ class RecommendationService:
                             category=category,
                             cover_url=book.get('cover_url'),
                             confidence_score=0.6,  # Confiance moyenne pour catégories
-                            reasons=[f"Vous lisez beaucoup de {category}"],
+                            reasons=[f"Tu lis beaucoup de {category}"],
                             source='algorithm_category',
                             metadata=book
                         )
@@ -285,8 +375,8 @@ class RecommendationService:
                     complete_series = await self.openlibrary_service.search_series(series_name, limit=10)
                     
                     for book in complete_series:
-                        # Vérifier si l'utilisateur n'a pas déjà ce livre
-                        if not await self._user_has_book(user_profile, book.get('title', ''), book.get('author', '')):
+                        # Écarter les livres déjà possédés ou rejetés
+                        if not await self._should_skip(user_profile, book.get('ol_key', ''), book.get('title', ''), book.get('author', '')):
                             rec = RecommendationItem(
                                 book_id=book.get('ol_key', ''),
                                 title=book.get('title', ''),
@@ -328,10 +418,10 @@ class RecommendationService:
                 }))
                 
                 for book in similar_books:
-                    # Vérifier si l'utilisateur n'a pas déjà ce livre
-                    if not await self._user_has_book(user_profile, book.get('title', ''), book.get('author', '')):
+                    # Écarter les livres déjà possédés ou rejetés
+                    if not await self._should_skip(user_profile, str(book.get('_id', '')), book.get('title', ''), book.get('author', '')):
                         rec = RecommendationItem(
-                            book_id=book.get('_id', ''),
+                            book_id=str(book.get('_id', '')),
                             title=book.get('title', ''),
                             author=book.get('author', ''),
                             category=book.get('category', 'roman'),
@@ -389,40 +479,58 @@ class RecommendationService:
         return enriched
     
     async def _score_and_rank(self, recommendations: List[RecommendationItem], user_profile: Dict) -> List[RecommendationItem]:
-        """Score et classe les recommandations"""
-        scored = []
-        
+        """Score, déduplique et classe les recommandations.
+
+        Le score combine la confiance de la source avec l'affinité réelle de
+        l'utilisateur (pondérée par ses notes et ses lectures terminées), ce qui
+        remonte les suggestions les plus pertinentes.
+        """
+        author_affinity = user_profile.get('author_affinity', {}) or {}
+        category_affinity = user_profile.get('category_affinity', {}) or {}
+
+        # Déduplication inter-sources : on garde la meilleure occurrence par livre
+        best_by_key: Dict[str, RecommendationItem] = {}
+
         for rec in recommendations:
             try:
-                # Score de base
                 base_score = rec.confidence_score
-                
-                # Bonus pour les auteurs très appréciés
-                if rec.author in user_profile.get('favorite_authors', []):
-                    base_score += 0.2
-                
-                # Bonus pour les catégories préférées
-                if rec.category in user_profile.get('favorite_categories', []):
-                    base_score += 0.15
-                
-                # Bonus pour les séries
-                if rec.source == 'algorithm_series':
+
+                # Bonus proportionnel à l'affinité auteur (0 → 0.30)
+                aff_author = author_affinity.get(rec.author, 0.0)
+                base_score += 0.30 * aff_author
+                # Repli : léger bonus si l'auteur est dans les favoris
+                if aff_author == 0.0 and rec.author in user_profile.get('favorite_authors', []):
                     base_score += 0.1
-                
-                # Penalty pour les scores trop bas
+
+                # Bonus proportionnel à l'affinité catégorie (0 → 0.15)
+                aff_cat = category_affinity.get(rec.category, 0.0)
+                base_score += 0.15 * aff_cat
+
+                # Bonus pour les séries (fort signal de pertinence)
+                if rec.source == 'algorithm_series':
+                    base_score += 0.15
+
+                # Bonus léger pour les livres bien enrichis (description présente)
+                if rec.metadata and rec.metadata.get('description'):
+                    base_score += 0.05
+
                 if base_score < self.min_confidence_score:
                     continue
-                
-                # Limiter le score max
+
                 rec.confidence_score = min(base_score, 1.0)
-                scored.append(rec)
-                
+
+                # Clé de déduplication
+                key = self._book_key(rec.title, rec.author)
+                existing = best_by_key.get(key)
+                if existing is None or rec.confidence_score > existing.confidence_score:
+                    best_by_key[key] = rec
+
             except Exception as e:
                 logger.warning(f"Erreur scoring {rec.title}: {str(e)}")
-        
-        # Trier par score décroissant
+
+        scored = list(best_by_key.values())
         scored.sort(key=lambda x: x.confidence_score, reverse=True)
-        
+
         return scored
     
     async def _get_popular_recommendations(self, limit: int) -> Dict:
@@ -467,6 +575,18 @@ class RecommendationService:
                 'generated_at': datetime.utcnow().isoformat()
             }
     
+    # Clés internes de scoring à ne pas exposer au client
+    _INTERNAL_PROFILE_KEYS = (
+        'owned_keys', 'owned_titles', 'author_affinity',
+        'category_affinity', 'disliked_book_ids',
+    )
+
+    def _strip_internal(self, profile: Dict) -> Dict:
+        """Retire les données internes de scoring d'un profil avant de l'exposer."""
+        if not isinstance(profile, dict):
+            return profile
+        return {k: v for k, v in profile.items() if k not in self._INTERNAL_PROFILE_KEYS}
+
     def _format_recommendation(self, rec: RecommendationItem) -> Dict:
         """Formate une recommandation pour l'API"""
         return {
@@ -481,15 +601,37 @@ class RecommendationService:
             'metadata': rec.metadata
         }
     
-    async def _user_has_book(self, user_profile: Dict, title: str, author: str) -> bool:
-        """Vérifie si l'utilisateur a déjà ce livre"""
-        # Recherche simple par titre et auteur
-        # TODO: Améliorer avec recherche fuzzy
+    async def _should_skip(self, user_profile: Dict, book_id: str, title: str, author: str) -> bool:
+        """Détermine si un livre doit être écarté des recommandations.
+
+        Un livre est écarté s'il est déjà dans la bibliothèque (comparaison sur
+        l'ensemble de la bibliothèque, normalisée) ou s'il a fait l'objet d'un
+        feedback négatif (dislike / pas intéressé).
+        """
+        # 1. Feedback négatif
+        if book_id and book_id in set(user_profile.get('disliked_book_ids', [])):
+            return True
+
+        # 2. Déjà possédé — comparaison sur toute la bibliothèque
+        owned_keys = set(user_profile.get('owned_keys', []))
+        owned_titles = set(user_profile.get('owned_titles', []))
+        norm_title = self._normalize_title(title)
+
+        if norm_title and norm_title in owned_titles:
+            return True
+        if self._book_key(title, author) in owned_keys:
+            return True
+
+        # 3. Repli pour les profils factices (by-author / by-category)
         for book in user_profile.get('high_rated_books', []) + user_profile.get('completed_books', []):
-            if (book.get('title', '').lower().strip() == title.lower().strip() and
-                book.get('author', '').lower().strip() == author.lower().strip()):
+            if (self._normalize_title(book.get('title', '')) == norm_title and
+                    self._normalize_author(book.get('author', '')) == self._normalize_author(author)):
                 return True
         return False
+
+    async def _user_has_book(self, user_profile: Dict, title: str, author: str) -> bool:
+        """Compatibilité : vérifie si l'utilisateur possède déjà ce livre."""
+        return await self._should_skip(user_profile, '', title, author)
     
     def _extract_languages(self, books: List[Dict]) -> List[str]:
         """Extrait les langues préférées"""

@@ -161,6 +161,12 @@ class PaginationService:
             query["author"] = {"$regex": author, "$options": "i"}
         if saga:
             query["saga"] = {"$regex": saga, "$options": "i"}
+
+        # Les livres "à surveiller" (sorties à venir) ne doivent pas polluer la
+        # grille principale : ils vivent uniquement dans le panneau "À venir".
+        if status not in ("upcoming",):
+            query["watchlist"] = {"$ne": True}
+            query.setdefault("status", {"$ne": "upcoming"})
         
         # Exclusion des livres de séries si demandé
         if exclude_series:

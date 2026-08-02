@@ -59,6 +59,55 @@ class ChapterGrouper:
             'volume_extra': re.compile(r'v(\d+)\s*extra', re.IGNORECASE)
         }
     
+    async def group_by_volume_tag(self, chapters: List[Chapter]) -> List[Volume]:
+        """
+        Regroupe les chapitres en tomes **uniquement** d'après le tag ``volume``
+        fourni par MangaUpdates (``Chapter.volume_number``).
+
+        Aucune estimation par plage n'est faite : un chapitre sans tome étiqueté
+        reste « orphelin » (affiché individuellement, chapitre par chapitre).
+        Les tomes produits n'ont pas de date confirmée à ce stade — l'enrichissement
+        (date officielle Wikidata/Google Books) est réalisé en aval.
+
+        Returns:
+            Liste des volumes déduits des tags, triés par numéro de tome.
+        """
+        if not chapters:
+            return []
+
+        try:
+            groups: Dict[int, List[Chapter]] = defaultdict(list)
+            for chapter in chapters:
+                if chapter.volume_number is not None:
+                    groups[int(chapter.volume_number)].append(chapter)
+
+            volumes: List[Volume] = []
+            for vol_num, vol_chapters in groups.items():
+                vol_chapters.sort(key=lambda c: c.chapter_number)
+                numbers = [c.chapter_number for c in vol_chapters]
+                start_ch = int(min(numbers))
+                end_ch = int(max(numbers))
+                volumes.append(
+                    Volume(
+                        volume_number=vol_num,
+                        chapters_range=f"{start_ch}-{end_ch}" if start_ch != end_ch else f"{start_ch}",
+                        chapters_included=numbers,
+                        status=VolumeStatus.COLLECTING,
+                        release_date=None,
+                    )
+                )
+
+            volumes.sort(key=lambda v: v.volume_number)
+            logger.info(
+                "Regroupement par tag: %d chapitres étiquetés → %d tomes",
+                sum(len(g) for g in groups.values()),
+                len(volumes),
+            )
+            return volumes
+        except Exception as exc:
+            logger.error("Erreur regroupement par tag volume: %s", exc)
+            return []
+
     async def group_chapters_to_volumes(self, chapters: List[Chapter], 
                                        format_hint: str = "magazine_manga", 
                                        total_volumes_expected: int = None) -> List[Volume]:

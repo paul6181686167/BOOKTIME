@@ -1,8 +1,58 @@
-from fastapi import APIRouter, Depends
-from ..database.connection import books_collection
+from fastapi import APIRouter, Depends, HTTPException, Body
+from ..database.connection import books_collection, users_collection
 from ..security.jwt import get_current_user
 
 router = APIRouter(prefix="/api/authors", tags=["authors"])
+
+
+def _get_followed(user_id: str) -> list:
+    """Liste des auteurs suivis (lecture tolérante aux docs sans le champ)."""
+    user = users_collection.find_one({"id": user_id}, {"_id": 0, "followed_authors": 1})
+    lst = (user or {}).get("followed_authors") or []
+    return lst if isinstance(lst, list) else []
+
+
+@router.get("/following")
+async def get_followed_authors(current_user: dict = Depends(get_current_user)):
+    """Auteurs suivis par l'utilisateur (persistés en base, multi-appareils)."""
+    return {"authors": _get_followed(current_user["id"])}
+
+
+@router.post("/follow")
+async def follow_author(
+    payload: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """Suivre un auteur (idempotent, insensible à la casse)."""
+    author = (payload.get("author") or "").strip()
+    if not author:
+        raise HTTPException(status_code=400, detail="Nom d'auteur requis")
+
+    followed = _get_followed(current_user["id"])
+    if not any(a.lower() == author.lower() for a in followed):
+        followed.append(author)
+        # read-modify-write via $set : compatible Mongo réel + mode mock
+        users_collection.update_one(
+            {"id": current_user["id"]},
+            {"$set": {"followed_authors": followed}},
+        )
+    return {"success": True, "following": True, "author": author, "authors": followed}
+
+
+@router.delete("/follow/{author_name}")
+async def unfollow_author(
+    author_name: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Ne plus suivre un auteur."""
+    followed = _get_followed(current_user["id"])
+    updated = [a for a in followed if a.lower() != author_name.strip().lower()]
+    if len(updated) != len(followed):
+        users_collection.update_one(
+            {"id": current_user["id"]},
+            {"$set": {"followed_authors": updated}},
+        )
+    return {"success": True, "following": False, "author": author_name, "authors": updated}
 
 @router.get("")
 async def get_authors(current_user: dict = Depends(get_current_user)):

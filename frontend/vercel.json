@@ -12,15 +12,37 @@
   ],
   "routes": [
     {
+      "src": "/sw.js",
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "service-worker-allowed": "/"
+      },
+      "dest": "/sw.js"
+    },
+    {
+      "src": "/manifest.json",
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate"
+      },
+      "dest": "/manifest.json"
+    },
+    {
+      "src": "/(favicon\\.ico|favicon-32\\.png|icon-192\\.png|icon-512\\.png|icon-512-maskable\\.png|apple-touch-icon\\.png)",
+      "headers": {
+        "cache-control": "public, max-age=86400"
+      },
+      "dest": "/$1"
+    },
+    {
       "src": "/static/(.*)",
-      "headers": { 
-        "cache-control": "s-maxage=31536000,immutable" 
+      "headers": {
+        "cache-control": "s-maxage=31536000,immutable"
       },
       "dest": "/static/$1"
     },
-    { 
-      "src": "/(.*)", 
-      "dest": "/index.html" 
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ],
   "headers": [
@@ -32,7 +54,7 @@
           "value": "DENY"
         },
         {
-          "key": "X-Content-Type-Options", 
+          "key": "X-Content-Type-Options",
           "value": "nosniff"
         },
         {

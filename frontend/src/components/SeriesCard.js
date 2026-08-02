@@ -110,7 +110,9 @@ const SeriesCard = ({
             <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-500">
               <span className="flex items-center">
                 <BookOpenIcon className="w-3 h-3 mr-1" />
-                {series.volumes || series.total_books || '?'} tomes
+                {(Array.isArray(series.volumes)
+                  ? series.volumes.length
+                  : series.volumes) || series.total_books || '?'} tomes
               </span>
               
               {series.first_published && (

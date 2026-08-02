@@ -235,7 +235,7 @@ async def get_user_profile(
         
         return {
             "success": True,
-            "data": user_profile,
+            "data": recommendation_service._strip_internal(user_profile),
             "generated_at": datetime.utcnow().isoformat()
         }
         

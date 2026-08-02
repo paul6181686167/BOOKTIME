@@ -46,6 +46,11 @@ def infer_book_category_from_google_item(it: dict[str, Any]) -> str:
     return "roman"
 
 
+def is_enabled() -> bool:
+    """True si une clé Google Books est configurée (sinon les appels échouent)."""
+    return bool(GOOGLE_BOOKS_API_KEY)
+
+
 def _require_key() -> str:
     if not GOOGLE_BOOKS_API_KEY:
         raise RuntimeError("GOOGLE_BOOKS_API_KEY manquante dans l'environnement (.env)")
@@ -56,18 +61,18 @@ def normalize_isbn(s: str) -> str:
     return re.sub(r"[^0-9Xx]", "", (s or "").strip())
 
 
-def search_volumes(q: str, *, max_results: int = 10) -> dict[str, Any]:
+def search_volumes(q: str, *, max_results: int = 10, order_by: str | None = None) -> dict[str, Any]:
     """
     Requête brute `volumes.list` : `q` peut être un titre, `isbn:978...`, `intitle:... inauthor:...`, etc.
+    `order_by` accepte "newest" (tri par date) ou "relevance" (défaut Google).
     Retourne le JSON Google (items, totalItems, ...).
     """
     key = _require_key()
     n = max(1, min(int(max_results), 40))
-    r = requests.get(
-        GB_VOLUMES_URL,
-        params={"q": q.strip(), "maxResults": n, "key": key},
-        timeout=_TIMEOUT,
-    )
+    params = {"q": q.strip(), "maxResults": n, "key": key}
+    if order_by in ("newest", "relevance"):
+        params["orderBy"] = order_by
+    r = requests.get(GB_VOLUMES_URL, params=params, timeout=_TIMEOUT)
     r.raise_for_status()
     return r.json()
 
@@ -136,8 +141,8 @@ def simplified_volume_to_integration_book(it: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def search_volumes_simplified(q: str, *, max_results: int = 10) -> dict[str, Any]:
-    raw = search_volumes(q, max_results=max_results)
+def search_volumes_simplified(q: str, *, max_results: int = 10, order_by: str | None = None) -> dict[str, Any]:
+    raw = search_volumes(q, max_results=max_results, order_by=order_by)
     items = raw.get("items") or []
     return {
         "source": "google_books",

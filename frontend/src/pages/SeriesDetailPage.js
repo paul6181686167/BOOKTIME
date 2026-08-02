@@ -388,7 +388,7 @@ const SeriesDetailPage = () => {
               <div className="flex items-center space-x-6 text-sm text-gray-500 dark:text-gray-500">
                 <span className="flex items-center">
                   <BookOpenIcon className="w-4 h-4 mr-1" />
-                  {series.volumes} tomes
+                  {(Array.isArray(series.volumes) ? series.volumes.length : series.volumes) || 0} tomes
                 </span>
                 <span className="flex items-center">
                   <ClockIcon className="w-4 h-4 mr-1" />

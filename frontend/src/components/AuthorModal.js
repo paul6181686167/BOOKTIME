@@ -28,24 +28,46 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
   const [expandedSeries, setExpandedSeries] = useState({});
   const [isFollowing, setIsFollowing] = useState(false);
 
-  // Charger l'état "Suivre" depuis localStorage
+  // Charger l'état "Suivre" depuis le backend (auteurs suivis persistés)
   useEffect(() => {
-    if (author) {
-      const followed = JSON.parse(localStorage.getItem('booktime-followed-authors') || '[]');
-      setIsFollowing(followed.includes(author));
-    }
+    if (!author) return;
+    const token = localStorage.getItem('token');
+    fetch(`${API_BASE_URL}/api/authors/following`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then((res) => (res.ok ? res.json() : { authors: [] }))
+      .then((data) => {
+        const followed = data.authors || [];
+        setIsFollowing(followed.some((a) => a?.toLowerCase() === author.toLowerCase()));
+      })
+      .catch(() => setIsFollowing(false));
   }, [author]);
 
-  const handleToggleFollow = () => {
-    const followed = JSON.parse(localStorage.getItem('booktime-followed-authors') || '[]');
-    let updated;
-    if (isFollowing) {
-      updated = followed.filter(a => a !== author);
-    } else {
-      updated = [...followed, author];
+  const handleToggleFollow = async () => {
+    const token = localStorage.getItem('token');
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+    const next = !isFollowing;
+    setIsFollowing(next); // optimiste
+    try {
+      if (next) {
+        await fetch(`${API_BASE_URL}/api/authors/follow`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ author }),
+        });
+      } else {
+        await fetch(`${API_BASE_URL}/api/authors/follow/${encodeURIComponent(author)}`, {
+          method: 'DELETE',
+          headers,
+        });
+      }
+    } catch (err) {
+      setIsFollowing(!next); // rollback en cas d'échec
+      console.warn('Erreur suivi auteur:', err);
     }
-    localStorage.setItem('booktime-followed-authors', JSON.stringify(updated));
-    setIsFollowing(!isFollowing);
   };
 
   const isBookInLibrary = (title) => {
@@ -572,7 +594,8 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
                     return Array.from(seen.values());
                   })().map((series, index) => {
                     const db = findSeriesInDB(series.name);
-                    const volumes = db?.volumes || series.books?.length || null;
+                    const rawVolumes = db?.volumes ?? series.books?.length ?? null;
+                    const volumes = Array.isArray(rawVolumes) ? rawVolumes.length : rawVolumes;
                     const status = db?.status;
                     const firstYear = db?.first_published || series.books?.[0]?.publication_year;
                     const lastYear = db?.volume_details

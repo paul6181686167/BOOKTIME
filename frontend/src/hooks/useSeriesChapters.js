@@ -137,12 +137,15 @@ export const useSeriesChapters = (seriesName) => {
       
       // Validation des données reçues
       if (data && typeof data === 'object') {
-        setChaptersData(data);
+        // L'API renvoie { success, data: SeriesChapters, ... } : on extrait la
+        // charge utile série pour que les composants lisent current_chapters/volumes.
+        const seriesData = data.data || data;
+        setChaptersData(seriesData);
         setError(null);
         setLastUpdated(new Date());
-        
-        // Sauvegarder en cache
-        saveToCache(seriesName, data);
+
+        // Sauvegarder en cache (charge utile déjà déballée)
+        saveToCache(seriesName, seriesData);
       } else {
         throw new Error('Format de données invalide reçu du serveur');
       }

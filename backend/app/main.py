@@ -32,7 +32,24 @@ async def lifespan(app: FastAPI):
 
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, _warm_wikidata)
-    yield
+
+    # Démarrage du job planifié "prochaines sorties" (rafraîchissement + notifications).
+    try:
+        from .upcoming.scheduler import start_scheduler
+
+        start_scheduler()
+    except Exception as exc:
+        logger.warning("Scheduler prochaines sorties non démarré : %s", exc)
+
+    try:
+        yield
+    finally:
+        try:
+            from .upcoming.scheduler import shutdown_scheduler
+
+            shutdown_scheduler()
+        except Exception:
+            pass
 
 # Utiliser le système de connexion avancé avec SSL fallbacks
 database = Database()
@@ -75,6 +92,11 @@ from .catalog.routes import router as catalog_router
 from .static_wikidata.routes import router as static_wikidata_router
 from .google_books.routes import router as google_books_router
 from .series_verification.routes import router as series_verification_router
+# Import du router Prochaines sorties (agrégat prochains tomes + manga + watchlist)
+from .upcoming.routes import router as upcoming_router
+# Import des routers Notifications + Réglages (V3 prochaines sorties)
+from .notifications.routes import router as notifications_router
+from .settings.routes import router as settings_router
 
 app = FastAPI(
     title="BookTime API",
@@ -94,6 +116,8 @@ def get_cors_origins() -> List[str]:
         "http://127.0.0.1:3000",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        # Accès LAN (autre PC sur le même Wi-Fi)
+        "http://192.168.1.167:3000",
         # Vercel deployments
         "https://booktime-sg59.vercel.app",
         "https://booktime-sg59-git-main-paul6181686167s-projects.vercel.app",
@@ -236,6 +260,9 @@ app.include_router(catalog_router)    # Catalogue global livres populaires
 app.include_router(static_wikidata_router)  # Export statique Wikidata (séries + standalone)
 app.include_router(google_books_router)  # Google Books (3e source métadonnées)
 app.include_router(series_verification_router)  # Vérification croisée tomes (WD + OL + GB)
+app.include_router(upcoming_router)  # Prochaines sorties (prochains tomes + manga + watchlist)
+app.include_router(notifications_router)  # Notifications in-app
+app.include_router(settings_router)  # Réglages (préférences de notification)
 
 if __name__ == "__main__":
     import uvicorn

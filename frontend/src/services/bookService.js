@@ -1,5 +1,9 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../config/environment';
+import {
+  saveLibraryCache,
+  loadLibraryCache,
+} from '../utils/offlineLibraryCache';
 
 // Configuration axios
 const api = axios.create({
@@ -44,6 +48,7 @@ api.interceptors.response.use(
 export const bookService = {
   // Récupérer tous les livres (incluant les séries)
   async getBooks(category = null, status = null) {
+    const filters = { category, status };
     try {
       const params = {};
       if (category) params.category = category;
@@ -52,8 +57,21 @@ export const bookService = {
       // Charger tous les livres (limit max backend = 1000)
       params.limit = 1000;
       const response = await api.get('/api/books/all', { params });
-      return response.data;
+      const data = response.data;
+      const books = Array.isArray(data) ? data : data?.books || data?.items || [];
+      // Cache complet sans filtre pour permettre le filtrage offline
+      if (!category && !status && Array.isArray(books)) {
+        saveLibraryCache(books, {});
+      } else if (Array.isArray(books)) {
+        saveLibraryCache(books, filters);
+      }
+      return data;
     } catch (error) {
+      const cached = loadLibraryCache(filters);
+      if (cached?.books) {
+        console.warn('Bibliothèque servie depuis le cache offline');
+        return cached.books;
+      }
       console.error('Erreur lors de la récupération des livres:', error);
       throw new Error('Erreur lors de la récupération des livres');
     }

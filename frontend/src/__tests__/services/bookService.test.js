@@ -25,6 +25,7 @@ const mockApi = require('axios').create();
 describe('BookService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    localStorage.clear();
     localStorage.setItem('token', 'test-token');
   });
 
@@ -122,5 +123,18 @@ describe('BookService', () => {
     await expect(bookService.getBooks()).rejects.toThrow(
       'Erreur lors de la récupération des livres'
     );
+  });
+
+  test('getBooks sert le cache offline si l’API échoue', async () => {
+    const mockBooksData = [
+      { id: 1, title: 'Cached Book', author: 'Author 1' },
+    ];
+    mockApi.get.mockResolvedValueOnce({ data: mockBooksData });
+    await bookService.getBooks();
+
+    mockApi.get.mockRejectedValueOnce(new Error('Network Error'));
+    const result = await bookService.getBooks();
+
+    expect(result).toEqual(mockBooksData);
   });
 });

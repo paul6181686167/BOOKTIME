@@ -354,33 +354,41 @@ class ChapterService:
             # 3. Prendre les métadonnées du meilleur match si disponible
             best_match = mangaupdates_matches[0] if mangaupdates_matches else {}
             series_id = best_match.get('id')
-            total_volumes = best_match.get('total_volumes', 112)  # ✅ Default 112 pour One Piece
-            latest_chapter = best_match.get('latest_chapter', 1155)  # ✅ Default 1155 pour One Piece
-            
+            # Valeurs réelles issues de l'API (peuvent être absentes / None).
+            total_volumes = best_match.get('total_volumes')
+            latest_chapter = best_match.get('latest_chapter')
+
             # 4. Convertir releases en objets Chapter
             chapters = []
             for release in releases:
+                chapter_number = release.get('chapter_number')
+                if chapter_number is None:
+                    continue
                 chapter = Chapter(
                     id=str(uuid4()),
-                    chapter_number=release.get('chapter_number', 0),
-                    title=release.get('title', f"Chapter {release.get('chapter_number')}"),
+                    chapter_number=chapter_number,
+                    title=release.get('title', f"Chapter {chapter_number}"),
                     release_date=datetime.strptime(release['release_date'], '%Y-%m-%d') if release.get('release_date') else None,
                     status=ChapterStatus.RELEASED if release.get('release_date') else ChapterStatus.UPCOMING,
-                    volume_number=release.get('volume'),  # ✅ Peut être None pour chapitres sans tome
-                    url="",  # Sera rempli par les intégrations futures
+                    volume_number=release.get('volume'),  # Renseigné uniquement si MangaUpdates a étiqueté le tome
+                    url="",
                     source_format=SourceFormat.MANGA
                 )
                 chapters.append(chapter)
-            
+
+            # Statistiques dérivées, robustes aux valeurs manquantes.
+            highest_chapter = max((c.chapter_number for c in chapters), default=0)
+            total_chapters_released = int(latest_chapter) if latest_chapter else int(highest_chapter)
+
             # 5. Créer SeriesChapters avec vraies données
             series_data = SeriesChapters(
                 id=str(uuid4()),
                 series_name=series_name,
-                current_chapters=chapters,  # ✅ Vrais chapitres depuis MangaUpdates
-                volumes=[],  # Sera rempli par le regroupement automatique
-                total_chapters_released=latest_chapter,
-                total_volumes_released=total_volumes,  # ✅ Maintenant 112
-                average_chapters_per_volume=10.0,  # One Piece standard
+                current_chapters=chapters,
+                volumes=[],  # Rempli par le regroupement (tag volume MangaUpdates)
+                total_chapters_released=total_chapters_released,
+                total_volumes_released=int(total_volumes) if total_volumes else 0,
+                average_chapters_per_volume=None,
                 manga_id_mangaupdates=series_id,
                 manga_id_anilist=anilist_matches[0].get('id') if anilist_matches else None,
                 release_schedule=ReleaseSchedule.WEEKLY,
@@ -389,8 +397,8 @@ class ChapterService:
                 auto_volume_grouping=True,
                 cache_expires=datetime.utcnow() + self.cache_duration
             )
-            
-            logger.info(f"Données récupérées pour {series_name}: {len(chapters)} chapitres, {total_volumes} volumes")
+
+            logger.info(f"Données récupérées pour {series_name}: {len(chapters)} chapitres, {series_data.total_volumes_released} volumes")
             return series_data
             
         except Exception as e:
@@ -415,14 +423,16 @@ class ChapterService:
         return series_data
     
     async def _auto_group_volumes(self, series_data: SeriesChapters) -> SeriesChapters:
-        """Regroupe automatiquement les chapitres en volumes"""
-        # ✅ NOUVEAU : Passer le nombre total de volumes attendus pour génération complète
-        grouped_volumes = await self.grouper.group_chapters_to_volumes(
-            series_data.current_chapters,
-            format_hint="magazine_manga",
-            total_volumes_expected=series_data.total_volumes_released  # ✅ Utilise 112 pour One Piece
+        """
+        Regroupe les chapitres en tomes strictement d'après le tag ``volume`` de
+        MangaUpdates. Les chapitres non étiquetés restent orphelins (affichés
+        chapitre par chapitre). Les dates officielles de tomes sont ajoutées en
+        aval (Wikidata / Google Books).
+        """
+        grouped_volumes = await self.grouper.group_by_volume_tag(
+            series_data.current_chapters
         )
-        series_data.volumes.extend(grouped_volumes)
+        series_data.volumes = grouped_volumes
         return series_data
     
     async def _save_to_cache(self, series_data: SeriesChapters) -> bool:

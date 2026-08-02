@@ -18,6 +18,9 @@ class BookCreate(BaseModel):
     volume_number: Optional[int] = None
     genre: str = ""
     publication_year: Optional[int] = None
+    publish_date: Optional[str] = None       # Date de sortie complète ISO (jour/mois si connus)
+    date_confidence: Optional[str] = None    # exact | month | year | estimated | unknown
+    watchlist: bool = False                  # Livre "à surveiller" (sortie à venir)
     publisher: str = ""
     isbn: str = ""
     auto_added: bool = False
@@ -40,6 +43,9 @@ class BookUpdate(BaseModel):
     category: Optional[str] = None
     cover_url: Optional[str] = None
     language: Optional[str] = None
+    publish_date: Optional[str] = None
+    date_confidence: Optional[str] = None
+    watchlist: Optional[bool] = None
 
 class BookResponse(BaseModel):
     id: str
@@ -59,6 +65,9 @@ class BookResponse(BaseModel):
     volume_number: Optional[int] = None
     genre: str
     publication_year: Optional[int] = None
+    publish_date: Optional[str] = None
+    date_confidence: Optional[str] = None
+    watchlist: bool = False
     publisher: str
     isbn: str
     auto_added: bool

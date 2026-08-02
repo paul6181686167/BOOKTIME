@@ -84,78 +84,49 @@ const ChapterSection = ({ seriesName, onClose }) => {
     return '🔴';
   };
 
-  // Rendu des chapitres
+  // Rendu des chapitres NON regroupés (chapitre par chapitre).
+  // Les chapitres déjà collectés dans un tome ne sont plus listés ici : ils
+  // apparaissent uniquement dans la section Tomes ci-dessous.
   const renderChapters = () => {
     if (!hasChapters) return null;
 
     const chapters = chaptersData.current_chapters || [];
-    const displayChapters = showAllChapters ? chapters : chapters.slice(-8); // 8 derniers
+    const ungroupedChapters = chapters
+      .filter(ch => ch.volume_number === null || ch.volume_number === undefined)
+      .sort((a, b) => a.chapter_number - b.chapter_number);
 
-    // Séparer les chapitres assignés aux tomes et les chapitres orphelins
-    const orphanChapters = chapters.filter(ch => ch.volume_number === null || ch.volume_number === undefined);
+    if (ungroupedChapters.length === 0) return null;
+
+    const displayChapters = showAllChapters ? ungroupedChapters : ungroupedChapters.slice(-10);
 
     return (
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-md font-semibold text-gray-900 dark:text-white flex items-center">
             <ChapterIcon />
-            <span className="ml-2">Chapitres Récents</span>
-            {totalChapters > 0 && (
-              <span className="ml-2 text-sm text-gray-500">({totalChapters} total)</span>
-            )}
+            <span className="ml-2">Chapitres (pas encore en tome)</span>
+            <span className="ml-2 text-sm text-gray-500">({ungroupedChapters.length})</span>
           </h4>
-          
-          {chapters.length > 8 && (
+
+          {ungroupedChapters.length > 10 && (
             <button
               onClick={() => setShowAllChapters(!showAllChapters)}
               className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400"
             >
-              {showAllChapters ? 'Voir moins' : `Voir tous (${chapters.length})`}
+              {showAllChapters ? 'Voir moins' : `Voir tous (${ungroupedChapters.length})`}
             </button>
           )}
         </div>
 
-        {/* Section chapitres sans tome assigné (orphelins) */}
-        {orphanChapters.length > 0 && (
-          <div className="mb-4">
-            <h5 className="text-sm font-medium text-orange-800 dark:text-orange-300 mb-2 flex items-center">
-              <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
-              Chapitres sans tome assigné ({orphanChapters.length})
-            </h5>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-              {orphanChapters.slice(-10).map((chapter, index) => (
-                <div
-                  key={`orphan-${chapter.chapter_number}-${index}`}
-                  className="p-2 rounded-lg border text-xs bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-900/20 dark:border-orange-700 dark:text-orange-300"
-                >
-                  <div className="font-semibold">Ch. {chapter.chapter_number}</div>
-                  {chapter.title && (
-                    <div className="text-xs opacity-75 truncate">{chapter.title}</div>
-                  )}
-                  <div className="text-xs opacity-60 mt-1">
-                    {formatDate(chapter.release_date)}
-                  </div>
-                  <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                    Non collecté
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Section chapitres principaux */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
           {displayChapters.map((chapter, index) => (
             <div
-              key={`${chapter.chapter_number}-${index}`}
+              key={`chapter-${chapter.chapter_number}-${index}`}
               className={`
                 p-2 rounded-lg border text-xs
-                ${chapter.status === 'released' 
+                ${chapter.status === 'released'
                   ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-700 dark:text-green-300'
-                  : chapter.status === 'upcoming'
-                  ? 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-700 dark:text-blue-300'
-                  : 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-700 dark:text-yellow-300'
+                  : 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-700 dark:text-blue-300'
                 }
               `}
             >
@@ -166,11 +137,6 @@ const ChapterSection = ({ seriesName, onClose }) => {
               <div className="text-xs opacity-60 mt-1">
                 {formatDate(chapter.release_date)}
               </div>
-              {chapter.volume_number && (
-                <div className="text-xs text-gray-500 mt-1">
-                  Vol. {chapter.volume_number}
-                </div>
-              )}
             </div>
           ))}
         </div>
