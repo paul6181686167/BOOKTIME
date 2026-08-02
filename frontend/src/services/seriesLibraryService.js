@@ -39,11 +39,17 @@ export const getUserSeriesLibrary = async (token, filters = {}) => {
   }
 
   const result = await response.json();
-  
-  // Adapter le format pour compatibilité avec le frontend
+
+  // API peut renvoyer un tableau ou { series: [...] }
+  const series = Array.isArray(result)
+    ? result
+    : Array.isArray(result?.series)
+      ? result.series
+      : [];
+
   return {
-    series: result || [],
-    total_count: (result || []).length
+    series,
+    total_count: series.length,
   };
 };
 

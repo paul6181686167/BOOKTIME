@@ -19,6 +19,24 @@ function safeParse(raw, fallback) {
 export function saveLibraryCache(books, filters = {}) {
   if (typeof window === 'undefined' || !Array.isArray(books)) return;
   try {
+    // Ne jamais écraser un cache plein avec une réponse vide / tronquée
+    const existing = safeParse(localStorage.getItem(CACHE_KEY), null);
+    const existingCount = Array.isArray(existing?.books) ? existing.books.length : 0;
+    const isFullDump = !filters?.category && !filters?.status;
+    if (
+      isFullDump &&
+      existingCount > 0 &&
+      (books.length === 0 || books.length < Math.max(3, Math.floor(existingCount * 0.5)))
+    ) {
+      console.warn(
+        '[cache] Ignoré sauvegarde bibliothèque trop courte:',
+        books.length,
+        '<',
+        existingCount
+      );
+      return;
+    }
+
     const payload = {
       books,
       filters: {
@@ -103,6 +121,20 @@ export function clearLibraryCache() {
 export function saveSeriesCache(series) {
   if (typeof window === 'undefined' || !Array.isArray(series)) return;
   try {
+    const existing = safeParse(localStorage.getItem(SERIES_CACHE_KEY), null);
+    const existingCount = Array.isArray(existing?.series) ? existing.series.length : 0;
+    if (
+      existingCount > 0 &&
+      (series.length === 0 || series.length < Math.max(3, Math.floor(existingCount * 0.5)))
+    ) {
+      console.warn(
+        '[cache] Ignoré sauvegarde séries trop courte:',
+        series.length,
+        '<',
+        existingCount
+      );
+      return;
+    }
     localStorage.setItem(
       SERIES_CACHE_KEY,
       JSON.stringify({ series, savedAt: Date.now() })

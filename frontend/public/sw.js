@@ -1,5 +1,5 @@
 /* Booktime PWA Service Worker */
-const SW_VERSION = 'booktime-v4';
+const SW_VERSION = 'booktime-v5';
 const SHELL_CACHE = `${SW_VERSION}-shell`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const API_CACHE = `${SW_VERSION}-api`;
@@ -76,13 +76,33 @@ async function networkFirst(request, cacheName) {
   }
 }
 
+async function isNonEmptyJsonArray(response) {
+  try {
+    const data = await response.clone().json();
+    if (Array.isArray(data)) return data.length > 0;
+    if (Array.isArray(data?.items)) return data.items.length > 0;
+    if (Array.isArray(data?.books)) return data.books.length > 0;
+    if (Array.isArray(data?.series)) return data.series.length > 0;
+    // Objet non-liste (stats, etc.) : OK à cacher
+    return data && typeof data === 'object';
+  } catch (_) {
+    return false;
+  }
+}
+
 async function staleWhileRevalidate(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
   const networkPromise = fetch(request)
-    .then((response) => {
+    .then(async (response) => {
       if (response && response.ok) {
-        cache.put(request, response.clone());
+        // Ne pas mettre en cache une bibliothèque vide (évite d'écraser l'UI)
+        const path = new URL(request.url).pathname;
+        const isLib =
+          path.includes('/api/books') || path.includes('/api/series/library');
+        if (!isLib || (await isNonEmptyJsonArray(response))) {
+          cache.put(request, response.clone());
+        }
       }
       return response;
     })

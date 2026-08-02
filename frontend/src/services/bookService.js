@@ -46,6 +46,10 @@ api.interceptors.response.use(
 );
 
 export const bookService = {
+  getCachedBooks(filters = {}) {
+    return loadLibraryCache(filters)?.books || null;
+  },
+
   // Récupérer tous les livres (incluant les séries)
   async getBooks(category = null, status = null) {
     const filters = { category, status };
@@ -60,9 +64,9 @@ export const bookService = {
       const data = response.data;
       const books = Array.isArray(data) ? data : data?.books || data?.items || [];
       // Cache complet sans filtre pour permettre le filtrage offline
-      if (!category && !status && Array.isArray(books)) {
+      if (!category && !status && Array.isArray(books) && books.length > 0) {
         saveLibraryCache(books, {});
-      } else if (Array.isArray(books)) {
+      } else if (Array.isArray(books) && books.length > 0) {
         saveLibraryCache(books, filters);
       }
       return data;

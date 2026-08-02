@@ -26,14 +26,25 @@ export const loadUserSeriesLibrary = async (setSeriesLibraryLoading, setUserSeri
     setSeriesLibraryLoading(true);
     const token = localStorage.getItem('token');
     const result = await seriesLibraryService.getUserSeriesLibrary(token);
-    const series = result.series || [];
-    setUserSeriesLibrary(series);
-    saveSeriesCache(series);
+    const series = Array.isArray(result?.series)
+      ? result.series
+      : Array.isArray(result)
+        ? result
+        : [];
+    setUserSeriesLibrary((prev) => {
+      if (series.length === 0 && Array.isArray(prev) && prev.length > 0) {
+        console.warn('[loadSeries] Réponse vide ignorée, conservation de l’état local');
+        return prev;
+      }
+      return series;
+    });
+    if (series.length > 0) saveSeriesCache(series);
   } catch (error) {
     console.error('Erreur chargement séries bibliothèque:', error);
     const cached = loadSeriesCache();
     if (cached?.series?.length) {
       setUserSeriesLibrary(cached.series);
+      toast.error('Erreur réseau — séries locales conservées');
     } else {
       toast.error('Erreur lors du chargement des séries');
     }

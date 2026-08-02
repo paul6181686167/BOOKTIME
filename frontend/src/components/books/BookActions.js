@@ -16,25 +16,36 @@ const BookActions = {
       
       const booksData = await bookService.getBooks();
       
-      // Vérification que booksData est un array
+      let next = null;
       if (Array.isArray(booksData)) {
-        setBooks(booksData);
+        next = booksData;
       } else if (booksData && Array.isArray(booksData.books)) {
-        // Si l'API retourne un objet avec une propriété 'books'
-        setBooks(booksData.books);
+        next = booksData.books;
       } else if (booksData && Array.isArray(booksData.items)) {
-        // Si l'API retourne un objet avec une propriété 'items' (format paginé)
-        setBooks(booksData.items);
+        next = booksData.items;
       } else {
-        // Si les données ne sont pas dans le format attendu
         console.warn('⚠️ Format de données inattendu pour les livres:', booksData);
-        setBooks([]);
+      }
+
+      if (Array.isArray(next)) {
+        // Ne pas remplacer une bibliothèque affichée par une liste vide (erreur réseau / cache SW)
+        setBooks((prev) => {
+          if (next.length === 0 && Array.isArray(prev) && prev.length > 0) {
+            console.warn('[loadBooks] Réponse vide ignorée, conservation de l’état local');
+            return prev;
+          }
+          return next;
+        });
       }
     } catch (error) {
       console.error('Erreur lors du chargement des livres:', error);
-      toast.error('Erreur lors du chargement des livres');
-      // IMPORTANT : Définir books comme array vide en cas d'erreur
-      setBooks([]);
+      // Ne JAMAIS vider la bibliothèque affichée (cache local / session)
+      setBooks((prev) => {
+        if (Array.isArray(prev) && prev.length > 0) return prev;
+        const cached = bookService.getCachedBooks?.() || null;
+        return Array.isArray(cached) && cached.length ? cached : prev;
+      });
+      toast.error('Erreur réseau — bibliothèque locale conservée');
     } finally {
       setLoading(false);
     }
