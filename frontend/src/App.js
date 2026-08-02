@@ -427,12 +427,22 @@ function MainApp() {
         if (bookData.review !== undefined) payload.review = bookData.review;
         if (Object.keys(payload).length === 0) return;
         await seriesLibraryService.updateSeriesLibraryEntry(bookId, payload, token);
-        await unifiedContent.loadUnifiedContent({
-          forceRefresh: true,
-          silent: true,
-          skipBooks: true,
-          skipStats: true,
-        });
+        // Éviter un rechargement complet pour méta (résumé / pages) — garde le modal stable
+        const metaOnly =
+          !payload.series_status &&
+          (payload.description_fr !== undefined ||
+            payload.total_pages !== undefined ||
+            payload.rating !== undefined ||
+            payload.review !== undefined ||
+            payload.current_page !== undefined);
+        if (!metaOnly) {
+          await unifiedContent.loadUnifiedContent({
+            forceRefresh: true,
+            silent: true,
+            skipBooks: true,
+            skipStats: true,
+          });
+        }
       } else {
         await booksHook.handleUpdateBook(bookId, bookData);
         await unifiedContent.refreshAfterAdd('books');

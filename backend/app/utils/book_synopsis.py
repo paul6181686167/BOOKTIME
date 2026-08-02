@@ -80,6 +80,16 @@ _FR_TITLE_ALIASES: dict[str, tuple[str, ...]] = {
     "trial": ("Le procès",),  # The Trial → trial après retrait de the
     "perfume story murderer": ("Le parfum",),
     "das parfum": ("Le parfum",),
+    "l alchimiste": ("The Alchemist", "L'Alchimiste"),
+    "alchimiste": ("The Alchemist", "L'Alchimiste"),
+    "metamorphose": ("La Métamorphose", "The Metamorphosis", "Die Verwandlung"),
+    "kilimanjaro": ("Les neiges du Kilimandjaro", "The Snows of Kilimanjaro"),
+    "neiges kilimandjaro": ("The Snows of Kilimanjaro",),
+    "fahrenheit 451": ("Fahrenheit 451",),
+    "ferme animaux": ("Animal Farm", "La Ferme des animaux"),
+    "meilleur mondes": ("Brave New World", "Le Meilleur des mondes"),
+    "crime orient express": ("Murder on the Orient Express",),
+    "fleurs mal": ("Les Fleurs du mal", "Les Fleurs du Mal"),
 }
 
 # ISBN poche FR connus (prioritaires sur les recherches floues)
@@ -180,6 +190,12 @@ def _title_match_score(query: str, candidate: str) -> int:
             return 0
     if q == c:
         return 100
+    qt, ct = set(q.split()), set(c.split())
+    # « Kilimanjaro » ⊂ « snows of kilimanjaro » (tous les tokens requête présents)
+    if qt and ct and qt <= ct:
+        # Refuser si le candidat ajoute trop de matière (anthologies)
+        if len(ct) <= len(qt) + 4:
+            return 75
     if c.startswith(q) or q.startswith(c):
         # Écart de longueur limité (évite anthologies)
         ratio = min(len(q), len(c)) / max(len(q), len(c))
@@ -193,7 +209,6 @@ def _title_match_score(query: str, candidate: str) -> int:
             return 40
         return 0
     # Tokens communs
-    qt, ct = set(q.split()), set(c.split())
     if not qt or not ct:
         return 0
     overlap = len(qt & ct) / max(len(qt), len(ct))
@@ -502,8 +517,11 @@ def _ol_keys_from_search(
                 if _likely_different_book(title_l, dt):
                     continue
                 if tscore < 50:
-                    # Titre original EN indexé alors que la requête est la trad. FR
-                    if author_ok and not _likely_different_book(title_l, dt):
+                    # Boost uniquement si les tokens du titre requête sont dans le candidat
+                    # (évite d'attribuer n'importe quelle œuvre du même auteur)
+                    qn = set(_normalize_title(title_l).split())
+                    cn = set(_normalize_title(dt).split())
+                    if author_ok and qn and qn <= cn:
                         tscore = 55
                     else:
                         continue
@@ -655,19 +673,38 @@ def _french_paperback_pages_from_google(
         return None
 
 
-def _from_google_books(
+def _scan_google_items_for_description(
+    items: list, *, title: str, out_pages: dict[str, Any]
+) -> str:
+    """Parcourt des volumeInfo GB ; remplit éventuellement out_pages['pages']."""
+    t = (title or "").strip()
+    best = ""
+    for item in items or []:
+        vi = (item or {}).get("volumeInfo") or {}
+        vi_title = str(vi.get("title") or "")
+        if t and _title_match_score(t, vi_title) < 50:
+            continue
+        if _is_secondary_literature(vi_title):
+            continue
+        desc = _clean(vi.get("description") or "")
+        if desc and len(desc) > len(best):
+            best = desc[:2000]
+            if not out_pages.get("pages"):
+                pc = vi.get("pageCount")
+                if (
+                    isinstance(pc, (int, float))
+                    and int(pc) > 0
+                    and _plausible_novel_pages(int(pc))
+                ):
+                    out_pages["pages"] = int(pc)
+    return best
+
+
+def _description_from_google_books(
     *, title: str = "", author: str = "", isbn: str = "", prefer_lang: str = "fr"
 ) -> dict[str, Any]:
-    """Métadonnées GB avec priorité poche FR pour les pages."""
+    """4ᵉ de couverture GB — rapide, sans recherche poche préalable."""
     out: dict[str, Any] = {"description": "", "pages": None}
-    poche = _french_paperback_pages_from_google(title=title, author=author, isbn=isbn)
-    if poche:
-        out["pages"] = poche.get("pages")
-        out["pages_source"] = poche.get("source")
-        if poche.get("description"):
-            out["description"] = poche["description"]
-            return out
-
     try:
         from ..google_books import service as gb
 
@@ -675,47 +712,190 @@ def _from_google_books(
             return out
         t = (title or "").strip()
         a = (author or "").split(",")[0].strip()
-        q = f'intitle:"{t}" inauthor:"{a}"' if t and a else f'intitle:"{t}"'
-
-        def _scan(raw: dict) -> str:
-            best = ""
-            for item in raw.get("items") or []:
-                vi = (item or {}).get("volumeInfo") or {}
-                vi_title = str(vi.get("title") or "")
-                if t and _title_match_score(t, vi_title) < 50:
-                    continue
-                if _is_secondary_literature(vi_title):
-                    continue
-                desc = _clean(vi.get("description") or "")
-                if desc and len(desc) > len(best):
-                    best = desc[:2000]
-                    if not out.get("pages"):
-                        pc = vi.get("pageCount")
-                        if (
-                            isinstance(pc, (int, float))
-                            and int(pc) > 0
-                            and _plausible_novel_pages(int(pc))
-                        ):
-                            out["pages"] = int(pc)
-            return best
-
-        # FR d'abord, puis sans filtre langue (beaucoup de 4ᵉ n'existent qu'en EN)
-        langs: list[str | None] = []
-        if prefer_lang:
-            langs.append(prefer_lang)
-        langs.append(None)
-        best_desc = ""
-        for lang in langs:
+        # Peu de requêtes : éviter de multiplier les latences GB
+        attempts: list[tuple[str, str | None]] = []
+        if isbn:
+            attempts.append((f"isbn:{re.sub(r'[^0-9Xx]', '', isbn)}", None))
+        if t and a:
+            attempts.append((f'intitle:"{t}" inauthor:"{a}"', prefer_lang or "fr"))
+            attempts.append((f'intitle:"{t}" inauthor:"{a}"', None))
+            attempts.append((f"{t} {a}", None))
+        elif t:
+            attempts.append((f'intitle:"{t}"', None))
+        for q, lang in attempts:
             raw = gb.search_volumes(
                 q, max_results=8, lang_restrict=lang, print_type="books"
             )
-            best_desc = _scan(raw)
-            if is_usable_synopsis(best_desc):
-                break
-        out["description"] = best_desc
+            best = _scan_google_items_for_description(
+                raw.get("items") or [], title=t, out_pages=out
+            )
+            if is_usable_synopsis(best):
+                out["description"] = best
+                return out
     except Exception as exc:
-        logger.debug("GB fallback fail: %s", exc)
+        logger.debug("GB description fail: %s", exc)
     return out
+
+
+def _from_google_books(
+    *, title: str = "", author: str = "", isbn: str = "", prefer_lang: str = "fr"
+) -> dict[str, Any]:
+    """Métadonnées GB : description rapide d'abord, poche FR ensuite pour les pages."""
+    out = _description_from_google_books(
+        title=title, author=author, isbn=isbn, prefer_lang=prefer_lang
+    )
+    if out.get("pages") and is_usable_synopsis(out.get("description")):
+        return out
+    poche = _french_paperback_pages_from_google(title=title, author=author, isbn=isbn)
+    if poche:
+        if not out.get("pages") and poche.get("pages"):
+            out["pages"] = poche.get("pages")
+            out["pages_source"] = poche.get("source")
+        if not is_usable_synopsis(out.get("description")) and poche.get("description"):
+            out["description"] = poche["description"]
+    return out
+
+
+def _ol_work_description_only(ol_key: str) -> str:
+    """Description d'une work OL sans parcourir les éditions poche."""
+    key = (ol_key or "").strip()
+    if not key:
+        return ""
+    if not key.startswith("/"):
+        key = f"/{key}"
+    try:
+        r = requests.get(f"https://openlibrary.org{key}.json", timeout=_OL_TIMEOUT)
+        if not r.ok:
+            return ""
+        data = r.json() or {}
+        desc = _clean(_as_text(data.get("description")))
+        if not desc:
+            fs = data.get("first_sentence")
+            if isinstance(fs, dict):
+                desc = _clean(_as_text(fs))
+            elif isinstance(fs, list) and fs:
+                desc = _clean(_as_text(fs[0]))
+            elif isinstance(fs, str):
+                desc = _clean(fs)
+        return desc[:2000] if desc else ""
+    except Exception as exc:
+        logger.debug("OL work desc-only fail %s: %s", key, exc)
+        return ""
+
+
+def _description_from_wikipedia(
+    title: str, author: str = "", *, langs: tuple[str, ...] = ("fr", "en")
+) -> str:
+    """Intro Wikipédia (FR puis EN) — secours pour classiques sans 4ᵉ GB/OL."""
+    t = (title or "").strip()
+    if not t:
+        return ""
+    a = (author or "").split(",")[0].strip()
+    queries = [f"{t} {a}".strip(), t]
+    for lang in langs:
+        for q in queries:
+            try:
+                sr = requests.get(
+                    f"https://{lang}.wikipedia.org/w/api.php",
+                    params={
+                        "action": "query",
+                        "list": "search",
+                        "srsearch": q,
+                        "srlimit": 5,
+                        "format": "json",
+                    },
+                    timeout=8,
+                    headers={"User-Agent": "Booktime/1.0 (synopsis)"},
+                )
+                if not sr.ok:
+                    continue
+                hits = (sr.json().get("query") or {}).get("search") or []
+                page_title = None
+                for hit in hits:
+                    ht = str(hit.get("title") or "")
+                    if _is_secondary_literature(ht):
+                        continue
+                    if _title_match_score(t, ht) < 50 and t.lower() not in ht.lower():
+                        continue
+                    page_title = ht
+                    break
+                if not page_title:
+                    continue
+                er = requests.get(
+                    f"https://{lang}.wikipedia.org/w/api.php",
+                    params={
+                        "action": "query",
+                        "prop": "extracts",
+                        "exintro": 1,
+                        "explaintext": 1,
+                        "titles": page_title,
+                        "format": "json",
+                    },
+                    timeout=8,
+                    headers={"User-Agent": "Booktime/1.0 (synopsis)"},
+                )
+                if not er.ok:
+                    continue
+                pages = (er.json().get("query") or {}).get("pages") or {}
+                for page in pages.values():
+                    extract = _clean(page.get("extract") or "")
+                    if is_usable_synopsis(extract):
+                        # Couper les intros trop longues
+                        if len(extract) > 1200:
+                            cut = extract[:1200]
+                            sp = cut.rfind(". ")
+                            extract = (cut[: sp + 1] if sp > 400 else cut) + ("…" if sp > 400 else "")
+                        return extract
+            except Exception as exc:
+                logger.debug("Wikipedia synopsis fail %s: %s", lang, exc)
+    return ""
+
+
+def _fast_book_description(
+    *, title: str = "", author: str = "", isbn: str = "", ol_key: str = ""
+) -> tuple[str, str, str]:
+    """
+    Résumé rapide (sans parcours poche).
+    Retourne (description, source, ol_key_trouvée).
+    """
+    found_key = (ol_key or "").strip()
+    title_tries = _french_title_candidates(title)
+
+    # 1) Clé OL déjà connue
+    if found_key:
+        desc = _ol_work_description_only(found_key)
+        if is_usable_synopsis(desc):
+            return desc, "openlibrary", found_key
+
+    # 2) Recherche Open Library (souvent plus fiable pour les classiques)
+    for t_try in title_tries:
+        key = _ol_key_from_search(t_try, author, language="fre")
+        if not key:
+            key = _ol_key_from_search(t_try, author, language=None)
+        if key:
+            desc = _ol_work_description_only(key)
+            if is_usable_synopsis(desc):
+                return desc, "openlibrary_search", key
+
+    if isbn:
+        ol_isbn = _from_openlibrary_isbn(isbn)
+        if is_usable_synopsis(ol_isbn):
+            return ol_isbn, "openlibrary_isbn", found_key
+
+    # 3) Google Books
+    gb = _description_from_google_books(
+        title=title, author=author, isbn=isbn, prefer_lang="fr"
+    )
+    if is_usable_synopsis(gb.get("description")):
+        return gb["description"], "google_books", found_key
+
+    # 4) Wikipédia en dernier recours
+    for t_try in title_tries:
+        wiki = _description_from_wikipedia(t_try, author)
+        if is_usable_synopsis(wiki):
+            return wiki, "wikipedia", found_key
+
+    return "", "none", found_key
 
 
 def _french_title_candidates(title: str) -> list[str]:
@@ -885,67 +1065,66 @@ def fetch_book_synopsis(
     author: str = "",
     isbn: str = "",
     ol_key: str = "",
+    want_pages: bool = True,
 ) -> dict[str, Any]:
     """
     Retourne {description, pages, source, ol_key?, pages_source?}.
-    Pages : toujours priorité édition poche française (+ recherche si besoin).
+
+    1) Résumé d'abord (GB / OL / Wikipédia) — chemin rapide
+    2) Pages ensuite via édition poche FR (optionnel, plus lent)
     """
     pages: Optional[int] = None
     pages_source = None
-    description = ""
-    source = "none"
-    found_key = ""
 
-    poche = fetch_french_paperback_pages(
+    description, source, found_key = _fast_book_description(
         title=title, author=author, isbn=isbn, ol_key=ol_key
     )
-    if poche and poche.get("pages"):
-        pages = int(poche["pages"])
-        pages_source = poche.get("source")
-        source = pages_source or "fr_poche"
-        if poche.get("ol_key"):
-            found_key = poche["ol_key"]
-        if poche.get("description"):
-            description = poche["description"]
 
-    gb = _from_google_books(title=title, author=author, isbn=isbn, prefer_lang="fr")
-    if not description and gb.get("description"):
-        description = gb["description"]
-        if source == "none":
-            source = "google_books"
-    if not pages and gb.get("pages"):
-        pages = int(gb["pages"])
-        pages_source = gb.get("pages_source") or "google_books"
+    if want_pages:
+        # Pages : poche FR prioritaire (séparé du résumé pour ne pas le bloquer)
+        try:
+            poche = fetch_french_paperback_pages(
+                title=title, author=author, isbn=isbn, ol_key=found_key or ol_key
+            )
+        except Exception as exc:
+            logger.debug("poche pages after synopsis fail: %s", exc)
+            poche = None
 
-    key = (ol_key or found_key or "").strip()
-    if key and (not description or not pages):
-        ol = _from_openlibrary_work(key, title=title)
-        if not description and ol.get("description"):
-            description = ol["description"]
-            if source == "none":
-                source = "openlibrary"
-        if not pages and ol.get("pages"):
-            pages = int(ol["pages"])
-            pages_source = ol.get("pages_source") or "openlibrary"
+        if poche and poche.get("pages"):
+            pages = int(poche["pages"])
+            pages_source = poche.get("source")
+            if poche.get("ol_key") and not found_key:
+                found_key = poche["ol_key"]
+            if not is_usable_synopsis(description) and poche.get("description"):
+                description = poche["description"]
+                source = poche.get("source") or "fr_poche"
 
-    if isbn and not description:
-        ol_isbn = _from_openlibrary_isbn(isbn)
-        if ol_isbn:
-            description = ol_isbn
-            if source == "none":
-                source = "openlibrary_isbn"
+        if not pages:
+            gb = _description_from_google_books(
+                title=title, author=author, isbn=isbn, prefer_lang="fr"
+            )
+            if gb.get("pages"):
+                pages = int(gb["pages"])
+                pages_source = "google_books"
+            if not is_usable_synopsis(description) and is_usable_synopsis(
+                gb.get("description")
+            ):
+                description = gb["description"]
+                source = "google_books"
 
-    if not description or not pages:
-        found_key = found_key or _ol_key_from_search(title, author, language="fre")
-        if found_key and not description:
-            ol = _from_openlibrary_work(found_key, title=title)
-            if ol.get("description"):
-                description = ol["description"]
-                if source == "none":
-                    source = "openlibrary_search"
-            if not pages and ol.get("pages"):
-                pages = int(ol["pages"])
-                pages_source = ol.get("pages_source") or "openlibrary_search"
+    if not is_usable_synopsis(description):
+        description = ""
+        if source not in (
+            "google_books",
+            "openlibrary",
+            "openlibrary_search",
+            "openlibrary_isbn",
+            "wikipedia",
+            "fr_poche",
+        ):
+            source = "none"
+        elif not description:
+            source = "none"
 
     result: dict[str, Any] = {
         "description": description or "",

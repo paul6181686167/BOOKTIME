@@ -470,10 +470,14 @@ async def resolve_book_synopsis(
     author: str = Query(""),
     isbn: str = Query(""),
     ol_key: str = Query(""),
+    include_pages: bool = Query(
+        False,
+        description="Aussi chercher le nb de pages poche FR (plus lent). Défaut: résumé seul.",
+    ),
     current_user: dict = Depends(get_current_user),
 ):
     """
-    Résout résumé + pages sans id livre (séries rétrogradées / livres sans fiche books).
+    Résout résumé (+ pages optionnelles) sans id livre (séries rétrogradées).
     """
     from ..utils.book_synopsis import fetch_book_synopsis, is_usable_synopsis
 
@@ -482,6 +486,7 @@ async def resolve_book_synopsis(
         author=author,
         isbn=isbn,
         ol_key=ol_key,
+        want_pages=include_pages,
     )
     description = (result.get("description") or "").strip()
     if not is_usable_synopsis(description):
@@ -626,6 +631,7 @@ async def get_book_synopsis(
         author=book.get("author") or "",
         isbn=book.get("isbn") or book.get("isbn13") or "",
         ol_key=book.get("ol_key") or "",
+        want_pages=not has_pages,
     )
     fetched_desc = (result.get("description") or "").strip()
     if not is_usable_synopsis(fetched_desc):

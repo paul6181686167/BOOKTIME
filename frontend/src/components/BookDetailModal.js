@@ -78,7 +78,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     pagesFetchDoneRef.current = null;
   }, [book]);
 
-  // Charger résumé + nombre de pages (poche FR) si manquants / faux résumés
+  // Charger résumé (rapide) + pages poche FR si manquants / faux résumés
   useEffect(() => {
     const storedDesc = (book.description || '').trim();
     const needsDesc = !isUsableSynopsis(storedDesc);
@@ -89,7 +89,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     }
     // Ne pas afficher un faux résumé Wikidata / « Série de N tomes »
     if (needsDesc && storedDesc) {
-      setOlDetails((prev) => (prev?.description ? prev : null));
+      setOlDetails((prev) => (isUsableSynopsis(prev?.description) ? prev : null));
     }
 
     let cancelled = false;
@@ -97,7 +97,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     const fetchKey = `${book.id}|${book.title}|p=${needsPages}|d=${needsDesc}`;
     if (pagesFetchDoneRef.current === fetchKey) return;
-    pagesFetchDoneRef.current = fetchKey;
 
     const applyMeta = async ({ description, pages } = {}) => {
       const patch = {};
@@ -122,10 +121,13 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
           /* ignore */
         }
       }
+      return patch;
     };
 
     const loadMeta = async () => {
       if (needsDesc || needsPages) setOlLoading(true);
+      let gotDesc = !needsDesc;
+      let gotPages = !needsPages;
       try {
         // 1) Livre réel en bibliothèque
         if (book.id && !book.isFromOpenLibrary && !book.isDemotedSeries) {
@@ -139,17 +141,17 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               description: data?.description,
               pages: data?.pages,
             });
-            const gotDesc = !needsDesc || isUsableSynopsis(data?.description);
-            const gotPages = !needsPages || data?.pages;
-            if (gotDesc && gotPages) return;
+            gotDesc = !needsDesc || isUsableSynopsis(data?.description);
+            gotPages = !needsPages || !!data?.pages;
           }
         }
 
-        // 2) Résolution par titre (séries rétrogradées / repli)
-        if ((needsDesc || needsPages) && (book.title || '').trim()) {
+        // 2) Résumé rapide par titre (séries rétrogradées / repli) — sans poche
+        if (!gotDesc && (book.title || '').trim()) {
           const params = new URLSearchParams({
             title: book.title || '',
             author: book.author || '',
+            include_pages: 'false',
           });
           if (book.isbn) params.set('isbn', book.isbn);
           if (book.ol_key) params.set('ol_key', book.ol_key);
@@ -159,17 +161,34 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
           );
           if (r.ok) {
             const data = await r.json();
-            await applyMeta({
-              description: data?.description,
-              pages: data?.pages,
-            });
-            const gotDesc = !needsDesc || isUsableSynopsis(data?.description);
-            if (gotDesc) return;
+            await applyMeta({ description: data?.description });
+            gotDesc = isUsableSynopsis(data?.description);
           }
         }
 
-        // 3) Fallback description OL par clé
-        if (needsDesc && !cancelled) {
+        // 3) Pages poche FR à part (plus lent, n'empêche pas d'afficher le résumé)
+        if (!gotPages && (book.title || '').trim()) {
+          const params = new URLSearchParams({
+            title: book.title || '',
+            author: book.author || '',
+          });
+          if (book.isbn) params.set('isbn', book.isbn);
+          if (book.ol_key) params.set('ol_key', book.ol_key);
+          const r = await fetch(
+            `${API_BASE_URL}/api/books/resolve-pages?${params}`,
+            { headers }
+          );
+          if (r.ok) {
+            const data = await r.json();
+            if (data?.pages) {
+              await applyMeta({ pages: data.pages });
+              gotPages = true;
+            }
+          }
+        }
+
+        // 4) Fallback OL par clé
+        if (!gotDesc && !cancelled) {
           const olKey = book.ol_key;
           if (olKey && (book.isFromOpenLibrary || String(olKey).includes('works/'))) {
             const stripped = olKey.startsWith('/') ? olKey.slice(1) : olKey;
@@ -180,12 +199,20 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               const data = await r.json();
               if (!cancelled && isUsableSynopsis(data?.description)) {
                 await applyMeta({ description: data.description });
+                gotDesc = true;
               }
             }
           }
         }
+
+        // Ne verrouiller que si on a obtenu ce qu'il fallait (sinon retry à la réouverture)
+        if ((!needsDesc || gotDesc) && (!needsPages || gotPages)) {
+          pagesFetchDoneRef.current = fetchKey;
+        } else {
+          pagesFetchDoneRef.current = null;
+        }
       } catch (_) {
-        /* ignore */
+        pagesFetchDoneRef.current = null;
       } finally {
         if (!cancelled) setOlLoading(false);
       }
@@ -408,9 +435,46 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Résumé
                 </h3>
-                <p className="text-gray-400 dark:text-gray-500 text-sm italic">
+                <p className="text-gray-400 dark:text-gray-500 text-sm italic mb-2">
                   Aucun résumé disponible pour ce livre.
                 </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    pagesFetchDoneRef.current = null;
+                    setOlLoading(true);
+                    // Relancer l'effet en touchant une dépendance locale via re-fetch manuel
+                    const token = localStorage.getItem('token');
+                    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                    const params = new URLSearchParams({
+                      title: book.title || '',
+                      author: book.author || '',
+                      include_pages: 'false',
+                    });
+                    if (book.isbn) params.set('isbn', book.isbn);
+                    if (book.ol_key) params.set('ol_key', book.ol_key);
+                    fetch(`${API_BASE_URL}/api/books/resolve-synopsis?${params}`, { headers })
+                      .then((r) => (r.ok ? r.json() : null))
+                      .then(async (data) => {
+                        if (isUsableSynopsis(data?.description)) {
+                          setOlDetails({ description: data.description.trim() });
+                          if (book.id && !book.isFromOpenLibrary && onUpdateRef.current) {
+                            try {
+                              await onUpdateRef.current(book.id, {
+                                description: data.description.trim(),
+                              });
+                            } catch (_) {
+                              /* ignore */
+                            }
+                          }
+                        }
+                      })
+                      .finally(() => setOlLoading(false));
+                  }}
+                  className="text-xs font-medium text-green-600 dark:text-green-400 hover:underline"
+                >
+                  Réessayer
+                </button>
               </div>
             )}
 
