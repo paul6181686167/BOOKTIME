@@ -33,6 +33,66 @@ import {
   resolveSeriesTotalBooks,
 } from '../../utils/seriesAttribution';
 
+async function fetchWikidataSpotlight(query, token, backendUrl) {
+  let wikidataSpotlight = [];
+  let wikidataMatcher = () => null;
+  try {
+    const wdRes = await fetch(
+      `${backendUrl}/api/static-wikidata/series/search?q=${encodeURIComponent(query.trim())}&limit=10`,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+    );
+    let wdData = wdRes.ok ? await wdRes.json() : null;
+    let rows = wdData?.results || [];
+    let fromSearch = rows.length > 0;
+    if (!rows.length) {
+      const topR = await fetch(
+        `${backendUrl}/api/static-wikidata/series/top/by-popularity?limit=4`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      if (topR.ok) {
+        wdData = await topR.json();
+        rows = wdData?.results || [];
+        fromSearch = false;
+      }
+    }
+    wikidataMatcher = buildWikidataSeriesMatcher(fromSearch ? rows : []);
+    wikidataSpotlight = (rows || [])
+      .map((entry, i) => {
+        const name = entry.name_fr || entry.name || entry.name_en || entry.label || entry.qid;
+        const curated = enrichWikidataCardFromCurated(name, {
+          author: entry.author_label || entry.author || '',
+          totalBooks: entry.work_count || 0,
+          category: inferCategoryFromWikidataSearchEntry(entry),
+        });
+        const totalBooks = curated.totalBooks || entry.work_count || 0;
+        if (!totalBooks || totalBooks < 1) return null;
+        return {
+          isSeriesCard: true,
+          isStaticWikidataCard: true,
+          wikidata_qid: entry.qid,
+          id: `series_wd_${entry.qid}`,
+          name,
+          author: curated.author,
+          category: curated.category || inferCategoryFromWikidataSearchEntry(entry),
+          cover_url: null,
+          totalBooks,
+          completedBooks: 0,
+          progressPercent: 0,
+          books: [],
+          description: fromSearch
+            ? `Wikidata · ${entry.work_count ?? 0} œuvre(s) · pop. ${entry.popularity ?? '—'}/100`
+            : `Wikidata · tendances · pop. ${entry.popularity ?? '—'}/100`,
+          relevanceScore: fromSearch ? 45000 - i * 100 : 40000,
+          fromOpenLibrary: false,
+        };
+      })
+      .filter(Boolean);
+  } catch (_) {
+    /* optionnel */
+  }
+  return { wikidataSpotlight, wikidataMatcher };
+}
+
 // FONCTION PRINCIPALE DE RECHERCHE OPEN LIBRARY
 export const searchOpenLibrary = async (query, {
   books, 
@@ -48,91 +108,46 @@ export const searchOpenLibrary = async (query, {
     console.log('❌ Recherche annulée: query vide');
     return;
   }
+
+  setSearchLoading(true);
+  setIsSearchMode(true);
+  setLastSearchTerm(query);
+
+  // Cartes curées locales : disponibles même si le backend/OL est down
+  const applyCuratedFallback = (extra = []) => {
+    const curated = generateSeriesCardsForSearch(query, []) || [];
+    let results = dedupeSeriesCardsByName(
+      dedupeWikidataStaticSeriesOverOpenLibrary([...curated, ...extra])
+    );
+    setOpenLibraryResults(results);
+    return results;
+  };
   
   try {
     console.log('✅ Début de la recherche globale Open Library (toutes catégories)');
-    setSearchLoading(true);
-    setIsSearchMode(true);
-    setLastSearchTerm(query);
     
     const token = localStorage.getItem('token');
     const backendUrl = API_BASE_URL;
+    const authHeaders = {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      'Content-Type': 'application/json',
+    };
 
-    const wdPromise = fetch(
-      `${backendUrl}/api/static-wikidata/series/search?q=${encodeURIComponent(query.trim())}&limit=10`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
-      .then((r) => (r.ok ? r.json() : null))
-      .catch(() => null);
-    
-    // RECHERCHE GLOBALE : pas de filtre par catégorie, 40 résultats (double-pass OL côté backend)
-    const response = await fetch(`${backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}&limit=40`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    const [olSettled, wdSettled] = await Promise.allSettled([
+      fetch(`${backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}&limit=40`, {
+        headers: authHeaders,
+      }),
+      fetchWikidataSpotlight(query, token, backendUrl),
+    ]);
 
-    // ── Wikidata statique : cartes "spotlight" + matcher (indépendant du succès OL) ──
-    // Les cartes Wikidata/curées doivent s'afficher même si Open Library échoue ou renvoie [].
-    let wikidataSpotlight = [];
-    let wikidataMatcher = () => null;
-    try {
-      let wdData = await wdPromise;
-      let rows = wdData?.results || [];
-      let fromSearch = rows.length > 0;
-      if (!rows.length) {
-        const topR = await fetch(
-          `${backendUrl}/api/static-wikidata/series/top/by-popularity?limit=4`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if (topR.ok) {
-          wdData = await topR.json();
-          rows = wdData?.results || [];
-          fromSearch = false;
-        }
-      }
-      // Le matcher ne s'appuie que sur les vraies correspondances de recherche
-      // (pas sur les tendances génériques) pour ne pas rattacher des livres au hasard.
-      wikidataMatcher = buildWikidataSeriesMatcher(fromSearch ? rows : []);
-      wikidataSpotlight = (rows || [])
-        .map((entry, i) => {
-          const name = entry.name_fr || entry.name || entry.name_en || entry.label || entry.qid;
-          // Auteur + nombre de tomes faisant autorité depuis le référentiel curé (par nom).
-          const curated = enrichWikidataCardFromCurated(name, {
-            author: entry.author_label || entry.author || '',
-            totalBooks: entry.work_count || 0,
-            category: inferCategoryFromWikidataSearchEntry(entry),
-          });
-          const totalBooks = curated.totalBooks || entry.work_count || 0;
-          // Pas de carte série à 0 tome (livre individuel mal tagué Wikidata)
-          if (!totalBooks || totalBooks < 1) return null;
-          return {
-            isSeriesCard: true,
-            isStaticWikidataCard: true,
-            wikidata_qid: entry.qid,
-            id: `series_wd_${entry.qid}`,
-            name,
-            author: curated.author,
-            category: curated.category || inferCategoryFromWikidataSearchEntry(entry),
-            cover_url: null,
-            totalBooks,
-            completedBooks: 0,
-            progressPercent: 0,
-            books: [],
-            description: fromSearch
-              ? `Wikidata · ${entry.work_count ?? 0} œuvre(s) · pop. ${entry.popularity ?? '—'}/100`
-              : `Wikidata · tendances · pop. ${entry.popularity ?? '—'}/100`,
-            relevanceScore: fromSearch ? 45000 - i * 100 : 40000,
-            fromOpenLibrary: false,
-          };
-        })
-        .filter(Boolean);
-    } catch (_) {
-      /* optionnel */
-    }
+    const { wikidataSpotlight, wikidataMatcher } =
+      wdSettled.status === 'fulfilled'
+        ? wdSettled.value
+        : { wikidataSpotlight: [], wikidataMatcher: () => null };
 
-    if (response.ok) {
+    const response = olSettled.status === 'fulfilled' ? olSettled.value : null;
+
+    if (response?.ok) {
       const data = await response.json();
 
       // ── 1. Dédoublonnage par ol_key ──────────────────────────────────────
@@ -159,19 +174,14 @@ export const searchOpenLibrary = async (query, {
       });
 
       // ── 3. ATTRIBUTION UNIQUE : chaque livre → une série (curé → Wikidata → saga) ──
-      // Tout livre attribué est exclu des standalone (corrige LOTR : carte WD + tomes).
       const wdSpotlightByQid = new Map(
         wikidataSpotlight.filter(c => c.wikidata_qid).map(c => [c.wikidata_qid, c])
       );
-      const seriesGroups = new Map(); // seriesKey → { attr, books: [] }
+      const seriesGroups = new Map();
       const attributedIds = new Set();
-
-      // Série curée correspondant à la requête (rattachement inter-langues par auteur).
       const querySeries = findCuratedSeriesByQuery(query);
 
       enriched.forEach(book => {
-        // Ordre : curé (titre/variations/volume_titles) → Wikidata → saga,
-        // puis repli sur la série de la requête (auteur + hors exclusions).
         let attr = attributeBookToSeries(book, { wikidataMatcher });
         if (!attr && querySeries) attr = attachBookToQuerySeries(book, querySeries);
         if (!attr) return;
@@ -188,7 +198,6 @@ export const searchOpenLibrary = async (query, {
         const author = groupBooks.find(b => b.author)?.author || '';
 
         if (attr.source === 'wikidata') {
-          // Rattacher les tomes à la carte spotlight Wikidata existante (pas de doublon)
           const card = wdSpotlightByQid.get(attr.wikidata_qid);
           if (card) {
             card.books = merged;
@@ -215,7 +224,7 @@ export const searchOpenLibrary = async (query, {
         });
       });
 
-      // ── 5. Heuristique de repli : auteur + mots du query (livres non attribués) ──
+      // ── 5. Heuristique de repli : auteur + mots du query ──
       const remaining = enriched.filter(b => !attributedIds.has(b.ol_key));
       const authorGroups = {};
       remaining.forEach(book => {
@@ -257,7 +266,7 @@ export const searchOpenLibrary = async (query, {
         });
       });
 
-      // ── 6. Séries de la base statique (legacy query-based) — dédoublonnées ──
+      // ── 6. Séries de la base statique — toujours, même si OL a peu de hits ──
       const allSeriesNames = new Set([
         ...seriesCards.map(c => (c.name || '').toLowerCase()),
         ...wikidataSpotlight.map(c => (c.name || '').toLowerCase()),
@@ -270,7 +279,7 @@ export const searchOpenLibrary = async (query, {
       // ── 7. Livres individuels (réellement hors série) ────────────────────
       const standaloneBooks = enriched.filter(b => !attributedIds.has(b.ol_key));
 
-      // ── 8. Fusion + dédup (priorité Wikidata sur les doublons) ───────────
+      // ── 8. Fusion + dédup ───────────────────────────────────────────────
       let finalResults = [
         ...seriesCards,
         ...dedupedStatic,
@@ -288,16 +297,22 @@ export const searchOpenLibrary = async (query, {
         ` trouvé(s)`
       );
     } else {
-      // Open Library indisponible : afficher au moins les cartes Wikidata/tendances.
-      if (wikidataSpotlight.length > 0) {
-        setOpenLibraryResults(dedupeWikidataStaticSeriesOverOpenLibrary([...wikidataSpotlight]));
+      // OL indisponible (401, 503, réseau…) : curé + Wikidata restent utilisables
+      const results = applyCuratedFallback(wikidataSpotlight);
+      if (results.length > 0) {
+        toast.success(`${results.length} résultat(s) trouvé(s)`);
       } else {
         toast.error('Erreur lors de la recherche Open Library');
       }
     }
   } catch (error) {
     console.error('Erreur recherche Open Library:', error);
-    toast.error('Erreur lors de la recherche Open Library');
+    const results = applyCuratedFallback([]);
+    if (results.length === 0) {
+      toast.error('Erreur lors de la recherche Open Library');
+    } else {
+      toast.success(`${results.length} résultat(s) trouvé(s)`);
+    }
   } finally {
     setSearchLoading(false);
   }

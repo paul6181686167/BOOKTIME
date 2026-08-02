@@ -1014,10 +1014,12 @@ function MainApp() {
           {searchHook.isSearchMode && (
             <BookGrid
               books={displayedBooks}
-              loading={unifiedContent.loading}
+              loading={searchHook.searchLoading}
               onItemClick={handleItemClick}
               onAuthorClick={handleAuthorClick}
               showEmptyState={true}
+              emptyTitle="Aucun résultat pour cette recherche"
+              emptySubtitle="Essaie un autre titre, auteur, ou orthographe."
             />
           )}
         </div>

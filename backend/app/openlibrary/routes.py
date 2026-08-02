@@ -89,10 +89,9 @@ async def search_open_library(
     min_pages: Optional[int] = None,
     max_pages: Optional[int] = None,
     author_filter: Optional[str] = None,
-    current_user: dict = Depends(get_current_user)
 ):
     """
-    Rechercher des livres dans Open Library.
+    Rechercher des livres dans Open Library (public — pas d'auth requise).
     Stratégie large : requête originale + version sans accents, fusionnées et dédupliquées.
     Retourne original_title pour que le front puisse l'afficher en sous-titre.
     """

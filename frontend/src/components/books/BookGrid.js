@@ -7,16 +7,26 @@ const BookGrid = ({
   onBookClick, 
   onItemClick,
   onAuthorClick,
-  showEmptyState = true 
+  showEmptyState = true,
+  emptyTitle = 'Aucun livre dans votre bibliothèque',
+  emptySubtitle = 'Commencez par rechercher des livres à ajouter à votre collection.',
 }) => {
-  // Les livres reçus sont déjà traités par App.js (createUnifiedDisplay + filtrage)
-  // On n'applique qu'un filtre minimal pour éviter les livres standalone avec saga
+  // Filtre soft : n'exclure un livre « saga » que si une carte série du même nom
+  // est déjà présente (évite de vider la grille quand OL tague saga sans carte).
   const displayedBooks = React.useMemo(() => {
     if (!books || !Array.isArray(books)) return [];
-    return books.filter(item => {
+    const seriesNames = new Set(
+      books
+        .filter((item) => item.isSeriesCard)
+        .map((item) => (item.name || item.title || '').toLowerCase().trim())
+        .filter(Boolean)
+    );
+    return books.filter((item) => {
       if (item.isSeriesCard) return true;
-      const belongsToSeries = !!(item.saga && item.saga.trim());
-      return !belongsToSeries;
+      const saga = (item.saga || '').trim().toLowerCase();
+      if (!saga) return true;
+      // Garder le livre s'il n'y a pas déjà une carte série pour cette saga
+      return !seriesNames.has(saga);
     });
   }, [books]);
 
@@ -39,10 +49,10 @@ const BookGrid = ({
       <div className="text-center py-12">
         <div className="text-6xl mb-4">📚</div>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-          Aucun livre dans votre bibliothèque
+          {emptyTitle}
         </h3>
         <p className="text-gray-600 dark:text-gray-400">
-          Commencez par rechercher des livres à ajouter à votre collection.
+          {emptySubtitle}
         </p>
       </div>
     );
