@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import BookActions from '../components/books/BookActions';
 import SeriesActions from '../components/series/SeriesActions';
 import { API_BASE_URL } from '../config/environment';
+import { scheduleLibraryMetaEnrichment } from '../services/libraryMetaEnrichment';
 
 export const useUnifiedContent = () => {
   const [books, setBooks] = useState([]);
@@ -113,6 +114,18 @@ export const useUnifiedContent = () => {
   useEffect(() => {
     loadUnifiedContent();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Résumé + pages en arrière-plan (sans clic sur la vignette)
+  useEffect(() => {
+    if (loading) return;
+    if (!books.length && !userSeriesLibrary.length) return;
+    return scheduleLibraryMetaEnrichment({
+      books,
+      userSeriesLibrary,
+      setBooks,
+      setUserSeriesLibrary,
+    });
+  }, [loading, books, userSeriesLibrary]);
 
   return {
     books,
