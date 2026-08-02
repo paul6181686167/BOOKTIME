@@ -175,6 +175,86 @@ def is_usable_synopsis(text: str | None) -> bool:
     return True
 
 
+_FR_STOPWORDS = {
+    "le", "la", "les", "un", "une", "des", "du", "de", "et", "en", "dans",
+    "qui", "que", "pour", "avec", "sur", "par", "est", "sont", "cette",
+    "ces", "aux", "ou", "mais", "donc", "comme", "son", "sa", "ses", "lui",
+    "elle", "ils", "elles", "nous", "vous", "leur", "leurs", "plus", "très",
+    "aussi", "entre", "sans", "après", "avant", "tout", "tous", "toute",
+    "être", "avoir", "fait", "été", "peut", "deux", "où", "dont",
+}
+_EN_STOPWORDS = {
+    "the", "and", "of", "to", "in", "a", "is", "that", "for", "with", "on",
+    "as", "by", "an", "be", "this", "was", "are", "from", "or", "his", "her",
+    "their", "they", "have", "has", "been", "which", "who", "will", "would",
+    "about", "into", "when", "what", "there", "can", "not", "but", "all",
+}
+
+
+def looks_french(text: str | None) -> bool:
+    """Heuristique : le texte ressemble davantage au français qu'à l'anglais."""
+    t = (text or "").strip()
+    if len(t) < 20:
+        return False
+    accent_n = len(re.findall(r"[àâäéèêëïîôùûüçœæÀÂÄÉÈÊËÏÎÔÙÛÜÇŒÆ]", t))
+    tokens = re.findall(r"[a-zA-ZàâäéèêëïîôùûüçœæÀÂÄÉÈÊËÏÎÔÙÛÜÇŒÆ']+", t.lower())
+    if not tokens:
+        return False
+    fr_hits = sum(1 for w in tokens if w in _FR_STOPWORDS)
+    en_hits = sum(1 for w in tokens if w in _EN_STOPWORDS)
+    # Accents forts → FR ; sinon comparer les stopwords
+    if accent_n >= 3:
+        return True
+    if accent_n >= 1 and fr_hits >= en_hits:
+        return True
+    if fr_hits >= 3 and fr_hits > en_hits:
+        return True
+    # Titres / phrases courts avec mots FR typiques
+    if fr_hits >= 2 and en_hits == 0:
+        return True
+    return False
+
+
+def looks_english(text: str | None) -> bool:
+    """Heuristique inverse : texte clairement anglais (à éviter pour l'UI FR)."""
+    t = (text or "").strip()
+    if len(t) < 20:
+        return False
+    if looks_french(t):
+        return False
+    tokens = re.findall(r"[a-zA-Z']+", t.lower())
+    if not tokens:
+        return False
+    en_hits = sum(1 for w in tokens if w in _EN_STOPWORDS)
+    fr_hits = sum(1 for w in tokens if w in _FR_STOPWORDS)
+    accent_n = len(re.findall(r"[àâäéèêëïîôùûüçœæ]", t, flags=re.I))
+    return en_hits >= 3 and en_hits > fr_hits and accent_n == 0
+
+
+def prefer_french_synopsis(*candidates: tuple[str, str]) -> tuple[str, str]:
+    """
+    Choisit le meilleur résumé parmi (texte, source).
+    Préfère un texte FR utilisable ; sinon le premier utilisable.
+    """
+    usable_fr: list[tuple[str, str]] = []
+    usable_any: list[tuple[str, str]] = []
+    for text, source in candidates:
+        if not is_usable_synopsis(text):
+            continue
+        usable_any.append((text, source))
+        if looks_french(text):
+            usable_fr.append((text, source))
+    if usable_fr:
+        return usable_fr[0]
+    # Éviter l'anglais si on a mieux… sinon accepter en dernier recours
+    non_en = [(t, s) for t, s in usable_any if not looks_english(t)]
+    if non_en:
+        return non_en[0]
+    if usable_any:
+        return usable_any[0]
+    return "", "none"
+
+
 def _title_match_score(query: str, candidate: str) -> int:
     """
     Score de proximité titre (0–100).
@@ -888,47 +968,75 @@ def _fast_book_description(
     *, title: str = "", author: str = "", isbn: str = "", ol_key: str = ""
 ) -> tuple[str, str, str]:
     """
-    Résumé rapide (sans parcours poche).
+    Résumé rapide priorisant le français.
+    Ordre : Google Books FR → Wikipédia FR → Open Library (si FR) → replis.
     Retourne (description, source, ol_key_trouvée).
     """
     found_key = (ol_key or "").strip()
     title_tries = _french_title_candidates(title)
+    candidates: list[tuple[str, str]] = []
 
-    # 1) Clé OL déjà connue
+    # 1) Google Books en français d'abord (meilleure 4ᵉ de couverture FR)
+    for t_try in title_tries:
+        gb = _description_from_google_books(
+            title=t_try, author=author, isbn=isbn if t_try == title else "", prefer_lang="fr"
+        )
+        desc = gb.get("description") or ""
+        if is_usable_synopsis(desc):
+            if looks_french(desc):
+                return desc, "google_books", found_key
+            candidates.append((desc, "google_books"))
+
+    # 2) Wikipédia FR (puis EN en interne — filtré ensuite)
+    for t_try in title_tries:
+        wiki = _description_from_wikipedia(t_try, author, langs=("fr",))
+        if is_usable_synopsis(wiki):
+            if looks_french(wiki):
+                return wiki, "wikipedia", found_key
+            candidates.append((wiki, "wikipedia"))
+
+    # 3) Open Library — accepter seulement si le texte est FR
+    ol_candidates: list[tuple[str, str, str]] = []  # desc, source, key
     if found_key:
         desc = _ol_work_description_only(found_key)
         if is_usable_synopsis(desc):
-            return desc, "openlibrary", found_key
+            if looks_french(desc):
+                return desc, "openlibrary", found_key
+            ol_candidates.append((desc, "openlibrary", found_key))
 
-    # 2) Recherche Open Library (souvent plus fiable pour les classiques)
     for t_try in title_tries:
         key = _ol_key_from_search(t_try, author, language="fre")
         if not key:
             key = _ol_key_from_search(t_try, author, language=None)
         if key:
+            if not found_key:
+                found_key = key
             desc = _ol_work_description_only(key)
             if is_usable_synopsis(desc):
-                return desc, "openlibrary_search", key
+                if looks_french(desc):
+                    return desc, "openlibrary_search", key
+                ol_candidates.append((desc, "openlibrary_search", key))
 
     if isbn:
         ol_isbn = _from_openlibrary_isbn(isbn)
         if is_usable_synopsis(ol_isbn):
-            return ol_isbn, "openlibrary_isbn", found_key
+            if looks_french(ol_isbn):
+                return ol_isbn, "openlibrary_isbn", found_key
+            candidates.append((ol_isbn, "openlibrary_isbn"))
 
-    # 3) Google Books
-    gb = _description_from_google_books(
-        title=title, author=author, isbn=isbn, prefer_lang="fr"
-    )
-    if is_usable_synopsis(gb.get("description")):
-        return gb["description"], "google_books", found_key
+    for desc, source, key in ol_candidates:
+        candidates.append((desc, source))
+        if key and not found_key:
+            found_key = key
 
-    # 4) Wikipédia en dernier recours
+    # 4) Wikipédia avec repli EN si rien en FR
     for t_try in title_tries:
-        wiki = _description_from_wikipedia(t_try, author)
+        wiki = _description_from_wikipedia(t_try, author, langs=("fr", "en"))
         if is_usable_synopsis(wiki):
-            return wiki, "wikipedia", found_key
+            candidates.append((wiki, "wikipedia"))
 
-    return "", "none", found_key
+    chosen, source = prefer_french_synopsis(*candidates)
+    return chosen, source, found_key
 
 
 def _french_title_candidates(title: str) -> list[str]:

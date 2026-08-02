@@ -46,6 +46,55 @@ def _build_ol_params(q_term: str, limit: int, year_start, year_end, language, au
         "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,number_of_pages_median,publisher,language,series"
     }
 
+def _accent_score(s: str) -> int:
+    return len(_re_global.findall(r"[àâäéèêëïîôùûüçœæ]", s or "", flags=_re_global.I))
+
+
+def _find_french_edition_title(ol_key: str, timeout: float = 2.0) -> Optional[str]:
+    """Titre d'une édition française Open Library pour un work (ex. /works/OL123W)."""
+    if not ol_key:
+        return None
+    key = ol_key if ol_key.startswith("/") else f"/{ol_key}"
+    if "/works/" not in key and key.startswith("/books/"):
+        return None
+    try:
+        fr_resp = requests.get(
+            f"https://openlibrary.org{key}/editions.json",
+            params={"language": "fre", "limit": 8},
+            timeout=timeout,
+        )
+        if not fr_resp.ok:
+            return None
+        best = None
+        best_score = -1
+        for entry in fr_resp.json().get("entries", []):
+            langs = [l.get("key", "") for l in entry.get("languages", [])]
+            title = (entry.get("title") or "").strip()
+            if "/languages/fre" not in langs or not title:
+                continue
+            score = _accent_score(title) * 5 + (10 if entry.get("covers") else 0)
+            if score > best_score:
+                best_score = score
+                best = title
+        return best
+    except Exception:
+        return None
+
+
+def _alias_french_title(title: str) -> Optional[str]:
+    """Alias FR connus (même table que les synopsis)."""
+    try:
+        from ..utils.book_synopsis import _FR_TITLE_ALIASES, _normalize_title
+        aliases = _FR_TITLE_ALIASES.get(_normalize_title(title) or "", ())
+        for a in aliases:
+            # Préférer un alias avec accents / mots FR
+            if a and a.lower() != (title or "").lower():
+                return a
+    except Exception:
+        pass
+    return None
+
+
 def _doc_to_book(doc: dict) -> dict:
     """Convertit un document OL en objet livre normalisé"""
     raw_series = doc.get("series", [])
@@ -56,16 +105,25 @@ def _doc_to_book(doc: dict) -> dict:
         series_name = s[:vol_match.start()].strip() if vol_match else s.strip()
 
     ol_title = doc.get("title", "")
+    langs = doc.get("language", []) or []
+    langs_l = [str(l).lower() for l in langs]
 
-    # Détecter si le titre semble être dans une langue non-latine (japonais, coréen, etc.)
-    # ou si c'est clairement anglais → on le stocke comme original_title
-    langs = doc.get("language", [])
-    is_original_english = "eng" in langs if langs else False
+    # Titre FR dès que possible (alias connus, sinon édition fre plus tard en enrichissement)
+    display_title = ol_title
+    original_title = ol_title
+    alias = _alias_french_title(ol_title)
+    if alias:
+        display_title = alias
+        original_title = ol_title if ol_title != alias else ol_title
+    elif "fre" in langs_l or any("fre" in x for x in langs_l):
+        display_title = ol_title
 
     return {
         "ol_key": doc.get("key", ""),
-        "title": ol_title,
-        "original_title": ol_title,  # conservé tel quel ; sera écrasé si on trouve la trad FR
+        "title": display_title,
+        "original_title": original_title if original_title != display_title else (
+            ol_title if display_title != ol_title else None
+        ),
         "author": ", ".join(doc.get("author_name", [])) if doc.get("author_name") else "",
         "category": detect_category_from_subjects(doc.get("subject", [])),
         "cover_url": extract_cover_url(doc.get("cover_i")),
@@ -76,6 +134,7 @@ def _doc_to_book(doc: dict) -> dict:
         "publisher": ", ".join(doc.get("publisher", [])) if doc.get("publisher") else "",
         "saga": series_name,
         "available_languages": langs[:5] if langs else [],
+        "title_fr": display_title if display_title != ol_title or "fre" in langs_l else None,
     }
 
 
@@ -143,8 +202,37 @@ async def search_open_library(
                 continue
             books.append(_doc_to_book(doc))
 
+        books = books[:limit]
+
+        # Enrichir les premiers résultats avec le titre d'édition FR (parallèle, court)
+        def _enrich_fr(book: dict) -> dict:
+            if book.get("title_fr") or "fre" in " ".join(book.get("available_languages") or []):
+                return book
+            # Alias déjà appliqué dans _doc_to_book
+            if book.get("title") and book.get("original_title") and book["title"] != book.get("original_title"):
+                return book
+            fr = _find_french_edition_title(book.get("ol_key") or "", timeout=1.8)
+            if fr and fr.strip() and fr.strip().lower() != (book.get("title") or "").lower():
+                book["original_title"] = book.get("original_title") or book.get("title")
+                book["title"] = fr.strip()
+                book["title_fr"] = fr.strip()
+                langs = list(book.get("available_languages") or [])
+                if "fre" not in langs:
+                    langs = ["fre"] + langs
+                book["available_languages"] = langs[:5]
+            return book
+
+        try:
+            import concurrent.futures
+            enrich_n = min(12, len(books))
+            with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
+                enriched_head = list(pool.map(_enrich_fr, books[:enrich_n]))
+            books = enriched_head + books[enrich_n:]
+        except Exception as exc:
+            logger.debug("Enrichissement titres FR search: %s", exc)
+
         return {
-            "books": books[:limit],
+            "books": books,
             "total_found": total_found,
             "source_unavailable": False,
             "filters_applied": {
@@ -333,14 +421,6 @@ async def import_from_open_library(
         
         author_str = ", ".join(authors) if authors else ""
         
-        # Extraire description
-        description = ""
-        if work_data.get("description"):
-            if isinstance(work_data["description"], dict):
-                description = work_data["description"].get("value", "")
-            else:
-                description = work_data["description"]
-        
         # Extraire sujets
         subjects = work_data.get("subjects", [])
 
@@ -371,15 +451,50 @@ async def import_from_open_library(
         if import_data.get("saga"):
             saga_name = import_data["saga"]
 
-        # Récupérer le titre français (attendu max 1s supplémentaire, car lancé en parallèle)
+        # Récupérer le titre français (lancé en parallèle plus haut)
+        fr_title = None
         try:
-            fr_title = _fr_future.result(timeout=1)
+            fr_title = _fr_future.result(timeout=3)
             if fr_title:
                 title = fr_title
         except Exception:
             pass
         finally:
             _fr_executor.shutdown(wait=False)
+
+        if not fr_title:
+            alias = _alias_french_title(original_title or title)
+            if alias:
+                title = alias
+
+        # Résumé en français (GB / Wiki FR) — éviter la description work OL souvent EN
+        description = ""
+        try:
+            from ..utils.book_synopsis import (
+                fetch_book_synopsis,
+                looks_french,
+                looks_english,
+                is_usable_synopsis,
+            )
+            syn = fetch_book_synopsis(
+                title=title or original_title,
+                author=author_str,
+                isbn=import_data.get("isbn") or "",
+                ol_key=ol_key,
+                want_pages=False,
+            )
+            cand = (syn.get("description") or "").strip()
+            if is_usable_synopsis(cand) and not looks_english(cand):
+                description = cand
+            elif is_usable_synopsis(cand) and looks_french(cand):
+                description = cand
+            if not description and work_data.get("description"):
+                raw = work_data["description"]
+                raw_desc = raw.get("value", "") if isinstance(raw, dict) else str(raw or "")
+                if is_usable_synopsis(raw_desc) and looks_french(raw_desc):
+                    description = raw_desc
+        except Exception as exc:
+            logger.debug("Synopsis FR import fail: %s", exc)
 
         # Récupérer des détails depuis la première édition
         first_edition = editions_data.get("entries", [{}])[0]

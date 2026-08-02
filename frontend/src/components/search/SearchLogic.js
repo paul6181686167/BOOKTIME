@@ -443,7 +443,7 @@ export const handleAddFromOpenLibrary = async (openLibraryBook, {
         'bd': 'BD',
         'manga': 'Manga'
       };
-      toast.success(`"${openLibraryBook.title}" ajouté avec succès ! 📚`, {
+      toast.success(`"${addTitle}" ajouté avec succès ! 📚`, {
         duration: 2000
       });
       

@@ -15,12 +15,28 @@ export function displayBookTitleFrFirst(book) {
   if (book.display_title != null && String(book.display_title).trim() !== '') {
     return String(book.display_title).trim();
   }
+  const titleFr = (book.title_fr || '').trim();
+  if (titleFr) return titleFr;
+
   const t = (book.title || '').trim();
   const o = (book.original_title || '').trim();
   const langs = book.available_languages || [];
   const langJoined = langs.map((l) => String(l).toLowerCase()).join(' ');
+
+  // Langue FR déclarée → titre courant
   if (langJoined.includes('fre') && t) return t;
-  if (o && frenchAccentScore(o) > frenchAccentScore(t)) return o;
+
+  // Entre title et original_title, garder celui qui « sonne » le plus français
+  const scoreT = frenchAccentScore(t);
+  const scoreO = frenchAccentScore(o);
+  if (o && scoreO > scoreT) return o;
+  if (t && scoreT > scoreO) return t;
+
+  // Mots français typiques dans l'un des deux
+  const frHint = /\b(le|la|les|un|une|des|du|de|et|l['’])/i;
+  if (o && frHint.test(o) && !frHint.test(t)) return o;
+  if (t && frHint.test(t) && !frHint.test(o)) return t;
+
   return t || o;
 }
 

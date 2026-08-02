@@ -283,7 +283,7 @@ const BookCard = ({ book, onAdd, onNotInterested, onFeedback, userBooks = [] }) 
           className={`text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 leading-tight ${path ? 'cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors' : ''}`}
           onClick={() => path && navigate(path)}
         >
-          {book.title}
+          {book.display_title || book.title_fr || book.title}
         </h3>
         <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{book.author}</p>
 

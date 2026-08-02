@@ -620,7 +620,12 @@ async def get_book_synopsis(
     Résumé / 4ᵉ de couverture (Google Books prioritaire, puis Open Library).
     Persiste la description sur le livre si elle était vide.
     """
-    from ..utils.book_synopsis import fetch_book_synopsis, is_usable_synopsis
+    from ..utils.book_synopsis import (
+        fetch_book_synopsis,
+        is_usable_synopsis,
+        looks_english,
+        looks_french,
+    )
 
     book = books_collection.find_one(
         {"id": book_id, "user_id": current_user["id"]}, {"_id": 0}
@@ -631,10 +636,12 @@ async def get_book_synopsis(
     existing_desc = (book.get("description") or "").strip()
     if not is_usable_synopsis(existing_desc):
         existing_desc = ""
+    # Résumé stocké en anglais → on retente une source FR
+    existing_is_en = bool(existing_desc and looks_english(existing_desc) and not looks_french(existing_desc))
     existing_pages = book.get("total_pages")
     has_pages = isinstance(existing_pages, (int, float)) and int(existing_pages) > 0
 
-    if existing_desc and has_pages:
+    if existing_desc and has_pages and not existing_is_en:
         return {
             "description": existing_desc,
             "pages": int(existing_pages),
@@ -644,7 +651,7 @@ async def get_book_synopsis(
         }
 
     result = fetch_book_synopsis(
-        title=book.get("title") or "",
+        title=book.get("title") or book.get("original_title") or "",
         author=book.get("author") or "",
         isbn=book.get("isbn") or book.get("isbn13") or "",
         ol_key=book.get("ol_key") or "",
@@ -653,7 +660,14 @@ async def get_book_synopsis(
     fetched_desc = (result.get("description") or "").strip()
     if not is_usable_synopsis(fetched_desc):
         fetched_desc = ""
-    description = existing_desc or fetched_desc
+
+    if existing_is_en and fetched_desc and looks_french(fetched_desc):
+        description = fetched_desc
+    elif existing_desc and not existing_is_en:
+        description = existing_desc
+    else:
+        description = fetched_desc or existing_desc
+
     pages = int(existing_pages) if has_pages else result.get("pages")
     if pages is not None:
         try:
@@ -666,7 +680,7 @@ async def get_book_synopsis(
     persisted = False
     patch = {}
     if persist:
-        if description and not existing_desc:
+        if description and (not existing_desc or (existing_is_en and looks_french(description))):
             patch["description"] = description
         if pages and not has_pages:
             patch["total_pages"] = pages
@@ -683,7 +697,7 @@ async def get_book_synopsis(
     return {
         "description": description,
         "pages": pages,
-        "source": result.get("source") or ("stored" if existing_desc else "none"),
+        "source": result.get("source") or ("stored" if existing_desc and not existing_is_en else "none"),
         "persisted": persisted,
         "book_id": book_id,
         "ol_key": result.get("ol_key") or book.get("ol_key"),
