@@ -15,6 +15,8 @@ function LoginPage() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
+  const [forgotResetUrl, setForgotResetUrl] = useState('');
+  const [forgotDelivery, setForgotDelivery] = useState('');
   const loadingStartRef = useRef(null);
 
   const [backendReady, setBackendReady] = useState(!isBackendRemote());
@@ -98,26 +100,52 @@ function LoginPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const openForgotModal = () => {
+    setShowForgot(true);
+    setForgotSent(false);
+    setForgotResetUrl('');
+    setForgotDelivery('');
+    setForgotEmail(formData.email || '');
+  };
+
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     if (!forgotEmail) return;
     setForgotLoading(true);
+    setForgotResetUrl('');
+    setForgotDelivery('');
     try {
       const res = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: forgotEmail }),
       });
+      const d = await res.json().catch(() => ({}));
       if (res.ok) {
+        setForgotDelivery(d.delivery || '');
+        setForgotResetUrl(d.reset_url || '');
         setForgotSent(true);
       } else {
-        const d = await res.json();
-        toast.error(d.detail || 'Erreur lors de l\'envoi');
+        const msg =
+          typeof d.detail === 'string'
+            ? d.detail
+            : "Impossible de préparer la réinitialisation.";
+        toast.error(msg);
       }
     } catch {
       toast.error('Erreur réseau. Réessaie dans un instant.');
     } finally {
       setForgotLoading(false);
+    }
+  };
+
+  const copyResetLink = async () => {
+    if (!forgotResetUrl) return;
+    try {
+      await navigator.clipboard.writeText(forgotResetUrl);
+      toast.success('Lien copié');
+    } catch {
+      toast.error('Copie impossible — sélectionne le lien manuellement');
     }
   };
 
@@ -226,7 +254,7 @@ function LoginPage() {
             {isLogin && (
               <button
                 type="button"
-                onClick={() => { setShowForgot(true); setForgotSent(false); setForgotEmail(''); }}
+                onClick={openForgotModal}
                 className="w-full text-sm text-green-600 dark:text-green-400 hover:underline text-center mt-1"
               >
                 Mot de passe oublié ?
@@ -242,14 +270,53 @@ function LoginPage() {
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-md">
             {forgotSent ? (
               <div className="text-center">
-                <div className="text-4xl mb-4">📧</div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Email envoyé !</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Si <strong>{forgotEmail}</strong> est associé à un compte, tu recevras un lien de réinitialisation dans quelques minutes.
-                </p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  {forgotDelivery === 'email'
+                    ? 'Email envoyé'
+                    : forgotResetUrl
+                      ? 'Lien prêt'
+                      : 'Demande enregistrée'}
+                </h3>
+                {forgotDelivery === 'email' ? (
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    Si <strong>{forgotEmail}</strong> est associé à un compte, tu recevras un lien sous peu (valable 1 heure).
+                  </p>
+                ) : forgotResetUrl ? (
+                  <div className="text-left mb-6 space-y-3">
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">
+                      Clique sur le lien ci-dessous pour choisir un nouveau mot de passe (valable 1 heure).
+                    </p>
+                    <a
+                      href={forgotResetUrl}
+                      className="block break-all text-sm text-green-700 dark:text-green-400 underline"
+                    >
+                      {forgotResetUrl}
+                    </a>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <a
+                        href={forgotResetUrl}
+                        className="flex-1 text-center bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-medium"
+                      >
+                        Ouvrir le lien
+                      </a>
+                      <button
+                        type="button"
+                        onClick={copyResetLink}
+                        className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium"
+                      >
+                        Copier
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    Si <strong>{forgotEmail}</strong> est associé à un compte, un lien a été préparé.
+                  </p>
+                )}
                 <button
+                  type="button"
                   onClick={() => setShowForgot(false)}
-                  className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-medium"
+                  className="w-full text-gray-500 dark:text-gray-400 py-2 text-sm hover:underline"
                 >
                   Fermer
                 </button>
@@ -258,7 +325,7 @@ function LoginPage() {
               <>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Mot de passe oublié</h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm">
-                  Saisis ton adresse email. Tu recevras un lien pour réinitialiser ton mot de passe (valable 1 heure).
+                  Saisis ton adresse email. Tu obtiendras un lien pour réinitialiser ton mot de passe (valable 1 heure).
                 </p>
                 <form onSubmit={handleForgotPassword} className="space-y-4">
                   <input
@@ -275,7 +342,7 @@ function LoginPage() {
                     disabled={forgotLoading || !forgotEmail}
                     className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-medium disabled:opacity-50"
                   >
-                    {forgotLoading ? 'Envoi en cours…' : 'Envoyer le lien'}
+                    {forgotLoading ? 'Préparation…' : 'Obtenir le lien'}
                   </button>
                   <button
                     type="button"

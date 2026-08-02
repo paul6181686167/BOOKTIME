@@ -37,13 +37,45 @@ class ResetPasswordRequest(BaseModel):
     new_password: str
 
 
+def _frontend_base_url() -> str:
+    return (
+        os.environ.get("FRONTEND_URL")
+        or os.environ.get("PUBLIC_FRONTEND_URL")
+        or "https://booktime-sg59.vercel.app"
+    ).rstrip("/")
+
+
+def _smtp_configured() -> bool:
+    return bool(
+        os.environ.get("SMTP_USER", "").strip()
+        and os.environ.get("SMTP_PASSWORD", "").strip()
+    )
+
+
+def _reset_email_html(reset_url: str) -> str:
+    return f"""
+    <html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+      <h2 style="color:#166534">Réinitialisation de mot de passe</h2>
+      <p>Bonjour,</p>
+      <p>Vous avez demandé à réinitialiser votre mot de passe Booktime.</p>
+      <p>Cliquez sur le bouton ci-dessous (valable <strong>1 heure</strong>) :</p>
+      <a href="{reset_url}" style="display:inline-block;padding:12px 24px;background:#16a34a;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;margin:16px 0">
+        Réinitialiser mon mot de passe
+      </a>
+      <p style="color:#666;font-size:13px">Si vous n'avez pas fait cette demande, ignorez cet email.</p>
+      <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
+      <p style="color:#999;font-size:12px">L'équipe Booktime</p>
+    </body></html>
+    """
+
+
 def _send_reset_email(to_email: str, reset_token: str, frontend_url: str):
     """Envoie l'email de réinitialisation via SMTP."""
     smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
     smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-    smtp_user = os.environ.get("SMTP_USER", "")
-    smtp_password = os.environ.get("SMTP_PASSWORD", "")
-    from_email = os.environ.get("FROM_EMAIL", smtp_user)
+    smtp_user = os.environ.get("SMTP_USER", "").strip()
+    smtp_password = os.environ.get("SMTP_PASSWORD", "").strip()
+    from_email = (os.environ.get("FROM_EMAIL") or smtp_user).strip()
 
     if not smtp_user or not smtp_password:
         raise ValueError("SMTP_USER et SMTP_PASSWORD non configurés")
@@ -54,24 +86,9 @@ def _send_reset_email(to_email: str, reset_token: str, frontend_url: str):
     msg["Subject"] = "Réinitialisation de votre mot de passe Booktime"
     msg["From"] = f"Booktime <{from_email}>"
     msg["To"] = to_email
+    msg.attach(MIMEText(_reset_email_html(reset_url), "html"))
 
-    html = f"""
-    <html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
-      <h2 style="color:#4f46e5">Réinitialisation de mot de passe</h2>
-      <p>Bonjour,</p>
-      <p>Vous avez demandé à réinitialiser votre mot de passe Booktime.</p>
-      <p>Cliquez sur le bouton ci-dessous (valable <strong>1 heure</strong>) :</p>
-      <a href="{reset_url}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;margin:16px 0">
-        Réinitialiser mon mot de passe
-      </a>
-      <p style="color:#666;font-size:13px">Si vous n'avez pas fait cette demande, ignorez cet email.</p>
-      <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
-      <p style="color:#999;font-size:12px">L'équipe Booktime</p>
-    </body></html>
-    """
-    msg.attach(MIMEText(html, "html"))
-
-    with smtplib.SMTP(smtp_host, smtp_port) as server:
+    with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
         server.starttls()
         server.login(smtp_user, smtp_password)
         server.sendmail(from_email, to_email, msg.as_string())
@@ -140,13 +157,16 @@ async def login(user_data: UserAuth):
 
 @router.post("/forgot-password")
 async def forgot_password(data: ForgotPasswordRequest):
-    """Envoyer un email de réinitialisation de mot de passe."""
+    """Demande de réinitialisation : email SMTP si configuré, sinon lien direct."""
     email_lower = data.email.lower().strip()
     user = users_collection.find_one({"email": email_lower}, {"_id": 0})
 
-    # Toujours retourner OK pour ne pas divulguer si l'email existe
+    # Toujours un message générique si le compte n'existe pas
     if not user:
-        return {"message": "Si cet email existe, un lien de réinitialisation a été envoyé."}
+        return {
+            "message": "Si cet email existe, un lien de réinitialisation a été préparé.",
+            "delivery": "none",
+        }
 
     reset_token = secrets.token_urlsafe(32)
     expires_at = datetime.utcnow() + timedelta(hours=1)
@@ -156,21 +176,26 @@ async def forgot_password(data: ForgotPasswordRequest):
         {"$set": {"reset_token": reset_token, "reset_token_expires": expires_at}}
     )
 
-    frontend_url = os.environ.get(
-        "FRONTEND_URL",
-        "https://1571571761761571.vercel.app"
-    )
+    frontend_url = _frontend_base_url()
+    reset_url = f"{frontend_url}/reset-password?token={reset_token}"
 
-    try:
-        _send_reset_email(email_lower, reset_token, frontend_url)
-    except Exception as e:
-        print(f"[EMAIL] Erreur envoi email reset: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Impossible d'envoyer l'email. Vérifiez la configuration SMTP."
-        )
+    if _smtp_configured():
+        try:
+            _send_reset_email(email_lower, reset_token, frontend_url)
+            return {
+                "message": "Si cet email existe, un lien de réinitialisation a été envoyé.",
+                "delivery": "email",
+            }
+        except Exception as e:
+            print(f"[EMAIL] Erreur envoi email reset: {e}")
+            # Fallback : le flux reste utilisable sans SMTP
 
-    return {"message": "Si cet email existe, un lien de réinitialisation a été envoyé."}
+    # Sans SMTP (ou échec d'envoi) : renvoyer le lien pour l'afficher dans l'UI
+    return {
+        "message": "Lien de réinitialisation prêt (valable 1 heure).",
+        "delivery": "link",
+        "reset_url": reset_url,
+    }
 
 
 @router.post("/reset-password")
@@ -185,6 +210,8 @@ async def reset_password(data: ResetPasswordRequest):
         raise HTTPException(status_code=400, detail="Lien invalide ou expiré.")
 
     expires_at = user.get("reset_token_expires")
+    if expires_at is not None and getattr(expires_at, "tzinfo", None) is not None:
+        expires_at = expires_at.replace(tzinfo=None)
     if not expires_at or datetime.utcnow() > expires_at:
         raise HTTPException(status_code=400, detail="Ce lien a expiré. Faites une nouvelle demande.")
 
