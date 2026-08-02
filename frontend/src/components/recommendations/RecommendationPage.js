@@ -76,19 +76,40 @@ function catalogPath(bookId) {
 
 const CATEGORY_MAP = {
   roman: { label: 'Romans', api: 'roman' },
-  'graphic_novel': { label: 'Romans Graphiques', api: null }, // manga + bd
-  manga: { label: 'Mangas', api: 'manga' },
-  bd: { label: 'BD', api: 'bd' },
+  graphic_novel: { label: 'Romans graphiques', api: null }, // manga + bd
+  graphic_novels: { label: 'Romans graphiques', api: null },
 };
+
+function normalizeRecoTab(tab) {
+  if (tab === 'graphic_novels' || tab === 'graphic_novel' || tab === 'manga' || tab === 'bd') {
+    return 'graphic_novel';
+  }
+  return tab || 'roman';
+}
 
 function detectActiveCategory() {
   const stored = localStorage.getItem('booktime_active_tab');
-  return stored || 'roman';
+  return normalizeRecoTab(stored || 'roman');
 }
 
 function categoryForApi(tab) {
-  if (tab === 'graphic_novel') return null; // no filter → show all graphic novels mixed
-  return CATEGORY_MAP[tab]?.api || null;
+  const t = normalizeRecoTab(tab);
+  if (t === 'graphic_novel') return null; // filtrage manga+bd côté client
+  return CATEGORY_MAP[t]?.api || null;
+}
+
+function isGraphicCategory(cat) {
+  const c = (cat || '').toLowerCase();
+  return c === 'manga' || c === 'bd' || c === 'graphic_novel' || c === 'graphic_novels';
+}
+
+function filterSectionsGraphicOnly(grouped) {
+  const out = {};
+  Object.entries(grouped || {}).forEach(([key, items]) => {
+    const filtered = (items || []).filter((r) => isGraphicCategory(r.category));
+    if (filtered.length) out[key] = filtered;
+  });
+  return out;
 }
 
 function isUpcoming(book) {
@@ -438,7 +459,16 @@ const RecommendationPage = () => {
 
     setIsLoading(true);
     try {
-      const category = tab === 'all' ? categoryForApi(appTab) : tab === 'graphic_novel' ? null : tab;
+      const tabNorm = normalizeRecoTab(tab === 'all' ? 'all' : tab);
+      const wantGraphic =
+        tabNorm === 'graphic_novel' ||
+        (tab === 'all' && normalizeRecoTab(appTab) === 'graphic_novel');
+      const category =
+        tab === 'all'
+          ? categoryForApi(appTab)
+          : tabNorm === 'graphic_novel'
+            ? null
+            : tabNorm;
 
       const [personalizedRes, popularRes, profileRes] = await Promise.allSettled([
         recommendationService.getPersonalized({ limit: 30, category, refresh: force }),
@@ -447,7 +477,7 @@ const RecommendationPage = () => {
       ]);
 
       // Regroupe par source
-      const grouped = {};
+      let grouped = {};
 
       if (personalizedRes.status === 'fulfilled' && personalizedRes.value?.success) {
         const recs = personalizedRes.value.data?.recommendations || [];
@@ -469,6 +499,10 @@ const RecommendationPage = () => {
         if (pops.length > 0) {
           grouped['popular'] = pops;
         }
+      }
+
+      if (wantGraphic) {
+        grouped = filterSectionsGraphicOnly(grouped);
       }
 
       let profile = null;
@@ -523,21 +557,27 @@ const RecommendationPage = () => {
   const [coldStartBooks, setColdStartBooks] = useState([]);
   useEffect(() => {
     if (!isLoading && totalRecs === 0) {
-      const cat = categoryForApi(activeTab === 'all' ? appTab : activeTab);
-      const url = `${API_BASE_URL}/api/catalog/popular?limit=18${cat ? `&category=${cat}` : ''}`;
+      const tabKey = activeTab === 'all' ? appTab : activeTab;
+      const wantGraphic = normalizeRecoTab(tabKey) === 'graphic_novel';
+      const cat = categoryForApi(tabKey);
+      const url = `${API_BASE_URL}/api/catalog/popular?limit=24${cat ? `&category=${cat}` : ''}`;
       fetch(url)
-        .then((r) => r.ok ? r.json() : { books: [] })
-        .then((d) => setColdStartBooks(d.books || []))
+        .then((r) => (r.ok ? r.json() : { books: [] }))
+        .then((d) => {
+          let books = d.books || [];
+          if (wantGraphic) {
+            books = books.filter((b) => isGraphicCategory(b.category));
+          }
+          setColdStartBooks(books.slice(0, 18));
+        })
         .catch(() => {});
     }
   }, [isLoading, totalRecs, activeTab, appTab]);
 
-  // « Tous » reste distinct des filtres catégorie (évite 2× « Romans » si l'onglet lib est roman)
   const TABS = [
     { id: 'all', label: 'Tous' },
     { id: 'roman', label: 'Romans' },
-    { id: 'manga', label: 'Mangas' },
-    { id: 'bd', label: 'BD' },
+    { id: 'graphic_novel', label: 'Romans graphiques' },
   ];
 
   const ORDER = ['algorithm_series', 'algorithm_author', 'algorithm_similarity', 'algorithm_category', 'popular'];
