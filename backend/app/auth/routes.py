@@ -46,7 +46,14 @@ def _frontend_base_url() -> str:
 
 
 def _smtp_configured() -> bool:
-    return bool(
+    """SMTP uniquement si explicitement activé (évite les 500 avec faux identifiants)."""
+    enabled = os.environ.get("SMTP_ENABLED", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+    return enabled and bool(
         os.environ.get("SMTP_USER", "").strip()
         and os.environ.get("SMTP_PASSWORD", "").strip()
     )

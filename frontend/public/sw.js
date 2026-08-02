@@ -1,5 +1,5 @@
 /* Booktime PWA Service Worker */
-const SW_VERSION = 'booktime-v2';
+const SW_VERSION = 'booktime-v3';
 const SHELL_CACHE = `${SW_VERSION}-shell`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const API_CACHE = `${SW_VERSION}-api`;
