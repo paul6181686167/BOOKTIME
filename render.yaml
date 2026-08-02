@@ -31,3 +31,18 @@ services:
         value: "1440"
       - key: FRONTEND_URL
         value: "https://booktime-sg59.vercel.app"
+      # E-mail « mot de passe oublié » — renseigner UNE des deux options dans le dashboard Render :
+      # Option A (simple) : RESEND_API_KEY (+ FROM_EMAIL optionnel)
+      # Option B : SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, FROM_EMAIL
+      - key: RESEND_API_KEY
+        sync: false
+      - key: FROM_EMAIL
+        sync: false
+      - key: SMTP_HOST
+        value: "smtp.gmail.com"
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false

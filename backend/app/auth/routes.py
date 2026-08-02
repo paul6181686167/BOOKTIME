@@ -46,17 +46,18 @@ def _frontend_base_url() -> str:
 
 
 def _smtp_configured() -> bool:
-    """SMTP uniquement si explicitement activé (évite les 500 avec faux identifiants)."""
-    enabled = os.environ.get("SMTP_ENABLED", "").strip().lower() in (
-        "1",
-        "true",
-        "yes",
-        "on",
-    )
-    return enabled and bool(
+    return bool(
         os.environ.get("SMTP_USER", "").strip()
         and os.environ.get("SMTP_PASSWORD", "").strip()
     )
+
+
+def _resend_configured() -> bool:
+    return bool(os.environ.get("RESEND_API_KEY", "").strip())
+
+
+def _email_configured() -> bool:
+    return _resend_configured() or _smtp_configured()
 
 
 def _reset_email_html(reset_url: str) -> str:
@@ -76,8 +77,38 @@ def _reset_email_html(reset_url: str) -> str:
     """
 
 
-def _send_reset_email(to_email: str, reset_token: str, frontend_url: str):
-    """Envoie l'email de réinitialisation via SMTP."""
+def _send_via_resend(to_email: str, reset_url: str) -> None:
+    """Envoi via l'API Resend (https://resend.com)."""
+    import requests
+
+    api_key = os.environ.get("RESEND_API_KEY", "").strip()
+    from_raw = (
+        os.environ.get("FROM_EMAIL")
+        or os.environ.get("RESEND_FROM")
+        or "Booktime <onboarding@resend.dev>"
+    ).strip()
+    from_email = from_raw if "<" in from_raw else f"Booktime <{from_raw}>"
+
+    response = requests.post(
+        "https://api.resend.com/emails",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "from": from_email,
+            "to": [to_email],
+            "subject": "Réinitialisation de votre mot de passe Booktime",
+            "html": _reset_email_html(reset_url),
+        },
+        timeout=20,
+    )
+    if response.status_code >= 400:
+        raise RuntimeError(f"Resend HTTP {response.status_code}: {response.text[:300]}")
+
+
+def _send_via_smtp(to_email: str, reset_url: str) -> None:
+    """Envoi via SMTP (Gmail, Outlook, etc.)."""
     smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
     smtp_port = int(os.environ.get("SMTP_PORT", "587"))
     smtp_user = os.environ.get("SMTP_USER", "").strip()
@@ -86,8 +117,6 @@ def _send_reset_email(to_email: str, reset_token: str, frontend_url: str):
 
     if not smtp_user or not smtp_password:
         raise ValueError("SMTP_USER et SMTP_PASSWORD non configurés")
-
-    reset_url = f"{frontend_url}/reset-password?token={reset_token}"
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = "Réinitialisation de votre mot de passe Booktime"
@@ -99,6 +128,20 @@ def _send_reset_email(to_email: str, reset_token: str, frontend_url: str):
         server.starttls()
         server.login(smtp_user, smtp_password)
         server.sendmail(from_email, to_email, msg.as_string())
+
+
+def _send_reset_email(to_email: str, reset_token: str, frontend_url: str):
+    """Envoie l'email de réinitialisation (Resend prioritaire, sinon SMTP)."""
+    reset_url = f"{frontend_url}/reset-password?token={reset_token}"
+    if _resend_configured():
+        _send_via_resend(to_email, reset_url)
+        return
+    if _smtp_configured():
+        _send_via_smtp(to_email, reset_url)
+        return
+    raise ValueError(
+        "Aucun service e-mail configuré (RESEND_API_KEY ou SMTP_USER/SMTP_PASSWORD)"
+    )
 
 
 def _hash_password(password: str) -> str:
@@ -164,16 +207,25 @@ async def login(user_data: UserAuth):
 
 @router.post("/forgot-password")
 async def forgot_password(data: ForgotPasswordRequest):
-    """Demande de réinitialisation : email SMTP si configuré, sinon lien direct."""
+    """Envoie un e-mail de réinitialisation (Resend ou SMTP requis)."""
     email_lower = data.email.lower().strip()
     user = users_collection.find_one({"email": email_lower}, {"_id": 0})
 
-    # Toujours un message générique si le compte n'existe pas
+    # Message générique si le compte n'existe pas (pas d'énumération d'emails)
     if not user:
         return {
-            "message": "Si cet email existe, un lien de réinitialisation a été préparé.",
+            "message": "Si cet email existe, un lien de réinitialisation a été envoyé.",
             "delivery": "none",
         }
+
+    if not _email_configured():
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Envoi d'e-mail non configuré sur le serveur. "
+                "Ajoute RESEND_API_KEY (recommandé) ou SMTP_USER + SMTP_PASSWORD sur Render."
+            ),
+        )
 
     reset_token = secrets.token_urlsafe(32)
     expires_at = datetime.utcnow() + timedelta(hours=1)
@@ -184,24 +236,22 @@ async def forgot_password(data: ForgotPasswordRequest):
     )
 
     frontend_url = _frontend_base_url()
-    reset_url = f"{frontend_url}/reset-password?token={reset_token}"
 
-    if _smtp_configured():
-        try:
-            _send_reset_email(email_lower, reset_token, frontend_url)
-            return {
-                "message": "Si cet email existe, un lien de réinitialisation a été envoyé.",
-                "delivery": "email",
-            }
-        except Exception as e:
-            print(f"[EMAIL] Erreur envoi email reset: {e}")
-            # Fallback : le flux reste utilisable sans SMTP
+    try:
+        _send_reset_email(email_lower, reset_token, frontend_url)
+    except Exception as e:
+        print(f"[EMAIL] Erreur envoi email reset: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Impossible d'envoyer l'e-mail. Vérifie RESEND_API_KEY ou "
+                "SMTP_USER / SMTP_PASSWORD (mot de passe d'application Gmail) sur Render."
+            ),
+        )
 
-    # Sans SMTP (ou échec d'envoi) : renvoyer le lien pour l'afficher dans l'UI
     return {
-        "message": "Lien de réinitialisation prêt (valable 1 heure).",
-        "delivery": "link",
-        "reset_url": reset_url,
+        "message": "Si cet email existe, un lien de réinitialisation a été envoyé.",
+        "delivery": "email",
     }
 
 

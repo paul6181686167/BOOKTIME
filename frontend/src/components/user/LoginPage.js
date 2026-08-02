@@ -127,14 +127,7 @@ function LoginPage() {
         setForgotSent(true);
       } else {
         const raw = typeof d.detail === 'string' ? d.detail : '';
-        // Ancien backend encore en cache / déploiement en cours
-        if (/smtp/i.test(raw)) {
-          toast.error(
-            'Mise à jour en cours : recharge la page (Ctrl+F5) puis réessaie.'
-          );
-        } else {
-          toast.error(raw || "Impossible de préparer la réinitialisation.");
-        }
+        toast.error(raw || "Impossible d'envoyer l'e-mail de réinitialisation.");
       }
     } catch {
       toast.error('Erreur réseau. Réessaie dans un instant.');
