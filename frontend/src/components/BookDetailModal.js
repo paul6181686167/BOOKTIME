@@ -41,11 +41,19 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     volume_number: book.volume_number || '',
   });
   const [pageInput, setPageInput] = useState(book.current_page || 0);
+  const [resolvedTotalPages, setResolvedTotalPages] = useState(
+    book.total_pages > 0 ? book.total_pages : null
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [addDone, setAddDone] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const pageInputRef = useRef(null);
+  const pagesFetchDoneRef = useRef(null);
+  const onUpdateRef = useRef(onUpdate);
+  onUpdateRef.current = onUpdate;
+
+  const totalPages = resolvedTotalPages || book.total_pages || 0;
 
   useEffect(() => {
     setEditData({
@@ -61,25 +69,117 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
       volume_number: book.volume_number || '',
     });
     setPageInput(book.current_page || 0);
+    setResolvedTotalPages(book.total_pages > 0 ? book.total_pages : null);
+    pagesFetchDoneRef.current = null;
   }, [book]);
 
-  // Charger la description complète depuis OL si le livre est isFromOpenLibrary et sans description
+  // Charger résumé + nombre de pages (poche FR) si manquants
   useEffect(() => {
-    const olKey = book.ol_key;
-    if (!olKey || book.description) return; // déjà une description, rien à faire
-    if (!book.isFromOpenLibrary && !olKey.startsWith('/works/')) return;
+    const needsDesc = !(book.description || '').trim();
+    const needsPages = !(book.total_pages > 0);
+    if (!needsDesc && !needsPages) {
+      setOlDetails(null);
+      return;
+    }
 
-    setOlLoading(true);
-    const stripped = olKey.startsWith('/') ? olKey.slice(1) : olKey;
+    let cancelled = false;
     const token = localStorage.getItem('token');
-    fetch(`${API_BASE_URL}/api/openlibrary/book/${stripped}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => { if (data) setOlDetails(data); })
-      .catch(() => {})
-      .finally(() => setOlLoading(false));
-  }, [book.ol_key, book.description, book.isFromOpenLibrary]);
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const fetchKey = `${book.id}|${book.title}|p=${needsPages}|d=${needsDesc}`;
+    if (pagesFetchDoneRef.current === fetchKey) return;
+    pagesFetchDoneRef.current = fetchKey;
+
+    const applyPages = async (pages) => {
+      const n = parseInt(pages, 10);
+      if (!n || n <= 0 || cancelled) return;
+      setResolvedTotalPages(n);
+      // Persister surtout les fiches series_library (synopsis le fait déjà pour les vrais livres)
+      if (book.isDemotedSeries && book.id && onUpdateRef.current) {
+        try {
+          await onUpdateRef.current(book.id, { total_pages: n });
+        } catch (_) {
+          /* ignore */
+        }
+      }
+    };
+
+    const loadMeta = async () => {
+      if (needsDesc || needsPages) setOlLoading(true);
+      try {
+        // 1) Livre réel en bibliothèque
+        if (book.id && !book.isFromOpenLibrary && !book.isDemotedSeries) {
+          const r = await fetch(
+            `${API_BASE_URL}/api/books/${book.id}/synopsis?persist=true`,
+            { headers }
+          );
+          if (r.ok) {
+            const data = await r.json();
+            if (!cancelled && needsDesc && data?.description) {
+              setOlDetails({ description: data.description });
+            }
+            if (needsPages && data?.pages) {
+              await applyPages(data.pages);
+            }
+            if (!needsPages || data?.pages) {
+              if (!needsDesc || data?.description) return;
+            }
+          }
+        }
+
+        // 2) Résolution poche FR par titre (séries rétrogradées / repli)
+        if (needsPages && (book.title || '').trim()) {
+          const params = new URLSearchParams({
+            title: book.title || '',
+            author: book.author || '',
+          });
+          if (book.isbn) params.set('isbn', book.isbn);
+          if (book.ol_key) params.set('ol_key', book.ol_key);
+          const r = await fetch(
+            `${API_BASE_URL}/api/books/resolve-pages?${params}`,
+            { headers }
+          );
+          if (r.ok) {
+            const data = await r.json();
+            if (data?.pages) await applyPages(data.pages);
+          }
+        }
+
+        // 3) Fallback description OL
+        if (needsDesc && !cancelled) {
+          const olKey = book.ol_key;
+          if (olKey && (book.isFromOpenLibrary || String(olKey).includes('works/'))) {
+            const stripped = olKey.startsWith('/') ? olKey.slice(1) : olKey;
+            const r = await fetch(`${API_BASE_URL}/api/openlibrary/book/${stripped}`, {
+              headers,
+            });
+            if (r.ok) {
+              const data = await r.json();
+              if (!cancelled && data) setOlDetails(data);
+            }
+          }
+        }
+      } catch (_) {
+        /* ignore */
+      } finally {
+        if (!cancelled) setOlLoading(false);
+      }
+    };
+
+    loadMeta();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    book.id,
+    book.title,
+    book.author,
+    book.isbn,
+    book.ol_key,
+    book.description,
+    book.total_pages,
+    book.isFromOpenLibrary,
+    book.isDemotedSeries,
+  ]);
 
   // Micro-bounce sur un bouton
   const triggerBounce = useCallback((id) => {
@@ -95,15 +195,20 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
 
   // Changer rapidement le statut
   const handleQuickStatusChange = async (newStatus) => {
+    if (!book?.id || newStatus === book.status) return;
     triggerBounce(`status-${newStatus}`);
+    const previousStatus = book.status;
+    // Feedback immédiat dans le modal
+    setEditData((prev) => ({ ...prev, status: newStatus }));
     try {
-      const updates = { ...editData, status: newStatus };
-      await onUpdate(book.id, updates);
+      // N'envoyer que le statut (évite champs hors BookUpdate / mauvais id série)
+      await onUpdate(book.id, { status: newStatus });
       if (newStatus === 'completed') {
         setTimeout(launchConfetti, 200);
         toast.success('🎉 Bravo, livre terminé !', { duration: 3000, icon: '🏆' });
       }
     } catch (error) {
+      setEditData((prev) => ({ ...prev, status: previousStatus }));
       toast.error('Erreur lors de la mise à jour du statut');
     }
   };
@@ -114,7 +219,15 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     if (page === (book.current_page || 0)) return;
     triggerBounce('page-save');
     try {
-      await onUpdate(book.id, { current_page: page });
+      const updates = { current_page: page };
+      // Comme les tomes de série : une page saisie ⇒ en cours de lecture
+      if (page > 0 && book.status !== 'reading' && book.status !== 'completed') {
+        updates.status = 'reading';
+        setEditData((prev) => ({ ...prev, status: 'reading', current_page: page }));
+      } else {
+        setEditData((prev) => ({ ...prev, current_page: page }));
+      }
+      await onUpdate(book.id, updates);
     } catch (error) {
       toast.error('Erreur lors de la mise à jour de la page');
     }
@@ -179,14 +292,15 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   };
 
   const getProgressPercentage = () => {
-    if (!book.total_pages || book.total_pages === 0) return 0;
+    if (!totalPages) return 0;
     const currentPage = isEditing ? editData.current_page : book.current_page;
-    return Math.min(100, (currentPage / book.total_pages) * 100);
+    return Math.min(100, (currentPage / totalPages) * 100);
   };
 
+  const displayStatus = editData.status || book.status;
+
   const getCurrentStatus = () => {
-    const status = isEditing ? editData.status : book.status;
-    return statusOptions.find(s => s.value === status) || statusOptions[0];
+    return statusOptions.find(s => s.value === displayStatus) || statusOptions[0];
   };
 
   return (
@@ -216,7 +330,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               </button>
             </p>
             
-            {/* Catégorie et statut */}
+            {/* Catégorie */}
             <div className="flex items-center space-x-3 mb-4">
               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-booktime-100 dark:bg-booktime-900/30 text-booktime-800 dark:text-booktime-300">
                 {book.category === 'roman' && '📚'} 
@@ -228,6 +342,32 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                 {getCurrentStatus().label}
               </span>
             </div>
+
+            {/* Résumé / 4ᵉ de couverture — au-dessus du statut (comme les fiches séries) */}
+            {(book.description || olDetails?.description) ? (
+              <div className="mb-4">
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Résumé
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed whitespace-pre-line">
+                  {book.description || olDetails?.description}
+                </p>
+              </div>
+            ) : olLoading ? (
+              <div className="mb-4 flex items-center gap-2 text-sm text-gray-400 py-2">
+                <div className="h-4 w-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+                Chargement du résumé…
+              </div>
+            ) : (
+              <div className="mb-4">
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Résumé
+                </h3>
+                <p className="text-gray-400 dark:text-gray-500 text-sm italic">
+                  Aucun résumé disponible pour ce livre.
+                </p>
+              </div>
+            )}
 
             {/* Boutons rapides de changement de statut */}
             {(!book.isFromOpenLibrary || book.isOwned) && !isEditing && (
@@ -243,7 +383,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                       className={`btn-ripple px-4 py-2 text-sm font-medium transition-all flex items-center space-x-2 ${
                         bouncing === `status-${option.value}` ? 'btn-bounce' : ''
                       } ${
-                        book.status === option.value
+                        displayStatus === option.value
                           ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
                           : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
                       }`}
@@ -257,22 +397,22 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               </div>
             )}
 
-            {/* Saisie rapide de la page (visible dès qu'En cours, page optionnelle) */}
-            {(!book.isFromOpenLibrary || book.isOwned) && !isEditing && book.status === 'reading' && (
+            {/* Saisie rapide de la page (livres individuels + séries rétrogradées, comme les tomes) */}
+            {(!book.isFromOpenLibrary || book.isOwned) && !isEditing && displayStatus === 'reading' && (
               <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800/40 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400">Progression de lecture</h3>
-                  {book.total_pages > 0 && pageInput > 0 && (
+                  {totalPages > 0 && pageInput > 0 && (
                     <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                      {Math.round(((pageInput || 0) / book.total_pages) * 100)}%
+                      {Math.round(((pageInput || 0) / totalPages) * 100)}%
                     </span>
                   )}
                 </div>
-                {book.total_pages > 0 && pageInput > 0 && (
+                {totalPages > 0 && pageInput > 0 && (
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mb-3">
                     <div
                       className="bg-blue-500 h-1.5 rounded-full reading-progress-bar transition-all duration-300"
-                      style={{ width: `${Math.min(100, Math.round(((pageInput || 0) / book.total_pages) * 100))}%` }}
+                      style={{ width: `${Math.min(100, Math.round(((pageInput || 0) / totalPages) * 100))}%` }}
                     />
                   </div>
                 )}
@@ -283,16 +423,18 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                     type="number"
                     value={pageInput || ''}
                     placeholder="optionnel"
-                    onChange={(e) => setPageInput(Math.max(0, Math.min(book.total_pages || 99999, parseInt(e.target.value) || 0)))}
+                    onChange={(e) => setPageInput(Math.max(0, Math.min(totalPages || 99999, parseInt(e.target.value) || 0)))}
                     onBlur={handlePageSave}
                     onKeyDown={(e) => e.key === 'Enter' && handlePageSave()}
                     min="0"
-                    max={book.total_pages || undefined}
+                    max={totalPages || undefined}
                     className="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 text-center"
                   />
-                  {book.total_pages > 0 && (
-                    <span className="text-sm text-gray-500 dark:text-gray-400">/ {book.total_pages}</span>
-                  )}
+                  {totalPages > 0 ? (
+                    <span className="text-sm text-gray-500 dark:text-gray-400">/ {totalPages}</span>
+                  ) : olLoading ? (
+                    <span className="text-xs text-gray-400 dark:text-gray-500">recherche du total…</span>
+                  ) : null}
                   {(parseInt(pageInput) || 0) !== (book.current_page || 0) && (
                     <button
                       onClick={handlePageSave}
@@ -555,7 +697,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             )}
 
             {/* Progression */}
-            {book.total_pages && (
+            {totalPages > 0 && (
               <div>
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Progression</h3>
                 {isEditing ? (
@@ -565,19 +707,19 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                       value={editData.current_page}
                       onChange={(e) => setEditData(prev => ({ ...prev, current_page: e.target.value }))}
                       min="0"
-                      max={book.total_pages}
+                      max={totalPages}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-booktime-500 transition-colors"
                     />
                     <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                       <span>{editData.current_page} pages lues</span>
-                      <span>{book.total_pages} pages total</span>
+                      <span>{totalPages} pages total</span>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-                      <span>{book.current_page} pages lues</span>
-                      <span>{book.total_pages} pages total</span>
+                      <span>{book.current_page || 0} pages lues</span>
+                      <span>{totalPages} pages total</span>
                     </div>
                     <div className="progress-bar bg-gray-200 dark:bg-gray-700">
                       <div 
@@ -628,21 +770,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                 </p>
               )}
             </div>
-
-            {/* Description — depuis le livre ou depuis OL enrichi */}
-            {(book.description || olDetails?.description) ? (
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
-                  {book.description || olDetails?.description}
-                </p>
-              </div>
-            ) : olLoading ? (
-              <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
-                <div className="h-4 w-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
-                Chargement du résumé…
-              </div>
-            ) : null}
 
             {/* Sujets / Genres — depuis OL enrichi */}
             {(olDetails?.subjects?.length > 0 || book.subjects?.length > 0) && (

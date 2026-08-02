@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDownIcon, ChevronUpIcon, BookOpenIcon, CalendarIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { isVolumeUnreleased } from '../utils/volumeRelease';
 
 // tomeStatus : 'non_lu' | 'en_cours' | 'lu'
 // onStatusChange(tomeNumber, status, currentPage)
 const TomeDropdown = ({ tomeNumber, tomeTitle, seriesData, tomeStatus = 'non_lu', currentPage = null, onToggleRead, onStatusChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [pageInput, setPageInput] = useState(currentPage || '');
+  const unreleased = isVolumeUnreleased(seriesData, tomeNumber);
 
   // Synchroniser pageInput si currentPage change depuis le parent
   useEffect(() => {
@@ -14,6 +16,7 @@ const TomeDropdown = ({ tomeNumber, tomeTitle, seriesData, tomeStatus = 'non_lu'
 
   // Rétrocompatibilité : si onStatusChange absent, utiliser onToggleRead (booléen)
   const handleStatusChange = (newStatus) => {
+    if (unreleased) return;
     const page = newStatus === 'en_cours' ? (Number(pageInput) || null) : null;
     if (onStatusChange) {
       onStatusChange(tomeNumber, newStatus, page);
@@ -29,19 +32,71 @@ const TomeDropdown = ({ tomeNumber, tomeTitle, seriesData, tomeStatus = 'non_lu'
   };
 
   const getTomeInfo = () => {
-    const baseInfo = { title: tomeTitle, number: tomeNumber, pages: null, published_year: null, description: null, isbn: null, publisher: null };
+    const baseInfo = {
+      title: tomeTitle,
+      number: tomeNumber,
+      pages: null,
+      published_year: null,
+      description: null,
+      isbn: null,
+      publisher: null,
+    };
     if (!seriesData) return baseInfo;
+
+    // 1) Référentiel curé (pages réelles si renseignées)
     if (seriesData.volume_details?.[tomeNumber]) {
       const d = seriesData.volume_details[tomeNumber];
-      return { ...baseInfo, pages: d.pages, published_year: d.published_year, description: d.description, isbn: d.isbn, publisher: d.publisher };
+      return {
+        ...baseInfo,
+        pages: d.pages || null,
+        published_year: d.published_year || null,
+        description: d.description || null,
+        isbn: d.isbn || null,
+        publisher: d.publisher || null,
+      };
     }
+
+    // 2) Métadonnées issues du merge OL / Google Books / Wikidata
+    const fromMerged =
+      (Array.isArray(seriesData.mergedLibraryVolumes) &&
+        seriesData.mergedLibraryVolumes.find(
+          (v) => Number(v.volume_number) === Number(tomeNumber)
+        )) ||
+      (Array.isArray(seriesData.volumes) &&
+        seriesData.volumes.find(
+          (v) =>
+            Number(v.volume_number) === Number(tomeNumber) ||
+            Number(v.number) === Number(tomeNumber)
+        ));
+    if (fromMerged) {
+      const pages =
+        fromMerged.page_count ||
+        fromMerged.pages ||
+        fromMerged.total_pages ||
+        fromMerged.number_of_pages ||
+        null;
+      return {
+        ...baseInfo,
+        title: fromMerged.display_title || fromMerged.volume_title || fromMerged.title || tomeTitle,
+        pages: pages ? Number(pages) : null,
+        published_year:
+          fromMerged.publication_year ||
+          fromMerged.published_year ||
+          fromMerged.first_publish_year ||
+          null,
+        description: fromMerged.description || null,
+        isbn: fromMerged.isbn || fromMerged.isbn13 || null,
+        publisher: fromMerged.publisher || null,
+      };
+    }
+
+    // 3) Pas de valeur inventée (ex-320 / 190 / 52) — mieux vaut "inconnu"
     if (seriesData.first_published) {
-      baseInfo.published_year = parseInt(seriesData.first_published) + (tomeNumber - 1);
+      const y = parseInt(seriesData.first_published, 10);
+      if (!Number.isNaN(y)) {
+        baseInfo.published_year = y + (tomeNumber - 1);
+      }
     }
-    if (seriesData.category === 'manga') baseInfo.pages = 190;
-    else if (seriesData.category === 'bd') baseInfo.pages = 52;
-    else baseInfo.pages = 320;
-    baseInfo.description = `Tome ${tomeNumber} de la série ${seriesData.name}`;
     return baseInfo;
   };
 
@@ -81,24 +136,33 @@ const TomeDropdown = ({ tomeNumber, tomeTitle, seriesData, tomeStatus = 'non_lu'
         </div>
 
         <div className="flex w-full shrink-0 items-stretch gap-2 lg:w-auto lg:items-center lg:justify-end">
-          <div className="grid min-h-[2.5rem] flex-1 grid-cols-3 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600 text-[10px] font-medium leading-tight lg:flex lg:h-auto lg:min-h-0 lg:flex-none lg:text-xs lg:leading-normal">
-            {(['non_lu', 'en_cours', 'lu']).map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => handleStatusChange(s)}
-                className={`flex items-center justify-center px-0.5 py-2 lg:px-2 lg:py-1 transition-colors ${
-                  tomeStatus === s
-                    ? s === 'lu' ? 'bg-green-600 text-white'
-                      : s === 'en_cours' ? 'bg-blue-600 text-white'
-                      : 'bg-gray-700 dark:bg-gray-300 text-white dark:text-gray-900'
-                    : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
-                }`}
-              >
-                {statusConfig[s].label}
-              </button>
-            ))}
-          </div>
+          {unreleased ? (
+            <div
+              className="flex min-h-[2.5rem] flex-1 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800 dark:border-amber-700/60 dark:bg-amber-900/30 dark:text-amber-200 lg:flex-none lg:text-xs"
+              title="Ce volume n'est pas encore paru"
+            >
+              Non sorti
+            </div>
+          ) : (
+            <div className="grid min-h-[2.5rem] flex-1 grid-cols-3 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600 text-[10px] font-medium leading-tight lg:flex lg:h-auto lg:min-h-0 lg:flex-none lg:text-xs lg:leading-normal">
+              {(['non_lu', 'en_cours', 'lu']).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => handleStatusChange(s)}
+                  className={`flex items-center justify-center px-0.5 py-2 lg:px-2 lg:py-1 transition-colors ${
+                    tomeStatus === s
+                      ? s === 'lu' ? 'bg-green-600 text-white'
+                        : s === 'en_cours' ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 dark:bg-gray-300 text-white dark:text-gray-900'
+                      : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {statusConfig[s].label}
+                </button>
+              ))}
+            </div>
+          )}
 
           <button type="button" onClick={() => setIsOpen(!isOpen)} className="flex w-10 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 lg:w-auto lg:border-0 lg:bg-transparent">
             {isOpen ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
@@ -114,7 +178,14 @@ const TomeDropdown = ({ tomeNumber, tomeTitle, seriesData, tomeStatus = 'non_lu'
             <p className="text-xs text-gray-500 dark:text-gray-400">Tome {tomeNumber} · {seriesData?.name}</p>
           </div>
 
+          {unreleased && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-100">
+              Ce volume n&apos;est pas encore sorti — il apparaît dans l&apos;onglet À venir. Impossible de le marquer comme lu pour l&apos;instant.
+            </div>
+          )}
+
           {/* Pages en cours */}
+          {!unreleased && (
           <div className={`flex items-center gap-2 p-2 rounded-lg border transition-colors ${
             isInProgress ? 'border-blue-300 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-700' : 'border-gray-200 dark:border-gray-600'
           }`}>
@@ -137,6 +208,7 @@ const TomeDropdown = ({ tomeNumber, tomeTitle, seriesData, tomeStatus = 'non_lu'
               Enregistrer
             </button>
           </div>
+          )}
 
           {/* Infos techniques */}
           <div className="grid grid-cols-2 gap-2 text-xs">
@@ -158,10 +230,17 @@ const TomeDropdown = ({ tomeNumber, tomeTitle, seriesData, tomeStatus = 'non_lu'
                 <span className="text-gray-600 dark:text-gray-400">{tomeInfo.published_year}</span>
               </div>
             )}
-            <div className="flex items-center gap-1">
-              <div className={`w-2 h-2 rounded-full ${cfg.dot}`} />
-              <span className={`font-medium ${cfg.text}`}>{cfg.label}</span>
-            </div>
+            {unreleased ? (
+              <div className="flex items-center gap-1">
+                <CalendarIcon className="w-3 h-3 text-amber-500" />
+                <span className="font-medium text-amber-700 dark:text-amber-300">À paraître</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1">
+                <div className={`w-2 h-2 rounded-full ${cfg.dot}`} />
+                <span className={`font-medium ${cfg.text}`}>{cfg.label}</span>
+              </div>
+            )}
           </div>
 
           {tomeInfo.description && (

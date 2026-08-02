@@ -22,6 +22,7 @@ import {
   mapLiveWikidataVolumesToWorks,
 } from '../utils/sourceMerge';
 import { DEFAULT_SERIES_MODAL_GOOGLE_BOOKS } from '../utils/searchSourcePipeline';
+import { isVolumeUnreleased, countReleasedVolumes } from '../utils/volumeRelease';
 
 function parseVolumeFromWork(vol) {
   if (vol == null || vol === '') return null;
@@ -423,16 +424,21 @@ const SeriesDetailModal = ({
 
   // Changer le statut d'un tome (non_lu | en_cours | lu) + page optionnelle
   const handleTomeStatusChange = async (tomeNumber, newStatus, currentPage = null) => {
+    if (isVolumeUnreleased(enrichedSeries, tomeNumber)) {
+      toast.error('Ce volume n’est pas encore sorti');
+      return;
+    }
     const newStatuses = {
       ...tomeStatuses,
       [String(tomeNumber)]: { status: newStatus, currentPage }
     };
     setTomeStatuses(newStatuses);
 
-    // Suggestion tomes précédents si on marque "lu"
+    // Suggestion tomes précédents si on marque "lu" (ignorer les non sortis)
     if (newStatus === 'lu' && tomeNumber > 1) {
       const missingPrevious = [];
       for (let i = 1; i < tomeNumber; i++) {
+        if (isVolumeUnreleased(enrichedSeries, i)) continue;
         if ((newStatuses[String(i)]?.status || 'non_lu') === 'non_lu') missingPrevious.push(i);
       }
       if (missingPrevious.length > 0) {
@@ -446,15 +452,22 @@ const SeriesDetailModal = ({
 
     // Calculer et mettre à jour le statut de la série
     const newReadSet = new Set(
-      Object.entries(newStatuses).filter(([,v]) => v.status === 'lu').map(([k]) => Number(k))
+      Object.entries(newStatuses)
+        .filter(([k, v]) => v.status === 'lu' && !isVolumeUnreleased(enrichedSeries, Number(k)))
+        .map(([k]) => Number(k))
     );
     // Statut : en_cours si au moins 1 tome lu ou en cours
-    const hasInProgress = Object.values(newStatuses).some(v => v.status === 'en_cours');
+    const hasInProgress = Object.entries(newStatuses).some(
+      ([k, v]) => v.status === 'en_cours' && !isVolumeUnreleased(enrichedSeries, Number(k))
+    );
     const hasRead = newReadSet.size > 0;
-    const totalTomes = resolveVolumesCount(
+    const catalogTotal = resolveVolumesCount(
       enrichedSeries?.volumes,
       olBooks.length || (series?.books?.length) || 0
     );
+    // Ne compter que les tomes déjà parus pour « terminé »
+    const totalTomes =
+      countReleasedVolumes(enrichedSeries, catalogTotal) || catalogTotal;
     let autoStatus = 'to_read';
     if (hasInProgress || (hasRead && newReadSet.size < totalTomes)) autoStatus = 'reading';
     else if (hasRead && totalTomes > 0 && newReadSet.size >= totalTomes) autoStatus = 'completed';

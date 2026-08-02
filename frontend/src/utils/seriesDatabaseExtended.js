@@ -130,6 +130,31 @@ export const EXTENDED_SERIES_DATABASE = {
         de: 'Der Herr der Ringe'
       }
     },
+    'time_riders': {
+      name: 'Time Riders',
+      authors: ['Alex Scarrow'],
+      category: 'roman',
+      volumes: 9,
+      volume_titles: {
+        1: 'Time Riders',
+        2: 'Jour du jugement',
+        3: 'Les portes du temps',
+        4: 'La guerre éternelle',
+        5: 'Les flammes de Rome',
+        6: 'Le piège de Mayan',
+        7: 'Les seigneurs de la guerre',
+        8: 'Le destin du Titanic',
+        9: 'La vengeance de l\'horloge'
+      },
+      description: 'Série jeunesse de science-fiction d\'Alex Scarrow sur une équipe de voyageurs temporels.',
+      first_published: '2010',
+      status: 'completed',
+      keywords: ['time riders', 'timeriders', 'alex scarrow', 'voyage dans le temps'],
+      variations: ['time riders', 'time rider', 'timeriders', 'time-riders'],
+      exclusions: [],
+      wikipedia_url: 'https://en.wikipedia.org/wiki/TimeRiders',
+      translations: { en: 'TimeRiders', fr: 'Time Riders' }
+    },
     'red_rising': {
       name: 'Red Rising',
       authors: ['Pierce Brown'],
@@ -169,7 +194,7 @@ export const EXTENDED_SERIES_DATABASE = {
         1: { pages: 624, published_year: 2018, description: "Dix ans après la révolution, Darrow défie le Sénat de la République pour sauver ses alliés sur Mercure.", publisher: 'Hodder & Stoughton' },
         2: { pages: 800, published_year: 2019, description: "La République est au bord de l'effondrement. Darrow est pris au piège sur Mercure.", publisher: 'Hodder & Stoughton' },
         3: { pages: 688, published_year: 2023, description: "Lysander au Soleil, Lyria sur Mercure — le destin du système solaire se joue sur plusieurs fronts.", publisher: 'Hodder & Stoughton' },
-        4: { pages: null, published_year: null, description: "Le tome final de la tétralogie Iron Gold.", publisher: 'Hodder & Stoughton' }
+        4: { pages: null, published_year: null, released: false, description: "Le tome final de la tétralogie Iron Gold — pas encore paru.", publisher: 'Hodder & Stoughton' }
       },
       description: 'Tétralogie de Pierce Brown, suite directe de la trilogie Red Rising, dix ans après la révolution.',
       first_published: '2018',

@@ -1777,6 +1777,12 @@
           "title": "Red God"
         }
       ],
+      "volume_details": {
+        "1": { "pages": 624, "published_year": 2018, "released": true },
+        "2": { "pages": 800, "published_year": 2019, "released": true },
+        "3": { "pages": 688, "published_year": 2023, "released": true },
+        "4": { "pages": null, "published_year": null, "released": false }
+      },
       "keywords": [
         "iron gold",
         "pierce brown",
@@ -1799,6 +1805,7 @@
         "morning star"
       ],
       "first_published": "2018",
+      "status": "ongoing",
       "source": "curated_reference"
     },
     {

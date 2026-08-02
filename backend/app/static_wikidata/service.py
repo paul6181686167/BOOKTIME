@@ -51,26 +51,14 @@ def norm_title(s: str) -> str:
 
 _LITE_SERIES_KEYS = ("qid", "name", "name_fr", "name_en", "type", "work_count", "popularity")
 
-# Genres P136 (libellés EN) signalant un format précis (priorité sur "book series" générique).
-_MANGA_GENRE = re.compile(r"\b(manga|manhwa|manhua|light novel|webtoon)\b", re.I)
-_BD_GENRE = re.compile(
-    r"(comic|comics|graphic novel|bande dessin|fumetti|franco-belgian)", re.I
-)
-
-
 def infer_series_category(row: dict[str, Any]) -> str:
     """
     Catégorie (roman | bd | manga) déduite du **type Wikidata** (P31) puis, à défaut,
-    des **genres P136** des œuvres. Fiable car basé sur les QID, pas sur du texte libre.
+    des **genres P136** des œuvres. Light novel → roman (prose).
     """
-    t = str((row or {}).get("type") or "").lower()
-    if "manga" in t or "light novel" in t:
-        return "manga"
-    if "comic" in t:  # "comics series", "comic book series"
-        return "bd"
-    if "novel" in t:  # "novel series"
-        return "roman"
-    # "book series" / "written work series" : on inspecte les genres des œuvres + sujets série.
+    from ..utils.category_detect import detect_category_from_wikidata_type_and_genres
+
+    t = str((row or {}).get("type") or "")
     parts: list[str] = []
     for w in (row or {}).get("works") or []:
         if not isinstance(w, dict):
@@ -85,12 +73,10 @@ def infer_series_category(row: dict[str, Any]) -> str:
         parts.extend(str(x) for x in ms if x)
     elif ms:
         parts.append(str(ms))
-    blob = " ".join(parts)
-    if _MANGA_GENRE.search(blob):
-        return "manga"
-    if _BD_GENRE.search(blob):
-        return "bd"
-    return "roman"
+    return detect_category_from_wikidata_type_and_genres(
+        type_label=t,
+        genres_blob=" ".join(parts),
+    )
 
 
 def _series_lite(row: dict[str, Any]) -> dict[str, Any]:
@@ -125,24 +111,38 @@ _CURATED_TYPES = {
 }
 
 
+# Types curés où l'absence de tomes Wikidata est fréquente mais la série est réelle.
+_CURATED_ALLOW_ZERO_WORKS = {
+    "manga series",
+    "manhwa series",
+    "comic book series",
+    "comics series",
+    "seed series",
+}
+
+
 def is_real_series(row: dict[str, Any]) -> bool:
     """
     True si l'entrée est une vraie série (multi-tomes) et non un livre/jeu/film isolé.
-    - Types curés Wikidata + seed : toujours acceptés (série réelle, tomes parfois absents).
-    - Types découverte (hub/franchise) : exigent >= 1 tome livre (sinon = série de jeux/films).
-    - Types génériques ("book series", "written work series") : exigent >= 2 tomes liés.
+    - Manga / BD / seed : acceptés même si work_count=0 (tomes souvent absents de WD).
+    - novel / children's series : exigent >= 2 tomes (sinon = livre individuel mal tagué).
+    - Types découverte (hub/franchise) : exigent >= 1 tome livre.
+    - Types génériques : exigent >= 2 tomes liés.
     """
     if not isinstance(row, dict):
         return False
     t = str(row.get("type") or "").strip().lower()
     wc = int(row.get("work_count") or 0)
-    if t in _CURATED_TYPES:
+    if t in _CURATED_ALLOW_ZERO_WORKS:
         return True
+    if t in _CURATED_TYPES:
+        return wc >= _MIN_GENERIC_WORKS
     if t in _DISCOVERY_TYPES:
         return wc >= 1
     if t in _GENERIC_SERIES_TYPES:
         return wc >= _MIN_GENERIC_WORKS
-    return True
+    # Type inconnu : exiger multi-tomes (évite les livres seuls)
+    return wc >= _MIN_GENERIC_WORKS
 
 _lock = threading.Lock()
 _series_db: dict[str, Any] | None = None

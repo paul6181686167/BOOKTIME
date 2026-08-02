@@ -1,0 +1,916 @@
+"""
+Récupération d'un résumé / 4ᵉ de couverture + nombre de pages.
+
+Règle pages : toujours préférer l'édition **poche française**.
+Si absente des bases locales / premières réponses → recherche OL + Google Books.
+"""
+
+from __future__ import annotations
+
+import logging
+import re
+import unicodedata
+from typing import Any, Optional
+
+import requests
+
+logger = logging.getLogger("booktime.synopsis")
+
+_OL_TIMEOUT = 12
+_GB_TIMEOUT = 12
+
+_POCHE_PUBLISHERS = (
+    "livre de poche",
+    "le livre de poche",
+    "pocket",
+    "presses pocket",
+    "folio",
+    "folio policier",
+    "folio sf",
+    "folio plus",
+    "j'ai lu",
+    "j’ai lu",
+    "points",
+    "points seuil",
+    "10/18",
+    "10-18",
+    "babel",
+    "actes sud babel",
+    "fleuve editions",
+    "fleuve noir",
+    "milady",
+    "bragelonne",
+    "pocket jeunesse",
+    "rageot",
+    "gallimard jeunesse folio",
+    "poche jeunesse",
+)
+
+_POCHE_FORMAT = re.compile(
+    r"\b(pocket|poche|paperback|mass\s*market|softcover|broch[ée]|souple|taschenbuch)\b",
+    re.I,
+)
+_HARDCOVER_FORMAT = re.compile(
+    r"\b(hardcover|hardback|reli[ée]|cartonn[ée]|cloth)\b",
+    re.I,
+)
+
+# Titres EN → titres poche FR courants (quand les bases ne relient pas la traduction)
+# Clés = _normalize_title() (articles / de / of retirés)
+_FR_TITLE_ALIASES: dict[str, tuple[str, ...]] = {
+    "percy jackson s greek gods": (
+        "Percy Jackson et les dieux grecs",
+        "Percy Jackson raconte les dieux grecs",
+    ),
+    "percy jackson greek gods": (
+        "Percy Jackson et les dieux grecs",
+    ),
+    "grapes wrath": ("Les raisins de la colère",),
+    "mice men": ("Des souris et des hommes",),
+    "chronicle death foretold": ("Chronique d'une mort annoncée",),
+    "one hundred years solitude": ("Cent ans de solitude",),
+    "cien anos soledad": ("Cent ans de solitude",),
+    "old man sea": ("Le vieil homme et la mer",),
+    "illustrated man": ("L'homme illustré",),
+    "clockwork orange": ("L'orange mécanique",),
+    "lord flies": ("Sa Majesté des mouches",),
+    "der process": ("Le procès",),
+    "der proce": ("Le procès",),
+    "the trial": ("Le procès",),  # si "the" non retiré un jour
+    "trial": ("Le procès",),  # The Trial → trial après retrait de the
+    "perfume story murderer": ("Le parfum",),
+    "das parfum": ("Le parfum",),
+}
+
+# ISBN poche FR connus (prioritaires sur les recherches floues)
+_FR_POCHE_ISBN: dict[str, str] = {
+    "percy jackson s greek gods": "9782011825100",
+    "percy jackson greek gods": "9782011825100",
+    "percy jackson et les dieux grecs": "9782011825100",
+    "cien anos soledad": "9782757883402",
+    "one hundred years solitude": "9782757883402",
+    "cent ans solitude": "9782757883402",
+}
+
+# Pages de secours pour ISBN poche vérifiés (si GB/OL indisponibles)
+_FR_POCHE_ISBN_PAGES: dict[str, int] = {
+    "9782011825100": 427,  # Percy Jackson et les dieux grecs — LDP Jeunesse
+    "9782757883402": 480,  # Cent ans de solitude — Points
+}
+
+_REJECT_PUBLISHERS = (
+    "cned",
+    "presses universitaires",
+    "puf",
+    "hatier",
+    "nathan",
+    "bordas",
+    "belin",
+    "magnard",
+    "ellipses",
+    "profil",
+    "clefs concours",
+)
+
+# Essais / fiches / extraits — pas le roman
+_SECONDARY_LIT = re.compile(
+    r"\b("
+    r"etudes?|études?|commentaire|analyse|analyses|critique|critiques|"
+    r"resume|résumé|fiches?|scolaire|bac\b|abridged|extrait|extraits|"
+    r"anthologie|companion|study\s*guide|cliff\s*notes|spark\s*notes|"
+    r"lecture\s*analytique|profil\s*d|rep[eè]res"
+    r")\b",
+    re.I,
+)
+
+
+def _strip_accents(text: str) -> str:
+    nfkd = unicodedata.normalize("NFKD", text or "")
+    return "".join(c for c in nfkd if not unicodedata.combining(c))
+
+
+def _normalize_title(text: str) -> str:
+    s = _strip_accents(text or "").lower()
+    s = re.sub(r"['’`]", " ", s)
+    s = re.sub(r"[^a-z0-9\s]", " ", s)
+    s = re.sub(r"\b(le|la|les|un|une|des|du|de|d|the|a|an|l)\b", " ", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+
+def _is_secondary_literature(title: str) -> bool:
+    return bool(_SECONDARY_LIT.search(title or ""))
+
+
+def _title_match_score(query: str, candidate: str) -> int:
+    """
+    Score de proximité titre (0–100).
+    Refuse les titres où la requête n'est qu'un sous-ensemble d'une étude critique.
+    """
+    q = _normalize_title(query)
+    c = _normalize_title(candidate)
+    if not q or not c:
+        return 0
+    if _is_secondary_literature(candidate) and q != c:
+        # « Les raisins… » ⊂ « Dix études sur les raisins… »
+        if q in c and c != q:
+            return 0
+    if q == c:
+        return 100
+    if c.startswith(q) or q.startswith(c):
+        # Écart de longueur limité (évite anthologies)
+        ratio = min(len(q), len(c)) / max(len(q), len(c))
+        if ratio >= 0.75:
+            return 90
+    if q in c or c in q:
+        ratio = min(len(q), len(c)) / max(len(q), len(c))
+        if ratio >= 0.85:
+            return 80
+        if ratio >= 0.6:
+            return 40
+        return 0
+    # Tokens communs
+    qt, ct = set(q.split()), set(c.split())
+    if not qt or not ct:
+        return 0
+    overlap = len(qt & ct) / max(len(qt), len(ct))
+    if overlap >= 0.8:
+        return 70
+    if overlap >= 0.6:
+        return 50
+    return 0
+
+
+def _likely_different_book(query: str, candidate: str) -> bool:
+    """Même série / même auteur mais tome ou sous-titre différent."""
+    q = _normalize_title(query)
+    c = _normalize_title(candidate)
+    if not q or not c or q == c:
+        return False
+    qt, ct = set(q.split()), set(c.split())
+    shared = qt & ct
+    if len(shared) >= 2 and (qt - shared) and (ct - shared):
+        return True
+    return False
+
+
+def _author_match(query_author: str, candidate_authors: Any) -> bool:
+    qa = _normalize_title((query_author or "").split(",")[0])
+    if not qa:
+        return True
+    if isinstance(candidate_authors, str):
+        names = [candidate_authors]
+    elif isinstance(candidate_authors, list):
+        names = [str(x) for x in candidate_authors]
+    else:
+        names = []
+    for name in names:
+        na = _normalize_title(name)
+        if not na:
+            continue
+        # Match sur le nom de famille (dernier token) ou inclusion
+        if qa in na or na in qa:
+            return True
+        q_last = qa.split()[-1]
+        n_last = na.split()[-1]
+        if q_last and q_last == n_last and len(q_last) > 2:
+            return True
+    return False
+
+
+def _as_text(value: Any) -> str:
+    if not value:
+        return ""
+    if isinstance(value, dict):
+        return str(value.get("value") or "").strip()
+    return str(value).strip()
+
+
+def _clean(text: str) -> str:
+    text = re.sub(r"<[^>]+>", " ", text or "")
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def _is_french_lang(lang_value: Any) -> bool:
+    if isinstance(lang_value, list):
+        return any(_is_french_lang(x) for x in lang_value)
+    if isinstance(lang_value, dict):
+        return _is_french_lang(lang_value.get("key") or lang_value.get("code"))
+    s = str(lang_value or "").lower()
+    return s in ("fr", "fre", "fra") or s.endswith("/fre") or "/languages/fre" in s or s.endswith("/fr")
+
+
+def _score_fr_poche_text(*, language: Any, format_text: str = "", publisher: str = "", title: str = "") -> int:
+    """Score > 0 = candidat FR ; plus haut = plus « poche »."""
+    if _is_secondary_literature(title):
+        return -1
+    pub_l = (publisher or "").lower()
+    if any(bad in pub_l for bad in _REJECT_PUBLISHERS):
+        return -1
+    has_poche_pub = any(p in pub_l for p in _POCHE_PUBLISHERS)
+    if not _is_french_lang(language) and "francais" not in _normalize_title(title):
+        if not has_poche_pub:
+            return -1
+    score = 100  # base FR / éditeur FR
+    fmt = (format_text or "").lower()
+    tit = (title or "").lower()
+    if _POCHE_FORMAT.search(fmt) or "poche" in tit or "pocket" in tit:
+        score += 50
+    if has_poche_pub:
+        score += 45
+    if _HARDCOVER_FORMAT.search(fmt):
+        score -= 40
+    if "grand format" in fmt or "grand format" in tit:
+        score -= 25
+    return score
+
+
+def _pages_from_ol_edition(ed: dict) -> Optional[int]:
+    n = ed.get("number_of_pages")
+    if isinstance(n, (int, float)) and int(n) > 0:
+        return int(n)
+    if isinstance(n, str):
+        m = re.search(r"\d+", n)
+        if m:
+            val = int(m.group(0))
+            return val if val > 0 else None
+    pag = ed.get("pagination")
+    if isinstance(pag, str):
+        m = re.search(r"(\d+)\s*p", pag, re.I)
+        if m:
+            return int(m.group(1))
+    return None
+
+
+def _plausible_novel_pages(pages: Optional[int]) -> bool:
+    """Écarte les artefacts (10 p., extraits scolaires, etc.)."""
+    if not isinstance(pages, int):
+        return False
+    return 60 <= pages <= 2000
+
+
+def _pick_best_candidate(candidates: list[dict[str, Any]], *, min_score: int = 145) -> Optional[dict[str, Any]]:
+    """Choisit la meilleure édition poche ; repli FR non-poche si rien."""
+    if not candidates:
+        return None
+    poche = [c for c in candidates if (c.get("score") or 0) >= min_score]
+    pool = poche or [c for c in candidates if (c.get("score") or 0) >= 100]
+    if not pool:
+        return None
+    pool.sort(
+        key=lambda c: (
+            int(c.get("score") or 0),
+            int(c.get("title_score") or 0),
+            int(c.get("pages") or 0),
+        ),
+        reverse=True,
+    )
+    return pool[0]
+
+
+def _french_paperback_pages_from_ol_work(
+    ol_key: str,
+    *,
+    title: str = "",
+    allow_translation_editions: bool = False,
+) -> Optional[dict[str, Any]]:
+    """Parcourt les éditions d'un work OL et choisit la meilleure poche FR."""
+    key = (ol_key or "").strip()
+    if not key:
+        return None
+    if not key.startswith("/"):
+        key = f"/{key}"
+    if "/books/" in key:
+        return None
+    try:
+        candidates: list[dict[str, Any]] = []
+        for lang_param in ("fre", None):
+            params: dict[str, Any] = {"limit": 80}
+            if lang_param:
+                params["language"] = lang_param
+            r = requests.get(
+                f"https://openlibrary.org{key}/editions.json",
+                params=params,
+                timeout=_OL_TIMEOUT,
+            )
+            if not r.ok:
+                continue
+            entries = (r.json() or {}).get("entries") or []
+            for ed in entries:
+                if not isinstance(ed, dict):
+                    continue
+                ed_title = str(ed.get("title") or "")
+                if _is_secondary_literature(ed_title):
+                    continue
+                title_score = 100
+                if title.strip():
+                    title_score = _title_match_score(title, ed_title)
+                    if title_score < 50:
+                        # Traduction FR d'un work déjà identifié (ex. Grapes → Raisins)
+                        if (
+                            allow_translation_editions
+                            and _is_french_lang(ed.get("languages") or [])
+                        ):
+                            title_score = 60
+                        else:
+                            continue
+                pages = _pages_from_ol_edition(ed)
+                if not _plausible_novel_pages(pages):
+                    continue
+                pubs = ", ".join(ed.get("publishers") or [])
+                score = _score_fr_poche_text(
+                    language=ed.get("languages") or [],
+                    format_text=str(ed.get("physical_format") or ""),
+                    publisher=pubs,
+                    title=ed_title,
+                )
+                if score < 0:
+                    continue
+                isbn_raw = ed.get("isbn_13") or ed.get("isbn_10")
+                if isinstance(isbn_raw, list):
+                    isbn_val = isbn_raw[0] if isbn_raw else None
+                else:
+                    isbn_val = isbn_raw
+                candidates.append(
+                    {
+                        "pages": pages,
+                        "source": "openlibrary_fr_poche",
+                        "score": score,
+                        "title_score": title_score,
+                        "publisher": pubs,
+                        "format": ed.get("physical_format"),
+                        "isbn": isbn_val,
+                    }
+                )
+            best = _pick_best_candidate(candidates)
+            if best and (best.get("score") or 0) >= 145:
+                return best
+        return _pick_best_candidate(candidates)
+    except Exception as exc:
+        logger.debug("OL fr poche editions fail %s: %s", key, exc)
+        return None
+
+
+def _from_openlibrary_work(ol_key: str, *, title: str = "") -> dict[str, Any]:
+    key = (ol_key or "").strip()
+    out: dict[str, Any] = {"description": "", "pages": None}
+    if not key:
+        return out
+    if not key.startswith("/"):
+        key = f"/{key}"
+    try:
+        r = requests.get(f"https://openlibrary.org{key}.json", timeout=_OL_TIMEOUT)
+        if not r.ok:
+            return out
+        data = r.json() or {}
+        desc = _clean(_as_text(data.get("description")))
+        if not desc:
+            fs = data.get("first_sentence")
+            if isinstance(fs, dict):
+                desc = _clean(_as_text(fs))
+            elif isinstance(fs, list) and fs:
+                desc = _clean(_as_text(fs[0]))
+            elif isinstance(fs, str):
+                desc = _clean(fs)
+        out["description"] = desc
+        poche = _french_paperback_pages_from_ol_work(key, title=title)
+        if poche and poche.get("pages"):
+            out["pages"] = int(poche["pages"])
+            out["pages_source"] = poche.get("source")
+        else:
+            pages = data.get("number_of_pages") or data.get("pagination")
+            if isinstance(pages, int) and pages > 0:
+                out["pages"] = pages
+            elif isinstance(pages, str) and pages.isdigit():
+                out["pages"] = int(pages)
+    except Exception as exc:
+        logger.debug("OL work synopsis fail %s: %s", key, exc)
+    return out
+
+
+def _ol_keys_from_search(
+    title: str, author: str = "", *, language: Optional[str] = "fre", limit: int = 6
+) -> list[str]:
+    """Retourne plusieurs works OL classés (titre + auteur + nb d'éditions)."""
+    if not (title or "").strip():
+        return []
+    queries: list[str] = []
+    base = f"{title} {author}".strip()
+    title_ascii = _strip_accents(title)
+    author_ascii = _strip_accents(author)
+    base_ascii = f"{title_ascii} {author_ascii}".strip()
+    if language:
+        queries.append(f"{base} language:{language}")
+        queries.append(f'title:"{title}" language:{language}')
+        if base_ascii != base:
+            queries.append(f"{base_ascii} language:{language}")
+    queries.append(base)
+    if base_ascii != base:
+        queries.append(base_ascii)
+    queries.append(title.strip())
+    if title_ascii != title:
+        queries.append(title_ascii)
+
+    ranked: dict[str, int] = {}
+    title_l = (title or "").strip()
+    try:
+        for q in queries:
+            r = requests.get(
+                "https://openlibrary.org/search.json",
+                params={
+                    "q": q,
+                    "limit": 12,
+                    "fields": "key,title,author_name,language,edition_count",
+                },
+                timeout=_OL_TIMEOUT,
+            )
+            if not r.ok:
+                continue
+            for doc in r.json().get("docs") or []:
+                key = doc.get("key") or ""
+                if not key:
+                    continue
+                dt = str(doc.get("title") or "")
+                if _is_secondary_literature(dt):
+                    continue
+                tscore = _title_match_score(title_l, dt)
+                author_ok = _author_match(author, doc.get("author_name") or [])
+                if _likely_different_book(title_l, dt):
+                    continue
+                if tscore < 50:
+                    # Titre original EN indexé alors que la requête est la trad. FR
+                    if author_ok and not _likely_different_book(title_l, dt):
+                        tscore = 55
+                    else:
+                        continue
+                if author and not author_ok:
+                    tscore -= 40
+                if tscore < 50:
+                    continue
+                ed_count = min(int(doc.get("edition_count") or 0), 80)
+                # Notice sans éditions (souvent doublon titre FR) < work canonique
+                if ed_count <= 0:
+                    rank = tscore
+                else:
+                    rank = tscore * 10 + ed_count
+                if key not in ranked or rank > ranked[key]:
+                    ranked[key] = rank
+    except Exception as exc:
+        logger.debug("OL search keys fail: %s", exc)
+    return [k for k, _ in sorted(ranked.items(), key=lambda kv: -kv[1])[:limit]]
+
+
+def _ol_key_from_search(title: str, author: str = "", *, language: Optional[str] = "fre") -> str:
+    keys = _ol_keys_from_search(title, author, language=language, limit=1)
+    return keys[0] if keys else ""
+
+
+def _from_openlibrary_isbn(isbn: str) -> str:
+    clean = re.sub(r"[^0-9Xx]", "", isbn or "")
+    if len(clean) not in (10, 13):
+        return ""
+    try:
+        r = requests.get(
+            "https://openlibrary.org/api/books",
+            params={"bibkeys": f"ISBN:{clean}", "jscmd": "data", "format": "json"},
+            timeout=_OL_TIMEOUT,
+        )
+        if not r.ok:
+            return ""
+        data = (r.json() or {}).get(f"ISBN:{clean}") or {}
+        desc = data.get("notes") or data.get("description") or ""
+        if isinstance(desc, dict):
+            desc = desc.get("value", "")
+        return _clean(str(desc))
+    except Exception as exc:
+        logger.debug("OL isbn synopsis fail: %s", exc)
+        return ""
+
+
+def _french_paperback_pages_from_google(
+    *, title: str = "", author: str = "", isbn: str = ""
+) -> Optional[dict[str, Any]]:
+    """Recherche Google Books ciblée poche FR."""
+    try:
+        from ..google_books import service as gb
+
+        if not gb.is_enabled():
+            return None
+
+        t = (title or "").strip()
+        a = (author or "").split(",")[0].strip()
+        clean_isbn = gb.normalize_isbn(isbn)
+
+        queries: list[str] = []
+        if len(clean_isbn) in (10, 13):
+            queries.append(f"isbn:{clean_isbn}")
+        if t and a:
+            queries.append(f'intitle:"{t}" inauthor:"{a}" Folio')
+            queries.append(f'intitle:"{t}" inauthor:"{a}" "livre de poche"')
+            queries.append(f'intitle:"{t}" inauthor:"{a}" poche')
+            queries.append(f'intitle:"{t}" inauthor:"{a}"')
+            queries.append(f"{t} {a} Folio")
+        elif t:
+            queries.append(f'intitle:"{t}" Folio')
+            queries.append(f'intitle:"{t}" poche')
+            queries.append(f'intitle:"{t}"')
+
+        candidates: list[dict[str, Any]] = []
+        for q in queries:
+            try:
+                raw = gb.search_volumes(
+                    q, max_results=12, lang_restrict="fr", print_type="books"
+                )
+            except Exception:
+                try:
+                    raw = gb.search_volumes(q, max_results=12, print_type="books")
+                except Exception:
+                    continue
+            for item in raw.get("items") or []:
+                if not isinstance(item, dict):
+                    continue
+                vi = item.get("volumeInfo") or {}
+                vi_title = f"{vi.get('title') or ''} {vi.get('subtitle') or ''}".strip()
+                if _is_secondary_literature(vi_title):
+                    continue
+                if t and _likely_different_book(t, vi_title):
+                    continue
+                title_score = _title_match_score(t, vi_title) if t else 100
+                if t and title_score < 50:
+                    continue
+                if a and not _author_match(a, vi.get("authors") or []):
+                    continue
+                pages = vi.get("pageCount")
+                pages_i = int(pages) if isinstance(pages, (int, float)) and int(pages) > 0 else None
+                if not _plausible_novel_pages(pages_i):
+                    continue
+                pub = str(vi.get("publisher") or "")
+                lang = vi.get("language") or ""
+                # Ne pas présumer le français si la fiche GB est en anglais
+                score = _score_fr_poche_text(
+                    language=lang or "fr",
+                    format_text="",
+                    publisher=pub,
+                    title=vi_title,
+                )
+                if lang and not _is_french_lang(lang):
+                    # Éditeur poche FR uniquement (fiche parfois mal taguée)
+                    pub_l = pub.lower()
+                    if not any(p in pub_l for p in _POCHE_PUBLISHERS):
+                        continue
+                ql = q.lower()
+                if "poche" in ql or "folio" in ql:
+                    score += 15
+                if score < 0:
+                    continue
+                candidates.append(
+                    {
+                        "pages": pages_i,
+                        "source": "google_books_fr_poche",
+                        "score": score,
+                        "title_score": title_score,
+                        "publisher": pub,
+                        "description": _clean(vi.get("description") or "")[:2000],
+                        "language": lang,
+                    }
+                )
+            best = _pick_best_candidate(candidates)
+            if (
+                best
+                and (best.get("score") or 0) >= 145
+                and (best.get("title_score") or 0) >= 70
+                and any(
+                    p in str(best.get("publisher") or "").lower()
+                    for p in _POCHE_PUBLISHERS
+                )
+            ):
+                return best
+        return _pick_best_candidate(candidates)
+    except Exception as exc:
+        logger.debug("GB fr poche fail: %s", exc)
+        return None
+
+
+def _from_google_books(
+    *, title: str = "", author: str = "", isbn: str = "", prefer_lang: str = "fr"
+) -> dict[str, Any]:
+    """Métadonnées GB avec priorité poche FR pour les pages."""
+    out: dict[str, Any] = {"description": "", "pages": None}
+    poche = _french_paperback_pages_from_google(title=title, author=author, isbn=isbn)
+    if poche:
+        out["pages"] = poche.get("pages")
+        out["pages_source"] = poche.get("source")
+        if poche.get("description"):
+            out["description"] = poche["description"]
+            return out
+
+    try:
+        from ..google_books import service as gb
+
+        if not gb.is_enabled():
+            return out
+        t = (title or "").strip()
+        a = (author or "").split(",")[0].strip()
+        q = f'intitle:"{t}" inauthor:"{a}"' if t and a else f'intitle:"{t}"'
+        raw = gb.search_volumes(q, max_results=8, lang_restrict=prefer_lang or "fr", print_type="books")
+        best_desc = ""
+        for item in raw.get("items") or []:
+            vi = (item or {}).get("volumeInfo") or {}
+            vi_title = str(vi.get("title") or "")
+            if t and _title_match_score(t, vi_title) < 50:
+                continue
+            if _is_secondary_literature(vi_title):
+                continue
+            desc = _clean(vi.get("description") or "")
+            if desc and len(desc) > len(best_desc):
+                best_desc = desc[:2000]
+                if not out.get("pages"):
+                    pc = vi.get("pageCount")
+                    if isinstance(pc, (int, float)) and int(pc) > 0 and _plausible_novel_pages(int(pc)):
+                        out["pages"] = int(pc)
+        out["description"] = best_desc
+    except Exception as exc:
+        logger.debug("GB fallback fail: %s", exc)
+    return out
+
+
+def _french_title_candidates(title: str) -> list[str]:
+    """Titre demandé + alias FR connus pour la recherche poche."""
+    t = (title or "").strip()
+    out: list[str] = []
+    if t:
+        out.append(t)
+    aliases = _FR_TITLE_ALIASES.get(_normalize_title(t), ())
+    for a in aliases:
+        if a not in out:
+            out.append(a)
+    return out
+
+
+def fetch_french_paperback_pages(
+    *,
+    title: str = "",
+    author: str = "",
+    isbn: str = "",
+    ol_key: str = "",
+) -> Optional[dict[str, Any]]:
+    """
+    Résout le nombre de pages de l'édition poche française.
+    Enchaîne : OL éditions FR → recherche multi-works → Google « poche ».
+    """
+    fallbacks: list[dict[str, Any]] = []
+    seen_keys: set[str] = set()
+    titles = _french_title_candidates(title)
+    # Alias FR / ISBN connus d'abord (évite les faux positifs + quota GB sur le titre EN)
+    if len(titles) > 1:
+        title_order = titles[1:] + [titles[0]]
+    else:
+        title_order = titles
+
+    known_isbn = _FR_POCHE_ISBN.get(_normalize_title(title)) or ""
+    if not known_isbn:
+        for t_alias in titles[1:]:
+            known_isbn = _FR_POCHE_ISBN.get(_normalize_title(t_alias)) or ""
+            if known_isbn:
+                break
+    isbn_try = (isbn or "").strip() or known_isbn
+
+    def _try_ol(
+        key: str, *, match_title: str, allow_translation: bool
+    ) -> Optional[dict[str, Any]]:
+        norm = key.strip()
+        cache_id = f"{norm}|{match_title}|{allow_translation}"
+        if not norm or cache_id in seen_keys:
+            return None
+        seen_keys.add(cache_id)
+        hit = _french_paperback_pages_from_ol_work(
+            norm, title=match_title, allow_translation_editions=allow_translation
+        )
+        if not hit:
+            return None
+        hit = {**hit, "ol_key": norm}
+        if (hit.get("score") or 0) >= 145:
+            return hit
+        fallbacks.append(hit)
+        return None
+
+    key = (ol_key or "").strip()
+
+    # 0) ISBN poche FR connu / fourni
+    if isbn_try:
+        clean_isbn = re.sub(r"[^0-9Xx]", "", isbn_try)
+        known_pages = _FR_POCHE_ISBN_PAGES.get(clean_isbn)
+        if known_pages and _plausible_novel_pages(known_pages):
+            return {
+                "pages": known_pages,
+                "source": "fr_poche_isbn_known",
+                "score": 200,
+                "publisher": "poche FR (ISBN connu)",
+                "isbn": clean_isbn,
+            }
+        hit = _french_paperback_pages_from_google(
+            title=titles[0] if titles else title,
+            author=author,
+            isbn=isbn_try,
+        )
+        if hit and hit.get("pages"):
+            pub_l = str(hit.get("publisher") or "").lower()
+            if (hit.get("score") or 0) >= 145 or any(
+                p in pub_l for p in _POCHE_PUBLISHERS
+            ):
+                if _plausible_novel_pages(int(hit["pages"])):
+                    return hit
+            fallbacks.append(hit)
+        # Repli Open Library par ISBN (GB souvent KO / 503)
+        try:
+            ol_isbn = requests.get(
+                f"https://openlibrary.org/isbn/{clean_isbn}.json",
+                timeout=_OL_TIMEOUT,
+            )
+            if ol_isbn.ok:
+                data_isbn = ol_isbn.json() or {}
+                pages_ol = data_isbn.get("number_of_pages")
+                pubs = ", ".join(data_isbn.get("publishers") or [])
+                if any(bad in pubs.lower() for bad in _REJECT_PUBLISHERS):
+                    pages_ol = None
+                if isinstance(pages_ol, int) and _plausible_novel_pages(pages_ol):
+                    return {
+                        "pages": pages_ol,
+                        "source": "openlibrary_isbn_fr_poche",
+                        "score": 160,
+                        "publisher": pubs,
+                        "isbn": clean_isbn,
+                    }
+        except Exception as exc:
+            logger.debug("OL isbn pages fail: %s", exc)
+
+    def _resolve_for_title(t_try: str) -> Optional[dict[str, Any]]:
+        # GB d'abord sur les alias FR (plus fiable et moins d'appels OL)
+        hit = _french_paperback_pages_from_google(
+            title=t_try, author=author, isbn=isbn_try if isbn_try == known_isbn else ""
+        )
+        if hit and hit.get("pages"):
+            pub_l = str(hit.get("publisher") or "").lower()
+            has_poche_pub = any(p in pub_l for p in _POCHE_PUBLISHERS)
+            if (hit.get("score") or 0) >= 145 and has_poche_pub:
+                return hit
+            fallbacks.append(hit)
+
+        keys = _ol_keys_from_search(t_try, author, language="fre", limit=4)
+        for k in _ol_keys_from_search(t_try, author, language=None, limit=4):
+            if k not in keys:
+                keys.append(k)
+        if key and key not in keys:
+            keys.insert(0, key)
+
+        for found in keys:
+            hit = _try_ol(found, match_title=t_try, allow_translation=False)
+            if hit:
+                return hit
+
+        for found in keys[:2]:
+            try:
+                path = found if found.startswith("/") else f"/{found}"
+                wr = requests.get(
+                    f"https://openlibrary.org{path}.json",
+                    timeout=_OL_TIMEOUT,
+                )
+                work_title = str((wr.json() or {}).get("title") or "") if wr.ok else ""
+            except Exception:
+                work_title = ""
+            if work_title and _title_match_score(t_try, work_title) >= 70:
+                hit = _try_ol(found, match_title=t_try, allow_translation=True)
+                if hit:
+                    return hit
+        return None
+
+    for t_try in title_order:
+        hit = _resolve_for_title(t_try)
+        if hit:
+            return hit
+
+    # Repli uniquement si vraie édition poche (pas un simple résultat FR)
+    if fallbacks:
+        return _pick_best_candidate(fallbacks, min_score=145)
+    return None
+
+
+def fetch_book_synopsis(
+    *,
+    title: str = "",
+    author: str = "",
+    isbn: str = "",
+    ol_key: str = "",
+) -> dict[str, Any]:
+    """
+    Retourne {description, pages, source, ol_key?, pages_source?}.
+    Pages : toujours priorité édition poche française (+ recherche si besoin).
+    """
+    pages: Optional[int] = None
+    pages_source = None
+    description = ""
+    source = "none"
+    found_key = ""
+
+    poche = fetch_french_paperback_pages(
+        title=title, author=author, isbn=isbn, ol_key=ol_key
+    )
+    if poche and poche.get("pages"):
+        pages = int(poche["pages"])
+        pages_source = poche.get("source")
+        source = pages_source or "fr_poche"
+        if poche.get("ol_key"):
+            found_key = poche["ol_key"]
+        if poche.get("description"):
+            description = poche["description"]
+
+    gb = _from_google_books(title=title, author=author, isbn=isbn, prefer_lang="fr")
+    if not description and gb.get("description"):
+        description = gb["description"]
+        if source == "none":
+            source = "google_books"
+    if not pages and gb.get("pages"):
+        pages = int(gb["pages"])
+        pages_source = gb.get("pages_source") or "google_books"
+
+    key = (ol_key or found_key or "").strip()
+    if key and (not description or not pages):
+        ol = _from_openlibrary_work(key, title=title)
+        if not description and ol.get("description"):
+            description = ol["description"]
+            if source == "none":
+                source = "openlibrary"
+        if not pages and ol.get("pages"):
+            pages = int(ol["pages"])
+            pages_source = ol.get("pages_source") or "openlibrary"
+
+    if isbn and not description:
+        ol_isbn = _from_openlibrary_isbn(isbn)
+        if ol_isbn:
+            description = ol_isbn
+            if source == "none":
+                source = "openlibrary_isbn"
+
+    if not description or not pages:
+        found_key = found_key or _ol_key_from_search(title, author, language="fre")
+        if found_key and not description:
+            ol = _from_openlibrary_work(found_key, title=title)
+            if ol.get("description"):
+                description = ol["description"]
+                if source == "none":
+                    source = "openlibrary_search"
+            if not pages and ol.get("pages"):
+                pages = int(ol["pages"])
+                pages_source = ol.get("pages_source") or "openlibrary_search"
+
+    result: dict[str, Any] = {
+        "description": description or "",
+        "pages": pages,
+        "source": source if (description or pages) else "none",
+    }
+    if pages_source:
+        result["pages_source"] = pages_source
+    if found_key:
+        result["ol_key"] = found_key
+    return result

@@ -95,34 +95,39 @@ export const searchOpenLibrary = async (query, {
       // Le matcher ne s'appuie que sur les vraies correspondances de recherche
       // (pas sur les tendances génériques) pour ne pas rattacher des livres au hasard.
       wikidataMatcher = buildWikidataSeriesMatcher(fromSearch ? rows : []);
-      wikidataSpotlight = (rows || []).map((entry, i) => {
-        const name = entry.name_fr || entry.name || entry.name_en || entry.label || entry.qid;
-        // Auteur + nombre de tomes faisant autorité depuis le référentiel curé (par nom).
-        const curated = enrichWikidataCardFromCurated(name, {
-          author: entry.author_label || entry.author || '',
-          totalBooks: entry.work_count || 0,
-          category: inferCategoryFromWikidataSearchEntry(entry),
-        });
-        return {
-          isSeriesCard: true,
-          isStaticWikidataCard: true,
-          wikidata_qid: entry.qid,
-          id: `series_wd_${entry.qid}`,
-          name,
-          author: curated.author,
-          category: curated.category || inferCategoryFromWikidataSearchEntry(entry),
-          cover_url: null,
-          totalBooks: curated.totalBooks,
-          completedBooks: 0,
-          progressPercent: 0,
-          books: [],
-          description: fromSearch
-            ? `Wikidata · ${entry.work_count ?? 0} œuvre(s) · pop. ${entry.popularity ?? '—'}/100`
-            : `Wikidata · tendances · pop. ${entry.popularity ?? '—'}/100`,
-          relevanceScore: fromSearch ? 45000 - i * 100 : 40000,
-          fromOpenLibrary: false,
-        };
-      });
+      wikidataSpotlight = (rows || [])
+        .map((entry, i) => {
+          const name = entry.name_fr || entry.name || entry.name_en || entry.label || entry.qid;
+          // Auteur + nombre de tomes faisant autorité depuis le référentiel curé (par nom).
+          const curated = enrichWikidataCardFromCurated(name, {
+            author: entry.author_label || entry.author || '',
+            totalBooks: entry.work_count || 0,
+            category: inferCategoryFromWikidataSearchEntry(entry),
+          });
+          const totalBooks = curated.totalBooks || entry.work_count || 0;
+          // Pas de carte série à 0 tome (livre individuel mal tagué Wikidata)
+          if (!totalBooks || totalBooks < 1) return null;
+          return {
+            isSeriesCard: true,
+            isStaticWikidataCard: true,
+            wikidata_qid: entry.qid,
+            id: `series_wd_${entry.qid}`,
+            name,
+            author: curated.author,
+            category: curated.category || inferCategoryFromWikidataSearchEntry(entry),
+            cover_url: null,
+            totalBooks,
+            completedBooks: 0,
+            progressPercent: 0,
+            books: [],
+            description: fromSearch
+              ? `Wikidata · ${entry.work_count ?? 0} œuvre(s) · pop. ${entry.popularity ?? '—'}/100`
+              : `Wikidata · tendances · pop. ${entry.popularity ?? '—'}/100`,
+            relevanceScore: fromSearch ? 45000 - i * 100 : 40000,
+            fromOpenLibrary: false,
+          };
+        })
+        .filter(Boolean);
     } catch (_) {
       /* optionnel */
     }

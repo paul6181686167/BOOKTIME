@@ -9,6 +9,8 @@ import requests
 from ..database.connection import books_collection
 from ..security.jwt import get_current_user
 from ..utils.validation import validate_category
+from ..utils.category_detect import detect_category_from_subjects
+from ..utils.category_buffer import set_cached_category
 
 logger = logging.getLogger("booktime.openlibrary")
 
@@ -18,32 +20,6 @@ def _normalize_query(s: str) -> str:
     return no_accent.strip()
 
 router = APIRouter(prefix="/api/openlibrary", tags=["openlibrary"])
-
-def detect_category_from_subjects(subjects):
-    """Détecter la catégorie d'un livre à partir de ses sujets"""
-    if not subjects:
-        return "roman"
-    
-    subjects_str = " ".join(subjects).lower()
-    
-    # Détection manga - uniquement mots-clés très spécifiques aux mangas
-    manga_keywords = ["manga", "japanese comics", "manhwa", "manhua", "anime"]
-    if any(keyword in subjects_str for keyword in manga_keywords):
-        return "manga"
-    
-    # Détection BD - mots-clés spécifiques aux bandes dessinées
-    # Note: "illustration" retiré car trop générique (livres illustrés comme The Hobbit)
-    # Note: "graphic novel" retiré des manga_keywords (c'est une BD, pas un manga)
-    bd_keywords = ["comic book", "comic strip", "bande dessinee", "bande dessinée", "fumetti", "comics"]
-    if any(keyword in subjects_str for keyword in bd_keywords):
-        return "bd"
-    
-    # "graphic novel" seul = BD (mais seulement si c'est clairement le genre principal)
-    if "graphic novel" in subjects_str and "fiction" not in subjects_str and "fantasy" not in subjects_str:
-        return "bd"
-    
-    # Par défaut: roman
-    return "roman"
 
 def extract_cover_url(cover_i):
     """Extraire l'URL de couverture depuis l'ID de couverture"""
@@ -369,6 +345,13 @@ async def import_from_open_library(
         # Extraire sujets
         subjects = work_data.get("subjects", [])
 
+        # Recalcule prudent côté serveur (évite bd/manga trop agressifs du front)
+        detected = detect_category_from_subjects(subjects, title=title or original_title)
+        if detected == "roman" and validated_category in ("bd", "manga"):
+            validated_category = "roman"
+        elif subjects and detected in ("bd", "manga"):
+            validated_category = detected
+
         # Extraire la série depuis OL (champ "series" du work ou titre tomeN)
         series_list = work_data.get("series", [])
         saga_name = ""
@@ -433,7 +416,17 @@ async def import_from_open_library(
         
         books_collection.insert_one(book)
         book.pop("_id", None)
-        
+        try:
+            set_cached_category(
+                title,
+                author_str,
+                category=validated_category,
+                source="openlibrary_import",
+                meta={"ol_key": ol_key},
+            )
+        except Exception:
+            pass
+
         return {
             "success": True,
             "message": "Livre importé avec succès",

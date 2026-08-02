@@ -3,58 +3,108 @@ from datetime import datetime
 from typing import Optional
 import uuid
 import re
+import logging
 from ..models.book import BookCreate, BookUpdate
 from ..database.connection import books_collection
 from ..security.jwt import get_current_user
 from ..utils.validation import validate_category
+from ..utils.category_buffer import get_cached_category, buffer_stats
+from ..utils.category_verify import reclassify_books
 from ..services.pagination import PaginatedResponse, pagination_service
 
 router = APIRouter(prefix="/api/books", tags=["books"])
+_logger = logging.getLogger("booktime.books")
 
-# Genres typiques des romans (indiquent qu'un livre n'est PAS une BD/manga)
-_ROMAN_GENRE_KEYWORDS = [
-    'fantasy', 'fiction', 'roman', 'novel', 'science fiction', 'sf', 'thriller',
-    'mystery', 'adventure', 'horror', 'historical', 'biography', 'detective',
-    'literature', 'young adult', 'children', 'epic', 'dystopia', 'littérature',
-    'policier', 'fantastique', 'horreur', 'aventure', 'historique', 'biographie',
-    'science-fiction', 'conte', 'jeunesse',
-]
 
-# Mots-clés qui indiquent clairement une BD ou un manga dans le titre/genre
-_BD_MANGA_KEYWORDS = [
-    'manga', 'comic', 'bande dessinée', 'bd', 'manhwa', 'manhua', 'anime',
-    'graphic novel', 'comics',
-]
+def _apply_category_updates(user_id: str, updates: list) -> int:
+    """Applique les changements de catégorie en base."""
+    applied = 0
+    for u in updates:
+        book_id = u.get("id")
+        new_cat = u.get("new_category")
+        if not book_id or not new_cat:
+            continue
+        result = books_collection.update_one(
+            {"id": book_id, "user_id": user_id},
+            {"$set": {"category": new_cat, "category_verified": True}},
+        )
+        if getattr(result, "modified_count", 0) or getattr(result, "matched_count", 0):
+            applied += 1
+    return applied
 
-def _auto_fix_book_categories(user_id: str):
+
+def _auto_fix_book_categories(
+    user_id: str, *, with_search: bool = True, force: bool = False
+) -> dict:
     """
-    Corrige automatiquement les catégories de livres mal détectées.
-    Un livre classé 'bd' ou 'manga' dont le genre indique un roman est recorrigé en 'roman'.
-    Un livre classé 'roman' dont le genre indique clairement BD/manga est recorrigé.
+    Corrige les catégories bd/manga suspectes :
+    1) mémoire tampon (titre+auteur)
+    2) sinon recherche Open Library + sauvegarde tampon
     """
+    report = {"checked": 0, "updated": [], "unchanged": 0, "from_buffer_only": 0}
     try:
         all_books = list(books_collection.find({"user_id": user_id}))
-        for book in all_books:
-            current_cat = book.get("category", "roman")
-            genre = (book.get("genre") or "").lower()
-            title = (book.get("title") or "").lower()
-            saga = (book.get("saga") or "").lower()
-            combined = f"{genre} {title} {saga}"
+        candidates = [
+            b
+            for b in all_books
+            if b.get("category") in ("bd", "manga")
+            and (force or not b.get("category_verified"))
+        ]
 
-            if current_cat in ("bd", "manga"):
-                # Vérifier si le genre suggère clairement un roman
-                has_roman_genre = any(kw in genre for kw in _ROMAN_GENRE_KEYWORDS)
-                has_bd_manga_marker = any(kw in combined for kw in _BD_MANGA_KEYWORDS)
+        # 1) Corrections immédiates depuis le tampon (sans réseau), sauf force
+        buffer_updates = []
+        need_search = []
+        for book in candidates:
+            if force:
+                need_search.append(book)
+                continue
+            cached = get_cached_category(book.get("title") or "", book.get("author") or "")
+            if cached and cached != book.get("category"):
+                buffer_updates.append(
+                    {
+                        "id": book.get("id"),
+                        "title": book.get("title"),
+                        "author": book.get("author"),
+                        "old_category": book.get("category"),
+                        "new_category": cached,
+                        "source": "buffer",
+                        "from_cache": True,
+                    }
+                )
+            elif cached and cached == book.get("category"):
+                books_collection.update_one(
+                    {"id": book.get("id"), "user_id": user_id},
+                    {"$set": {"category_verified": True}},
+                )
+            else:
+                need_search.append(book)
 
-                # Corriger si : genre indique un roman OU aucun marqueur BD/manga n'existe
-                should_fix = (has_roman_genre or not genre) and not has_bd_manga_marker
-                if should_fix:
-                    books_collection.update_one(
-                        {"id": book.get("id"), "user_id": user_id},
-                        {"$set": {"category": "roman"}}
-                    )
-    except Exception:
-        pass  # Silencieux pour ne pas bloquer le chargement
+        if buffer_updates:
+            _apply_category_updates(user_id, buffer_updates)
+            report["from_buffer_only"] = len(buffer_updates)
+            report["updated"].extend(buffer_updates)
+
+        # 2) Recherche OL pour le reste + écriture tampon
+        if with_search and need_search:
+            search_report = reclassify_books(
+                need_search, only_suspicious=True, force=force
+            )
+            report["checked"] = search_report.get("checked", 0) + len(buffer_updates)
+            report["unchanged"] = search_report.get("unchanged", 0)
+            search_updates = search_report.get("updated") or []
+            if search_updates:
+                _apply_category_updates(user_id, search_updates)
+                report["updated"].extend(search_updates)
+            for book in need_search:
+                books_collection.update_one(
+                    {"id": book.get("id"), "user_id": user_id},
+                    {"$set": {"category_verified": True}},
+                )
+        else:
+            report["checked"] = len(buffer_updates) + len(need_search)
+    except Exception as exc:
+        _logger.warning("Auto-fix catégories: %s", exc)
+    return report
 
 @router.get("", response_model=PaginatedResponse)
 async def get_books(
@@ -119,11 +169,12 @@ async def get_all_books(
     logger = logging.getLogger(__name__)
     try:
         from ..db_config import database
+        # Reclassement prudent des bd/manga suspects (recherche OL + mémoire tampon)
+        _auto_fix_book_categories(current_user["id"], with_search=True)
+        _auto_fix_series_categories(current_user["id"], force=False)
+
         # Mode mock : requête directe en mémoire
         if database.is_mock_mode():
-            # Auto-correction des catégories mal détectées (ex: livres illustrés classés en BD)
-            _auto_fix_book_categories(current_user["id"])
-
             query = {"user_id": current_user["id"]}
             if category:
                 query["category"] = category
@@ -165,6 +216,67 @@ async def get_all_books(
         import traceback
         logger.error(f"Erreur get_all_books: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Erreur récupération livres: {str(e)}")
+
+
+def _auto_fix_series_categories(user_id: str, *, force: bool = False) -> dict:
+    """Même logique pour les séries de la bibliothèque."""
+    from ..database.connection import series_library_collection
+    from ..utils.category_verify import verify_category_via_search
+
+    report = {"checked": 0, "updated": []}
+    try:
+        series = list(series_library_collection.find({"user_id": user_id}))
+        for s in series:
+            if not force and s.get("category_verified"):
+                continue
+            if not force and s.get("category") not in ("bd", "manga"):
+                continue
+            name = s.get("name") or s.get("series_name") or s.get("title") or ""
+            author = s.get("author") or ""
+            if isinstance(author, list):
+                author = ", ".join(str(a) for a in author)
+            old = s.get("category") or "roman"
+            result = verify_category_via_search(
+                name, author, force=force, current_category=old
+            )
+            new = result["category"]
+            report["checked"] += 1
+            filt = {"id": s["id"]} if s.get("id") else {"_id": s.get("_id")}
+            series_library_collection.update_one(
+                filt,
+                {"$set": {"category": new, "category_verified": True}},
+            )
+            if new != old:
+                report["updated"].append(
+                    {
+                        "id": s.get("id"),
+                        "title": name,
+                        "old_category": old,
+                        "new_category": new,
+                        "source": result.get("source"),
+                    }
+                )
+    except Exception as exc:
+        _logger.warning("Auto-fix séries: %s", exc)
+    return report
+
+
+@router.post("/reclassify-categories")
+async def reclassify_categories(
+    force: bool = Query(False, description="Ignore le tampon et re-recherche Open Library"),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Relance une recherche pour chaque livre/série classé bd/manga, mémorise
+    le résultat dans la mémoire tampon, et corrige la bibliothèque.
+    """
+    report = _auto_fix_book_categories(
+        current_user["id"], with_search=True, force=force
+    )
+    series_report = _auto_fix_series_categories(current_user["id"], force=force)
+    report["series"] = series_report
+    report["buffer"] = buffer_stats()
+    return report
 
 @router.get("/search-grouped")
 async def search_books_grouped(
@@ -321,6 +433,37 @@ async def search_books_grouped(
         "series_first": True
     }
 
+@router.get("/resolve-pages")
+async def resolve_french_paperback_pages(
+    title: str = Query(..., min_length=1),
+    author: str = Query(""),
+    isbn: str = Query(""),
+    ol_key: str = Query(""),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Résout le nombre de pages de l'édition poche FR (sans id livre).
+    Utile pour les fiches issues de series_library.
+    """
+    from ..utils.book_synopsis import fetch_french_paperback_pages
+
+    hit = fetch_french_paperback_pages(
+        title=title,
+        author=author,
+        isbn=isbn,
+        ol_key=ol_key,
+    )
+    if not hit or not hit.get("pages"):
+        return {"pages": None, "source": "none", "found": False}
+    return {
+        "pages": int(hit["pages"]),
+        "source": hit.get("source") or "fr_poche",
+        "publisher": hit.get("publisher"),
+        "isbn": hit.get("isbn"),
+        "found": True,
+    }
+
+
 @router.get("/{book_id}")
 async def get_book(book_id: str, current_user: dict = Depends(get_current_user)):
     """Obtenir un livre par son ID"""
@@ -407,10 +550,85 @@ async def update_book(
     
     return updated_book
 
+@router.get("/{book_id}/synopsis")
+async def get_book_synopsis(
+    book_id: str,
+    persist: bool = Query(True, description="Sauvegarder le résumé sur le livre"),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Résumé / 4ᵉ de couverture (Google Books prioritaire, puis Open Library).
+    Persiste la description sur le livre si elle était vide.
+    """
+    from ..utils.book_synopsis import fetch_book_synopsis
+
+    book = books_collection.find_one(
+        {"id": book_id, "user_id": current_user["id"]}, {"_id": 0}
+    )
+    if not book:
+        raise HTTPException(status_code=404, detail="Livre non trouvé")
+
+    existing_desc = (book.get("description") or "").strip()
+    existing_pages = book.get("total_pages")
+    has_pages = isinstance(existing_pages, (int, float)) and int(existing_pages) > 0
+
+    if existing_desc and has_pages:
+        return {
+            "description": existing_desc,
+            "pages": int(existing_pages),
+            "source": "stored",
+            "persisted": False,
+            "book_id": book_id,
+        }
+
+    result = fetch_book_synopsis(
+        title=book.get("title") or "",
+        author=book.get("author") or "",
+        isbn=book.get("isbn") or book.get("isbn13") or "",
+        ol_key=book.get("ol_key") or "",
+    )
+    description = existing_desc or (result.get("description") or "").strip()
+    pages = int(existing_pages) if has_pages else result.get("pages")
+    if pages is not None:
+        try:
+            pages = int(pages)
+            if pages <= 0:
+                pages = None
+        except (TypeError, ValueError):
+            pages = None
+
+    persisted = False
+    patch = {}
+    if persist:
+        if description and not existing_desc:
+            patch["description"] = description
+        if pages and not has_pages:
+            patch["total_pages"] = pages
+        if result.get("ol_key") and not book.get("ol_key"):
+            patch["ol_key"] = result["ol_key"]
+        if patch:
+            patch["updated_at"] = datetime.utcnow()
+            books_collection.update_one(
+                {"id": book_id, "user_id": current_user["id"]},
+                {"$set": patch},
+            )
+            persisted = True
+
+    return {
+        "description": description,
+        "pages": pages,
+        "source": result.get("source") or ("stored" if existing_desc else "none"),
+        "persisted": persisted,
+        "book_id": book_id,
+        "ol_key": result.get("ol_key") or book.get("ol_key"),
+    }
+
+
 @router.post("/{book_id}/enrich")
 async def enrich_book(book_id: str, current_user: dict = Depends(get_current_user)):
-    """Enrichir un livre avec les métadonnées Open Library (couverture, description, genres)"""
+    """Enrichir un livre avec couverture, description (4ᵉ) et genres."""
     import httpx
+    from ..utils.book_synopsis import fetch_book_synopsis
 
     book = books_collection.find_one({"id": book_id, "user_id": current_user["id"]}, {"_id": 0})
     if not book:
@@ -422,6 +640,19 @@ async def enrich_book(book_id: str, current_user: dict = Depends(get_current_use
 
     enriched = {}
 
+    # Résumé / 4ᵉ de couverture (GB + OL)
+    if not (book.get("description") or "").strip():
+        syn = fetch_book_synopsis(
+            title=title,
+            author=author,
+            isbn=isbn or book.get("isbn13") or "",
+            ol_key=book.get("ol_key") or "",
+        )
+        if syn.get("description"):
+            enriched["description"] = syn["description"]
+        if syn.get("ol_key") and not book.get("ol_key"):
+            enriched["ol_key"] = syn["ol_key"]
+
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             # Chercher par ISBN d'abord, puis par titre/auteur
@@ -432,13 +663,10 @@ async def enrich_book(book_id: str, current_user: dict = Depends(get_current_use
                     data = r.json()
                     ol_data = data.get(f"ISBN:{isbn}", {})
                     cover_ids = ol_data.get("cover", {})
-                    if cover_ids.get("large"):
+                    if cover_ids.get("large") and not book.get("cover_url"):
                         enriched["cover_url"] = cover_ids["large"]
-                    elif cover_ids.get("medium"):
+                    elif cover_ids.get("medium") and not book.get("cover_url"):
                         enriched["cover_url"] = cover_ids["medium"]
-                    if ol_data.get("description"):
-                        desc = ol_data["description"]
-                        enriched["description"] = desc if isinstance(desc, str) else desc.get("value", "")
                     subjects = [
                         (s if isinstance(s, str) else s.get("name", ""))
                         for s in ol_data.get("subjects", [])[:5]
@@ -446,26 +674,26 @@ async def enrich_book(book_id: str, current_user: dict = Depends(get_current_use
                     if subjects:
                         enriched["genres"] = subjects
 
-            if not enriched and title:
+            if title and ("cover_url" not in enriched or "genres" not in enriched):
                 q = f"{title} {author}".strip()
                 r = await client.get(
                     "https://openlibrary.org/search.json",
-                    params={"q": q, "limit": 1, "fields": "cover_i,description,subject"}
+                    params={"q": q, "limit": 1, "fields": "cover_i,subject,key"}
                 )
                 if r.status_code == 200:
                     docs = r.json().get("docs", [])
                     if docs:
                         doc = docs[0]
-                        if doc.get("cover_i"):
+                        if doc.get("cover_i") and not book.get("cover_url") and "cover_url" not in enriched:
                             enriched["cover_url"] = f"https://covers.openlibrary.org/b/id/{doc['cover_i']}-L.jpg"
-                        if doc.get("subject"):
+                        if doc.get("subject") and "genres" not in enriched:
                             enriched["genres"] = doc["subject"][:5]
 
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Erreur Open Library : {str(e)}")
+        raise HTTPException(status_code=502, detail=f"Erreur enrichissement : {str(e)}")
 
     if not enriched:
-        return {"message": "Aucune donnée supplémentaire trouvée sur Open Library", "book": book}
+        return {"message": "Aucune donnée supplémentaire trouvée", "book": book}
 
     enriched["updated_at"] = datetime.utcnow()
     books_collection.update_one({"id": book_id, "user_id": current_user["id"]}, {"$set": enriched})

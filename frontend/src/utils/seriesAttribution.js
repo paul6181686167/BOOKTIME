@@ -164,11 +164,31 @@ export const attributeBookToSeries = (book, { wikidataMatcher } = {}) => {
   }
 
   // 3. Champ saga (Open Library / bibliothèque)
+  // Ignorer si la « saga » n'est que le titre du livre (faux positif OL fréquent)
   const saga = (book.saga || '').trim();
   if (saga) {
+    const sagaNorm = FuzzyMatcher.normalizeString(saga);
+    const titleNorm = FuzzyMatcher.normalizeString(book.title || '');
+    const sameAsTitle =
+      sagaNorm &&
+      titleNorm &&
+      (sagaNorm === titleNorm ||
+        titleNorm.includes(sagaNorm) ||
+        sagaNorm.includes(titleNorm));
+    // Saga = titre du livre et pas de série curée multi-tomes → livre individuel
     const resolved = resolveCuratedSeriesByName(saga);
+    const curatedVolumes = resolved?.data?.volumes;
+    const isMulti =
+      (typeof curatedVolumes === 'number' && curatedVolumes > 1) ||
+      (Array.isArray(resolved?.data?.volume_titles) &&
+        resolved.data.volume_titles.length > 1);
+
+    if (sameAsTitle && !isMulti) {
+      return null;
+    }
+
     return {
-      seriesKey: resolved?.key || `saga_${FuzzyMatcher.normalizeString(saga)}`,
+      seriesKey: resolved?.key || `saga_${sagaNorm}`,
       seriesName: resolved?.data?.name || saga,
       seriesData: resolved?.data || null,
       source: 'saga',
@@ -244,6 +264,119 @@ export const resolveSeriesTotalBooks = (seriesData, foundCount) => {
     return seriesData.volumes;
   }
   return foundCount || 0;
+};
+
+/**
+ * Normalise un titre de tome pour détecter les doublons d'éditions OL.
+ */
+export const normalizeOwnedVolumeTitle = (raw) => {
+  let t = String(raw || '');
+  // Retirer mentions édition / audio avant normalisation
+  t = t.replace(/\([^)]*\)/g, ' ');
+  t = FuzzyMatcher.normalizeString(t);
+  if (!t) return '';
+  t = t.replace(/\s*[-–—:]?\s*tome\s*\d+\s*$/i, '').trim();
+  t = t.replace(/\b(three )?audio compact discs?\b/g, ' ').trim();
+  t = t.replace(/\b(edition|editions|audiobook|livre audio)\b/g, ' ').trim();
+  // "des fiançailles" ≈ "de fiançailles"
+  t = t.replace(/\bdes\b/g, 'de');
+  t = t.replace(/\s+/g, ' ').trim();
+  return t;
+};
+
+/**
+ * Compte les tomes réellement distincts (ignore les doublons OL du même livre).
+ * Regroupe aussi les titres quasi-identiques (fuzzy >= 90).
+ */
+export const countDistinctOwnedVolumes = (volumes) => {
+  if (!Array.isArray(volumes) || !volumes.length) return 0;
+  const norms = [];
+  for (const v of volumes) {
+    const t = normalizeOwnedVolumeTitle(v?.volume_title || v?.title || '');
+    if (!t) continue;
+    const isDup = norms.some((n) => FuzzyMatcher.fuzzyMatch(t, n, 2) >= 90);
+    if (!isDup) norms.push(t);
+  }
+  return norms.length;
+};
+
+const curatedVolumeCount = (seriesData) => {
+  if (!seriesData) return 0;
+  if (Number.isFinite(seriesData.volumes) && seriesData.volumes > 0) {
+    return seriesData.volumes;
+  }
+  if (seriesData.volume_titles && typeof seriesData.volume_titles === 'object') {
+    return Object.keys(seriesData.volume_titles).length;
+  }
+  if (Array.isArray(seriesData.volume_titles)) {
+    return seriesData.volume_titles.length;
+  }
+  return 0;
+};
+
+/**
+ * Décide si une entrée series_library doit s'afficher comme série ou livre.
+ * - Vraie série curée (SdA, HP…) → série même si 1 seul tome en bibliothèque
+ * - Doublons du même titre (ex. Long Dimanche ×11) → livre individuel
+ * - 0–1 tome distinct sans référentiel multi-tomes → livre individuel
+ *
+ * @returns {{ demote: boolean, totalBooks: number, curated: object|null, distinctOwned: number }}
+ */
+export const evaluateOwnedSeriesForDisplay = (series) => {
+  const name = series?.series_name || series?.name || '';
+  const volArr = Array.isArray(series?.volumes) ? series.volumes : [];
+  const curated = resolveCuratedSeriesByName(name);
+  const curatedCount = curatedVolumeCount(curated?.data);
+  const distinctOwned = countDistinctOwnedVolumes(volArr);
+  const storedTotal =
+    Number(series?.total_volumes) > 0 ? Number(series.total_volumes) : volArr.length;
+
+  const volumeNumbers = volArr
+    .map((v) => Number(v?.volume_number))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  const uniqueVolumeNumbers = new Set(volumeNumbers);
+  // Toutes les entrées en "tome 1" = éditions du même livre (ex. Long Dimanche ×11)
+  const allSameVolumeNumber =
+    volArr.length > 1 && uniqueVolumeNumbers.size > 0 && uniqueVolumeNumbers.size <= 1;
+
+  // Faux multi-tome : plein d'entrées mais un seul titre distinct (ou quasi)
+  const isFakeMulti =
+    volArr.length > 1 && (distinctOwned <= 1 || allSameVolumeNumber);
+
+  if (curatedCount > 1 && !allSameVolumeNumber) {
+    return {
+      demote: false,
+      totalBooks: Math.max(
+        curatedCount,
+        distinctOwned,
+        storedTotal > 1 && !isFakeMulti ? storedTotal : 0
+      ),
+      curated,
+      distinctOwned,
+    };
+  }
+
+  // Série curée mais bibliothèque = doublons du même tome → quand même série
+  // (ex. SdA avec un seul tome stocké plusieurs fois) si curatedCount > 1
+  if (curatedCount > 1) {
+    return {
+      demote: false,
+      totalBooks: curatedCount,
+      curated,
+      distinctOwned: Math.max(distinctOwned, 1),
+    };
+  }
+
+  if (isFakeMulti || distinctOwned <= 1) {
+    return { demote: true, totalBooks: 1, curated, distinctOwned };
+  }
+
+  return {
+    demote: false,
+    totalBooks: Math.max(storedTotal, distinctOwned),
+    curated,
+    distinctOwned,
+  };
 };
 
 /**

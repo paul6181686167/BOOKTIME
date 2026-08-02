@@ -16,7 +16,8 @@ from app.static_wikidata.service import infer_series_category, is_real_series
         ({"type": "written work series"}, "roman"),
         # Repli sur les genres P136 des œuvres quand le type est générique.
         ({"type": "book series", "works": [{"genres_en": ["comics", "adventure comic"]}]}, "bd"),
-        ({"type": "book series", "works": [{"genres_en": ["light novel"]}]}, "manga"),
+        ({"type": "book series", "works": [{"genres_en": ["light novel"]}]}, "roman"),
+        ({"type": "light novel series"}, "roman"),
         ({"type": "book series", "works": [{"genres_en": ["science fiction"]}]}, "roman"),
         # Repli sur les sujets série.
         ({"type": "book series", "main_subjects_en": ["graphic novel"]}, "bd"),
@@ -33,10 +34,13 @@ def test_infer_series_category(row, expected):
 @pytest.mark.parametrize(
     "row,expected",
     [
-        # Types curés : gardés même sans tome (série réelle, tomes absents de Wikidata).
+        # Manga / seed : gardés même sans tome (souvent absents de Wikidata).
         ({"type": "manga series", "work_count": 0}, True),
-        ({"type": "children's book series", "work_count": 0}, True),
         ({"type": "seed series", "work_count": 0}, True),
+        # Novel / children's mal tagués WD → rejetés s'il n'y a pas assez de tomes.
+        ({"type": "children's book series", "work_count": 0}, False),
+        ({"type": "novel series", "work_count": 0}, False),
+        ({"type": "novel series", "work_count": 2}, True),
         # Hub/franchise de découverte : exige >= 1 tome livre (sinon = série de jeux/films).
         ({"type": "literary series hub", "work_count": 116}, True),
         ({"type": "literary series hub", "work_count": 0}, False),

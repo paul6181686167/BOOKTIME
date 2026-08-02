@@ -377,22 +377,59 @@ function MainApp() {
   // Fonction pour ajouter un livre depuis Open Library
   // Mise à jour optimiste : UI instantanée + sync backend en arrière-plan
   const handleUpdateBookOptimistic = async (bookId, bookData) => {
-    // 1. Mettre à jour l'UI immédiatement
-    unifiedContent.setBooks(prev =>
-      prev.map(b => b.id === bookId ? { ...b, ...bookData } : b)
-    );
-    // Mettre à jour aussi le livre sélectionné dans le modal
-    if (booksHook.selectedBook?.id === bookId) {
-      // le modal re-lit depuis selectedBook — on laisse handleUpdateBook le mettre à jour
+    const selected = booksHook.selectedBook;
+    // Séries rétrogradées en « livre » : l'id est celui de series_library, pas books
+    const isDemotedSeries =
+      !!(selected?.isDemotedSeries && selected?.id === bookId);
+
+    // 1. UI immédiate (liste + modal)
+    if (isDemotedSeries) {
+      unifiedContent.setUserSeriesLibrary((prev) =>
+        (prev || []).map((s) => {
+          if (s.id !== bookId) return s;
+          const next = { ...s };
+          if (bookData.status) next.series_status = bookData.status;
+          if (bookData.current_page !== undefined) next.current_page = bookData.current_page;
+          if (bookData.total_pages !== undefined) next.total_pages = bookData.total_pages;
+          return next;
+        })
+      );
+    } else {
+      unifiedContent.setBooks((prev) =>
+        prev.map((b) => (b.id === bookId ? { ...b, ...bookData } : b))
+      );
     }
-    // 2. Appeler l'API et rafraîchir en arrière-plan (sans bloquer l'UI)
+    if (selected?.id === bookId) {
+      booksHook.setSelectedBook({ ...selected, ...bookData });
+    }
+
+    // 2. Persistance API
     try {
-      await booksHook.handleUpdateBook(bookId, bookData);
-      // Rafraîchir unifiedContent après confirmation backend
-      await unifiedContent.refreshAfterAdd('books');
+      if (isDemotedSeries) {
+        const token = localStorage.getItem('token');
+        const payload = {};
+        if (bookData.status) payload.series_status = bookData.status;
+        if (bookData.current_page !== undefined) {
+          payload.current_page = bookData.current_page;
+        }
+        if (bookData.total_pages !== undefined) {
+          payload.total_pages = bookData.total_pages;
+        }
+        if (Object.keys(payload).length === 0) return;
+        await seriesLibraryService.updateSeriesLibraryEntry(bookId, payload, token);
+        await unifiedContent.loadUnifiedContent({
+          forceRefresh: true,
+          silent: true,
+          skipBooks: true,
+          skipStats: true,
+        });
+      } else {
+        await booksHook.handleUpdateBook(bookId, bookData);
+        await unifiedContent.refreshAfterAdd('books');
+      }
     } catch (error) {
-      // En cas d'erreur : recharger pour revenir à l'état réel
-      await unifiedContent.refreshAfterAdd('books');
+      await unifiedContent.loadUnifiedContent({ forceRefresh: true, silent: true });
+      throw error;
     }
   };
 
@@ -970,6 +1007,15 @@ function MainApp() {
           onClose={booksHook.closeBookModal}
           onUpdate={handleUpdateBookOptimistic}
           onDelete={async (bookId) => {
+            const selected = booksHook.selectedBook;
+            if (selected?.isDemotedSeries && selected?.id === bookId) {
+              const token = localStorage.getItem('token');
+              await seriesLibraryService.deleteSeriesFromLibrary(bookId, token);
+              booksHook.closeBookModal();
+              toast.success('Livre retiré de la bibliothèque');
+              await unifiedContent.loadUnifiedContent({ forceRefresh: true, silent: true });
+              return;
+            }
             await booksHook.handleDeleteBook(bookId);
             // Rafraîchir unifiedContent pour que isOwned soit recalculé dans les résultats de recherche
             await unifiedContent.loadUnifiedContent({ forceRefresh: true, skipSeries: true, skipStats: true });

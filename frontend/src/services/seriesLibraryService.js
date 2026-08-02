@@ -63,15 +63,15 @@ export const toggleVolumeStatus = async (seriesId, volumeNumber, isRead, token) 
   return response.json();
 };
 
-// Mettre à jour le statut global d'une série
-export const updateSeriesStatus = async (seriesId, newStatus, token) => {
+// Mettre à jour une entrée series_library (statut et/ou page courante)
+export const updateSeriesLibraryEntry = async (seriesId, data, token) => {
   const response = await fetch(`${API_BASE}/api/series/library/${seriesId}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({ series_status: newStatus })
+    body: JSON.stringify(data)
   });
 
   if (!response.ok) {
@@ -79,6 +79,11 @@ export const updateSeriesStatus = async (seriesId, newStatus, token) => {
   }
 
   return response.json();
+};
+
+// Mettre à jour le statut global d'une série
+export const updateSeriesStatus = async (seriesId, newStatus, token) => {
+  return updateSeriesLibraryEntry(seriesId, { series_status: newStatus }, token);
 };
 
 // Supprimer une série de la bibliothèque
@@ -179,24 +184,45 @@ export const generateVolumesList = (seriesData, extendedSeriesDatabase) => {
       }
     }
     
-    // Fallback amélioré : Utiliser total_volumes ou volumes du seriesData
-    const volumeCount = seriesData.total_volumes || seriesData.volumes || 1;
+    // Fallback : total_volumes / totalBooks / work_count (PAS un array volumes vide)
+    const volumeCount = Number(
+      seriesData.total_volumes ||
+        seriesData.totalBooks ||
+        seriesData.work_count ||
+        (typeof seriesData.volumes === 'number' ? seriesData.volumes : 0) ||
+        0
+    );
+    if (!volumeCount || volumeCount < 1) {
+      // Pas de tomes connus → une seule entrée générique (sera rétrogradée en livre à l'affichage)
+      return [
+        {
+          volume_number: 1,
+          volume_title: seriesData.name || 'Tome 1',
+          is_read: false,
+          date_read: null,
+        },
+      ];
+    }
     console.log('⚠️ [DEBUG] Fallback génération:', volumeCount, 'volumes');
-    
+
     return Array.from({ length: volumeCount }, (_, i) => ({
       volume_number: i + 1,
       volume_title: `${seriesData.name} - Tome ${i + 1}`,
       is_read: false,
-      date_read: null
+      date_read: null,
     }));
   } catch (error) {
     console.error('Erreur génération volumes:', error);
-    // Fallback en cas d'erreur
-    return Array.from({ length: seriesData.volumes || 1 }, (_, i) => ({
+    const n = Number(
+      (typeof seriesData.volumes === 'number' && seriesData.volumes) ||
+        seriesData.total_volumes ||
+        1
+    );
+    return Array.from({ length: Math.max(1, n) }, (_, i) => ({
       volume_number: i + 1,
       volume_title: `${seriesData.name} - Tome ${i + 1}`,
       is_read: false,
-      date_read: null
+      date_read: null,
     }));
   }
 };

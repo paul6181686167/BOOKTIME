@@ -15,20 +15,24 @@ export const getCategoryBadge = (book) => {
     return CATEGORY_BADGES[category];
   }
   
-  // Détection automatique basée sur le contenu
+  // Heuristiques prudentes : pas de japan/bd en sous-chaîne (faux positifs)
   const title = (book.title || '').toLowerCase();
-  const description = (book.description || '').toLowerCase();
   const subjects = (book.subjects || []).join(' ').toLowerCase();
-  const allText = `${title} ${description} ${subjects}`;
-  
-  if (allText.includes('manga') || allText.includes('japonais') || allText.includes('japan')) {
+  const description = ((book.description || '').slice(0, 200)).toLowerCase();
+  const allText = `${title} ${subjects} ${description}`;
+
+  if (/\b(manga|manhwa|manhua|webtoon|shonen|shounen|seinen|josei|shojo)\b/i.test(allText)) {
     return CATEGORY_BADGES.manga;
   }
-  
-  if (allText.includes('bande dessinée') || allText.includes('comic') || allText.includes('bd')) {
+
+  if (
+    /\b(comic books?|comic strips?|graphic novels?|roman graphique|bande dessin[ée]e|fumetti)\b/i.test(
+      allText
+    )
+  ) {
     return CATEGORY_BADGES.bd;
   }
-  
+
   return CATEGORY_BADGES.roman;
 };
 

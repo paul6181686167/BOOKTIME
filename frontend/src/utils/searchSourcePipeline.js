@@ -139,15 +139,19 @@ export function inferCategoryFromWikidataSearchEntry(entry) {
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
+  // Light novel = prose → roman (pas Romans graphiques)
+  if (/\blight novel\b/i.test(blob)) {
+    return 'roman';
+  }
   if (
-    /\b(manga|manhwa|manhua|light novel|webtoon|sh[ōo]nen|shounen|seinen|josei|kodomo|sh[ōo]jo)\b/i.test(
+    /\b(manga|manhwa|manhua|webtoon|sh[ōo]nen|shounen|seinen|josei|kodomo|sh[ōo]jo)\b/i.test(
       blob
     )
   ) {
     return 'manga';
   }
   if (
-    /\b(comic|comics|comic book|graphic novel|roman graphique|bande dessin[ée]e|fumetti|marvel|dc comics|bd franco|franco-belgian)\b/i.test(
+    /\b(comic books?|comic strips?|graphic novels?|roman graphique|bande dessin[ée]e|fumetti|franco-belgian)\b/i.test(
       blob
     )
   ) {

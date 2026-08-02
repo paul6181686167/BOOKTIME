@@ -36,6 +36,11 @@ async def create_series_library(
             "series": normalize_series_library_doc(existing),
         }
 
+    # total_volumes dérivé des tomes si absent / à 0
+    vols = data.get("volumes") or []
+    if not data.get("total_volumes"):
+        data["total_volumes"] = len(vols)
+
     series_id = str(uuid.uuid4())
     series = {
         "id": series_id,
@@ -118,32 +123,63 @@ async def update_series_status(
     series_data: dict,
     current_user: dict = Depends(get_current_user)
 ):
-    """Mettre à jour le statut global d'une série"""
+    """Mettre à jour le statut global et/ou la page courante d'une série (livre rétrogradé inclus)."""
     from datetime import datetime, timezone
     
     new_status = series_data.get("series_status")
-    if not new_status or new_status not in ["to_read", "reading", "completed"]:
+    has_page = "current_page" in series_data
+    has_total = "total_pages" in series_data
+    if new_status is not None and new_status not in ["to_read", "reading", "completed"]:
         raise HTTPException(status_code=400, detail="Statut invalide")
-    
+    if new_status is None and not has_page and not has_total:
+        raise HTTPException(status_code=400, detail="Aucune mise à jour fournie")
+
+    update_fields: dict = {"updated_at": datetime.now(timezone.utc)}
+    if new_status is not None:
+        update_fields["series_status"] = new_status
+    if has_page:
+        raw_page = series_data.get("current_page")
+        if raw_page is None or raw_page == "":
+            update_fields["current_page"] = None
+        else:
+            try:
+                page_i = int(raw_page)
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=400, detail="current_page invalide")
+            if page_i < 0:
+                raise HTTPException(status_code=400, detail="current_page invalide")
+            update_fields["current_page"] = page_i
+            # Saisie d'une page ⇒ considéré en cours de lecture
+            if page_i > 0 and new_status is None:
+                update_fields["series_status"] = "reading"
+    if has_total:
+        raw_total = series_data.get("total_pages")
+        if raw_total is None or raw_total == "":
+            update_fields["total_pages"] = None
+        else:
+            try:
+                total_i = int(raw_total)
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=400, detail="total_pages invalide")
+            if total_i <= 0:
+                raise HTTPException(status_code=400, detail="total_pages invalide")
+            update_fields["total_pages"] = total_i
+
     result = series_library_collection.update_one(
         {
             "id": series_id,
             "user_id": current_user["id"]
         },
-        {
-            "$set": {
-                "series_status": new_status,
-                "updated_at": datetime.now(timezone.utc)
-            }
-        }
+        {"$set": update_fields}
     )
     
-    if result.modified_count == 0:
+    if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Série non trouvée")
     
     return {
         "success": True,
-        "message": "Statut de la série mis à jour"
+        "message": "Série mise à jour",
+        "updated": {k: v for k, v in update_fields.items() if k != "updated_at"},
     }
 
 @router.delete("/series/{series_id}")

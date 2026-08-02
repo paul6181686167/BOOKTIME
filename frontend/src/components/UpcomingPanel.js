@@ -236,7 +236,12 @@ const UpcomingPanel = ({ isOpen, onClose }) => {
   );
 
   useEffect(() => {
-    loadData(false);
+    // Après un changement de règles backend, forcer 1 refresh (évite l'ancien cache 6h).
+    const LOGIC_V = '2';
+    const key = 'booktime_upcoming_logic_v';
+    const stale = localStorage.getItem(key) !== LOGIC_V;
+    loadData(stale);
+    if (stale) localStorage.setItem(key, LOGIC_V);
   }, [loadData]);
 
   useEffect(() => {

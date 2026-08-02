@@ -18,32 +18,17 @@ _TIMEOUT = 15
 
 def infer_book_category_from_google_item(it: dict[str, Any]) -> str:
     """
-    roman | bd | manga — à partir des catégories Google Books + titre/sous-titre/description.
+    roman | bd | manga — catégories Google + titre/sous-titre (pas la description).
+    Light novel → roman. Heuristiques prudentes (voir category_detect).
     """
-    parts: list[str] = []
-    cats = it.get("categories")
-    if isinstance(cats, list):
-        parts.extend(str(c) for c in cats if c)
-    elif cats:
-        parts.append(str(cats))
-    parts.append(str(it.get("title") or ""))
-    parts.append(str(it.get("subtitle") or ""))
-    desc = str(it.get("description") or "")
-    parts.append(desc[:500])
-    blob = " ".join(parts).lower()
-    if re.search(
-        r"\b(manga|manhwa|manhua|light novel|webtoon|shōnen|shonen|shounen|seinen|josei|kodomo|shojo|shōjo)\b",
-        blob,
-        re.I,
-    ):
-        return "manga"
-    if re.search(
-        r"\b(comic|comics|comic book|graphic novel|roman graphique|bande dessinée|fumetti|marvel\b|dc comics)\b",
-        blob,
-        re.I,
-    ):
-        return "bd"
-    return "roman"
+    from ..utils.category_detect import detect_category_from_google
+
+    return detect_category_from_google(
+        categories=it.get("categories"),
+        title=str(it.get("title") or ""),
+        subtitle=str(it.get("subtitle") or ""),
+        description=str(it.get("description") or ""),
+    )
 
 
 def is_enabled() -> bool:
@@ -61,10 +46,19 @@ def normalize_isbn(s: str) -> str:
     return re.sub(r"[^0-9Xx]", "", (s or "").strip())
 
 
-def search_volumes(q: str, *, max_results: int = 10, order_by: str | None = None) -> dict[str, Any]:
+def search_volumes(
+    q: str,
+    *,
+    max_results: int = 10,
+    order_by: str | None = None,
+    lang_restrict: str | None = None,
+    print_type: str | None = None,
+) -> dict[str, Any]:
     """
     Requête brute `volumes.list` : `q` peut être un titre, `isbn:978...`, `intitle:... inauthor:...`, etc.
     `order_by` accepte "newest" (tri par date) ou "relevance" (défaut Google).
+    `lang_restrict` : ex. "fr" pour ne garder que les volumes dans cette langue.
+    `print_type` : "books" | "magazines".
     Retourne le JSON Google (items, totalItems, ...).
     """
     key = _require_key()
@@ -72,6 +66,10 @@ def search_volumes(q: str, *, max_results: int = 10, order_by: str | None = None
     params = {"q": q.strip(), "maxResults": n, "key": key}
     if order_by in ("newest", "relevance"):
         params["orderBy"] = order_by
+    if lang_restrict:
+        params["langRestrict"] = lang_restrict
+    if print_type in ("books", "magazines"):
+        params["printType"] = print_type
     r = requests.get(GB_VOLUMES_URL, params=params, timeout=_TIMEOUT)
     r.raise_for_status()
     return r.json()

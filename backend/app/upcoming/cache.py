@@ -18,6 +18,9 @@ from ..database.connection import db
 logger = logging.getLogger(__name__)
 
 CACHE_TTL_HOURS = int(os.getenv("UPCOMING_CACHE_TTL_HOURS", "6"))
+# Incrémenter après tout changement de règles de filtrage pour invalider
+# les payloads obsolètes encore dans la TTL (sinon le panneau sert l'ancienne liste).
+CACHE_LOGIC_VERSION = int(os.getenv("UPCOMING_CACHE_LOGIC_VERSION", "2"))
 
 
 def _coll():
@@ -32,6 +35,8 @@ def get_cached(user_id: str, *, max_age_hours: int = CACHE_TTL_HOURS) -> Optiona
         logger.debug("Lecture cache upcoming échouée : %s", exc)
         return None
     if not doc or "payload" not in doc:
+        return None
+    if int(doc.get("logic_version") or 0) != CACHE_LOGIC_VERSION:
         return None
     updated = doc.get("updated_at")
     if isinstance(updated, str):
@@ -57,7 +62,10 @@ def set_cached(
     notified_ids: Optional[list[str]] = None,
 ) -> None:
     """Met à jour le cache (payload et/ou liste des ids déjà notifiés)."""
-    update: dict[str, Any] = {"updated_at": datetime.now(timezone.utc)}
+    update: dict[str, Any] = {
+        "updated_at": datetime.now(timezone.utc),
+        "logic_version": CACHE_LOGIC_VERSION,
+    }
     if payload is not None:
         stored = {k: v for k, v in payload.items() if k != "cached"}
         update["payload"] = stored

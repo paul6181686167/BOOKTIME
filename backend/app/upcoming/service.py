@@ -20,6 +20,7 @@ from ..database.connection import books_collection, series_library_collection
 from ..static_wikidata import service as wd
 from ..google_books import service as gb
 from ..chapters.service import ChapterService
+from ..series_verification.curated import match_curated
 
 logger = logging.getLogger(__name__)
 
@@ -146,6 +147,9 @@ def _collect_user_series(user_id: str) -> tuple[dict[str, dict], set[str]]:
                 "author": author or "",
                 "cover": cover or "",
                 "owned": set(),
+                "series_status": None,
+                "library_volume_count": 0,
+                "from_series_library": False,
             }
             series_map[key] = entry
         # Complète les métadonnées manquantes si une source les fournit.
@@ -163,6 +167,8 @@ def _collect_user_series(user_id: str) -> tuple[dict[str, dict], set[str]]:
         if not saga:
             continue
         entry = touch(saga, b.get("category"), b.get("author"), b.get("cover_url"))
+        if not entry:
+            continue
         vn = b.get("volume_number")
         try:
             if vn is not None:
@@ -177,7 +183,23 @@ def _collect_user_series(user_id: str) -> tuple[dict[str, dict], set[str]]:
         authors = s.get("authors") or []
         author = authors[0] if isinstance(authors, list) and authors else ""
         entry = touch(name, s.get("category"), author, s.get("cover_image_url"))
-        for v in s.get("volumes") or []:
+        if not entry:
+            continue
+        entry["from_series_library"] = True
+        st = s.get("series_status")
+        if st:
+            entry["series_status"] = st
+        vols = s.get("volumes") or []
+        try:
+            declared = int(s.get("total_volumes") or 0)
+        except (TypeError, ValueError):
+            declared = 0
+        entry["library_volume_count"] = max(
+            entry.get("library_volume_count") or 0,
+            len(vols),
+            declared,
+        )
+        for v in vols:
             vn = v.get("volume_number") if isinstance(v, dict) else None
             try:
                 if vn is not None:
@@ -188,20 +210,131 @@ def _collect_user_series(user_id: str) -> tuple[dict[str, dict], set[str]]:
     return series_map, owned_titles
 
 
+def _curated_volume_titles(entry: dict) -> dict[int, str]:
+    titles: dict[int, str] = {}
+    raw = entry.get("volume_titles") or []
+    if isinstance(raw, dict):
+        for k, v in raw.items():
+            try:
+                titles[int(k)] = str(v or "")
+            except (TypeError, ValueError):
+                continue
+    elif isinstance(raw, list):
+        for t in raw:
+            if not isinstance(t, dict) or t.get("volume_number") is None:
+                continue
+            try:
+                titles[int(t["volume_number"])] = str(t.get("title") or "")
+            except (TypeError, ValueError):
+                continue
+    return titles
+
+
+def _curated_volume_details(entry: dict) -> dict[int, dict]:
+    out: dict[int, dict] = {}
+    raw = entry.get("volume_details") or {}
+    if not isinstance(raw, dict):
+        return out
+    for k, v in raw.items():
+        try:
+            out[int(k)] = v if isinstance(v, dict) else {}
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def _is_unreleased_volume(detail: dict | None, today_year: int) -> bool:
+    """True si le référentiel indique un tome pas encore paru."""
+    if not detail:
+        return False
+    if detail.get("released") is False:
+        return True
+    if detail.get("released") is True:
+        return False
+    if "published_year" in detail:
+        y = detail.get("published_year")
+        if y is None or y == "":
+            return True
+        try:
+            if int(y) > today_year:
+                return True
+        except (TypeError, ValueError):
+            return True
+    pub = detail.get("publish_date")
+    if pub:
+        iso = str(pub)[:10]
+        if len(iso) == 10 and iso > date.today().isoformat():
+            return True
+    return False
+
+
+def _curated_has_unreleased(details: dict[int, dict], today_year: int) -> bool:
+    return any(_is_unreleased_volume(d, today_year) for d in details.values())
+
+
+def _curated_status_complete(curated: dict | None, details: dict[int, dict], today_year: int) -> bool:
+    """Série considérée terminée (plus de suite attendue hors tomes explicitement non sortis)."""
+    if not curated:
+        return False
+    status = str(curated.get("status") or "").lower().strip()
+    if status in ("completed", "finished", "ended", "complete"):
+        return not _curated_has_unreleased(details, today_year)
+    if status in ("ongoing", "hiatus", "announced"):
+        return False
+    # Sans statut : terminée si tous les tomes curatés sont parus
+    total = int(curated.get("volumes") or 0)
+    if total > 0 and details and len(details) >= total:
+        return not _curated_has_unreleased(details, today_year)
+    return False
+
+
+def _is_standalone_series(entry: dict, curated: dict | None, curated_total: int) -> bool:
+    """Livre individuel / fausse série à 1 tome — pas de « prochain tome » à inventer."""
+    lib_count = int(entry.get("library_volume_count") or 0)
+    owned_n = len(entry.get("owned") or [])
+    slots = max(lib_count, owned_n)
+    if curated_total > 1:
+        return False
+    if curated_total == 1:
+        return True
+    # Pas de référentiel multi-tomes : 0–1 slot en bibliothèque = standalone
+    return slots <= 1
+
+
 def _build_next_tomes(
     series_map: dict[str, dict],
     today_iso: str,
     manga_info: dict[str, dict] | None = None,
 ) -> list[dict]:
+    """
+    Prochains tomes **à paraître** uniquement :
+    - pas de suites inventées pour livres individuels ;
+    - pas de tomes déjà sortis (trous de collection) ;
+    - pas de séries terminées sans tome annoncé non sorti.
+    """
     manga_info = manga_info or {}
     items: list[dict] = []
-    for key, entry in series_map.items():
-        owned = entry["owned"]
-        owned_max = max(owned) if owned else 0
+    today_year = date.fromisoformat(today_iso).year
 
-        # Pour les mangas, MangaUpdates fait autorité sur les tomes déjà parus
-        # (tomes étiquetés / sortis) : le prochain tome est calculé à partir de
-        # cette réalité plutôt que des seuls tomes possédés (dédoublonnage MU).
+    for key, entry in series_map.items():
+        owned = set(entry["owned"] or [])
+        curated = match_curated(entry["name"], entry.get("author"))
+        details = _curated_volume_details(curated) if curated else {}
+        titles = _curated_volume_titles(curated) if curated else {}
+        curated_total = int(curated.get("volumes") or 0) if curated else 0
+
+        # Livre unique ajouté comme « série » → ignorer
+        if _is_standalone_series(entry, curated, curated_total):
+            continue
+
+        # Les slots catalogue non sortis (ex. Red God) ne comptent pas comme « possédés »
+        released_owned = {
+            vn
+            for vn in owned
+            if not _is_unreleased_volume(details.get(vn), today_year)
+        }
+        owned_max = max(released_owned) if released_owned else 0
+
         info = manga_info.get(key)
         is_manga = (entry.get("category") or "").lower() == "manga"
         if is_manga and info:
@@ -209,45 +342,96 @@ def _build_next_tomes(
         else:
             base = owned_max
         next_vol = base + 1
+        vol_title = titles.get(next_vol) or ""
+        curated_unreleased = False
+
+        # Premier tome curaté non sorti (prioritaire sur owned_max+1)
+        if curated and details:
+            for n in range(1, (curated_total or max(details) or 0) + 1):
+                if n in released_owned:
+                    continue
+                if _is_unreleased_volume(details.get(n), today_year):
+                    next_vol = n
+                    vol_title = titles.get(n) or vol_title
+                    curated_unreleased = True
+                    break
+
+        # Série marquée terminée (biblio ou référentiel) sans tome annoncé
+        lib_completed = (entry.get("series_status") or "").lower() == "completed"
+        if (
+            (lib_completed or _curated_status_complete(curated, details, today_year))
+            and not curated_unreleased
+        ):
+            continue
+
+        if curated_total and next_vol > curated_total and not curated_unreleased:
+            continue
 
         wd_doc = _find_series_doc(entry["name"])
         vol_works = _extract_volumes(wd_doc.get("works")) if wd_doc else {}
-        total_known = None
-        if wd_doc:
-            try:
-                total_known = int(wd_doc.get("work_count"))
-            except (TypeError, ValueError):
-                total_known = None
 
         work = vol_works.get(next_vol)
         iso, conf = parse_pub_date(work.get("publication_date")) if work else (None, "unknown")
+        detail = details.get(next_vol) or {}
+        if not iso and detail.get("publish_date"):
+            iso, conf = parse_pub_date(detail.get("publish_date"))
+        if not iso and detail.get("published_year"):
+            try:
+                y = int(detail["published_year"])
+                iso = f"{y:04d}-01-01"
+                conf = "year"
+            except (TypeError, ValueError):
+                pass
+
         available = bool(iso) and iso <= today_iso
+        is_future = bool(iso) and iso > today_iso
 
-        max_known_vol = max(vol_works) if vol_works else 0
-        next_tome_exists = bool(work) or (
-            isinstance(total_known, int) and total_known >= next_vol
-        ) or max_known_vol >= next_vol
+        # À venir = annoncé non sorti, ou date future. Pas les tomes déjà parus.
+        if curated_unreleased:
+            available = False
+        elif is_future:
+            pass
+        elif is_manga and info and next_vol > owned_max:
+            # Manga en cours : garder le prochain tome même sans date si MU/WD le connaît
+            max_known = max(info.get("max_tagged_vol", 0), info.get("max_released_vol", 0))
+            if next_vol > max_known + 1 and not work:
+                continue
+            if available:
+                continue
+        else:
+            # Speculatif (Tome N+1 sans preuve de non-sortie) → ignorer
+            continue
 
-        source = "wikidata" if wd_doc else "library"
-        if is_manga and info:
+        source = "curated" if curated_unreleased else ("wikidata" if work else "library")
+        if is_manga and info and not curated_unreleased:
             source = "mangaupdates+wikidata" if wd_doc else "mangaupdates"
+
+        display_title = (
+            f"{entry['name']} — {vol_title}"
+            if vol_title
+            else f"{entry['name']} — Tome {next_vol}"
+        )
 
         items.append(
             {
                 "id": f"tome:{key}:{next_vol}",
                 "type": "next_tome",
-                "title": f"{entry['name']} — Tome {next_vol}",
+                "title": display_title,
                 "author": entry["author"],
                 "cover_url": entry["cover"],
                 "category": entry["category"],
                 "series_name": entry["name"],
                 "volume": next_vol,
                 "date": iso,
-                "date_confidence": conf,
+                "date_confidence": conf if iso else "unknown",
                 "source": source,
-                "available": available,
-                "confirmed": next_tome_exists,
-                "reason": f"Suite de {entry['name']}",
+                "available": False,
+                "confirmed": True,
+                "reason": (
+                    f"À paraître — suite de {entry['name']}"
+                    if curated_unreleased
+                    else f"Suite de {entry['name']}"
+                ),
             }
         )
     return items
@@ -546,12 +730,31 @@ async def get_upcoming_for_user(current_user: dict) -> dict[str, Any]:
     gb_on = gb.is_enabled()
 
     # Enrichissement des tomes sans date via Google Books (en parallèle, borné).
+    # On n'enrichit pas les tomes curatés « non sortis » (évite une fausse date GB).
     if gb_on:
-        to_enrich = [it for it in next_tomes if not it.get("date")][:_MAX_TOME_ENRICH]
+        to_enrich = [
+            it
+            for it in next_tomes
+            if not it.get("date") and it.get("source") != "curated"
+        ][:_MAX_TOME_ENRICH]
         if to_enrich:
             await asyncio.gather(
                 *(asyncio.to_thread(_enrich_next_tome_date, it, today_iso) for it in to_enrich)
             )
+            # Après enrichissement : ne garder que les vraies sorties futures
+            next_tomes = [
+                it
+                for it in next_tomes
+                if it.get("source") == "curated"
+                or (
+                    it.get("date")
+                    and it["date"] > today_iso
+                )
+                or (
+                    (it.get("category") or "").lower() == "manga"
+                    and not it.get("available")
+                )
+            ]
 
     # Nouveautés des auteurs suivis (persistés en base).
     author_items: list[dict] = []

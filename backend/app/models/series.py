@@ -12,6 +12,7 @@ class SeriesLibraryCreate(BaseModel):
     authors: List[str]
     category: str
     volumes: List[VolumeData]
+    total_volumes: int = 0
     description_fr: str = ""
     cover_image_url: str = ""
     first_published: str = ""

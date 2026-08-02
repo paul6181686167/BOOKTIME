@@ -1,7 +1,10 @@
 import { bookService } from '../../services/bookService';
 import { toast } from 'react-hot-toast';
 import { openStaticWikidataSeriesModal } from '../../utils/openStaticWikidataSeries';
-import { attributeBookToSeries } from '../../utils/seriesAttribution';
+import {
+  attributeBookToSeries,
+  evaluateOwnedSeriesForDisplay,
+} from '../../utils/seriesAttribution';
 
 // Composant BookActions pour gérer toutes les actions liées aux livres
 const BookActions = {
@@ -73,31 +76,81 @@ const BookActions = {
     const standaloneBooks = [];
 
     // 🆕 PHASE B : Convertir séries bibliothèque en format d'affichage
-    const seriesCards = userSeriesLibrary.map(series => ({
-      id: series.id,
-      isSeriesCard: true,
-      isOwnedSeries: true, // Marquer comme série possédée
-      name: series.series_name,
-      author: series.authors?.[0] || 'Auteur inconnu',
-      category: series.category,
-      status: series.series_status || 'to_read',
-      date_added: series.created_at,
-      updated_at: series.updated_at,
-      completion_percentage: series.completion_percentage || 0,
-      total_books: series.total_volumes || 0,
-      totalBooks: series.total_volumes || 0,
-      completedBooks: series.volumes?.filter(v => v.is_read).length || 0,
-      readingBooks: 0, // Calculé selon logique série
-      toReadBooks: (series.total_volumes || 0) - (series.volumes?.filter(v => v.is_read).length || 0),
-      volumes: series.volumes || [],
-      cover_url: series.cover_image_url || series.cover_url || null,
-      // Données pour tri et affichage
-      title: series.series_name,
-      saga: series.series_name,
-      // Métadonnées enrichies
-      description: series.description_fr || `Collection ${series.series_name}`,
-      progressPercent: series.completion_percentage || 0
-    }));
+    // - Vraies séries curées (SdA…) gardées même avec 1 tome en bibliothèque
+    // - Doublons du même livre (Long Dimanche × N) → fiche livre
+    const seriesCards = [];
+    const demotedFromSeries = [];
+    userSeriesLibrary.forEach((series) => {
+      const volArr = Array.isArray(series.volumes) ? series.volumes : [];
+      const name = series.series_name || series.name || '';
+      const verdict = evaluateOwnedSeriesForDisplay(series);
+      const completed = volArr.filter((v) => v.is_read).length;
+
+      if (verdict.demote) {
+        demotedFromSeries.push({
+          id: series.id,
+          seriesLibraryId: series.id,
+          isSeriesCard: false,
+          isDemotedSeries: true,
+          title: name,
+          author: series.authors?.[0] || 'Auteur inconnu',
+          category: series.category || 'roman',
+          status: series.series_status || 'to_read',
+          cover_url: series.cover_image_url || series.cover_url || null,
+          description: series.description_fr || '',
+          date_added: series.created_at,
+          updated_at: series.updated_at,
+          saga: '',
+          total_pages: series.total_pages || null,
+          current_page: series.current_page ?? null,
+        });
+        return;
+      }
+
+      const total = verdict.totalBooks;
+      // Enrichir la liste des tomes depuis le référentiel curé si pauvre
+      let volumes = volArr;
+      const curatedTitles = verdict.curated?.data?.volume_titles;
+      if (
+        curatedTitles &&
+        typeof curatedTitles === 'object' &&
+        verdict.distinctOwned <= 1
+      ) {
+        volumes = Object.entries(curatedTitles).map(([num, title]) => ({
+          volume_number: Number(num) || 0,
+          volume_title: title,
+          is_read: false,
+          date_read: null,
+        }));
+      }
+
+      seriesCards.push({
+        id: series.id,
+        isSeriesCard: true,
+        isOwnedSeries: true,
+        name: verdict.curated?.data?.name || name,
+        author: series.authors?.[0] || 'Auteur inconnu',
+        category: series.category,
+        status: series.series_status || 'to_read',
+        date_added: series.created_at,
+        updated_at: series.updated_at,
+        completion_percentage: series.completion_percentage || 0,
+        total_books: total,
+        totalBooks: total,
+        completedBooks: completed,
+        readingBooks: 0,
+        toReadBooks: Math.max(0, total - completed),
+        volumes,
+        cover_url: series.cover_image_url || series.cover_url || null,
+        title: verdict.curated?.data?.name || name,
+        saga: verdict.curated?.data?.name || name,
+        description: series.description_fr || `Collection ${name}`,
+        progressPercent:
+          total > 0
+            ? Math.round((completed / total) * 100)
+            : series.completion_percentage || 0,
+      });
+    });
 
 
     // 🔍 Attribution unifiée recherche + bibliothèque : ordre curé → saga.
@@ -207,8 +260,34 @@ const BookActions = {
       }
     });
 
-    // Convertir les groupes de livres détectés en tableau et trier par nombre de livres
-    const detectedSeriesCards = Object.values(seriesGroups).sort((a, b) => b.totalBooks - a.totalBooks);
+    // Groupes à 1 seul livre → rester en livre individuel (évite vignettes série fantômes)
+    const detectedSeriesCards = [];
+    Object.values(seriesGroups).forEach((group) => {
+      if ((group.totalBooks || 0) <= 1) {
+        if (group.books?.[0]) {
+          standaloneBooks.push({
+            ...group.books[0],
+            belongsToSeries: false,
+            detectedSeriesKey: null,
+            detectedSeriesName: null,
+          });
+        }
+        return;
+      }
+      detectedSeriesCards.push(group);
+    });
+    detectedSeriesCards.sort((a, b) => b.totalBooks - a.totalBooks);
+
+    // Éviter doublons titre entre livres réels et séries rétrogradées
+    const standaloneTitles = new Set(
+      standaloneBooks.map((b) => (b.title || '').toLowerCase().trim())
+    );
+    demotedFromSeries.forEach((b) => {
+      const key = (b.title || '').toLowerCase().trim();
+      if (key && standaloneTitles.has(key)) return;
+      standaloneBooks.push(b);
+      if (key) standaloneTitles.add(key);
+    });
     
     // MODIFICATION ORGANISATIONNELLE : Tri des livres standalone par statut
     // Ordre prioritaire : EN COURS → À LIRE → TERMINÉ
@@ -265,17 +344,21 @@ const BookActions = {
       return card;
     });
 
-    // Combiner séries bibliothèque + séries détectées, puis dédoublonner par nom normalisé
-    // Priorité : série de bibliothèque (isOwnedSeries) > série détectée
+    // Combiner + dédoublonner : garder la carte avec le plus de tomes
+    // (évite qu'une série owned mal remplie écrase une détection correcte)
     const rawSeriesCards = [...seriesCards, ...detectedSeriesCards];
-    const seenSeriesNames = new Set();
-    const dedupedSeriesCards = rawSeriesCards.filter(card => {
+    const bestByName = new Map();
+    rawSeriesCards.forEach((card) => {
       const key = (card.name || card.title || '').toLowerCase().trim();
-      if (!key) return true;
-      if (seenSeriesNames.has(key)) return false;
-      seenSeriesNames.add(key);
-      return true;
+      if (!key) return;
+      const prev = bestByName.get(key);
+      const score = (c) =>
+        (Number(c.totalBooks) || 0) * 10 + (c.isOwnedSeries ? 1 : 0) + (c.books?.length || 0);
+      if (!prev || score(card) > score(prev)) {
+        bestByName.set(key, card);
+      }
     });
+    const dedupedSeriesCards = Array.from(bestByName.values());
 
     const allSeriesCards = applyReadingPreferences(dedupedSeriesCards).sort((a, b) => {
       if (a.isOwnedSeries && !b.isOwnedSeries) return -1;
