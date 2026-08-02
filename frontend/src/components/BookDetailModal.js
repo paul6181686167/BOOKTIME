@@ -7,6 +7,7 @@ import { API_BASE_URL } from '../config/environment';
 import { displayBookTitleFrFirst } from '../utils/openLibraryBookDisplay';
 import { isUsableSynopsis } from '../utils/synopsisQuality';
 import AddToCollectionMenu from './common/AddToCollectionMenu';
+import CommunityReviews from './common/CommunityReviews';
 import confetti from 'canvas-confetti';
 
 // Déclenche les confettis de célébration
@@ -48,6 +49,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   const [isAdding, setIsAdding] = useState(false);
   const [addDone, setAddDone] = useState(false);
   const [publishingReview, setPublishingReview] = useState(false);
+  const [communityRefreshKey, setCommunityRefreshKey] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showCollectionMenu, setShowCollectionMenu] = useState(false);
   const pageInputRef = useRef(null);
@@ -362,6 +364,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     if ((editData.status || book.status) === 'completed' && book?.id && !book.isFromOpenLibrary) {
       try {
         await onUpdate(book.id, { rating });
+        setCommunityRefreshKey((k) => k + 1);
       } catch (_) {
         toast.error('Erreur lors de la sauvegarde de la note');
       }
@@ -383,6 +386,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     try {
       await onUpdate(book.id, { review });
       setEditData((prev) => ({ ...prev, review }));
+      setCommunityRefreshKey((k) => k + 1);
       toast.success('Avis publié');
     } catch (_) {
       toast.error("Erreur lors de la publication de l'avis");
@@ -852,6 +856,11 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                 </div>
               </>
             )}
+
+            <CommunityReviews
+              book={book}
+              refreshKey={communityRefreshKey}
+            />
 
             {/* Sujets / Genres — depuis OL enrichi */}
             {(olDetails?.subjects?.length > 0 || book.subjects?.length > 0) && (
