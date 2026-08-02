@@ -532,8 +532,9 @@ const RecommendationPage = () => {
     }
   }, [isLoading, totalRecs, activeTab, appTab]);
 
+  // « Tous » reste distinct des filtres catégorie (évite 2× « Romans » si l'onglet lib est roman)
   const TABS = [
-    { id: 'all', label: appTabLabel || 'Tous' },
+    { id: 'all', label: 'Tous' },
     { id: 'roman', label: 'Romans' },
     { id: 'manga', label: 'Mangas' },
     { id: 'bd', label: 'BD' },
