@@ -34,7 +34,7 @@ async def get_personalized_recommendations(
         Dict contenant les recommandations et métadonnées
     """
     try:
-        user_id = current_user.get("user_id")
+        user_id = current_user.get("id") or (current_user.get("id") or current_user.get("user_id"))
         
         # Génération des recommandations
         recommendations = await recommendation_service.get_personalized_recommendations(
@@ -122,7 +122,7 @@ async def get_recommendations_by_author(
         Dict contenant les recommandations de l'auteur
     """
     try:
-        user_id = current_user.get("user_id")
+        user_id = (current_user.get("id") or current_user.get("user_id"))
         
         # Créer un profil utilisateur factice centré sur cet auteur
         fake_profile = {
@@ -177,7 +177,7 @@ async def get_recommendations_by_category(
         Dict contenant les recommandations de la catégorie
     """
     try:
-        user_id = current_user.get("user_id")
+        user_id = (current_user.get("id") or current_user.get("user_id"))
         
         # Créer un profil utilisateur factice centré sur cette catégorie
         fake_profile = {
@@ -228,7 +228,7 @@ async def get_user_profile(
         Dict contenant le profil utilisateur
     """
     try:
-        user_id = current_user.get("user_id")
+        user_id = (current_user.get("id") or current_user.get("user_id"))
         
         # Analyser la bibliothèque utilisateur
         user_profile = await recommendation_service._analyze_user_library(user_id)
@@ -263,7 +263,7 @@ async def submit_recommendation_feedback(
         Dict confirmant l'enregistrement du feedback
     """
     try:
-        user_id = current_user.get("user_id")
+        user_id = (current_user.get("id") or current_user.get("user_id"))
         
         # Enregistrer le feedback dans la base de données
         feedback_data = {
@@ -307,7 +307,7 @@ async def get_recommendation_stats(
         Dict contenant les statistiques
     """
     try:
-        user_id = current_user.get("user_id")
+        user_id = (current_user.get("id") or current_user.get("user_id"))
         
         # Compter les feedbacks par type
         feedback_stats = {}

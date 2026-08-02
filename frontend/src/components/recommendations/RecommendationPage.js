@@ -74,42 +74,55 @@ function catalogPath(bookId) {
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
-const CATEGORY_MAP = {
-  roman: { label: 'Romans', api: 'roman' },
-  graphic_novel: { label: 'Romans graphiques', api: null }, // manga + bd
-  graphic_novels: { label: 'Romans graphiques', api: null },
+const PRIMARY_TABS = [
+  { id: 'pour_toi', label: 'Pour toi' },
+  { id: 'aime', label: 'Parce que vous avez aimé' },
+  { id: 'lisez', label: 'Parce que vous lisez' },
+];
+
+const GENRE_TABS = [
+  { id: 'genre_jeunesse', label: 'Jeunesse', query: 'jeunesse young adult' },
+  { id: 'genre_polar', label: 'Polar', query: 'polar mystery detective' },
+  { id: 'genre_fantasy', label: 'Fantasy', query: 'fantasy fantastique' },
+  { id: 'genre_sf', label: 'Science-fiction', query: 'science fiction SF' },
+  { id: 'genre_thriller', label: 'Thriller', query: 'thriller suspense' },
+  { id: 'genre_romance', label: 'Romance', query: 'romance amour' },
+  { id: 'genre_classiques', label: 'Classiques', query: 'classiques littérature classique' },
+  { id: 'genre_historique', label: 'Histororique', query: 'roman historique historical fiction' },
+];
+
+const TAB_SECTION_FILTER = {
+  pour_toi: null, // toutes les sources
+  aime: ['algorithm_similarity', 'algorithm_category'],
+  lisez: ['algorithm_author', 'algorithm_series'],
 };
 
-function normalizeRecoTab(tab) {
-  if (tab === 'graphic_novels' || tab === 'graphic_novel' || tab === 'manga' || tab === 'bd') {
-    return 'graphic_novel';
-  }
-  return tab || 'roman';
-}
-
-function detectActiveCategory() {
-  const stored = localStorage.getItem('booktime_active_tab');
-  return normalizeRecoTab(stored || 'roman');
-}
-
-function categoryForApi(tab) {
-  const t = normalizeRecoTab(tab);
-  if (t === 'graphic_novel') return null; // filtrage manga+bd côté client
-  return CATEGORY_MAP[t]?.api || null;
-}
-
-function isGraphicCategory(cat) {
-  const c = (cat || '').toLowerCase();
-  return c === 'manga' || c === 'bd' || c === 'graphic_novel' || c === 'graphic_novels';
-}
-
-function filterSectionsGraphicOnly(grouped) {
+function filterSectionsBySources(grouped, sources) {
+  if (!sources) return grouped || {};
   const out = {};
-  Object.entries(grouped || {}).forEach(([key, items]) => {
-    const filtered = (items || []).filter((r) => isGraphicCategory(r.category));
-    if (filtered.length) out[key] = filtered;
+  sources.forEach((src) => {
+    if (grouped?.[src]?.length) out[src] = grouped[src];
   });
   return out;
+}
+
+async function fetchGenreBooks(genreTab, token) {
+  const q = genreTab.query || genreTab.label;
+  const res = await fetch(
+    `${API_BASE_URL}/api/openlibrary/search?q=${encodeURIComponent(q)}&limit=24`,
+    { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+  );
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  const books = Array.isArray(data) ? data : data.books || data.results || [];
+  return books.map((b) => ({
+    ...b,
+    book_id: b.ol_key || b.id,
+    reason: `Sélection ${genreTab.label}`,
+    source: 'algorithm_genre',
+    _genreLabel: genreTab.label,
+    category: b.category || 'roman',
+  }));
 }
 
 function isUpcoming(book) {
@@ -146,6 +159,14 @@ const SECTION_CONFIG = {
     icon: SparklesIcon,
     color: 'indigo',
     title: () => 'Dans ton genre préféré',
+  },
+  algorithm_genre: {
+    icon: SparklesIcon,
+    color: 'indigo',
+    title: (items) =>
+      items[0]?._genreLabel
+        ? `Romans · ${items[0]._genreLabel}`
+        : 'Par genre',
   },
   popular: {
     icon: FireIcon,
@@ -429,24 +450,67 @@ const RecommendationPage = () => {
   const [sections, setSections] = useState({});
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('all');
-  const [appTab] = useState(detectActiveCategory);
+  const [activeTab, setActiveTab] = useState('pour_toi');
   const [userBooks, setUserBooks] = useState([]);
 
   // Charge la liste des livres de l'utilisateur pour détecter "déjà dans bibliothèque"
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
-    fetch(`${API_BASE_URL}/api/books`, {
+    fetch(`${API_BASE_URL}/api/books/all?limit=1000`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
-      .then((data) => setUserBooks(Array.isArray(data) ? data : data.books || []))
+      .then((data) => setUserBooks(Array.isArray(data) ? data : data.books || data.items || []))
       .catch(() => {});
   }, []);
 
+  const loadPersonalizedBundle = useCallback(async ({ force = false } = {}) => {
+    if (!force) {
+      const cached = readCache('pour_toi');
+      if (cached?.sections) {
+        if (cached.userProfile) setUserProfile(cached.userProfile);
+        return cached.sections;
+      }
+    }
+
+    const [personalizedRes, popularRes, profileRes] = await Promise.allSettled([
+      recommendationService.getPersonalized({ limit: 36, refresh: force }),
+      recommendationService.getPopular({ limit: 12 }),
+      recommendationService.getUserProfile(),
+    ]);
+
+    const grouped = {};
+
+    if (personalizedRes.status === 'fulfilled' && personalizedRes.value?.success) {
+      const recs = personalizedRes.value.data?.recommendations || [];
+      recs.forEach((r) => {
+        const src = r.source || 'algorithm_category';
+        if (!grouped[src]) grouped[src] = [];
+        grouped[src].push({
+          ...r,
+          reason: r.reason || (Array.isArray(r.reasons) ? r.reasons[0] : undefined),
+          score: r.score ?? r.confidence_score,
+        });
+      });
+    }
+
+    if (popularRes.status === 'fulfilled' && popularRes.value?.success) {
+      const pops = popularRes.value.data?.recommendations || [];
+      if (pops.length > 0) grouped.popular = pops;
+    }
+
+    let profile = null;
+    if (profileRes.status === 'fulfilled' && profileRes.value?.success) {
+      profile = profileRes.value.data;
+      setUserProfile(profile);
+    }
+
+    writeCache('pour_toi', grouped, profile);
+    return grouped;
+  }, []);
+
   const loadRecommendations = useCallback(async (tab, { force = false } = {}) => {
-    // Utilise le cache si disponible et non expiré (sauf rafraîchissement forcé)
     if (!force) {
       const cached = readCache(tab);
       if (cached) {
@@ -459,67 +523,33 @@ const RecommendationPage = () => {
 
     setIsLoading(true);
     try {
-      const tabNorm = normalizeRecoTab(tab === 'all' ? 'all' : tab);
-      const wantGraphic =
-        tabNorm === 'graphic_novel' ||
-        (tab === 'all' && normalizeRecoTab(appTab) === 'graphic_novel');
-      const category =
-        tab === 'all'
-          ? categoryForApi(appTab)
-          : tabNorm === 'graphic_novel'
-            ? null
-            : tabNorm;
+      const genreTab = GENRE_TABS.find((t) => t.id === tab);
 
-      const [personalizedRes, popularRes, profileRes] = await Promise.allSettled([
-        recommendationService.getPersonalized({ limit: 30, category, refresh: force }),
-        recommendationService.getPopular({ limit: 12, category }),
-        recommendationService.getUserProfile(),
-      ]);
-
-      // Regroupe par source
-      let grouped = {};
-
-      if (personalizedRes.status === 'fulfilled' && personalizedRes.value?.success) {
-        const recs = personalizedRes.value.data?.recommendations || [];
-        recs.forEach((r) => {
-          const src = r.source || 'algorithm_category';
-          if (!grouped[src]) grouped[src] = [];
-          // Le backend renvoie `reasons` (tableau) ; la carte affiche `reason`
-          // et `score`. On normalise ici pour afficher la justification.
-          grouped[src].push({
-            ...r,
-            reason: r.reason || (Array.isArray(r.reasons) ? r.reasons[0] : undefined),
-            score: r.score ?? r.confidence_score,
-          });
-        });
+      if (genreTab) {
+        const token = localStorage.getItem('token');
+        const books = await fetchGenreBooks(genreTab, token);
+        const grouped = books.length ? { algorithm_genre: books } : {};
+        setSections(grouped);
+        writeCache(tab, grouped, userProfile);
+        return;
       }
 
-      if (popularRes.status === 'fulfilled' && popularRes.value?.success) {
-        const pops = popularRes.value.data?.recommendations || [];
-        if (pops.length > 0) {
-          grouped['popular'] = pops;
-        }
+      const bundle = await loadPersonalizedBundle({ force });
+      const sources = TAB_SECTION_FILTER[tab];
+      const grouped = filterSectionsBySources(bundle, sources);
+      // « Pour toi » garde aussi les tendances ; les autres onglets perso non
+      if (tab === 'pour_toi' && bundle.popular?.length && !grouped.popular) {
+        grouped.popular = bundle.popular;
       }
-
-      if (wantGraphic) {
-        grouped = filterSectionsGraphicOnly(grouped);
-      }
-
-      let profile = null;
-      if (profileRes.status === 'fulfilled' && profileRes.value?.success) {
-        profile = profileRes.value.data;
-        setUserProfile(profile);
-      }
-
       setSections(grouped);
-      writeCache(tab, grouped, profile);
+      writeCache(tab, grouped, null);
     } catch (err) {
       console.error('Erreur chargement recommandations:', err);
       toast.error('Erreur lors du chargement');
     } finally {
       setIsLoading(false);
     }
-  }, [appTab]);
+  }, [loadPersonalizedBundle]);
 
   useEffect(() => {
     loadRecommendations(activeTab);
@@ -550,37 +580,27 @@ const RecommendationPage = () => {
     clearRecoCache();
   };
 
-  const totalRecs = Object.values(sections).reduce((s, arr) => s + arr.length, 0);
-  const appTabLabel = CATEGORY_MAP[appTab]?.label || '';
+  const totalRecs = Object.values(sections).reduce((s, arr) => s + (arr?.length || 0), 0);
 
-  // Cold start : charger les livres populaires du catalogue si aucune reco
+  // Cold start : catalogue populaire si aucune reco perso
   const [coldStartBooks, setColdStartBooks] = useState([]);
   useEffect(() => {
-    if (!isLoading && totalRecs === 0) {
-      const tabKey = activeTab === 'all' ? appTab : activeTab;
-      const wantGraphic = normalizeRecoTab(tabKey) === 'graphic_novel';
-      const cat = categoryForApi(tabKey);
-      const url = `${API_BASE_URL}/api/catalog/popular?limit=24${cat ? `&category=${cat}` : ''}`;
-      fetch(url)
+    if (!isLoading && totalRecs === 0 && !String(activeTab).startsWith('genre_')) {
+      fetch(`${API_BASE_URL}/api/catalog/popular?limit=18`)
         .then((r) => (r.ok ? r.json() : { books: [] }))
-        .then((d) => {
-          let books = d.books || [];
-          if (wantGraphic) {
-            books = books.filter((b) => isGraphicCategory(b.category));
-          }
-          setColdStartBooks(books.slice(0, 18));
-        })
+        .then((d) => setColdStartBooks(d.books || []))
         .catch(() => {});
     }
-  }, [isLoading, totalRecs, activeTab, appTab]);
+  }, [isLoading, totalRecs, activeTab]);
 
-  const TABS = [
-    { id: 'all', label: 'Tous' },
-    { id: 'roman', label: 'Romans' },
-    { id: 'graphic_novel', label: 'Romans graphiques' },
+  const ORDER = [
+    'algorithm_series',
+    'algorithm_author',
+    'algorithm_similarity',
+    'algorithm_category',
+    'algorithm_genre',
+    'popular',
   ];
-
-  const ORDER = ['algorithm_series', 'algorithm_author', 'algorithm_similarity', 'algorithm_category', 'popular'];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -604,7 +624,6 @@ const RecommendationPage = () => {
             {userProfile?.has_books && (
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Basé sur tes {userProfile.total_books} livres
-                {appTabLabel ? ` · Onglet actif : ${appTabLabel}` : ''}
               </p>
             )}
           </div>
@@ -638,9 +657,9 @@ const RecommendationPage = () => {
         </div>
       )}
 
-      {/* Onglets catégorie */}
-      <div className="flex gap-2 mb-8 flex-wrap">
-        {TABS.map((t) => (
+      {/* Onglets principaux */}
+      <div className="flex gap-2 mb-3 flex-wrap">
+        {PRIMARY_TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id)}
@@ -648,6 +667,23 @@ const RecommendationPage = () => {
               activeTab === t.id
                 ? 'bg-blue-600 text-white shadow-sm'
                 : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Genres littéraires */}
+      <div className="flex gap-2 mb-8 flex-wrap">
+        {GENRE_TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setActiveTab(t.id)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              activeTab === t.id
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
             }`}
           >
             {t.label}
