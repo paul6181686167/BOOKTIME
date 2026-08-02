@@ -79,6 +79,7 @@ class BookResponse(BaseModel):
     date_added: datetime
     date_started: Optional[datetime] = None
     date_completed: Optional[datetime] = None
+    reading_history: Optional[List[dict]] = None  # lectures précédentes [{date_started, date_completed, rating}]
 
 class BookSearchResponse(BaseModel):
     books: List[BookResponse]

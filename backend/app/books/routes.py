@@ -568,22 +568,39 @@ async def update_book(
     
     update_data = book_update.model_dump(exclude_unset=True)
     update_data["updated_at"] = datetime.utcnow()
+    history_entry = None
     
     # Gérer les changements de statut
     if "status" in update_data:
         current_status = book.get("status")
         new_status = update_data["status"]
         
-        if current_status != "reading" and new_status == "reading":
+        # Relire : archiver la lecture terminée, puis repartir à zéro
+        if current_status == "completed" and new_status == "reading":
+            if book.get("date_completed") or book.get("date_started"):
+                history_entry = {
+                    "date_started": book.get("date_started"),
+                    "date_completed": book.get("date_completed"),
+                    "rating": book.get("rating"),
+                }
+            update_data["date_started"] = datetime.utcnow()
+            update_data["date_completed"] = None
+            if "current_page" not in update_data:
+                update_data["current_page"] = 0
+        elif current_status != "reading" and new_status == "reading":
             update_data["date_started"] = datetime.utcnow()
         elif current_status != "completed" and new_status == "completed":
             if not book.get("date_started"):
                 update_data["date_started"] = datetime.utcnow()
             update_data["date_completed"] = datetime.utcnow()
     
+    mongo_ops = {"$set": update_data}
+    if history_entry:
+        mongo_ops["$push"] = {"reading_history": history_entry}
+
     books_collection.update_one(
         {"id": book_id, "user_id": current_user["id"]},
-        {"$set": update_data}
+        mongo_ops
     )
     
     updated_book = books_collection.find_one({

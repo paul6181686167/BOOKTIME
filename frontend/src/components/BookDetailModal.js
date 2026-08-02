@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { XMarkIcon, StarIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, StarIcon, TrashIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 import LanguageSelector from './LanguageSelector';
@@ -262,6 +262,21 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     { value: 'completed', label: 'Terminé',  color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300', emoji: '✅' },
   ];
 
+  const formatReadDate = (value) => {
+    if (!value) return null;
+    try {
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return null;
+      return d.toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+    } catch {
+      return null;
+    }
+  };
+
   // Changer rapidement le statut
   const handleQuickStatusChange = async (newStatus) => {
     if (!book?.id || newStatus === book.status) return;
@@ -279,6 +294,32 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     } catch (error) {
       setEditData((prev) => ({ ...prev, status: previousStatus }));
       toast.error('Erreur lors de la mise à jour du statut');
+    }
+  };
+
+  // Relancer une lecture (conserve l'historique côté serveur)
+  const handleReread = async () => {
+    if (!book?.id || displayStatus !== 'completed') return;
+    triggerBounce('reread');
+    const previous = {
+      status: book.status,
+      current_page: book.current_page,
+      date_completed: book.date_completed,
+      date_started: book.date_started,
+    };
+    setEditData((prev) => ({ ...prev, status: 'reading', current_page: 0 }));
+    setPageInput(0);
+    try {
+      await onUpdate(book.id, { status: 'reading', current_page: 0 });
+      toast.success('Bonne relecture !', { icon: '📖' });
+    } catch (error) {
+      setEditData((prev) => ({
+        ...prev,
+        status: previous.status,
+        current_page: previous.current_page || 0,
+      }));
+      setPageInput(previous.current_page || 0);
+      toast.error('Impossible de relancer la lecture');
     }
   };
 
@@ -514,25 +555,57 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                 <div className="flex items-center mb-2">
                   <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Statut :</h3>
                 </div>
-                <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 w-fit">
-                  {statusOptions.map((option) => (
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 w-fit">
+                    {statusOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => handleQuickStatusChange(option.value)}
+                        className={`btn-ripple px-4 py-2 text-sm font-medium transition-all flex items-center space-x-2 ${
+                          bouncing === `status-${option.value}` ? 'btn-bounce' : ''
+                        } ${
+                          displayStatus === option.value
+                            ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
+                            : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                        }`}
+                        title={`Marquer comme ${option.label}`}
+                      >
+                        <span className="text-base">{option.emoji}</span>
+                        <span>{option.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {displayStatus === 'completed' && (
                     <button
-                      key={option.value}
-                      onClick={() => handleQuickStatusChange(option.value)}
-                      className={`btn-ripple px-4 py-2 text-sm font-medium transition-all flex items-center space-x-2 ${
-                        bouncing === `status-${option.value}` ? 'btn-bounce' : ''
-                      } ${
-                        displayStatus === option.value
-                          ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
-                          : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                      type="button"
+                      onClick={handleReread}
+                      className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors ${
+                        bouncing === 'reread' ? 'btn-bounce' : ''
                       }`}
-                      title={`Marquer comme ${option.label}`}
+                      title="Relancer une lecture depuis le début"
                     >
-                      <span className="text-base">{option.emoji}</span>
-                      <span>{option.label}</span>
+                      <ArrowPathIcon className="h-4 w-4" />
+                      Relire
                     </button>
-                  ))}
+                  )}
                 </div>
+
+                {displayStatus === 'completed' && formatReadDate(book.date_completed) && (
+                  <p className="mt-2 text-sm text-green-700 dark:text-green-400">
+                    Lu le {formatReadDate(book.date_completed)}
+                    {formatReadDate(book.date_started) &&
+                      formatReadDate(book.date_started) !== formatReadDate(book.date_completed) && (
+                        <span className="text-gray-500 dark:text-gray-400">
+                          {' '}· commencé le {formatReadDate(book.date_started)}
+                        </span>
+                      )}
+                  </p>
+                )}
+                {displayStatus === 'reading' && formatReadDate(book.date_started) && (
+                  <p className="mt-2 text-sm text-blue-700 dark:text-blue-400">
+                    Lecture commencée le {formatReadDate(book.date_started)}
+                  </p>
+                )}
               </div>
             )}
 
@@ -905,10 +978,44 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                     {book.date_added ? new Date(book.date_added).toLocaleDateString('fr-FR') : '—'}
                   </p>
                 </div>
+                {book.date_started && (
+                  <div>
+                    <h4 className="font-medium text-gray-700 dark:text-gray-300">Début de lecture</h4>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      {new Date(book.date_started).toLocaleDateString('fr-FR')}
+                    </p>
+                  </div>
+                )}
+                {book.date_completed && (
+                  <div>
+                    <h4 className="font-medium text-gray-700 dark:text-gray-300">Terminé le</h4>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      {new Date(book.date_completed).toLocaleDateString('fr-FR')}
+                    </p>
+                  </div>
+                )}
                 {book.isbn && (
                   <div>
                     <h4 className="font-medium text-gray-700 dark:text-gray-300">ISBN</h4>
                     <p className="text-gray-600 dark:text-gray-400">{book.isbn}</p>
+                  </div>
+                )}
+                {Array.isArray(book.reading_history) && book.reading_history.length > 0 && (
+                  <div className="col-span-2">
+                    <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-1">Lectures précédentes</h4>
+                    <ul className="space-y-1 text-gray-600 dark:text-gray-400">
+                      {[...book.reading_history].reverse().map((entry, idx) => {
+                        const done = formatReadDate(entry?.date_completed);
+                        const started = formatReadDate(entry?.date_started);
+                        if (!done && !started) return null;
+                        return (
+                          <li key={idx}>
+                            {done ? `Lu le ${done}` : `Commencé le ${started}`}
+                            {entry?.rating ? ` · ${entry.rating}/5` : ''}
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </div>
                 )}
               </div>

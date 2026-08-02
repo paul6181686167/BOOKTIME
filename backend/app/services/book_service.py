@@ -160,7 +160,12 @@ class BookService:
             update_dict["status"] = update_dict["status"].lower()
             
             # Gérer les dates selon le statut
-            if update_dict["status"] == "reading" and not book.get("date_started"):
+            if book.get("status") == "completed" and update_dict["status"] == "reading":
+                update_dict["date_started"] = datetime.now()
+                update_dict["date_completed"] = None
+                if "current_page" not in update_dict:
+                    update_dict["current_page"] = 0
+            elif update_dict["status"] == "reading" and not book.get("date_started"):
                 update_dict["date_started"] = datetime.now()
             elif update_dict["status"] == "completed":
                 if not book.get("date_started"):
@@ -169,9 +174,24 @@ class BookService:
         
         # Mettre à jour le livre
         try:
+            mongo_ops = {"$set": update_dict}
+            # Relire : archiver la lecture précédente
+            if (
+                "status" in update_dict
+                and book.get("status") == "completed"
+                and update_dict["status"] == "reading"
+                and (book.get("date_completed") or book.get("date_started"))
+            ):
+                mongo_ops["$push"] = {
+                    "reading_history": {
+                        "date_started": book.get("date_started"),
+                        "date_completed": book.get("date_completed"),
+                        "rating": book.get("rating"),
+                    }
+                }
             books_collection.update_one(
                 {"id": book_id, "user_id": user_id},
-                {"$set": update_dict}
+                mongo_ops
             )
         except Exception as e:
             raise HTTPException(
