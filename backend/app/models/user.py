@@ -5,6 +5,7 @@ from datetime import datetime
 class UserAuth(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=6)
+    remember_me: bool = True
 
 class UserCreate(BaseModel):
     """Modèle pour création d'utilisateur"""

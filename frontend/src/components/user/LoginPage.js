@@ -10,6 +10,7 @@ function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
+  const [rememberMe, setRememberMe] = useState(true);
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
@@ -66,7 +67,7 @@ function LoginPage() {
     try {
       let result;
       if (isLogin) {
-        result = await login(formData.email, formData.password);
+        result = await login(formData.email, formData.password, rememberMe);
       } else {
         result = await register(formData.email, formData.password);
       }
@@ -198,6 +199,20 @@ function LoginPage() {
                   💡 Mot de passe minimum 6 caractères.
                 </p>
               </div>
+            )}
+
+            {isLogin && (
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Rester connecté
+                </span>
+              </label>
             )}
 
             <button

@@ -72,7 +72,7 @@ describe('useAuth Hook', () => {
       returned = await result.current.login('test@example.com', 'pwd123');
     });
 
-    expect(mockLogin).toHaveBeenCalledWith('test@example.com', 'pwd123');
+    expect(mockLogin).toHaveBeenCalledWith('test@example.com', 'pwd123', true);
     expect(result.current.user).toEqual(mockUser);
     expect(returned).toEqual({ success: true, user: mockUser });
   });

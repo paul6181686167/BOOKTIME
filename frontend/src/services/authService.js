@@ -7,14 +7,14 @@ class AuthService {
     console.log('🔗 AuthService initialized with:', this.backendUrl);
   }
 
-  async login(email, password) {
+  async login(email, password, rememberMe = true) {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000);
       const response = await fetch(`${this.backendUrl}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, remember_me: !!rememberMe }),
         signal: controller.signal
       });
       clearTimeout(timeoutId);

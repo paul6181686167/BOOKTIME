@@ -10,7 +10,20 @@ import os
 import bcrypt
 from ..models.user import UserAuth
 from ..database.connection import users_collection
-from ..security.jwt import create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
+from ..security.jwt import (
+    create_access_token,
+    get_current_user,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    REMEMBER_ME_EXPIRE_MINUTES,
+    SESSION_EXPIRE_MINUTES,
+)
+
+
+def _token_ttl_minutes(remember_me: bool = True) -> int:
+    """Durée de session : longue par défaut (rester connecté)."""
+    if remember_me:
+        return REMEMBER_ME_EXPIRE_MINUTES or ACCESS_TOKEN_EXPIRE_MINUTES
+    return SESSION_EXPIRE_MINUTES
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -92,7 +105,7 @@ async def register(user_data: UserAuth):
 
     users_collection.insert_one(user)
 
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(minutes=_token_ttl_minutes(True))
     access_token = create_access_token(data={"sub": user_id}, expires_delta=access_token_expires)
 
     return {
@@ -114,7 +127,9 @@ async def login(user_data: UserAuth):
     if not _verify_password(user_data.password, user.get("password_hash", "")):
         raise HTTPException(status_code=400, detail="Email ou mot de passe incorrect")
 
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(
+        minutes=_token_ttl_minutes(bool(user_data.remember_me))
+    )
     access_token = create_access_token(data={"sub": user["id"]}, expires_delta=access_token_expires)
 
     return {
