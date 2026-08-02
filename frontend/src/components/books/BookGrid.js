@@ -63,12 +63,15 @@ const BookGrid = ({
     <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 sm:gap-5 p-2 sm:p-6">
       {displayedBooks.map((item, index) => {
         const coverSrc = resolveCoverForGridItem(item);
-        // Statut dérivé pour les séries (cohérent avec le badge de statut des livres)
-        const seriesStatus = item.progressPercent >= 100
-          ? 'completed'
-          : item.progressPercent > 0
-            ? 'reading'
-            : 'to_read';
+        // Statut série : priorité au statut manuel, sinon progression des tomes
+        const seriesStatus =
+          item.status ||
+          item.series_status ||
+          (item.progressPercent >= 100
+            ? 'completed'
+            : item.progressPercent > 0
+              ? 'reading'
+              : 'to_read');
         const categoryEmoji = item.category === 'bd' ? '🎨' : item.category === 'manga' ? '🇯🇵' : '📚';
         return (
         <div

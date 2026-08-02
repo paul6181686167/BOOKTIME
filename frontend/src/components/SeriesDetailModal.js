@@ -286,9 +286,14 @@ const SeriesDetailModal = ({
       } else if (hasRead && totalTomes > 0 && readCount >= totalTomes) {
         derivedStatus = 'completed';
       }
-      // Ne mettre à jour que si on a des données significatives
-      if (hasRead || hasInProgress) {
+      // Ne pas écraser le statut série explicite (ex. « Terminé » sans tous les tomes cochés)
+      const explicit = series?.status || series?.series_status;
+      if (explicit === 'completed' && derivedStatus !== 'completed') {
+        setSeriesStatus('completed');
+      } else if (hasRead || hasInProgress) {
         setSeriesStatus(derivedStatus);
+      } else if (explicit) {
+        setSeriesStatus(explicit);
       }
     } catch (error) {
       console.error('❌ Erreur chargement préférences:', error);
@@ -652,7 +657,6 @@ const SeriesDetailModal = ({
 
   // Fonction pour changer rapidement le statut de la série
   const handleQuickStatusChange = async (newStatus) => {
-    // Autoriser si la série est possédée OU si elle contient des livres détectés
     const hasDetectedBooks = (series?.books || []).length > 0;
     if (!isSeriesOwned && !hasDetectedBooks) {
       toast.error('Vous devez d\'abord ajouter cette série à votre bibliothèque');
@@ -662,68 +666,71 @@ const SeriesDetailModal = ({
     const token = localStorage.getItem('token');
     const backendUrl = API_BASE_URL;
     const statusLabel = statusOptions.find(s => s.value === newStatus)?.label || newStatus;
+    const previousStatus = seriesStatus;
 
     // Mise à jour optimiste de l'UI
     setSeriesStatus(newStatus);
 
+    const isRealBookId = (id) =>
+      id && typeof id === 'string' &&
+      !id.startsWith('ol_') &&
+      !id.startsWith('series_') &&
+      !id.startsWith('jikan_') &&
+      !id.startsWith('gbooks_');
+
     try {
-      let updatedViaBooks = false;
+      let anyOk = false;
 
-      // 1a. Livres déjà présents dans l'objet série (détection automatique ou série possédée)
-      const booksInSeries = series.books || [];
-
-      if (booksInSeries.length > 0) {
-        const results = await Promise.all(
-          booksInSeries.map(book =>
-            fetch(`${backendUrl}/api/books/${book.id}`, {
-              method: 'PUT',
-              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ status: newStatus })
-            }).then(r => r.ok)
-          )
-        );
-        if (results.some(r => r)) updatedViaBooks = true;
+      // 1. Toujours mettre à jour series_library (source de vérité des cartes série)
+      const libEntry = (userSeriesLibrary || []).find(
+        (s) =>
+          (s.series_name || s.name || '').toLowerCase().trim() ===
+          (series.name || series.title || '').toLowerCase().trim()
+      );
+      const seriesId = libEntry?.id || (series.isOwnedSeries || series.isLibrarySeries ? series.id : null);
+      if (seriesId && isRealBookId(seriesId)) {
+        const res = await fetch(`${backendUrl}/api/series/library/${seriesId}`, {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ series_status: newStatus }),
+        });
+        if (res.ok) anyOk = true;
+        else console.error('PUT series_status failed', res.status, await res.text());
       }
 
-      // 1b. Fallback saga : chercher les livres par champ saga si series.books vide
-      if (!updatedViaBooks) {
+      // 2. Mettre à jour aussi les livres utilisateur liés (en plus, pas à la place)
+      const candidateBooks = (series.books || []).filter((b) => isRealBookId(b.id));
+      let userBooks = candidateBooks;
+      if (userBooks.length === 0 && series.name) {
         const response = await fetch(
           `${backendUrl}/api/books/all?saga=${encodeURIComponent(series.name)}&limit=100`,
-          { headers: { 'Authorization': `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         if (response.ok) {
           const data = await response.json();
-          const seriesBooks = (data.items || []).filter(book =>
-            (book.saga || '').toLowerCase().trim() === (series.name || '').toLowerCase().trim()
+          const sagaNorm = (series.name || '').toLowerCase().trim();
+          userBooks = (data.items || data.books || []).filter(
+            (book) => (book.saga || '').toLowerCase().trim() === sagaNorm && isRealBookId(book.id)
           );
-          if (seriesBooks.length > 0) {
-            const results = await Promise.all(
-              seriesBooks.map(book =>
-                fetch(`${backendUrl}/api/books/${book.id}`, {
-                  method: 'PUT',
-                  headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ status: newStatus })
-                }).then(r => r.ok)
-              )
-            );
-            if (results.some(r => r)) updatedViaBooks = true;
-          }
         }
       }
-
-      // 2. Fallback series_library : série ajoutée via le panneau séries (sans livres individuels)
-      if (!updatedViaBooks) {
-        const libEntry = (userSeriesLibrary || []).find(
-          s => (s.series_name || s.name || '').toLowerCase().trim() === (series.name || '').toLowerCase().trim()
+      if (userBooks.length > 0) {
+        const results = await Promise.all(
+          userBooks.map((book) =>
+            fetch(`${backendUrl}/api/books/${book.id}`, {
+              method: 'PUT',
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: newStatus }),
+            }).then((r) => r.ok)
+          )
         );
-        const seriesId = libEntry?.id || series.id;
-        if (seriesId) {
-          await fetch(`${backendUrl}/api/series/library/${seriesId}`, {
-            method: 'PUT',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ series_status: newStatus })
-          });
-        }
+        if (results.some(Boolean)) anyOk = true;
+      }
+
+      if (!anyOk) {
+        setSeriesStatus(previousStatus);
+        toast.error('Impossible de mettre à jour le statut de la série');
+        return;
       }
 
       toast.success(`Statut de la série "${series.name}" : ${statusLabel}`);
@@ -733,6 +740,7 @@ const SeriesDetailModal = ({
       }
     } catch (error) {
       console.error('❌ Erreur changement statut:', error);
+      setSeriesStatus(previousStatus);
       toast.error('Erreur lors du changement de statut');
     }
   };
@@ -776,6 +784,8 @@ const SeriesDetailModal = ({
     setMissingPreviousWarning(null);
     setShowWdRaw(false);
     setVerification(null);
+    // Statut lecture depuis la carte / series_library (pas toujours 'to_read')
+    setSeriesStatus(series.status || series.series_status || 'to_read');
     // Réinitialiser : on ne considère une série comme possédée qu'après vérification réelle.
     setIsSeriesOwned(false);
 
