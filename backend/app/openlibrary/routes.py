@@ -82,13 +82,26 @@ def _find_french_edition_title(ol_key: str, timeout: float = 2.0) -> Optional[st
 
 
 def _alias_french_title(title: str) -> Optional[str]:
-    """Alias FR connus (même table que les synopsis)."""
+    """Alias FR connus — retourne uniquement un titre qui « sonne » français."""
     try:
         from ..utils.book_synopsis import _FR_TITLE_ALIASES, _normalize_title
+        import re as _re
+
         aliases = _FR_TITLE_ALIASES.get(_normalize_title(title) or "", ())
+        fr_hint = _re.compile(
+            r"[àâäéèêëïîôùûüçœæ]|^(le|la|les|l'|l’|un|une|des|du)\b",
+            _re.I,
+        )
+        # 1) Alias clairement FR et différent du titre actuel
         for a in aliases:
-            # Préférer un alias avec accents / mots FR
-            if a and a.lower() != (title or "").lower():
+            if a and a.lower() != (title or "").lower() and fr_hint.search(a):
+                return a
+        # 2) Si le titre actuel est déjà FR, ne pas le remplacer par un EN
+        if fr_hint.search(title or ""):
+            return None
+        # 3) Sinon premier alias différent (dernier recours)
+        for a in aliases:
+            if a and a.lower() != (title or "").lower() and fr_hint.search(a):
                 return a
     except Exception:
         pass
