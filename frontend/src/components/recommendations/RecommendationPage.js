@@ -530,7 +530,7 @@ const RecommendationPage = () => {
         const books = await fetchGenreBooks(genreTab, token);
         const grouped = books.length ? { algorithm_genre: books } : {};
         setSections(grouped);
-        writeCache(tab, grouped, userProfile);
+        writeCache(tab, grouped, null);
         return;
       }
 
