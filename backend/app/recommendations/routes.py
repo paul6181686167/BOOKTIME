@@ -34,7 +34,9 @@ async def get_personalized_recommendations(
         Dict contenant les recommandations et métadonnées
     """
     try:
-        user_id = current_user.get("id") or (current_user.get("id") or current_user.get("user_id"))
+        user_id = current_user.get("id") or current_user.get("user_id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Utilisateur non identifié")
         
         # Génération des recommandations
         recommendations = await recommendation_service.get_personalized_recommendations(

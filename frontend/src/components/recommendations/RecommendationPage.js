@@ -468,7 +468,9 @@ const RecommendationPage = () => {
   const loadPersonalizedBundle = useCallback(async ({ force = false } = {}) => {
     if (!force) {
       const cached = readCache('pour_toi');
-      if (cached?.sections) {
+      // Ne réutiliser un cache que s'il contient vraiment des suggestions
+      const hasItems = cached?.sections && Object.values(cached.sections).some((a) => a?.length);
+      if (hasItems) {
         if (cached.userProfile) setUserProfile(cached.userProfile);
         return cached.sections;
       }
@@ -493,6 +495,13 @@ const RecommendationPage = () => {
           score: r.score ?? r.confidence_score,
         });
       });
+      // Profil parfois renvoyé avec les recos
+      const inlineProfile = personalizedRes.value.data?.user_profile;
+      if (inlineProfile?.has_books) {
+        setUserProfile(inlineProfile);
+      }
+    } else if (personalizedRes.status === 'rejected') {
+      console.error('Recos personnalisées en échec:', personalizedRes.reason);
     }
 
     if (popularRes.status === 'fulfilled' && popularRes.value?.success) {
@@ -506,14 +515,18 @@ const RecommendationPage = () => {
       setUserProfile(profile);
     }
 
-    writeCache('pour_toi', grouped, profile);
+    const hasItems = Object.values(grouped).some((a) => a?.length);
+    if (hasItems) {
+      writeCache('pour_toi', grouped, profile);
+    }
     return grouped;
   }, []);
 
   const loadRecommendations = useCallback(async (tab, { force = false } = {}) => {
     if (!force) {
       const cached = readCache(tab);
-      if (cached) {
+      const hasItems = cached?.sections && Object.values(cached.sections).some((a) => a?.length);
+      if (hasItems) {
         setSections(cached.sections || {});
         if (cached.userProfile) setUserProfile(cached.userProfile);
         setIsLoading(false);
@@ -530,7 +543,7 @@ const RecommendationPage = () => {
         const books = await fetchGenreBooks(genreTab, token);
         const grouped = books.length ? { algorithm_genre: books } : {};
         setSections(grouped);
-        writeCache(tab, grouped, null);
+        if (books.length) writeCache(tab, grouped, null);
         return;
       }
 
@@ -542,7 +555,9 @@ const RecommendationPage = () => {
         grouped.popular = bundle.popular;
       }
       setSections(grouped);
-      writeCache(tab, grouped, null);
+      if (Object.values(grouped).some((a) => a?.length)) {
+        writeCache(tab, grouped, null);
+      }
     } catch (err) {
       console.error('Erreur chargement recommandations:', err);
       toast.error('Erreur lors du chargement');

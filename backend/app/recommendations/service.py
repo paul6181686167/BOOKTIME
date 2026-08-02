@@ -14,6 +14,7 @@ import logging
 from dataclasses import dataclass
 import math
 import re
+import asyncio
 
 from ..database.connection import client
 from ..openlibrary.service import OpenLibraryService
@@ -148,7 +149,8 @@ class RecommendationService:
                     category_counts[category] += 1
                     category_affinity[category] += weight
 
-                if rating >= 4:
+                # « Bon score » : 4+ prioritaire ; 3+ accepté pour alimenter l'onglet Aimé
+                if rating >= 3:
                     high_rated_books.append(book)
                 if status == 'completed':
                     completed_books.append(book)
@@ -262,30 +264,29 @@ class RecommendationService:
             return set()
     
     async def _generate_algorithm_recommendations(self, user_profile: Dict, limit: int) -> List[RecommendationItem]:
-        """Génère des recommandations basées sur l'algorithme"""
-        recommendations = []
-        
+        """Génère des recommandations basées sur l'algorithme (sources en parallèle)."""
         try:
-            # 1. Recommandations basées sur les auteurs favoris
-            author_recommendations = await self._recommend_by_authors(user_profile, limit // 3)
-            recommendations.extend(author_recommendations)
-            
-            # 2. Recommandations basées sur les catégories favorites
-            category_recommendations = await self._recommend_by_categories(user_profile, limit // 3)
-            recommendations.extend(category_recommendations)
-            
-            # 3. Recommandations basées sur les séries
-            series_recommendations = await self._recommend_by_series(user_profile, limit // 3)
-            recommendations.extend(series_recommendations)
-            
-            # 4. Similaires aux livres bien notés (onglet « Parce que vous avez aimé »)
-            similarity_recommendations = await self._recommend_by_similarity(
-                user_profile, max(10, limit // 3)
+            author_n = max(4, limit // 3)
+            category_n = max(4, limit // 3)
+            series_n = max(4, limit // 3)
+            similarity_n = max(12, limit // 2)
+
+            results = await asyncio.gather(
+                self._recommend_by_authors(user_profile, author_n),
+                self._recommend_by_categories(user_profile, category_n),
+                self._recommend_by_series(user_profile, series_n),
+                self._recommend_by_similarity(user_profile, similarity_n),
+                return_exceptions=True,
             )
-            recommendations.extend(similarity_recommendations)
-            
+
+            recommendations: List[RecommendationItem] = []
+            for result in results:
+                if isinstance(result, Exception):
+                    logger.warning(f"Branche recommandations en échec: {result}")
+                    continue
+                recommendations.extend(result or [])
             return recommendations
-            
+
         except Exception as e:
             logger.error(f"Erreur lors de la génération algorithme: {str(e)}")
             return []
@@ -412,8 +413,6 @@ class RecommendationService:
     
     async def _recommend_by_similarity(self, user_profile: Dict, limit: int) -> List[RecommendationItem]:
         """Livres similaires aux titres bien notés (≥ 4) de l'utilisateur via Open Library."""
-        recommendations: List[RecommendationItem] = []
-
         try:
             seeds = list(user_profile.get('high_rated_books') or [])
             # Repli : livres terminés correctement notés si peu de coups de cœur
@@ -426,26 +425,37 @@ class RecommendationService:
                             for s in seeds
                         ):
                             seeds.append(book)
-                    if len(seeds) >= 5:
+                    if len(seeds) >= 4:
                         break
 
             if not seeds:
                 seeds = list(user_profile.get('completed_books') or [])[:3]
 
+            # Dernier repli : n'importe quels livres de la biblio (titres connus)
+            if not seeds:
+                for title_key in (user_profile.get('owned_titles') or [])[:3]:
+                    if title_key:
+                        seeds.append({'title': title_key, 'author': '', 'rating': 0})
+
+            seeds = [s for s in seeds if (s.get('title') or '').strip()][:3]
             if not seeds:
                 return []
 
-            per_seed = max(3, (limit // max(1, min(5, len(seeds)))) + 1)
+            per_seed = max(4, (limit // max(1, len(seeds))) + 1)
 
-            for seed in seeds[:5]:
+            async def _for_seed(seed: Dict) -> List[RecommendationItem]:
                 seed_title = (seed.get('title') or '').strip()
                 seed_author = (seed.get('author') or '').strip()
                 seed_rating = seed.get('rating') or 0
-                if not seed_title:
-                    continue
+                seed_subjects = seed.get('subjects') or seed.get('genres') or []
+                if isinstance(seed_subjects, str):
+                    seed_subjects = [seed_subjects]
 
                 similar_books = await self.openlibrary_service.search_similar_books(
-                    seed_title, seed_author, limit=per_seed
+                    seed_title,
+                    seed_author,
+                    limit=per_seed,
+                    subjects=seed_subjects if isinstance(seed_subjects, list) else None,
                 )
 
                 short_title = seed_title if len(seed_title) <= 42 else seed_title[:39] + '…'
@@ -454,8 +464,8 @@ class RecommendationService:
                 else:
                     reason = f"Parce que tu as aimé « {short_title} »"
 
-                # Confiance plus haute si la note seed est excellente
                 base_confidence = 0.72 + 0.04 * min(5, float(seed_rating or 4))
+                out: List[RecommendationItem] = []
 
                 for book in similar_books:
                     title = book.get('title', '')
@@ -464,13 +474,10 @@ class RecommendationService:
                         user_profile, book.get('ol_key', ''), title, author
                     ):
                         continue
-
-                    # Éviter de recommander un autre livre du même auteur seed
-                    # (déjà couvert par l'onglet « Parce que vous lisez »)
                     if seed_author and self._normalize_author(author) == self._normalize_author(seed_author):
                         continue
 
-                    rec = RecommendationItem(
+                    out.append(RecommendationItem(
                         book_id=book.get('ol_key', ''),
                         title=title,
                         author=author,
@@ -484,11 +491,20 @@ class RecommendationService:
                             'seed_title': seed_title,
                             'seed_rating': seed_rating,
                         },
-                    )
-                    recommendations.append(rec)
+                    ))
+                return out
 
-                    if len(recommendations) >= limit:
-                        return recommendations[:limit]
+            batches = await asyncio.gather(
+                *[_for_seed(s) for s in seeds],
+                return_exceptions=True,
+            )
+
+            recommendations: List[RecommendationItem] = []
+            for batch in batches:
+                if isinstance(batch, Exception):
+                    logger.warning(f"Similarité seed en échec: {batch}")
+                    continue
+                recommendations.extend(batch or [])
 
             return recommendations[:limit]
 
@@ -497,37 +513,10 @@ class RecommendationService:
             return []
     
     async def _enrich_with_openlibrary(self, recommendations: List[RecommendationItem], user_profile: Dict) -> List[RecommendationItem]:
-        """Enrichit les recommandations avec des données Open Library"""
-        enriched = []
-        
-        for rec in recommendations:
-            try:
-                # Enrichir avec des métadonnées supplémentaires
-                if rec.source.startswith('algorithm'):
-                    # Rechercher des informations complémentaires
-                    enhanced_info = await self.openlibrary_service.get_book_details(rec.book_id)
-                    
-                    if enhanced_info:
-                        # Mettre à jour les métadonnées
-                        rec.metadata.update(enhanced_info)
-                        
-                        # Ajuster le score de confiance
-                        if 'description' in enhanced_info:
-                            rec.confidence_score += 0.1
-                        
-                        if 'publication_year' in enhanced_info:
-                            # Bonus pour les livres récents
-                            year = enhanced_info.get('publication_year', 0)
-                            if year > 2020:
-                                rec.confidence_score += 0.05
-                
-                enriched.append(rec)
-                
-            except Exception as e:
-                logger.warning(f"Erreur enrichissement {rec.title}: {str(e)}")
-                enriched.append(rec)  # Garder même sans enrichissement
-        
-        return enriched
+        """Enrichit légèrement (sans N+1 Open Library — trop lent en prod)."""
+        # Les sources algorithm_* viennent déjà d'Open Library avec couverture.
+        # On ne fait plus de get_book_details par item (timeout fréquent).
+        return recommendations
     
     async def _score_and_rank(self, recommendations: List[RecommendationItem], user_profile: Dict) -> List[RecommendationItem]:
         """Score, déduplique et classe les recommandations.
