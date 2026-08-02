@@ -649,8 +649,12 @@ function MainApp() {
       // Les données sont automatiquement chargées par useUnifiedContent
       // Seul l'auto-enrichissement des images est conservé ici
       
-      // 🎨 Auto-enrichissement des images de séries — 1 seule fois par session
-      if (!sessionStorage.getItem('series-enrich-done')) {
+      // Auto-enrichissement images de séries — désactivé sur mobile (trop lourd)
+      const isMobile =
+        typeof window !== 'undefined' &&
+        (window.matchMedia('(max-width: 768px)').matches ||
+          /Mobi|Android/i.test(navigator.userAgent || ''));
+      if (!isMobile && !sessionStorage.getItem('series-enrich-done')) {
         sessionStorage.setItem('series-enrich-done', 'true');
         seriesImageService.autoEnrichPopularSeries().then(result => {
           if (result) console.log('✅ Auto-enrichissement terminé:', result);

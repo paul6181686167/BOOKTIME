@@ -5,6 +5,7 @@
 
 const CACHE_KEY = 'booktime_offline_library_v1';
 const META_KEY = 'booktime_offline_library_meta_v1';
+const SERIES_CACHE_KEY = 'booktime_offline_series_v1';
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
 
 function safeParse(raw, fallback) {
@@ -96,6 +97,31 @@ export function clearLibraryCache() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(CACHE_KEY);
   localStorage.removeItem(META_KEY);
+  localStorage.removeItem(SERIES_CACHE_KEY);
+}
+
+export function saveSeriesCache(series) {
+  if (typeof window === 'undefined' || !Array.isArray(series)) return;
+  try {
+    localStorage.setItem(
+      SERIES_CACHE_KEY,
+      JSON.stringify({ series, savedAt: Date.now() })
+    );
+  } catch {
+    /* quota */
+  }
+}
+
+export function loadSeriesCache() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const payload = safeParse(localStorage.getItem(SERIES_CACHE_KEY), null);
+    if (!payload || !Array.isArray(payload.series)) return null;
+    if (Date.now() - (payload.savedAt || 0) > MAX_AGE_MS) return null;
+    return { series: payload.series, savedAt: payload.savedAt, fromCache: true };
+  } catch {
+    return null;
+  }
 }
 
 export function isLikelyOffline() {

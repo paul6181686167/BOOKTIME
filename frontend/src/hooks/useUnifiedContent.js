@@ -1,15 +1,36 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import BookActions from '../components/books/BookActions';
 import SeriesActions from '../components/series/SeriesActions';
 import { API_BASE_URL } from '../config/environment';
 import { scheduleLibraryMetaEnrichment } from '../services/libraryMetaEnrichment';
+import {
+  loadLibraryCache,
+  loadSeriesCache,
+} from '../utils/offlineLibraryCache';
+
+function readLocalLibrarySnapshot() {
+  const books = loadLibraryCache({})?.books || [];
+  const series = loadSeriesCache()?.series || [];
+  return {
+    books,
+    series,
+    hasCache: books.length > 0 || series.length > 0,
+  };
+}
 
 export const useUnifiedContent = () => {
-  const [books, setBooks] = useState([]);
-  const [userSeriesLibrary, setUserSeriesLibrary] = useState([]);
+  const localSnap = useRef(null);
+  if (localSnap.current === null) {
+    localSnap.current = readLocalLibrarySnapshot();
+  }
+  const [books, setBooks] = useState(() => localSnap.current.books);
+  const [userSeriesLibrary, setUserSeriesLibrary] = useState(
+    () => localSnap.current.series
+  );
   const [readingPreferences, setReadingPreferences] = useState({});
   const [stats, setStats] = useState({});
-  const [loading, setLoading] = useState(true);
+  // Si cache local dispo → pas d'écran blanc en attendant Render
+  const [loading, setLoading] = useState(() => !localSnap.current.hasCache);
   const [error, setError] = useState(null);
 
   // Cache par type pour éviter les rechargements inutiles
@@ -36,7 +57,9 @@ export const useUnifiedContent = () => {
 
     if (!doBooks && !doSeries && !doStats) return;
 
-    if (!silent) setLoading(true);
+    // Garde l'UI responsive si on a déjà du cache affiché
+    const hasVisibleData = books.length > 0 || userSeriesLibrary.length > 0;
+    if (!silent && !hasVisibleData) setLoading(true);
     setError(null);
 
     const promises = [];
@@ -88,7 +111,7 @@ export const useUnifiedContent = () => {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [shouldRefresh]);
+  }, [shouldRefresh, books.length, userSeriesLibrary.length]);
 
   const refreshAfterAdd = useCallback(async (type = 'both', options = {}) => {
     const { maxRetries = 2, retryDelay = 1000 } = options;
@@ -112,7 +135,8 @@ export const useUnifiedContent = () => {
   }, [loadUnifiedContent]);
 
   useEffect(() => {
-    loadUnifiedContent();
+    // Refresh réseau en silence si on a déjà hydraté depuis le cache
+    loadUnifiedContent({ silent: localSnap.current.hasCache });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Résumé + pages en arrière-plan (sans clic sur la vignette)

@@ -79,6 +79,8 @@ const BookGrid = ({
                     <img 
                       src={coverSrc} 
                       alt={item.name}
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover"
                       onError={(e) => {
                         e.target.style.display = 'none';
@@ -146,6 +148,8 @@ const BookGrid = ({
                     <img 
                       src={coverSrc} 
                       alt={item.display_title || item.title}
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover"
                       onError={(e) => {
                         e.target.style.display = 'none';

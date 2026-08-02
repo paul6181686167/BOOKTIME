@@ -15,6 +15,10 @@ import { toast } from 'react-hot-toast';
 import * as seriesLibraryService from '../../services/seriesLibraryService';
 import { DEFAULT_SERIES_COVER } from '../../utils/constants';
 import { seriesImageService } from '../../services/seriesImageService';
+import {
+  loadSeriesCache,
+  saveSeriesCache,
+} from '../../utils/offlineLibraryCache';
 
 // CHARGEMENT DES SÉRIES UTILISATEUR
 export const loadUserSeriesLibrary = async (setSeriesLibraryLoading, setUserSeriesLibrary) => {
@@ -22,10 +26,17 @@ export const loadUserSeriesLibrary = async (setSeriesLibraryLoading, setUserSeri
     setSeriesLibraryLoading(true);
     const token = localStorage.getItem('token');
     const result = await seriesLibraryService.getUserSeriesLibrary(token);
-    setUserSeriesLibrary(result.series || []);
+    const series = result.series || [];
+    setUserSeriesLibrary(series);
+    saveSeriesCache(series);
   } catch (error) {
     console.error('Erreur chargement séries bibliothèque:', error);
-    toast.error('Erreur lors du chargement des séries');
+    const cached = loadSeriesCache();
+    if (cached?.series?.length) {
+      setUserSeriesLibrary(cached.series);
+    } else {
+      toast.error('Erreur lors du chargement des séries');
+    }
   } finally {
     setSeriesLibraryLoading(false);
   }

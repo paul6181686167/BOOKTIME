@@ -1,5 +1,5 @@
 /* Booktime PWA Service Worker */
-const SW_VERSION = 'booktime-v3';
+const SW_VERSION = 'booktime-v4';
 const SHELL_CACHE = `${SW_VERSION}-shell`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const API_CACHE = `${SW_VERSION}-api`;
@@ -39,13 +39,18 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-function isApiBooksRequest(url) {
-  // Cache bibliothèque pour offline — jamais les résolutions méta (résumé / pages)
-  if (!url.pathname.includes('/api/books')) return false;
-  if (/resolve-synopsis|resolve-pages|\/synopsis/i.test(url.pathname + url.search)) {
+function isApiLibraryRequest(url) {
+  // Bibliothèque : stale-while-revalidate (affichage rapide).
+  // Jamais les résolutions méta (résumé / pages).
+  const path = url.pathname;
+  const full = path + url.search;
+  if (/resolve-synopsis|resolve-pages|\/synopsis/i.test(full)) {
     return false;
   }
-  return true;
+  if (path.includes('/api/books')) return true;
+  if (path.includes('/api/series/library')) return true;
+  if (path.includes('/api/series/reading-preferences')) return true;
+  return false;
 }
 
 function isNavigationRequest(request) {
@@ -127,9 +132,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Library API → network first, cache for offline read
-  if (isApiBooksRequest(url)) {
-    event.respondWith(networkFirst(request, API_CACHE));
+  // Bibliothèque → cache d'abord (puis refresh réseau) pour mobile / Render lent
+  if (isApiLibraryRequest(url)) {
+    event.respondWith(staleWhileRevalidate(request, API_CACHE));
     return;
   }
 

@@ -5,12 +5,19 @@
 import { API_BASE_URL } from '../config/environment';
 import { isUsableSynopsis } from '../utils/synopsisQuality';
 import { evaluateOwnedSeriesForDisplay } from '../utils/seriesAttribution';
+import { isMobileClient } from '../utils/device';
 import { bookService } from './bookService';
 import { updateSeriesLibraryEntry } from './seriesLibraryService';
 
-const CONCURRENCY = 2;
-const START_DELAY_MS = 1200;
-const BETWEEN_MS = 350;
+function enrichmentLimits() {
+  const mobile = isMobileClient();
+  return {
+    concurrency: mobile ? 1 : 2,
+    startDelayMs: mobile ? 6000 : 1200,
+    betweenMs: mobile ? 1000 : 350,
+    maxPerRun: mobile ? 4 : 40,
+  };
+}
 
 /** Évite de retenter le même item dans la session (succès ou échec). */
 const attempted = new Set();
@@ -227,7 +234,11 @@ export async function enrichLibraryMetadata({
   if (running) return;
   if (!localStorage.getItem('token')) return;
 
-  const candidates = collectCandidates(books, userSeriesLibrary);
+  const limits = enrichmentLimits();
+  const candidates = collectCandidates(books, userSeriesLibrary).slice(
+    0,
+    limits.maxPerRun
+  );
   if (!candidates.length) return;
 
   running = true;
@@ -248,12 +259,13 @@ export async function enrichLibraryMetadata({
         } catch (_) {
           /* non bloquant */
         }
-        await sleep(BETWEEN_MS);
+        await sleep(limits.betweenMs);
       }
     };
     await Promise.all(
-      Array.from({ length: Math.min(CONCURRENCY, candidates.length) }, () =>
-        worker()
+      Array.from(
+        { length: Math.min(limits.concurrency, candidates.length) },
+        () => worker()
       )
     );
   } finally {
@@ -265,10 +277,11 @@ export async function enrichLibraryMetadata({
  * Démarre après un court délai (laisse l'UI peindre / le backend se réveiller).
  * Retourne une fonction d'annulation du timer (pas de l'enrichissement en cours).
  */
-export function scheduleLibraryMetaEnrichment(args, delayMs = START_DELAY_MS) {
+export function scheduleLibraryMetaEnrichment(args, delayMs) {
+  const wait = delayMs ?? enrichmentLimits().startDelayMs;
   const timer = setTimeout(() => {
     enrichLibraryMetadata(args).catch(() => {});
-  }, delayMs);
+  }, wait);
   return () => clearTimeout(timer);
 }
 
