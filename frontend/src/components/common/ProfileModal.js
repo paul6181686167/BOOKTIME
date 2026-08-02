@@ -15,6 +15,7 @@ import {
   collectionContains,
   normalizeCollection,
 } from '../../utils/collectionsStorage';
+import IsbnScannerModal from './IsbnScannerModal';
 
 // ─── Heatmap de lecture ──────────────────────────────────────────────────────
 function ReadingHeatmap({ completionDates }) {
@@ -75,12 +76,14 @@ function ProfileModal({
   librarySeries = [],
   onOpenBook,
   onOpenSeries,
+  onAddFromOpenLibrary,
 }) {
   const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('stats'); // 'stats' | 'goal' | 'heatmap' | 'collections' | 'authors'
+  const [showIsbnScanner, setShowIsbnScanner] = useState(false);
 
   // Données persistées localement
   const [profileData, setProfileData] = useState(() => loadProfileData());
@@ -327,6 +330,15 @@ function ProfileModal({
           {/* ─── STATS ─── */}
           {activeTab === 'stats' && (
             <div className="space-y-4 animate-fadeIn">
+              <button
+                type="button"
+                onClick={() => setShowIsbnScanner(true)}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-medium text-sm shadow-sm"
+              >
+                <span aria-hidden>📷</span>
+                Scanner un ISBN
+              </button>
+
               {loading ? (
                 <div className="space-y-2">{[...Array(4)].map((_, i) => (
                   <div key={i} className="h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
@@ -747,6 +759,19 @@ function ProfileModal({
           </button>
         </div>
       </div>
+
+      <IsbnScannerModal
+        isOpen={showIsbnScanner}
+        onClose={() => setShowIsbnScanner(false)}
+        onAddBook={async (book) => {
+          if (!onAddFromOpenLibrary) {
+            throw new Error("Ajout non disponible");
+          }
+          await onAddFromOpenLibrary(book);
+          setShowIsbnScanner(false);
+          onClose();
+        }}
+      />
     </div>
   );
 }

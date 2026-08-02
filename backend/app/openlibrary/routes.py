@@ -500,37 +500,132 @@ async def search_by_isbn(
     isbn: str,
     current_user: dict = Depends(get_current_user)
 ):
-    """Rechercher un livre par ISBN"""
+    """Rechercher un livre par ISBN (scan mobile / saisie)."""
+    clean = "".join(c for c in (isbn or "") if c.isdigit() or c.upper() == "X")
+    if len(clean) not in (10, 13):
+        raise HTTPException(status_code=400, detail="ISBN invalide (10 ou 13 caractères)")
+
     try:
-        response = requests.get(f"https://openlibrary.org/isbn/{isbn}.json", timeout=10)
+        # 1) API books : auteurs + couverture plus fiables
+        api_resp = requests.get(
+            "https://openlibrary.org/api/books",
+            params={
+                "bibkeys": f"ISBN:{clean}",
+                "jscmd": "data",
+                "format": "json",
+            },
+            timeout=12,
+        )
+        if api_resp.status_code == 200:
+            entry = (api_resp.json() or {}).get(f"ISBN:{clean}") or {}
+            if entry.get("title"):
+                authors = [
+                    a.get("name", "")
+                    for a in (entry.get("authors") or [])
+                    if a.get("name")
+                ]
+                cover = (entry.get("cover") or {}).get("medium") or (
+                    entry.get("cover") or {}
+                ).get("large")
+                subjects_raw = entry.get("subjects") or []
+                subjects = [
+                    s.get("name", s) if isinstance(s, dict) else str(s)
+                    for s in subjects_raw[:8]
+                ]
+                identifiers = entry.get("identifiers") or {}
+                ol_ids = identifiers.get("openlibrary") or []
+                # Chercher une clé work via search ISBN
+                ol_key = ""
+                try:
+                    sr = requests.get(
+                        "https://openlibrary.org/search.json",
+                        params={"isbn": clean, "limit": 1, "fields": "key,title"},
+                        timeout=8,
+                    )
+                    if sr.status_code == 200:
+                        docs = (sr.json() or {}).get("docs") or []
+                        if docs:
+                            ol_key = docs[0].get("key") or ""
+                except requests.RequestException:
+                    pass
+                if not ol_key and ol_ids:
+                    ol_key = f"/books/{ol_ids[0]}"
+
+                return {
+                    "book": {
+                        "ol_key": ol_key,
+                        "title": entry.get("title") or "",
+                        "author": ", ".join(authors) or "Auteur inconnu",
+                        "category": detect_category_from_subjects(subjects),
+                        "cover_url": cover
+                        or f"https://covers.openlibrary.org/b/isbn/{clean}-M.jpg",
+                        "first_publish_year": (entry.get("publish_date") or "")[:4]
+                        or None,
+                        "isbn": clean,
+                        "subjects": subjects[:5],
+                        "number_of_pages": entry.get("number_of_pages"),
+                        "total_pages": entry.get("number_of_pages"),
+                        "publisher": ", ".join(
+                            p.get("name", p) if isinstance(p, dict) else str(p)
+                            for p in (entry.get("publishers") or [])
+                        ),
+                    }
+                }
+
+        # 2) Fallback /isbn/{id}.json
+        response = requests.get(f"https://openlibrary.org/isbn/{clean}.json", timeout=12)
         response.raise_for_status()
         data = response.json()
-        
-        # Récupérer les détails du work
+
         work_key = data.get("works", [{}])[0].get("key", "")
+        work_data = {}
         if work_key:
-            work_response = requests.get(f"https://openlibrary.org{work_key}.json", timeout=10)
-            work_data = work_response.json() if work_response.status_code == 200 else {}
-        else:
-            work_data = {}
-        
-        book = {
-            "ol_key": work_key,
-            "title": work_data.get("title", data.get("title", "")),
-            "author": ", ".join([author.get("name", "") for author in data.get("authors", [])]),
-            "category": detect_category_from_subjects(work_data.get("subjects", [])),
-            "cover_url": extract_cover_url(data.get("covers", [None])[0]),
-            "first_publish_year": data.get("publish_date"),
-            "isbn": isbn,
-            "subjects": work_data.get("subjects", [])[:5],
-            "number_of_pages": data.get("number_of_pages"),
-            "publisher": ", ".join(data.get("publishers", []))
+            work_response = requests.get(
+                f"https://openlibrary.org{work_key}.json", timeout=10
+            )
+            if work_response.status_code == 200:
+                work_data = work_response.json()
+
+        author_names = []
+        for author in data.get("authors", []) or []:
+            if author.get("name"):
+                author_names.append(author["name"])
+            elif author.get("key"):
+                try:
+                    ar = requests.get(
+                        f"https://openlibrary.org{author['key']}.json", timeout=6
+                    )
+                    if ar.status_code == 200:
+                        author_names.append(ar.json().get("name", ""))
+                except requests.RequestException:
+                    pass
+
+        return {
+            "book": {
+                "ol_key": work_key,
+                "title": work_data.get("title", data.get("title", "")),
+                "author": ", ".join([n for n in author_names if n])
+                or "Auteur inconnu",
+                "category": detect_category_from_subjects(
+                    work_data.get("subjects", [])
+                ),
+                "cover_url": extract_cover_url(data.get("covers", [None])[0])
+                or f"https://covers.openlibrary.org/b/isbn/{clean}-M.jpg",
+                "first_publish_year": data.get("publish_date"),
+                "isbn": clean,
+                "subjects": work_data.get("subjects", [])[:5],
+                "number_of_pages": data.get("number_of_pages"),
+                "total_pages": data.get("number_of_pages"),
+                "publisher": ", ".join(data.get("publishers", [])),
+            }
         }
-        
-        return {"book": book}
-        
-    except requests.RequestException as e:
-        raise HTTPException(status_code=404, detail=f"Livre non trouvé pour l'ISBN {isbn}")
+
+    except HTTPException:
+        raise
+    except requests.RequestException:
+        raise HTTPException(
+            status_code=404, detail=f"Livre non trouvé pour l'ISBN {clean}"
+        )
 
 @router.get("/search-author")
 async def search_by_author(

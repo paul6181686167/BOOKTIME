@@ -1088,6 +1088,7 @@ function MainApp() {
           isOpen={showProfileModal}
           onClose={() => setShowProfileModal(false)}
           onAuthorClick={handleAuthorClick}
+          onAddFromOpenLibrary={handleAddFromOpenLibrary}
           libraryBooks={unifiedContent.books || []}
           librarySeries={unifiedContent.userSeriesLibrary || []}
           onOpenBook={(bookId) => {
