@@ -6,6 +6,44 @@ import {
   evaluateOwnedSeriesForDisplay,
 } from '../../utils/seriesAttribution';
 import { isUsableSynopsis } from '../../utils/synopsisQuality';
+import { normalizeForSearch } from '../../utils/helpers';
+
+/** Clés de dédoublonnage titre (FR/EN) pour éviter livre + série rétrogradée du même ouvrage. */
+function workTitleKeys(book) {
+  const keys = new Set();
+  const add = (t) => {
+    const n = normalizeForSearch(t);
+    if (n && n.length >= 4) keys.add(n);
+  };
+  add(book?.title);
+  add(book?.original_title);
+  add(book?.name);
+  add(book?.display_title);
+  // Alias courants EN ↔ FR (même œuvre)
+  const joined = [...keys].join(' ');
+  if (joined.includes('old man') && joined.includes('sea')) {
+    add('le vieil homme et la mer');
+  }
+  if (joined.includes('vieil homme') && joined.includes('mer')) {
+    add('the old man and the sea');
+  }
+  return keys;
+}
+
+function authorKey(book) {
+  return normalizeForSearch((book?.author || '').split(',')[0] || '');
+}
+
+function isSameWork(a, b) {
+  const aKeys = workTitleKeys(a);
+  const bKeys = workTitleKeys(b);
+  if (![...aKeys].some((k) => bKeys.has(k))) return false;
+  const aa = authorKey(a);
+  const ba = authorKey(b);
+  // Même auteur, ou auteur manquant d'un côté
+  if (!aa || !ba) return true;
+  return aa === ba || aa.includes(ba) || ba.includes(aa);
+}
 
 // Composant BookActions pour gérer toutes les actions liées aux livres
 const BookActions = {
@@ -297,15 +335,12 @@ const BookActions = {
     });
     detectedSeriesCards.sort((a, b) => b.totalBooks - a.totalBooks);
 
-    // Éviter doublons titre entre livres réels et séries rétrogradées
-    const standaloneTitles = new Set(
-      standaloneBooks.map((b) => (b.title || '').toLowerCase().trim())
-    );
-    demotedFromSeries.forEach((b) => {
-      const key = (b.title || '').toLowerCase().trim();
-      if (key && standaloneTitles.has(key)) return;
-      standaloneBooks.push(b);
-      if (key) standaloneTitles.add(key);
+    // Éviter doublons entre livres réels et séries rétrogradées
+    // (ex. « The Old Man and the Sea » + série « le vieil homme et la mer »)
+    demotedFromSeries.forEach((demoted) => {
+      const already = standaloneBooks.some((b) => isSameWork(b, demoted));
+      if (already) return;
+      standaloneBooks.push(demoted);
     });
     
     // MODIFICATION ORGANISATIONNELLE : Tri des livres standalone par statut
