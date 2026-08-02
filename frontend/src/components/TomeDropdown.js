@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDownIcon, ChevronUpIcon, BookOpenIcon, CalendarIcon, DocumentTextIcon, StarIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
+import toast from 'react-hot-toast';
 import { isVolumeUnreleased } from '../utils/volumeRelease';
 
 // tomeStatus : 'non_lu' | 'en_cours' | 'lu'
@@ -22,6 +23,7 @@ const TomeDropdown = ({
   const [pageInput, setPageInput] = useState(currentPage || '');
   const [localRating, setLocalRating] = useState(rating || 0);
   const [localReview, setLocalReview] = useState(review || '');
+  const [publishingReview, setPublishingReview] = useState(false);
   const unreleased = isVolumeUnreleased(seriesData, tomeNumber);
 
   // Synchroniser pageInput si currentPage change depuis le parent
@@ -309,14 +311,45 @@ const TomeDropdown = ({
                 <textarea
                   value={localReview}
                   onChange={(e) => setLocalReview(e.target.value)}
-                  onBlur={() => {
-                    if ((localReview || '') === (review || '')) return;
-                    onFeedbackChange?.(tomeNumber, { rating: localRating, review: localReview });
-                  }}
                   rows={3}
                   placeholder="Qu'avez-vous pensé de ce tome ?"
                   className="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-booktime-500 resize-none"
                 />
+                <button
+                  type="button"
+                  disabled={
+                    publishingReview ||
+                    !(localReview || '').trim() ||
+                    (localReview || '').trim() === (review || '').trim()
+                  }
+                  onClick={async () => {
+                    const text = (localReview || '').trim();
+                    if (!text) {
+                      toast.error('Écris un avis avant de publier');
+                      return;
+                    }
+                    if (text === (review || '').trim()) {
+                      toast.success('Avis déjà publié');
+                      return;
+                    }
+                    setPublishingReview(true);
+                    try {
+                      setLocalReview(text);
+                      await onFeedbackChange?.(tomeNumber, {
+                        rating: localRating,
+                        review: text,
+                      });
+                      toast.success('Avis publié');
+                    } catch (_) {
+                      toast.error("Erreur lors de la publication de l'avis");
+                    } finally {
+                      setPublishingReview(false);
+                    }
+                  }}
+                  className="mt-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {publishingReview ? 'Publication…' : 'Publier'}
+                </button>
               </div>
             </div>
           )}

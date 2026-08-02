@@ -47,6 +47,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   const [isLoading, setIsLoading] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [addDone, setAddDone] = useState(false);
+  const [publishingReview, setPublishingReview] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showCollectionMenu, setShowCollectionMenu] = useState(false);
   const pageInputRef = useRef(null);
@@ -367,14 +368,26 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     }
   };
 
-  const handleReviewSave = async () => {
+  const handleReviewPublish = async () => {
     if ((editData.status || book.status) !== 'completed' || !book?.id || book.isFromOpenLibrary) return;
-    const review = editData.review || '';
-    if (review === (book.review || '')) return;
+    const review = (editData.review || '').trim();
+    if (!review) {
+      toast.error('Écris un avis avant de publier');
+      return;
+    }
+    if (review === (book.review || '').trim()) {
+      toast.success('Avis déjà publié');
+      return;
+    }
+    setPublishingReview(true);
     try {
       await onUpdate(book.id, { review });
+      setEditData((prev) => ({ ...prev, review }));
+      toast.success('Avis publié');
     } catch (_) {
-      toast.error("Erreur lors de la sauvegarde de l'avis");
+      toast.error("Erreur lors de la publication de l'avis");
+    } finally {
+      setPublishingReview(false);
     }
   };
 
@@ -820,11 +833,22 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                   <textarea
                     value={editData.review}
                     onChange={(e) => setEditData((prev) => ({ ...prev, review: e.target.value }))}
-                    onBlur={handleReviewSave}
                     rows={4}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-booktime-500 transition-colors"
                     placeholder="Qu'avez-vous pensé de ce livre ?"
                   />
+                  <button
+                    type="button"
+                    onClick={handleReviewPublish}
+                    disabled={
+                      publishingReview ||
+                      !(editData.review || '').trim() ||
+                      (editData.review || '').trim() === (book.review || '').trim()
+                    }
+                    className="mt-2 px-4 py-2 text-sm font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {publishingReview ? 'Publication…' : 'Publier'}
+                  </button>
                 </div>
               </>
             )}
