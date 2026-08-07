@@ -357,7 +357,7 @@ const UpcomingPanel = ({ isOpen, onClose }) => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Ajouter un livre à surveiller..."
-              className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+              className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-booktime-500 dark:text-white"
             />
             {isSearching && (
               <div className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 border border-gray-400 border-t-transparent rounded-full animate-spin" />
@@ -408,7 +408,7 @@ const UpcomingPanel = ({ isOpen, onClose }) => {
           <select
             value={notifMode}
             onChange={(e) => handleChangeNotifMode(e.target.value)}
-            className="flex-1 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:text-white"
+            className="flex-1 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-booktime-500 dark:text-white"
           >
             {NOTIF_MODES.map((m) => (
               <option key={m.value} value={m.value}>

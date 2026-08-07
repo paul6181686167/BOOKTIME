@@ -4,6 +4,7 @@
  */
 import React, { useState } from 'react';
 import { X, Download, Upload, FileText, FileSpreadsheet, Archive, Eye, CheckCircle, AlertCircle } from 'lucide-react';
+import { saveBlobAsFile } from '../../utils/fileDownload';
 
 const ExportImportModal = ({ isOpen, onClose, backendUrl, token }) => {
   const [activeTab, setActiveTab] = useState('export');
@@ -74,14 +75,14 @@ const ExportImportModal = ({ isOpen, onClose, backendUrl, token }) => {
         ? contentDisposition.split('filename=')[1].replace(/"/g, '')
         : `booktime_export_${new Date().toISOString().split('T')[0]}.${exportFormat}`;
 
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      window.URL.revokeObjectURL(url);
+      const { location } = await saveBlobAsFile(blob, filename);
 
-      showMessage('Export terminé avec succès !', 'success');
+      showMessage(
+        location === 'device'
+          ? `Export enregistré dans Documents (${filename}).`
+          : 'Export terminé avec succès !',
+        'success'
+      );
     } catch (error) {
       console.error('Erreur export:', error);
       showMessage(`Erreur lors de l'export: ${error.message}`, 'error');
@@ -182,14 +183,14 @@ const ExportImportModal = ({ isOpen, onClose, backendUrl, token }) => {
       }
 
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'booktime_import_template.csv';
-      a.click();
-      window.URL.revokeObjectURL(url);
+      const { location } = await saveBlobAsFile(blob, 'booktime_import_template.csv');
 
-      showMessage('Template téléchargé avec succès !', 'success');
+      showMessage(
+        location === 'device'
+          ? 'Template enregistré dans Documents.'
+          : 'Template téléchargé avec succès !',
+        'success'
+      );
     } catch (error) {
       console.error('Erreur template:', error);
       showMessage(`Erreur lors du téléchargement: ${error.message}`, 'error');

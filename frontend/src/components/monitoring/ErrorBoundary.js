@@ -1,5 +1,6 @@
 import React from 'react';
 import { toast } from 'react-hot-toast';
+import { API_BASE_URL } from '../../config/environment';
 
 /**
  * PHASE 2.4 - MONITORING ET ANALYTICS
@@ -68,7 +69,7 @@ class ErrorBoundary extends React.Component {
     // En production, envoyer au service de monitoring
     if (process.env.NODE_ENV === 'production') {
       // Exemple : Sentry, LogRocket, ou service custom
-      fetch('/api/errors', {
+      fetch(`${API_BASE_URL}/api/monitoring/errors`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(errorData)

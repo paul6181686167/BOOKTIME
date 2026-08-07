@@ -9,7 +9,7 @@ from email.mime.multipart import MIMEMultipart
 import os
 import bcrypt
 from ..models.user import UserAuth
-from ..database.connection import users_collection
+from ..database.connection import users_collection, db
 from ..security.jwt import (
     create_access_token,
     get_current_user,
@@ -149,6 +149,8 @@ def _hash_password(password: str) -> str:
 
 
 def _verify_password(plain: str, hashed: str) -> bool:
+    if not hashed:
+        return False
     return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
 
 
@@ -285,3 +287,65 @@ async def reset_password(data: ResetPasswordRequest):
 async def get_me(current_user: dict = Depends(get_current_user)):
     """Obtenir les informations de l'utilisateur actuel"""
     return current_user
+
+
+# Collections portant des documents rattachés à un utilisateur via user_id.
+# Toute nouvelle collection utilisateur doit être ajoutée ici, sans quoi des
+# données orphelines survivraient à la suppression du compte.
+_USER_DATA_COLLECTIONS = (
+    "books",
+    "series_library",
+    "notifications",
+    "upcoming_cache",
+    "user_profiles",
+    "follows",
+    "social_activities",
+    "social_comments",
+    "social_likes",
+    "book_lists",
+    "book_recommendations",
+    "social_notifications",
+)
+
+
+class DeleteAccountRequest(BaseModel):
+    password: str
+
+
+@router.delete("/me")
+async def delete_account(
+    data: DeleteAccountRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """Supprimer définitivement le compte et toutes les données associées.
+
+    Exigé par Google Play pour toute application permettant la création d'un
+    compte. Le mot de passe est redemandé car l'action est irréversible.
+    """
+    user_id = current_user.get("id")
+    stored = users_collection.find_one({"id": user_id})
+    if not stored:
+        raise HTTPException(status_code=404, detail="Compte introuvable.")
+
+    if not _verify_password(data.password, stored.get("password_hash", "")):
+        raise HTTPException(status_code=401, detail="Mot de passe incorrect.")
+
+    deleted = {}
+    for name in _USER_DATA_COLLECTIONS:
+        try:
+            result = db[name].delete_many({"user_id": user_id})
+            if result.deleted_count:
+                deleted[name] = result.deleted_count
+        except Exception:
+            # Une collection absente ne doit pas empêcher la suppression du compte.
+            continue
+
+    # Le follow social référence l'utilisateur par les deux extrémités.
+    try:
+        db["follows"].delete_many({"following_id": user_id})
+    except Exception:
+        pass
+
+    users_collection.delete_one({"id": user_id})
+
+    return {"message": "Compte supprimé définitivement.", "deleted": deleted}

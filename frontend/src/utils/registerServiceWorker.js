@@ -1,9 +1,18 @@
+import { isNativeApp } from './platform';
+
 /**
  * Enregistrement du Service Worker Booktime (PWA).
  * Activé en production, ou en local si REACT_APP_ENABLE_SW=true.
  */
 export function registerServiceWorker() {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+    return;
+  }
+
+  // Dans l'app native, les assets sont déjà embarqués dans l'APK : le cache du
+  // SW ferait doublon et pourrait servir un shell obsolète après une mise à jour.
+  if (isNativeApp()) {
+    unregisterServiceWorker();
     return;
   }
 
@@ -39,8 +48,11 @@ export function registerServiceWorker() {
 }
 
 export function unregisterServiceWorker() {
-  if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.ready
-    .then((registration) => registration.unregister())
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+  // getRegistrations() plutôt que ready : cette dernière ne se résout jamais
+  // quand aucun service worker n'est enregistré.
+  navigator.serviceWorker
+    .getRegistrations()
+    .then((registrations) => registrations.forEach((r) => r.unregister()))
     .catch(() => {});
 }

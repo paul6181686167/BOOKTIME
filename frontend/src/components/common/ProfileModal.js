@@ -16,6 +16,7 @@ import {
   normalizeCollection,
 } from '../../utils/collectionsStorage';
 import IsbnScannerModal from './IsbnScannerModal';
+import DeleteAccountDialog from '../user/DeleteAccountDialog';
 
 // ─── Heatmap de lecture ──────────────────────────────────────────────────────
 function ReadingHeatmap({ completionDates }) {
@@ -84,6 +85,7 @@ function ProfileModal({
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('stats'); // 'stats' | 'goal' | 'heatmap' | 'collections' | 'authors'
   const [showIsbnScanner, setShowIsbnScanner] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
   // Données persistées localement
   const [profileData, setProfileData] = useState(() => loadProfileData());
@@ -750,15 +752,27 @@ function ProfileModal({
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
           <button
             onClick={handleLogout}
             className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
           >
             Se déconnecter
           </button>
+          <button
+            onClick={() => setShowDeleteAccount(true)}
+            className="w-full text-xs text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors py-1"
+          >
+            Supprimer mon compte
+          </button>
         </div>
       </div>
+
+      <DeleteAccountDialog
+        isOpen={showDeleteAccount}
+        onClose={() => setShowDeleteAccount(false)}
+        onDeleted={onClose}
+      />
 
       <IsbnScannerModal
         isOpen={showIsbnScanner}

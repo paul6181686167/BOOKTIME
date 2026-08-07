@@ -2,7 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+/* Inter est chargée par le <link> de public/index.html, précédé de ses
+   preconnect. Un @import ici la téléchargeait une seconde fois en bloquant le
+   rendu, et se retrouvait de surcroît après les directives @tailwind. */
 
 /* Scrollbar invisible pour les sliders horizontaux */
 .scrollbar-hide::-webkit-scrollbar { display: none; }
@@ -33,17 +35,17 @@
   background: #94a3b8;
 }
 
-/* Mode sombre pour la scrollbar */
+/* Mode sombre pour la scrollbar — accordé aux nouvelles surfaces sombres */
 .dark ::-webkit-scrollbar-track {
-  background: #374151;
+  background: #171c24;
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: #6b7280;
+  background: #374151;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: #4b5563;
 }
 
 /* CORRECTION: Transitions spécifiques optimisées */
@@ -51,9 +53,9 @@
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
-.transition-colors {
-  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out;
-}
+/* Pas de .transition-colors ici : Tailwind fournit déjà un utilitaire de ce nom
+   exact, et le redéfinir créait une collision dont l'issue dépendait de l'ordre
+   des feuilles de style. */
 
 /* Custom animations */
 @keyframes fadeIn {
@@ -185,14 +187,17 @@ button:not(:disabled),
 
 button:not(:disabled):active,
 [role="button"]:not(:disabled):active {
-  transform: scale(0.93) !important;
-  opacity: 0.82;
+  transform: scale(0.97) !important;
+  opacity: 0.9;
 }
 
-/* Anneau de focus accessible */
-button:not(:disabled):focus-visible {
-  outline: 2px solid #3b82f6;
+/* Anneau de focus accessible, sur l'accent de l'application */
+button:not(:disabled):focus-visible,
+a:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline: 2px solid #16a34a;
   outline-offset: 2px;
+  border-radius: 4px;
 }
 
 /* Effet ripple CSS (pseudo-élément) */
@@ -267,15 +272,9 @@ button:not(:disabled):focus-visible {
   }
 }
 
-/* Book card hover effects */
-.book-card {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.book-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-}
+/* Pas de survol .book-card ici : la grille définit le sien en utilitaires
+   Tailwind (soulèvement de la carte, zoom interne de la couverture). Deux
+   idiomes concurrents se disputaient auparavant la même intention. */
 
 /* Status badges */
 .status-badge {

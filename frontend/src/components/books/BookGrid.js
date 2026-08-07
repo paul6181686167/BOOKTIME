@@ -13,10 +13,70 @@ const ANIMATED_CARDS = 12;
 const INITIAL_VISIBLE = 30;
 const VISIBLE_STEP = 30;
 
+// La couverture porte la carte : pas de bordure, un arrondi plus généreux et une
+// ombre large qui s'intensifie au survol (sur desktop seulement).
 const CARD_SHELL =
-  'h-full bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 relative';
+  'h-full bg-white dark:bg-gray-800 rounded-xl shadow-card overflow-hidden relative transition-shadow duration-200 sm:group-hover:shadow-card-hover';
 
-const SeriesCardBody = ({ item, coverSrc, categoryEmoji }) => {
+const COVER_FRAME = 'aspect-[2/3] bg-gray-100 dark:bg-gray-700 relative overflow-hidden';
+const COVER_IMAGE =
+  'h-full w-full object-cover transition-transform duration-300 sm:group-hover:scale-[1.04]';
+
+// Pastille translucide et floutée, lisible sur n'importe quelle couverture
+const PILL = 'backdrop-blur-sm ring-1 ring-white/15';
+
+// Teintes sourdes des vignettes de secours, tenables en clair comme en sombre
+const PLACEHOLDER_TINTS = [
+  'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
+  'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200',
+  'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200',
+  'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200',
+  'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200',
+  'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-200',
+];
+
+const INITIALS_SKIPPED = new Set(['le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'the', 'a', 'an', 'of', 'and', 'et']);
+
+const initialsFor = (text) => {
+  const words = (text || '')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (!words.length) return '?';
+  const kept = words.filter((word) => !INITIALS_SKIPPED.has(word.toLowerCase()));
+  return (kept.length ? kept : words)
+    .slice(0, 2)
+    .map((word) => word[0].toUpperCase())
+    .join('');
+};
+
+// Teinte stable d'un rendu à l'autre : dérivée du texte, pas tirée au hasard
+const tintFor = (text) => {
+  let hash = 0;
+  for (let i = 0; i < (text || '').length; i += 1) {
+    hash = (hash * 31 + text.charCodeAt(i)) % 9973;
+  }
+  return PLACEHOLDER_TINTS[hash % PLACEHOLDER_TINTS.length];
+};
+
+// Remplace les emojis de secours (📖, 📚, 🎨) par une initiale composée en serif
+const CoverPlaceholder = ({ text, hidden = false }) => (
+  <div
+    className={`${hidden ? 'hidden ' : ''}absolute inset-0 flex items-center justify-center ${tintFor(text)}`}
+  >
+    <span className="font-display text-xl font-semibold tracking-tight sm:text-3xl">
+      {initialsFor(text)}
+    </span>
+  </div>
+);
+
+// Voile bas de couverture : assoit les badges et la barre de progression
+const CoverScrim = () => (
+  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-black/25 to-transparent" />
+);
+
+const SeriesCardBody = ({ item, coverSrc }) => {
   // Statut série : priorité au statut manuel, sinon progression des tomes
   const seriesStatus =
     item.status ||
@@ -30,7 +90,7 @@ const SeriesCardBody = ({ item, coverSrc, categoryEmoji }) => {
   return (
     <div className={CARD_SHELL}>
       {/* Couverture (même squelette que les livres individuels) */}
-      <div className="aspect-[3/4] bg-gray-100 dark:bg-gray-700 flex items-center justify-center relative overflow-hidden">
+      <div className={COVER_FRAME}>
         {coverSrc ? (
           <>
             <img
@@ -38,34 +98,35 @@ const SeriesCardBody = ({ item, coverSrc, categoryEmoji }) => {
               alt={item.name}
               loading="lazy"
               decoding="async"
-              className="h-full w-full object-cover"
+              className={COVER_IMAGE}
               onError={(e) => {
                 e.target.style.display = 'none';
                 const fb = e.target.nextElementSibling;
                 if (fb) fb.classList.remove('hidden');
               }}
             />
-            <div className="hidden absolute inset-0 flex items-center justify-center text-2xl text-gray-400 sm:text-4xl">{categoryEmoji}</div>
+            <CoverPlaceholder text={item.name} hidden />
           </>
         ) : (
-          <div className="text-gray-400 text-2xl sm:text-4xl">{categoryEmoji}</div>
+          <CoverPlaceholder text={item.name} />
         )}
+        <CoverScrim />
 
         {/* Badge identifiant "Série" — distinction claire avec un livre individuel */}
         <div className="absolute top-1 left-1 sm:top-2 sm:left-2">
-          <span className="inline-flex items-center rounded bg-black/70 px-1 py-0.5 text-[9px] font-medium text-white sm:px-2 sm:py-1 sm:text-xs">
-            📚 Série
+          <span className={`inline-flex items-center rounded-md bg-black/50 px-1.5 py-0.5 text-micro font-medium text-white sm:px-2 sm:py-1 sm:text-xs ${PILL}`}>
+            Série
           </span>
         </div>
 
         {/* Badge statut superposé — uniquement "terminé" (✓), même style que les livres */}
         {seriesStatus === 'completed' && (
-          <div className="absolute top-1 right-1">
-            <span className="hidden sm:inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500 text-white">
+          <div className="absolute top-1 right-1 sm:top-2 sm:right-2">
+            <span className={`hidden sm:inline-flex px-1.5 py-0.5 rounded-md text-mini font-semibold bg-booktime-600/90 text-white ${PILL}`}>
               ✓
             </span>
             {/* Version mobile: point coloré */}
-            <span className="sm:hidden w-2.5 h-2.5 rounded-full block border border-white bg-green-500" />
+            <span className="sm:hidden w-2.5 h-2.5 rounded-full block ring-2 ring-white/80 bg-booktime-500" />
           </div>
         )}
       </div>
@@ -82,16 +143,16 @@ const SeriesCardBody = ({ item, coverSrc, categoryEmoji }) => {
       )}
 
       <div className="p-1.5 sm:p-3">
-        <h3 className="font-medium text-gray-900 dark:text-white text-[11px] sm:text-sm line-clamp-2 leading-tight">
+        <h3 className="font-medium text-gray-900 dark:text-white text-tiny sm:text-sm line-clamp-2 leading-tight">
           {item.name}
         </h3>
-        <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">
+        <p className="text-mini sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">
           {item.author}
           {item.isStaticWikidataCard && (
             <span className="ml-1 text-indigo-500 dark:text-indigo-400">· Wikidata</span>
           )}
         </p>
-        <div className="mt-1 text-[10px] sm:text-xs font-medium text-gray-600 dark:text-gray-400">
+        <div className="mt-1 text-mini sm:text-xs font-medium text-gray-600 dark:text-gray-400">
           {item.completedBooks}/{item.totalBooks} <span className="hidden sm:inline">tomes</span>
         </div>
       </div>
@@ -105,7 +166,7 @@ const BookCardBody = ({ item, coverSrc }) => {
   return (
     <div className={CARD_SHELL}>
       {/* Couverture (Open Library en secours si pas d’URL) */}
-      <div className="aspect-[3/4] bg-gray-100 dark:bg-gray-700 flex items-center justify-center relative overflow-hidden">
+      <div className={COVER_FRAME}>
         {coverSrc ? (
           <>
             <img
@@ -113,18 +174,19 @@ const BookCardBody = ({ item, coverSrc }) => {
               alt={item.display_title || item.title}
               loading="lazy"
               decoding="async"
-              className="h-full w-full object-cover"
+              className={COVER_IMAGE}
               onError={(e) => {
                 e.target.style.display = 'none';
                 const fb = e.target.nextElementSibling;
                 if (fb) fb.classList.remove('hidden');
               }}
             />
-            <div className="hidden absolute inset-0 flex items-center justify-center text-2xl text-gray-400 sm:text-4xl">📖</div>
+            <CoverPlaceholder text={title} hidden />
           </>
         ) : (
-          <div className="text-gray-400 text-2xl sm:text-4xl">📖</div>
+          <CoverPlaceholder text={title} />
         )}
+        <CoverScrim />
       </div>
 
       {/* Barre de progression */}
@@ -139,33 +201,33 @@ const BookCardBody = ({ item, coverSrc }) => {
 
       {/* Badge statut superposé — uniquement "terminé" (✓) */}
       {item.status === 'completed' && (
-        <div className="absolute top-1 right-1">
-          <span className="hidden sm:inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500 text-white">
+        <div className="absolute top-1 right-1 sm:top-2 sm:right-2">
+          <span className={`hidden sm:inline-flex px-1.5 py-0.5 rounded-md text-mini font-semibold bg-booktime-600/90 text-white ${PILL}`}>
             ✓
           </span>
           {/* Version mobile: point coloré */}
-          <span className="sm:hidden w-2.5 h-2.5 rounded-full block border border-white bg-green-500" />
+          <span className="sm:hidden w-2.5 h-2.5 rounded-full block ring-2 ring-white/80 bg-booktime-500" />
         </div>
       )}
 
       <div className="p-1.5 sm:p-3">
-        <h3 className="font-medium text-gray-900 dark:text-white text-[11px] sm:text-sm line-clamp-2 leading-tight">
+        <h3 className="font-medium text-gray-900 dark:text-white text-tiny sm:text-sm line-clamp-2 leading-tight">
           {title}
         </h3>
         {/* Titre original si différent du titre affiché */}
         {item.original_title && item.original_title !== title && (
-          <p className="text-[9px] sm:text-[10px] text-gray-400 dark:text-gray-500 italic line-clamp-1 mt-0.5 leading-tight">
+          <p className="text-micro sm:text-mini text-gray-400 dark:text-gray-500 italic line-clamp-1 mt-0.5 leading-tight">
             {item.original_title}
           </p>
         )}
-        <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">
+        <p className="text-mini sm:text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">
           {item.author}
         </p>
         {/* Étoiles — desktop seulement */}
         {item.rating > 0 && (
           <div className="hidden sm:flex items-center gap-0.5 mt-1.5">
             {Array.from({ length: 5 }).map((_, i) => (
-              <svg key={i} className={`h-2.5 w-2.5 ${i < Math.round(item.rating) ? 'text-yellow-400' : 'text-gray-200 dark:text-gray-600'}`} fill="currentColor" viewBox="0 0 20 20">
+              <svg key={i} className={`h-2.5 w-2.5 ${i < Math.round(item.rating) ? 'text-amber-400' : 'text-gray-200 dark:text-gray-600'}`} fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
               </svg>
             ))}
@@ -180,19 +242,18 @@ const BookCardBody = ({ item, coverSrc }) => {
 // cartes de la bibliothèque, ce qui se sentait nettement sur mobile.
 const GridCard = React.memo(({ item, index, onSelect }) => {
   const coverSrc = resolveCoverForGridItem(item);
-  const categoryEmoji = item.category === 'bd' ? '🎨' : item.category === 'manga' ? '🇯🇵' : '📚';
   const animated = index < ANIMATED_CARDS;
 
   return (
     <div
-      className={`col-span-1 group cursor-pointer transform transition-transform duration-200 sm:hover:scale-105 sm:hover:shadow-lg${
+      className={`col-span-1 group cursor-pointer transform transition-transform duration-200 sm:hover:-translate-y-1${
         animated ? ' book-card-stagger' : ''
       }`}
       style={animated ? { animationDelay: `${Math.min(index * 40, 400)}ms` } : undefined}
       onClick={() => onSelect(item)}
     >
       {item.isSeriesCard ? (
-        <SeriesCardBody item={item} coverSrc={coverSrc} categoryEmoji={categoryEmoji} />
+        <SeriesCardBody item={item} coverSrc={coverSrc} />
       ) : (
         <BookCardBody item={item} coverSrc={coverSrc} />
       )}
@@ -281,7 +342,7 @@ const BookGrid = ({
       <div className={GRID_CLASSES}>
         {Array.from({ length: 12 }).map((_, index) => (
           <div key={index} className="animate-pulse">
-            <div className="bg-gray-200 dark:bg-gray-700 rounded-lg aspect-[3/4] mb-3"></div>
+            <div className="bg-gray-200 dark:bg-gray-700 rounded-xl aspect-[2/3] mb-3"></div>
             <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
             <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
           </div>

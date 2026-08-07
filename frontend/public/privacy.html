@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="index, follow" />
+  <title>Politique de confidentialité — Booktime</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      margin: 0 auto; padding: 2rem 1.25rem 4rem; max-width: 46rem;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.65; color: #1f2937; background: #f9fafb;
+    }
+    header { border-bottom: 3px solid #16a34a; padding-bottom: 1rem; margin-bottom: 2rem; }
+    h1 { font-size: 1.75rem; margin: 0 0 .25rem; }
+    h2 { font-size: 1.15rem; margin: 2rem 0 .5rem; color: #15803d; }
+    .updated { color: #6b7280; font-size: .9rem; margin: 0; }
+    table { border-collapse: collapse; width: 100%; margin: .75rem 0; font-size: .95rem; }
+    th, td { border: 1px solid #d1d5db; padding: .5rem .65rem; text-align: left; vertical-align: top; }
+    th { background: #f3f4f6; }
+    code { background: #e5e7eb; padding: .1rem .3rem; border-radius: .2rem; font-size: .9em; }
+    a { color: #15803d; }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #d1d5db; font-size: .9rem; color: #6b7280; }
+    @media (prefers-color-scheme: dark) {
+      body { color: #e5e7eb; background: #111827; }
+      th { background: #1f2937; }
+      th, td { border-color: #374151; }
+      code { background: #374151; }
+      a, h2 { color: #4ade80; }
+      footer { border-color: #374151; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Politique de confidentialité de Booktime</h1>
+    <p class="updated">Dernière mise à jour : 7 août 2026</p>
+  </header>
+
+  <p>
+    Booktime est une application qui permet de suivre ses lectures et de gérer sa bibliothèque
+    personnelle. Cette politique explique quelles données sont collectées, pourquoi, et comment
+    les supprimer. Elle s'applique au site web comme à l'application Android.
+  </p>
+
+  <h2>1. Responsable du traitement</h2>
+  <p>
+    Booktime est édité par un développeur indépendant. Pour toute question relative à vos données
+    personnelles ou pour exercer vos droits, écrivez à
+    <a href="mailto:ADRESSE-EMAIL-A-COMPLETER">ADRESSE-EMAIL-A-COMPLETER</a>.
+  </p>
+
+  <h2>2. Données collectées</h2>
+  <table>
+    <thead>
+      <tr><th>Catégorie</th><th>Données</th><th>Finalité</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Compte</td>
+        <td>Adresse e-mail, mot de passe (stocké uniquement sous forme de empreinte bcrypt, jamais en clair), date de création du compte</td>
+        <td>Créer le compte, vous authentifier, permettre la réinitialisation du mot de passe</td>
+      </tr>
+      <tr>
+        <td>Bibliothèque</td>
+        <td>Livres et séries ajoutés, statut de lecture, page en cours, dates de début et de fin, notes, avis, historique de lecture, liste d'envies, auteurs suivis</td>
+        <td>Fournir la fonction principale de l'application</td>
+      </tr>
+      <tr>
+        <td>Préférences</td>
+        <td>Objectif de lecture annuel, thème clair/sombre, collections, réglages de notification</td>
+        <td>Personnaliser l'application</td>
+      </tr>
+      <tr>
+        <td>Profil public (facultatif)</td>
+        <td>Pseudonyme, biographie, avatar, localisation, site web, niveau de confidentialité</td>
+        <td>Fonctions sociales, uniquement si vous les activez</td>
+      </tr>
+      <tr>
+        <td>Données techniques</td>
+        <td>Journaux d'erreurs anonymes (type d'appareil, page concernée), statistiques d'usage agrégées</td>
+        <td>Corriger les pannes et améliorer l'application</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    Booktime ne collecte <strong>pas</strong> votre position géographique, vos contacts, vos
+    photos, votre identifiant publicitaire ni aucune donnée de santé ou financière.
+  </p>
+
+  <h2>3. Caméra</h2>
+  <p>
+    L'application Android demande l'accès à la caméra uniquement lorsque vous ouvrez le scanner de
+    code-barres pour ajouter un livre par son ISBN. L'image de la caméra est analysée sur votre
+    appareil et n'est ni enregistrée, ni transmise. Vous pouvez refuser cette permission et saisir
+    l'ISBN à la main.
+  </p>
+
+  <h2>4. Base légale (RGPD)</h2>
+  <p>
+    Le traitement de vos données de compte et de bibliothèque repose sur l'exécution du contrat
+    qui nous lie lorsque vous utilisez le service. Les fonctions sociales et les notifications par
+    e-mail reposent sur votre consentement, que vous pouvez retirer à tout moment.
+  </p>
+
+  <h2>5. Hébergement et sous-traitants</h2>
+  <table>
+    <thead>
+      <tr><th>Prestataire</th><th>Rôle</th><th>Données concernées</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>MongoDB Atlas</td><td>Base de données</td><td>Compte et bibliothèque</td></tr>
+      <tr><td>Render</td><td>Hébergement du serveur applicatif</td><td>Transit des requêtes</td></tr>
+      <tr><td>Vercel</td><td>Hébergement du site web</td><td>Fichiers de l'interface</td></tr>
+      <tr><td>Resend ou serveur SMTP</td><td>Envoi d'e-mails</td><td>Adresse e-mail, pour la réinitialisation du mot de passe et les notifications que vous avez activées</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Pour enrichir les fiches de livres, l'application interroge des catalogues publics
+    (Open Library, Wikidata, Wikipédia, Google Books, AniList, MangaUpdates). Ces services
+    reçoivent uniquement des termes de recherche bibliographiques ; aucune donnée permettant de
+    vous identifier ne leur est transmise.
+  </p>
+
+  <h2>6. Publicité et revente</h2>
+  <p>
+    Booktime n'affiche aucune publicité, n'intègre aucun outil de pistage publicitaire et ne vend
+    ni ne loue vos données à des tiers.
+  </p>
+
+  <h2>7. Durée de conservation</h2>
+  <p>
+    Vos données sont conservées tant que votre compte existe. Elles sont effacées immédiatement
+    lorsque vous supprimez votre compte. Les jetons de réinitialisation de mot de passe expirent
+    au bout d'une heure. Les journaux techniques sont conservés au maximum 30 jours.
+  </p>
+
+  <h2>8. Suppression de votre compte</h2>
+  <p>
+    Vous pouvez supprimer votre compte et l'intégralité des données associées à tout moment,
+    directement depuis l'application : ouvrez votre <strong>profil</strong>, puis en bas de
+    l'écran choisissez <strong>Supprimer mon compte</strong>. La suppression est immédiate et
+    définitive.
+  </p>
+  <p>
+    Si vous n'avez plus accès à l'application, suivez la procédure décrite sur la page
+    <a href="/delete-account.html">Supprimer mon compte Booktime</a>.
+  </p>
+
+  <h2>9. Vos droits</h2>
+  <p>
+    Conformément au RGPD, vous disposez d'un droit d'accès, de rectification, d'effacement, de
+    limitation, d'opposition et de portabilité de vos données. La fonction
+    <em>Export / Import</em> de l'application vous permet de récupérer l'ensemble de votre
+    bibliothèque aux formats JSON, CSV ou Excel. Pour les autres demandes, écrivez-nous à
+    l'adresse indiquée au point 1. Vous pouvez également introduire une réclamation auprès de la
+    CNIL (<a href="https://www.cnil.fr">www.cnil.fr</a>).
+  </p>
+
+  <h2>10. Sécurité</h2>
+  <p>
+    Les échanges entre l'application et le serveur sont chiffrés en HTTPS. Les mots de passe sont
+    hachés avec bcrypt. L'accès à vos données est protégé par un jeton d'authentification stocké
+    sur votre appareil.
+  </p>
+
+  <h2>11. Mineurs</h2>
+  <p>
+    Booktime ne s'adresse pas spécifiquement aux enfants et ne collecte pas sciemment de données
+    concernant des personnes de moins de 13 ans.
+  </p>
+
+  <h2>12. Modifications</h2>
+  <p>
+    Toute évolution de cette politique sera publiée sur cette page, avec mise à jour de la date
+    indiquée en tête de document.
+  </p>
+
+  <footer>
+    Booktime — Ta bibliothèque personnelle.
+    <a href="/">Retour à l'application</a>
+  </footer>
+</body>
+</html>

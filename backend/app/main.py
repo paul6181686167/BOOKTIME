@@ -119,6 +119,11 @@ def get_cors_origins() -> List[str]:
         "http://127.0.0.1:5173",
         # Accès LAN (autre PC sur le même Wi-Fi)
         "http://192.168.1.167:3000",
+        # Application Android (Capacitor) : la WebView sert le bundle depuis
+        # https://localhost et envoie cette origine sur chaque requête.
+        "https://localhost",
+        "http://localhost",
+        "capacitor://localhost",
         # Vercel deployments
         "https://booktime-sg59.vercel.app",
         "https://booktime-sg59-git-main-paul6181686167s-projects.vercel.app",

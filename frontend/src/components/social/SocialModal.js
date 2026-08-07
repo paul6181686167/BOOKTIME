@@ -207,7 +207,7 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
                     type="text"
                     value={profileForm.display_name}
                     onChange={(e) => setProfileForm({ ...profileForm, display_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-booktime-500"
                     placeholder="Votre nom d'affichage"
                   />
                 </div>
@@ -220,7 +220,7 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
                     value={profileForm.bio}
                     onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-booktime-500"
                     placeholder="Parlez-nous de vous..."
                   />
                 </div>
@@ -234,7 +234,7 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
                       type="text"
                       value={profileForm.location}
                       onChange={(e) => setProfileForm({ ...profileForm, location: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-booktime-500"
                       placeholder="Votre ville"
                     />
                   </div>
@@ -246,7 +246,7 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
                       type="url"
                       value={profileForm.website}
                       onChange={(e) => setProfileForm({ ...profileForm, website: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-booktime-500"
                       placeholder="https://votre-site.com"
                     />
                   </div>
@@ -259,7 +259,7 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
                   <select
                     value={profileForm.privacy_level}
                     onChange={(e) => setProfileForm({ ...profileForm, privacy_level: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-booktime-500"
                   >
                     <option value="public">Public</option>
                     <option value="friends">Amis seulement</option>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { XMarkIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { isNativeApp } from '../utils/platform';
 
 const DISMISS_KEY = 'booktime_pwa_install_dismissed';
 
@@ -13,6 +14,9 @@ const PwaInstallPrompt = () => {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+
+    // L'app est déjà installée depuis le Play Store : rien à proposer.
+    if (isNativeApp()) return;
 
     const dismissed = localStorage.getItem(DISMISS_KEY);
     if (dismissed) return;

@@ -3,6 +3,8 @@
  * Détection automatique Preview Emergent / Vercel Fullstack / Local Development
  */
 
+import { isNativeApp } from '../utils/platform';
+
 /**
  * IP privée LAN (ex. 192.168.x.x) — accès depuis un autre PC du réseau
  */
@@ -13,6 +15,18 @@ const isPrivateLanHost = (hostname) =>
  * Détection intelligente URL backend selon environnement
  */
 const getBackendURL = () => {
+  // App native : le bundle est servi depuis https://localhost, mais "localhost"
+  // désigne le téléphone lui-même. L'URL distante doit être figée au build.
+  if (isNativeApp()) {
+    const nativeURL =
+      process.env.REACT_APP_BACKEND_URL || process.env.REACT_APP_API_URL;
+    if (!nativeURL) {
+      throw new Error(
+        'REACT_APP_BACKEND_URL est obligatoire pour le build natif (npm run build:native).'
+      );
+    }
+    return nativeURL;
+  }
   if (typeof window !== 'undefined' && window.location.hostname.includes('emergentagent.com')) {
     return window.location.origin;
   }

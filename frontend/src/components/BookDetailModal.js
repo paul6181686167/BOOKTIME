@@ -640,7 +640,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                     onKeyDown={(e) => e.key === 'Enter' && handlePageSave()}
                     min="0"
                     max={totalPages || undefined}
-                    className="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 text-center"
+                    className="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-booktime-500 text-center"
                   />
                   {totalPages > 0 ? (
                     <span className="text-sm text-gray-500 dark:text-gray-400">/ {totalPages}</span>

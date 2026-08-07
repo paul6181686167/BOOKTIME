@@ -5,8 +5,8 @@
 
 /* ===== VARIABLES CSS OPTIMISÉES ===== */
 :root {
-  /* Couleurs principales */
-  --color-primary: #10b981;
+  /* Couleurs principales — accordées à l'accent booktime-600 */
+  --color-primary: #16a34a;
   --color-secondary: #3b82f6;
   --color-accent: #f59e0b;
   
@@ -28,14 +28,15 @@
   --spacing-xl: 2rem;
 }
 
-/* Mode sombre */
+/* Mode sombre — mêmes surfaces que l'échelle gray de tailwind.config.js,
+   sans quoi le fond de page restait sur l'ancien #111827 par cette variable. */
 .dark {
-  --color-bg-primary: #111827;
-  --color-bg-secondary: #1f2937;
-  --color-bg-tertiary: #374151;
+  --color-bg-primary: #0d1117;
+  --color-bg-secondary: #171c24;
+  --color-bg-tertiary: #242b36;
   --color-text-primary: #f9fafb;
   --color-text-secondary: #d1d5db;
-  --color-border: #4b5563;
+  --color-border: #2b333f;
 }
 
 /* Mode clair */
@@ -74,24 +75,10 @@ body {
 
 /* ===== CLASSES UTILITAIRES OPTIMISÉES ===== */
 
-/* Transitions spécifiques - plus de wildcard * */
-.transition-colors {
-  transition: background-color var(--transition-normal), 
-              color var(--transition-normal), 
-              border-color var(--transition-normal);
-}
-
-.transition-transform {
-  transition: transform var(--transition-normal);
-}
-
-.transition-shadow {
-  transition: box-shadow var(--transition-normal);
-}
-
-.transition-all {
-  transition: all var(--transition-normal);
-}
+/* Pas de .transition-colors / -transform / -shadow / -all ici : ces quatre noms
+   sont ceux d'utilitaires Tailwind. Comme ce fichier est chargé après, il les
+   écrasait dans toute l'application, y compris là où le code attendait la durée
+   demandée par un duration-*. */
 
 /* États d'interaction optimisés */
 .interactive {
@@ -185,7 +172,7 @@ body {
 }
 
 .btn-primary:hover {
-  background-color: #059669;
+  background-color: #15803d;
   transform: translateY(-1px);
 }
 

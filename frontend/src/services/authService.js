@@ -85,6 +85,32 @@ class AuthService {
     }
   }
 
+  async deleteAccount(password) {
+    try {
+      const response = await fetch(`${this.backendUrl}/api/auth/me`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ password }),
+      });
+
+      if (response.ok) {
+        this.logout();
+        return { success: true };
+      }
+      const error = await response.json().catch(() => ({}));
+      const msg =
+        typeof error.detail === 'string'
+          ? error.detail
+          : error.detail?.[0]?.msg || 'Suppression impossible';
+      return { success: false, error: msg };
+    } catch (error) {
+      return { success: false, error: error.message || 'Serveur inaccessible' };
+    }
+  }
+
   logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');

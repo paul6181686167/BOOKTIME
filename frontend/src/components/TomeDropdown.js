@@ -232,7 +232,7 @@ const TomeDropdown = ({
               value={pageInput}
               onChange={e => setPageInput(e.target.value)}
               placeholder={tomeInfo.pages ? `/ ${tomeInfo.pages}` : 'optionnel'}
-              className="w-20 text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              className="w-20 text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-booktime-500 focus:outline-none"
             />
             {tomeInfo.pages && <span className="text-xs text-gray-400">/ {tomeInfo.pages}</span>}
             <button

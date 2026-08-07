@@ -27,6 +27,13 @@
       "dest": "/manifest.json"
     },
     {
+      "src": "/(privacy\\.html|delete-account\\.html)",
+      "headers": {
+        "cache-control": "public, max-age=3600"
+      },
+      "dest": "/$1"
+    },
+    {
       "src": "/(favicon\\.ico|favicon-32\\.png|icon-192\\.png|icon-512\\.png|icon-512-maskable\\.png|apple-touch-icon\\.png)",
       "headers": {
         "cache-control": "public, max-age=86400"

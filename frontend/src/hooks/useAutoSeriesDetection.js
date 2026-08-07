@@ -1,9 +1,11 @@
 // 🔄 DÉTECTION AUTOMATIQUE À L'AJOUT DE LIVRES
 // Intégration dans le processus d'ajout pour détecter automatiquement les séries
 
+import { API_BASE_URL } from '../config/environment';
+
 export class AutoSeriesDetector {
   constructor() {
-    this.apiBase = process.env.REACT_APP_BACKEND_URL || '';
+    this.apiBase = API_BASE_URL;
     this.enabled = true;
     this.minConfidence = 70;
   }

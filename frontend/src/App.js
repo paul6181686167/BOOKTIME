@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth';
 import LoginPage from './components/user/LoginPage';
 import UnifiedSearchBar from './components/UnifiedSearchBar';
 import DiscoverSection from './components/DiscoverSection';
+import NativeAppShell from './components/native/NativeAppShell';
 
 // Pages de routes et modales : chargées à la demande pour ne pas alourdir le
 // premier rendu. Les deux modales les plus ouvertes sont préchargées en temps mort
@@ -797,7 +798,9 @@ function MainApp() {
       />
 
       {/* Header desktop + mobile compact */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
+      {/* Header translucide : le contenu défile visiblement dessous, ce qui
+          ancre la barre sans la faire peser comme un bandeau opaque. */}
+      <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-900/5 dark:border-white/5 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Desktop header */}
           <div className="hidden md:flex justify-between items-center h-16">
@@ -822,16 +825,18 @@ function MainApp() {
             
             {/* Profil et navigation */}
             <div className="flex-shrink-0 flex items-center space-x-4">
+              {/* Action secondaire : discrète, pour ne pas concurrencer
+                  visuellement l'accent porté par l'avatar juste à côté. */}
               <button
                 onClick={() => navigate('/recommendations')}
-                className="flex items-center space-x-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800 rounded-lg transition-colors duration-200"
               >
                 <span>Recommandations</span>
               </button>
               
               <button
                 onClick={() => setShowProfileModal(true)}
-                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full transition-colors duration-200"
+                className="bg-booktime-600 hover:bg-booktime-700 text-white font-bold py-2 px-4 rounded-full shadow-card transition-colors duration-200"
               >
                 {user?.email?.[0]?.toUpperCase() || '?'}{(user?.email?.[1] || '')?.toUpperCase() || ''}
               </button>
@@ -863,8 +868,8 @@ function MainApp() {
             <div className="py-3 sm:py-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
                 <div>
-                  <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                    Résultats pour "{searchHook.lastSearchTerm}"
+                  <h2 className="font-display text-lg sm:text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
+                    Résultats pour «&nbsp;{searchHook.lastSearchTerm}&nbsp;»
                   </h2>
                   <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                     {displayedBooks.length} résultat(s) trouvé(s)
@@ -872,7 +877,7 @@ function MainApp() {
                 </div>
                 <button
                   onClick={backToLibrary}
-                  className="self-start sm:self-auto px-3 sm:px-4 py-1.5 sm:py-2 text-sm bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors duration-200"
+                  className="self-start sm:self-auto px-3 sm:px-4 py-1.5 sm:py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 ring-1 ring-gray-900/10 dark:ring-white/10 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                 >
                   ← Retour
                 </button>
@@ -893,8 +898,8 @@ function MainApp() {
                       onClick={() => handleTabChange(tab.key)}
                       className={`flex-shrink-0 px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors duration-200 text-sm sm:text-base ${
                         activeTab === tab.key
-                          ? 'bg-green-600 text-white'
-                          : 'bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300'
+                          ? 'bg-booktime-600 text-white shadow-card'
+                          : 'bg-gray-100 hover:bg-gray-200 text-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300'
                       }`}
                     >
                       {tab.label}
@@ -950,10 +955,10 @@ function MainApp() {
 
               {/* Skeleton de chargement initial */}
               {unifiedContent.loading && (
-                <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-5 p-2 sm:p-6">
+                <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 sm:gap-5 p-2 sm:p-6">
                   {Array.from({ length: 12 }).map((_, i) => (
                     <div key={i} className="animate-pulse">
-                      <div className="bg-gray-200 dark:bg-gray-700 rounded-lg aspect-[3/4] mb-2" />
+                      <div className="bg-gray-200 dark:bg-gray-700 rounded-xl aspect-[2/3] mb-2" />
                       <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded mb-1" />
                       <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
                     </div>
@@ -1271,6 +1276,7 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <ErrorBoundary>
+            <NativeAppShell />
             <Suspense fallback={<RouteFallback />}>
               <Routes>
                 {/* Route publique */}
