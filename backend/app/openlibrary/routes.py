@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from datetime import datetime
 from typing import Optional
+import asyncio
 import logging
 import uuid
 import re as _re_global
@@ -151,6 +152,138 @@ def _doc_to_book(doc: dict) -> dict:
     }
 
 
+def _search_open_library_sync(
+    q: str,
+    limit: int = 10,
+    year_start: Optional[int] = None,
+    year_end: Optional[int] = None,
+    language: Optional[str] = None,
+    min_pages: Optional[int] = None,
+    max_pages: Optional[int] = None,
+    author_filter: Optional[str] = None,
+) -> dict:
+    """Travail bloquant (HTTP Open Library) : toujours appeler via asyncio.to_thread.
+
+    Un `async def` qui faisait `requests.get` gelait toute l'API dès qu'OL
+    ramentait — y compris Wikidata et /health — d'où des recherches à 0 résultat.
+    """
+    import concurrent.futures
+
+    empty = {
+        "books": [],
+        "total_found": 0,
+        "source_unavailable": True,
+        "filters_applied": {
+            "year_range": f"{year_start}-{year_end}" if year_start or year_end else None,
+            "language": language,
+            "pages_range": f"{min_pages}-{max_pages}" if min_pages or max_pages else None,
+            "author": author_filter,
+        },
+    }
+
+    try:
+        OL_URL = "https://openlibrary.org/search.json"
+        fetch_limit = min(limit + 10, 50)
+        # Suggestions (limit bas) : timeout court pour ne pas saturer le serveur
+        # pendant la saisie. Recherche complète : un peu plus large.
+        ol_timeout = 5 if limit <= 8 else 8
+
+        q_norm = _normalize_query(q)
+        queries = [q]
+        if q_norm.lower() != q.lower():
+            queries.append(q_norm)
+
+        def _fetch(q_term):
+            try:
+                params = _build_ol_params(
+                    q_term, fetch_limit, year_start, year_end, language, author_filter
+                )
+                r = requests.get(OL_URL, params=params, timeout=ol_timeout)
+                if not r.ok:
+                    return {"docs": [], "numFound": 0, "_failed": True}
+                data = r.json()
+                data["_failed"] = False
+                return data
+            except requests.RequestException as exc:
+                logger.warning("OpenLibrary lent pour '%s': %s", q_term, exc)
+                return {"docs": [], "numFound": 0, "_failed": True}
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [pool.submit(_fetch, qt) for qt in queries]
+            results = [f.result() for f in concurrent.futures.as_completed(futures)]
+
+        seen_keys = set()
+        merged_docs = []
+        for data in results:
+            for doc in data.get("docs", []):
+                key = doc.get("key", "")
+                if not key or key in seen_keys:
+                    continue
+                seen_keys.add(key)
+                merged_docs.append(doc)
+
+        total_found = max((r.get("numFound", 0) for r in results), default=0)
+        all_failed = bool(results) and all(r.get("_failed") for r in results)
+
+        books = []
+        for doc in merged_docs:
+            if min_pages and doc.get("number_of_pages_median", 0) < min_pages:
+                continue
+            if max_pages and doc.get("number_of_pages_median", float("inf")) > max_pages:
+                continue
+            books.append(_doc_to_book(doc))
+
+        books = books[:limit]
+
+        # Enrichissement FR : uniquement sur la recherche « pleine », pas sur les
+        # suggestions (limit bas) — chaque titre FR = un aller-retour OL de plus.
+        if limit > 8 and books and not all_failed:
+
+            def _enrich_fr(book: dict) -> dict:
+                if book.get("title_fr") or "fre" in " ".join(book.get("available_languages") or []):
+                    return book
+                if (
+                    book.get("title")
+                    and book.get("original_title")
+                    and book["title"] != book.get("original_title")
+                ):
+                    return book
+                fr = _find_french_edition_title(book.get("ol_key") or "", timeout=1.2)
+                if fr and fr.strip() and fr.strip().lower() != (book.get("title") or "").lower():
+                    book["original_title"] = book.get("original_title") or book.get("title")
+                    book["title"] = fr.strip()
+                    book["title_fr"] = fr.strip()
+                    langs = list(book.get("available_languages") or [])
+                    if "fre" not in langs:
+                        langs = ["fre"] + langs
+                    book["available_languages"] = langs[:5]
+                return book
+
+            try:
+                enrich_n = min(8, len(books))
+                with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+                    enriched_head = list(pool.map(_enrich_fr, books[:enrich_n]))
+                books = enriched_head + books[enrich_n:]
+            except Exception as exc:
+                logger.debug("Enrichissement titres FR search: %s", exc)
+
+        return {
+            "books": books,
+            "total_found": total_found,
+            "source_unavailable": all_failed,
+            "filters_applied": {
+                "year_range": f"{year_start}-{year_end}" if year_start or year_end else None,
+                "language": language,
+                "pages_range": f"{min_pages}-{max_pages}" if min_pages or max_pages else None,
+                "author": author_filter,
+            },
+        }
+
+    except requests.RequestException as e:
+        logger.warning("OpenLibrary indisponible pour '%s': %s", q, e)
+        return empty
+
+
 @router.get("/search")
 async def search_open_library(
     q: str,
@@ -167,118 +300,19 @@ async def search_open_library(
     Stratégie large : requête originale + version sans accents, fusionnées et dédupliquées.
     Retourne original_title pour que le front puisse l'afficher en sous-titre.
     """
-    try:
-        import concurrent.futures
-        OL_URL = "https://openlibrary.org/search.json"
-        fetch_limit = min(limit + 10, 50)  # marge légère sans surcharger
-
-        # ── Requêtes parallèles : terme original + version sans accents ───────
-        q_norm = _normalize_query(q)
-        queries = [q]
-        if q_norm.lower() != q.lower():
-            queries.append(q_norm)
-
-        def _fetch(q_term):
-            # Chaque sous-requête gère son propre échec : un timeout sur l'une ne doit
-            # pas faire échouer l'autre (ni la réponse globale).
-            try:
-                params = _build_ol_params(q_term, fetch_limit, year_start, year_end, language, author_filter)
-                # 12s : Open Library est souvent lent ; 6s produisait trop de listes vides.
-                r = requests.get(OL_URL, params=params, timeout=12)
-                if not r.ok:
-                    return {"docs": [], "numFound": 0, "_failed": True}
-                data = r.json()
-                data["_failed"] = False
-                return data
-            except requests.RequestException as exc:
-                logger.warning("OpenLibrary lent pour '%s': %s", q_term, exc)
-                return {"docs": [], "numFound": 0, "_failed": True}
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-            futures = [pool.submit(_fetch, qt) for qt in queries]
-            results = [f.result() for f in concurrent.futures.as_completed(futures)]
-
-        # ── Fusion et dédoublonnage par ol_key ──────────────────────────────
-        seen_keys = set()
-        merged_docs = []
-        for data in results:
-            for doc in data.get("docs", []):
-                key = doc.get("key", "")
-                if not key or key in seen_keys:
-                    continue
-                seen_keys.add(key)
-                merged_docs.append(doc)
-
-        total_found = max((r.get("numFound", 0) for r in results), default=0)
-        # Si toutes les sous-requêtes ont échoué, le front doit basculer sur
-        # Wikidata / curé plutôt que d'afficher « 0 résultat » comme un succès.
-        all_failed = bool(results) and all(r.get("_failed") for r in results)
-
-        # ── Filtrage pages + construction objets livres ──────────────────────
-        books = []
-        for doc in merged_docs:
-            if min_pages and doc.get("number_of_pages_median", 0) < min_pages:
-                continue
-            if max_pages and doc.get("number_of_pages_median", float('inf')) > max_pages:
-                continue
-            books.append(_doc_to_book(doc))
-
-        books = books[:limit]
-
-        # Enrichir les premiers résultats avec le titre d'édition FR (parallèle, court)
-        def _enrich_fr(book: dict) -> dict:
-            if book.get("title_fr") or "fre" in " ".join(book.get("available_languages") or []):
-                return book
-            # Alias déjà appliqué dans _doc_to_book
-            if book.get("title") and book.get("original_title") and book["title"] != book.get("original_title"):
-                return book
-            fr = _find_french_edition_title(book.get("ol_key") or "", timeout=1.8)
-            if fr and fr.strip() and fr.strip().lower() != (book.get("title") or "").lower():
-                book["original_title"] = book.get("original_title") or book.get("title")
-                book["title"] = fr.strip()
-                book["title_fr"] = fr.strip()
-                langs = list(book.get("available_languages") or [])
-                if "fre" not in langs:
-                    langs = ["fre"] + langs
-                book["available_languages"] = langs[:5]
-            return book
-
-        try:
-            import concurrent.futures
-            enrich_n = min(12, len(books))
-            with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
-                enriched_head = list(pool.map(_enrich_fr, books[:enrich_n]))
-            books = enriched_head + books[enrich_n:]
-        except Exception as exc:
-            logger.debug("Enrichissement titres FR search: %s", exc)
-
-        return {
-            "books": books,
-            "total_found": total_found,
-            "source_unavailable": all_failed,
-            "filters_applied": {
-                "year_range": f"{year_start}-{year_end}" if year_start or year_end else None,
-                "language": language,
-                "pages_range": f"{min_pages}-{max_pages}" if min_pages or max_pages else None,
-                "author": author_filter
-            }
-        }
-
-    except requests.RequestException as e:
-        # OpenLibrary lent ou indisponible : dégradation en douceur (HTTP 200, liste vide).
-        # Le front conserve ainsi les autres sources (Wikidata statique, etc.) sans planter.
-        logger.warning("OpenLibrary indisponible pour '%s': %s", q, e)
-        return {
-            "books": [],
-            "total_found": 0,
-            "source_unavailable": True,
-            "filters_applied": {
-                "year_range": f"{year_start}-{year_end}" if year_start or year_end else None,
-                "language": language,
-                "pages_range": f"{min_pages}-{max_pages}" if min_pages or max_pages else None,
-                "author": author_filter
-            }
-        }
+    # Exécuter le travail bloquant hors de la boucle asyncio, sinon une seule
+    # recherche OL lente empêche Wikidata, /health et les autres clients de répondre.
+    return await asyncio.to_thread(
+        _search_open_library_sync,
+        q,
+        limit,
+        year_start,
+        year_end,
+        language,
+        min_pages,
+        max_pages,
+        author_filter,
+    )
 
 
 @router.get("/series-books")

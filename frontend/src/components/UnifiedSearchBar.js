@@ -53,28 +53,47 @@ const UnifiedSearchBar = React.memo(({
     }
   }, []);
 
-  // Recherche universelle Open Library uniquement sur demande explicite
+  // Suggestions OL : debounce + annulation + timeout court, pour ne pas
+  // empiler des recherches serveur à chaque frappe quand OL est lent.
+  const suggestionsAbortRef = useRef(null);
+
   const searchUniversal = useCallback(async (query) => {
     if (!query.trim() || query.length < 3) {
       setUniversalResults([]);
       return;
     }
 
+    if (suggestionsAbortRef.current) suggestionsAbortRef.current.abort();
+    const controller = new AbortController();
+    suggestionsAbortRef.current = controller;
+    const timer = setTimeout(() => controller.abort(), 5000);
+
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}&limit=5`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        `${backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}&limit=5`,
+        {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal,
         }
-      });
+      );
 
       if (response.ok) {
         const data = await response.json();
         setUniversalResults((data.books ?? []).slice(0, 3));
       }
     } catch (error) {
-      console.error('Erreur recherche universelle:', error);
+      if (error?.name !== 'AbortError') {
+        console.error('Erreur recherche universelle:', error);
+      }
+    } finally {
+      clearTimeout(timer);
+      if (suggestionsAbortRef.current === controller) {
+        suggestionsAbortRef.current = null;
+      }
     }
   }, [backendUrl]);
 
@@ -87,7 +106,10 @@ const UnifiedSearchBar = React.memo(({
     const timer = setTimeout(() => {
       searchUniversal(localSearchTerm);
     }, 600);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      if (suggestionsAbortRef.current) suggestionsAbortRef.current.abort();
+    };
   }, [localSearchTerm, showSuggestions, searchUniversal]);
 
   // Sauvegarder les recherches récentes

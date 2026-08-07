@@ -41,6 +41,26 @@ import {
 let searchSequence = 0;
 let inFlightSearch = null;
 
+// Au-delà de ce délai, on arrête d'attendre Open Library et on garde curé/Wikidata.
+// Évite l'écran « 0 résultat » pendant que le backend attend un timeout OL.
+const OL_CLIENT_TIMEOUT_MS = 8000;
+
+/** fetch avec timeout local, sans annuler le signal parent (Wikidata continue). */
+function fetchWithTimeout(url, options = {}, timeoutMs = OL_CLIENT_TIMEOUT_MS) {
+  const local = new AbortController();
+  const timer = setTimeout(() => local.abort(), timeoutMs);
+  const parent = options.signal;
+  const onParentAbort = () => local.abort();
+  if (parent) {
+    if (parent.aborted) local.abort();
+    else parent.addEventListener('abort', onParentAbort, { once: true });
+  }
+  return fetch(url, { ...options, signal: local.signal }).finally(() => {
+    clearTimeout(timer);
+    if (parent) parent.removeEventListener('abort', onParentAbort);
+  });
+}
+
 async function fetchWikidataSpotlight(query, token, backendUrl, signal) {
   let wikidataSpotlight = [];
   let wikidataMatcher = () => null;
@@ -72,8 +92,10 @@ async function fetchWikidataSpotlight(query, token, backendUrl, signal) {
           totalBooks: entry.work_count || 0,
           category: inferCategoryFromWikidataSearchEntry(entry),
         });
-        const totalBooks = curated.totalBooks || entry.work_count || 0;
-        if (!totalBooks || totalBooks < 1) return null;
+        // work_count peut être 0 dans l'index : on affiche quand même les hits
+        // de recherche (sinon « 0 résultat » dès qu'Open Library est down).
+        const totalBooks = curated.totalBooks || entry.work_count || (fromSearch ? 1 : 0);
+        if (!fromSearch && totalBooks < 1) return null;
         return {
           isSeriesCard: true,
           isStaticWikidataCard: true,
@@ -138,6 +160,10 @@ export const searchOpenLibrary = async (query, {
     setOpenLibraryResults(results);
     return results;
   };
+
+  // Afficher tout de suite le curé : l'utilisateur ne reste pas sur « 0 résultat »
+  // pendant les 8–12 s d'attente Open Library.
+  const immediate = applyCuratedFallback([]);
   
   try {
     console.log('✅ Début de la recherche globale Open Library (toutes catégories)');
@@ -150,10 +176,11 @@ export const searchOpenLibrary = async (query, {
     };
 
     const [olSettled, wdSettled] = await Promise.allSettled([
-      fetch(`${backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}&limit=40`, {
-        headers: authHeaders,
-        signal: controller.signal,
-      }),
+      fetchWithTimeout(
+        `${backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}&limit=40`,
+        { headers: authHeaders, signal: controller.signal },
+        OL_CLIENT_TIMEOUT_MS
+      ),
       fetchWikidataSpotlight(query, token, backendUrl, controller.signal),
     ]);
 
@@ -166,6 +193,11 @@ export const searchOpenLibrary = async (query, {
         ? wdSettled.value
         : { wikidataSpotlight: [], wikidataMatcher: () => null };
 
+    // Fusionner Wikidata dès qu'il est là, même si OL n'a rien donné
+    if (wikidataSpotlight.length) {
+      applyCuratedFallback(wikidataSpotlight);
+    }
+
     const response = olSettled.status === 'fulfilled' ? olSettled.value : null;
 
     if (response?.ok) {
@@ -173,13 +205,13 @@ export const searchOpenLibrary = async (query, {
       if (isStale()) return;
 
       // Open Library a répondu mais sans livres utiles (timeout amont, panne soft) :
-      // basculer sur curé + Wikidata plutôt que d'afficher une grille vide.
+      // garder curé + Wikidata déjà affichés.
       if (data.source_unavailable || !(data.books || []).length) {
         const results = applyCuratedFallback(wikidataSpotlight);
         if (isStale()) return;
         if (results.length > 0) {
           toast.success(`${results.length} résultat(s) trouvé(s)`);
-        } else {
+        } else if (!immediate.length) {
           toast.error(
             data.source_unavailable
               ? 'Open Library indisponible — aucun résultat local'
@@ -338,11 +370,11 @@ export const searchOpenLibrary = async (query, {
         ` trouvé(s)`
       );
     } else {
-      // OL indisponible (401, 503, réseau…) : curé + Wikidata restent utilisables
+      // OL indisponible / timeout client : curé + Wikidata déjà (ou encore) affichés
       const results = applyCuratedFallback(wikidataSpotlight);
       if (results.length > 0) {
         toast.success(`${results.length} résultat(s) trouvé(s)`);
-      } else {
+      } else if (!immediate.length) {
         toast.error('Erreur lors de la recherche Open Library');
       }
     }
@@ -351,10 +383,10 @@ export const searchOpenLibrary = async (query, {
     if (isStale() || error?.name === 'AbortError') return;
     console.error('Erreur recherche Open Library:', error);
     const results = applyCuratedFallback([]);
-    if (results.length === 0) {
-      toast.error('Erreur lors de la recherche Open Library');
-    } else {
+    if (results.length > 0) {
       toast.success(`${results.length} résultat(s) trouvé(s)`);
+    } else if (!immediate.length) {
+      toast.error('Erreur lors de la recherche Open Library');
     }
   } finally {
     // Ne pas éteindre l'indicateur d'une recherche encore en cours
