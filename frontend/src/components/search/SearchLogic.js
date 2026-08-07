@@ -170,6 +170,24 @@ export const searchOpenLibrary = async (query, {
 
     if (response?.ok) {
       const data = await response.json();
+      if (isStale()) return;
+
+      // Open Library a répondu mais sans livres utiles (timeout amont, panne soft) :
+      // basculer sur curé + Wikidata plutôt que d'afficher une grille vide.
+      if (data.source_unavailable || !(data.books || []).length) {
+        const results = applyCuratedFallback(wikidataSpotlight);
+        if (isStale()) return;
+        if (results.length > 0) {
+          toast.success(`${results.length} résultat(s) trouvé(s)`);
+        } else {
+          toast.error(
+            data.source_unavailable
+              ? 'Open Library indisponible — aucun résultat local'
+              : 'Aucun résultat trouvé'
+          );
+        }
+        return;
+      }
 
       // ── 1. Dédoublonnage par ol_key ──────────────────────────────────────
       const seen = new Set();

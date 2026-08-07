@@ -183,11 +183,16 @@ async def search_open_library(
             # pas faire échouer l'autre (ni la réponse globale).
             try:
                 params = _build_ol_params(q_term, fetch_limit, year_start, year_end, language, author_filter)
-                r = requests.get(OL_URL, params=params, timeout=6)
-                return r.json() if r.ok else {}
+                # 12s : Open Library est souvent lent ; 6s produisait trop de listes vides.
+                r = requests.get(OL_URL, params=params, timeout=12)
+                if not r.ok:
+                    return {"docs": [], "numFound": 0, "_failed": True}
+                data = r.json()
+                data["_failed"] = False
+                return data
             except requests.RequestException as exc:
                 logger.warning("OpenLibrary lent pour '%s': %s", q_term, exc)
-                return {}
+                return {"docs": [], "numFound": 0, "_failed": True}
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
             futures = [pool.submit(_fetch, qt) for qt in queries]
@@ -205,6 +210,9 @@ async def search_open_library(
                 merged_docs.append(doc)
 
         total_found = max((r.get("numFound", 0) for r in results), default=0)
+        # Si toutes les sous-requêtes ont échoué, le front doit basculer sur
+        # Wikidata / curé plutôt que d'afficher « 0 résultat » comme un succès.
+        all_failed = bool(results) and all(r.get("_failed") for r in results)
 
         # ── Filtrage pages + construction objets livres ──────────────────────
         books = []
@@ -247,7 +255,7 @@ async def search_open_library(
         return {
             "books": books,
             "total_found": total_found,
-            "source_unavailable": False,
+            "source_unavailable": all_failed,
             "filters_applied": {
                 "year_range": f"{year_start}-{year_end}" if year_start or year_end else None,
                 "language": language,

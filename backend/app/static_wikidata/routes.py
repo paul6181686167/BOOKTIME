@@ -20,9 +20,8 @@ async def static_wikidata_status(_user: dict = Depends(get_current_user)):
 async def search_series(
     q: str = Query("", min_length=1, max_length=200),
     limit: int = Query(15, ge=1, le=50),
-    _user: dict = Depends(get_current_user),
 ):
-    """Recherche textuelle sur l'index title_index (normalisation alignée sur l'export)."""
+    """Recherche textuelle sur l'index (public — catalogue en lecture seule)."""
     q = (q or "").strip()
     if len(q) < 2:
         return {"results": [], "query": q}
@@ -30,8 +29,8 @@ async def search_series(
 
 
 @router.get("/series/{qid}")
-async def get_series(qid: str, _user: dict = Depends(get_current_user)):
-    """Détail d'une série par QID (contenu tel quel dans wikidata_series_db.json)."""
+async def get_series(qid: str):
+    """Détail d'une série par QID (public — catalogue en lecture seule)."""
     if not qid.startswith("Q"):
         raise HTTPException(status_code=400, detail="QID invalide")
     row = service.get_series(qid)
@@ -46,9 +45,8 @@ async def get_series(qid: str, _user: dict = Depends(get_current_user)):
 @router.get("/series/top/by-popularity")
 async def top_series(
     limit: int = Query(30, ge=1, le=200),
-    _user: dict = Depends(get_current_user),
 ):
-    """Séries triées par popularity (0–100) puis work_count ; sans popularity, retombe sur work_count."""
+    """Séries triées par popularity (public — catalogue en lecture seule)."""
     return {"results": service.top_series_by_popularity(limit=limit)}
 
 
