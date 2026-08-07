@@ -19,6 +19,7 @@ import SeriesDetector from '../../utils/seriesDetector';
 import { API_BASE_URL } from '../../config/environment';
 import { displayBookTitleFrFirst, mergeOpenLibraryBooksByVolume } from '../../utils/openLibraryBookDisplay';
 import { openStaticWikidataSeriesModal } from '../../utils/openStaticWikidataSeries';
+import { buildOwnershipIndex, isBookOwned } from '../../utils/bookOwnership';
 import {
   dedupeWikidataStaticSeriesOverOpenLibrary,
   dedupeSeriesCardsByName,
@@ -33,13 +34,20 @@ import {
   resolveSeriesTotalBooks,
 } from '../../utils/seriesAttribution';
 
-async function fetchWikidataSpotlight(query, token, backendUrl) {
+// Une réponse lente ne doit jamais écraser les résultats d'une recherche plus
+// récente : chaque appel prend un numéro de séquence et seul le dernier a le droit
+// d'écrire dans l'état. La requête précédente est en outre interrompue, pour ne pas
+// consommer réseau et batterie pour un résultat qui ne sera pas affiché.
+let searchSequence = 0;
+let inFlightSearch = null;
+
+async function fetchWikidataSpotlight(query, token, backendUrl, signal) {
   let wikidataSpotlight = [];
   let wikidataMatcher = () => null;
   try {
     const wdRes = await fetch(
       `${backendUrl}/api/static-wikidata/series/search?q=${encodeURIComponent(query.trim())}&limit=10`,
-      { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      { headers: token ? { Authorization: `Bearer ${token}` } : {}, signal }
     );
     let wdData = wdRes.ok ? await wdRes.json() : null;
     let rows = wdData?.results || [];
@@ -47,7 +55,7 @@ async function fetchWikidataSpotlight(query, token, backendUrl) {
     if (!rows.length) {
       const topR = await fetch(
         `${backendUrl}/api/static-wikidata/series/top/by-popularity?limit=4`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        { headers: token ? { Authorization: `Bearer ${token}` } : {}, signal }
       );
       if (topR.ok) {
         wdData = await topR.json();
@@ -109,6 +117,13 @@ export const searchOpenLibrary = async (query, {
     return;
   }
 
+  // Cette recherche devient la référence ; la précédente est abandonnée.
+  const sequence = ++searchSequence;
+  const isStale = () => sequence !== searchSequence;
+  if (inFlightSearch) inFlightSearch.abort();
+  const controller = new AbortController();
+  inFlightSearch = controller;
+
   setSearchLoading(true);
   setIsSearchMode(true);
   setLastSearchTerm(query);
@@ -119,6 +134,7 @@ export const searchOpenLibrary = async (query, {
     let results = dedupeSeriesCardsByName(
       dedupeWikidataStaticSeriesOverOpenLibrary([...curated, ...extra])
     );
+    if (isStale()) return results;
     setOpenLibraryResults(results);
     return results;
   };
@@ -136,9 +152,14 @@ export const searchOpenLibrary = async (query, {
     const [olSettled, wdSettled] = await Promise.allSettled([
       fetch(`${backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}&limit=40`, {
         headers: authHeaders,
+        signal: controller.signal,
       }),
-      fetchWikidataSpotlight(query, token, backendUrl),
+      fetchWikidataSpotlight(query, token, backendUrl, controller.signal),
     ]);
+
+    // Une recherche plus récente est partie entre-temps : ne rien afficher et
+    // surtout ne pas payer le post-traitement (attribution séries, tris, dédup).
+    if (isStale()) return;
 
     const { wikidataSpotlight, wikidataMatcher } =
       wdSettled.status === 'fulfilled'
@@ -159,6 +180,8 @@ export const searchOpenLibrary = async (query, {
       });
 
       // ── 2. Enrichir chaque livre (ownership + badge) ─────────────────────
+      // Index construit une seule fois pour toute la bibliothèque
+      const ownershipIndex = buildOwnershipIndex(books);
       const enriched = uniqueBooks.map(book => {
         const categoryBadge = getCategoryBadgeFromBook(book);
         const display_title = displayBookTitleFrFirst(book);
@@ -166,7 +189,7 @@ export const searchOpenLibrary = async (query, {
         return {
           ...withDisplay,
           isFromOpenLibrary: true,
-          isOwned: detectBookOwnership(withDisplay, books),
+          isOwned: isBookOwned(withDisplay, ownershipIndex),
           id: `ol_${book.ol_key}`,
           categoryBadge,
           category: book.category || categoryBadge.key || 'roman',
@@ -306,6 +329,8 @@ export const searchOpenLibrary = async (query, {
       }
     }
   } catch (error) {
+    // Recherche abandonnée au profit d'une plus récente : silence complet.
+    if (isStale() || error?.name === 'AbortError') return;
     console.error('Erreur recherche Open Library:', error);
     const results = applyCuratedFallback([]);
     if (results.length === 0) {
@@ -314,56 +339,13 @@ export const searchOpenLibrary = async (query, {
       toast.success(`${results.length} résultat(s) trouvé(s)`);
     }
   } finally {
-    setSearchLoading(false);
+    // Ne pas éteindre l'indicateur d'une recherche encore en cours
+    if (!isStale()) setSearchLoading(false);
+    if (inFlightSearch === controller) inFlightSearch = null;
   }
 };
 
-// DÉTECTION DE PROPRIÉTÉ D'UN LIVRE
-const detectBookOwnership = (book, books) => {
-  return books.some(localBook => {
-    // Normaliser les titres et auteurs pour la comparaison
-    const normalizeString = (str) => {
-      if (!str) return '';
-      return str.toLowerCase()
-        .trim()
-        .replace(/[^\w\s]/g, '') // Supprimer la ponctuation
-        .replace(/\s+/g, ' '); // Normaliser les espaces
-    };
-    
-    const localTitle = normalizeString(localBook.title);
-    const localAuthor = normalizeString(localBook.author);
-    const openLibTitle = normalizeString(book.display_title || book.title);
-    const openLibAuthor = normalizeString(book.author);
-    
-    // Vérification par ol_key d'abord (plus précise)
-    if (localBook.ol_key && book.ol_key && localBook.ol_key === book.ol_key) {
-      return true;
-    }
-    
-    // Vérification par ISBN si disponible
-    if (localBook.isbn && book.isbn && 
-        localBook.isbn.replace(/[-\s]/g, '') === book.isbn.replace(/[-\s]/g, '')) {
-      return true;
-    }
-    
-    // Vérification par titre et auteur (comparaison exacte)
-    if (localTitle === openLibTitle && localAuthor === openLibAuthor) {
-      return true;
-    }
-    
-    // Vérification par titre et auteur (comparaison flexible)
-    // Le titre de Open Library doit contenir le titre local OU vice versa
-    const titleMatch = (localTitle.includes(openLibTitle) || openLibTitle.includes(localTitle)) && 
-                      (localTitle.length > 3 && openLibTitle.length > 3); // Éviter les correspondances trop courtes
-    
-    // L'auteur doit correspondre exactement ou l'un doit contenir l'autre
-    const authorMatch = localAuthor === openLibAuthor || 
-                       (localAuthor.includes(openLibAuthor) && openLibAuthor.length > 3) ||
-                       (openLibAuthor.includes(localAuthor) && localAuthor.length > 3);
-    
-    return titleMatch && authorMatch;
-  });
-};
+// La détection de propriété vit désormais dans utils/bookOwnership.js (règle unique)
 
 // Fonction verifyAndDisplayBook déplacée et consolidée dans l'export ci-dessous
 

@@ -1,5 +1,5 @@
 // Imports
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { toast, Toaster } from 'react-hot-toast';
 
@@ -10,29 +10,27 @@ import { AuthProvider, useAuth } from './hooks/useAuth';
 // Component imports
 import LoginPage from './components/user/LoginPage';
 import UnifiedSearchBar from './components/UnifiedSearchBar';
-import BookDetailModal from './components/BookDetailModal';
-import AuthorModal from './components/AuthorModal';
-import SeriesCard from './components/SeriesCard';
-import SeriesDetailModal from './components/SeriesDetailModal';
-import SeriesDetailPage from './pages/SeriesDetailPage';
-import RecommendationPage from './components/recommendations/RecommendationPage';
-import OpenLibraryBookPage from './pages/OpenLibraryBookPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import ExportImportPage from './components/exportimport/ExportImportPage';
-import ProfileModal from './components/common/ProfileModal';
-import ExportImportModal from './components/export-import/ExportImportModal';
-import SlidePanel from './components/SlidePanel';
-import UpcomingPanel from './components/UpcomingPanel';
 import DiscoverSection from './components/DiscoverSection';
 
-// PHASE 3.3 - Composants Social
-import SocialModal from './components/social/SocialModal';
-
-// PHASE 3.4 - Recommandations Avancées IA
-import AdvancedRecommendationsModal from './components/advanced-recommendations/AdvancedRecommendationsModal';
-
-// PHASE 3.5 - Intégrations Externes
-import IntegrationsModal from './components/integrations/IntegrationsModal';
+// Pages de routes et modales : chargées à la demande pour ne pas alourdir le
+// premier rendu. Les deux modales les plus ouvertes sont préchargées en temps mort
+// (voir useIdlePreload) afin que leur ouverture reste instantanée.
+const BookDetailModal = lazy(() => import('./components/BookDetailModal'));
+const AuthorModal = lazy(() => import('./components/AuthorModal'));
+const SeriesDetailModal = lazy(() => import('./components/SeriesDetailModal'));
+const SeriesDetailPage = lazy(() => import('./pages/SeriesDetailPage'));
+const RecommendationPage = lazy(() => import('./components/recommendations/RecommendationPage'));
+const OpenLibraryBookPage = lazy(() => import('./pages/OpenLibraryBookPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const ExportImportPage = lazy(() => import('./components/exportimport/ExportImportPage'));
+const ProfileModal = lazy(() => import('./components/common/ProfileModal'));
+const ExportImportModal = lazy(() => import('./components/export-import/ExportImportModal'));
+const UpcomingPanel = lazy(() => import('./components/UpcomingPanel'));
+const SocialModal = lazy(() => import('./components/social/SocialModal'));
+const AdvancedRecommendationsModal = lazy(() =>
+  import('./components/advanced-recommendations/AdvancedRecommendationsModal')
+);
+const IntegrationsModal = lazy(() => import('./components/integrations/IntegrationsModal'));
 
 // PHASE 2.4 - Monitoring et Analytics
 import ErrorBoundary from './components/monitoring/ErrorBoundary';
@@ -58,6 +56,7 @@ import usePerformanceMonitoring from './hooks/usePerformanceMonitoring';
 import useUserAnalytics from './hooks/useUserAnalytics';
 
 // Utils imports
+import { buildOwnershipIndex, isBookOwned } from './utils/bookOwnership';
 import { getCategoryBadge } from './utils/helpers';
 import { TAB_CONFIG } from './utils/constants';
 import { API_BASE_URL } from './config/environment';
@@ -155,16 +154,58 @@ const AnimatedCounter = ({ value, className }) => {
   return <span className={className}>{displayed}</span>;
 };
 
+// Donne une identité stable à un callback tout en appelant toujours sa dernière
+// version. Nécessaire pour que React.memo protège réellement les cartes de la
+// grille : sans cela, un handler recréé à chaque rendu invalide la mémoïsation.
+const useStableCallback = (fn) => {
+  const ref = React.useRef(fn);
+  useEffect(() => {
+    ref.current = fn;
+  });
+  return useCallback((...args) => ref.current?.(...args), []);
+};
+
+// Écran d'attente le temps qu'un morceau de code différé arrive
+const RouteFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+  </div>
+);
+
+// Précharge en temps mort les écrans les plus ouverts, pour que le chargement
+// différé ne se paie pas au moment du clic.
+const useIdlePreload = () => {
+  useEffect(() => {
+    let cancelled = false;
+    const preload = () => {
+      if (cancelled) return;
+      import('./components/BookDetailModal');
+      import('./components/SeriesDetailModal');
+    };
+    const hasIdle = typeof window.requestIdleCallback === 'function';
+    const handle = hasIdle
+      ? window.requestIdleCallback(preload, { timeout: 4000 })
+      : setTimeout(preload, 2500);
+    return () => {
+      cancelled = true;
+      if (hasIdle) window.cancelIdleCallback(handle);
+      else clearTimeout(handle);
+    };
+  }, []);
+};
+
 // Main App Content
 function AppContent() {
   return (
-    <Routes>
-      <Route path="/" element={<MainApp />} />
-      <Route path="/series/:seriesName" element={<SeriesDetailPage />} />
-      <Route path="/recommendations" element={<RecommendationPage />} />
-      <Route path="/export-import" element={<ExportImportPage />} />
-      <Route path="/catalogue/*" element={<OpenLibraryBookPage />} />
-    </Routes>
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
+        <Route path="/" element={<MainApp />} />
+        <Route path="/series/:seriesName" element={<SeriesDetailPage />} />
+        <Route path="/recommendations" element={<RecommendationPage />} />
+        <Route path="/export-import" element={<ExportImportPage />} />
+        <Route path="/catalogue/*" element={<OpenLibraryBookPage />} />
+      </Routes>
+    </Suspense>
   );
 }
 
@@ -172,6 +213,7 @@ function AppContent() {
 function MainApp() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  useIdlePreload();
   
   // États locaux pour l'UI
   const [activeTab, setActiveTab] = useState('roman');
@@ -591,6 +633,10 @@ function MainApp() {
     }
   };
 
+  // Identités stables passées aux grilles, pour que la mémoïsation des cartes tienne
+  const stableItemClick = useStableCallback(handleItemClick);
+  const stableAuthorClick = useStableCallback(handleAuthorClick);
+
   // Gestion changement d'onglet avec analytics
   const handleTabChange = (newTab) => {
     // PHASE 2.4 - Analytics catégories
@@ -668,18 +714,10 @@ function MainApp() {
   // Helper : recalcule isOwned depuis la bibliothèque courante (évite les faux "déjà possédé" après suppression)
   const recomputeOwnership = useCallback((olResults, localBooks) => {
     if (!olResults?.length) return olResults;
-    return olResults.map(item => {
-      if (item.isSeriesCard) return item;
-      const owned = (localBooks || []).some(b => {
-        if (b.ol_key && item.ol_key && b.ol_key === item.ol_key) return true;
-        if (b.isbn && item.isbn && b.isbn.replace(/[-\s]/g, '') === item.isbn.replace(/[-\s]/g, '')) return true;
-        const normalize = s => (s || '').toLowerCase().trim().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ');
-        const sameTitle = normalize(b.title) === normalize(item.title);
-        const sameAuthor = normalize(b.author) === normalize(item.author);
-        return sameTitle && sameAuthor && normalize(b.title).length > 3;
-      });
-      return { ...item, isOwned: owned };
-    });
+    const index = buildOwnershipIndex(localBooks);
+    return olResults.map((item) =>
+      item.isSeriesCard ? item : { ...item, isOwned: isBookOwned(item, index) }
+    );
   }, []);
 
   // Calculer les livres à afficher selon le mode
@@ -737,6 +775,12 @@ function MainApp() {
     return groups;
   }, [displayedBooks, searchHook.isSearchMode]);
   const { sortConfig, setSortConfig, sortBooks } = useSectionSort();
+
+  // Tris mémoïsés : appelés directement dans le JSX, ils renvoyaient un nouveau
+  // tableau à chaque rendu et forçaient les trois grilles à se recalculer.
+  const sortedReading = useMemo(() => sortBooks(groupedBooks.reading || []), [sortBooks, groupedBooks.reading]);
+  const sortedToRead = useMemo(() => sortBooks(groupedBooks.to_read || []), [sortBooks, groupedBooks.to_read]);
+  const sortedCompleted = useMemo(() => sortBooks(groupedBooks.completed || []), [sortBooks, groupedBooks.completed]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
@@ -927,10 +971,10 @@ function MainApp() {
                     <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} />
                   </div>
                   <BookGrid
-                    books={sortBooks(groupedBooks.reading)}
+                    books={sortedReading}
                     loading={false}
-                    onItemClick={handleItemClick}
-                    onAuthorClick={handleAuthorClick}
+                    onItemClick={stableItemClick}
+                    onAuthorClick={stableAuthorClick}
                     showEmptyState={false}
                   />
                 </div>
@@ -946,10 +990,10 @@ function MainApp() {
                     <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} />
                   </div>
                   <BookGrid
-                    books={sortBooks(groupedBooks.to_read)}
+                    books={sortedToRead}
                     loading={false}
-                    onItemClick={handleItemClick}
-                    onAuthorClick={handleAuthorClick}
+                    onItemClick={stableItemClick}
+                    onAuthorClick={stableAuthorClick}
                     showEmptyState={false}
                   />
                 </div>
@@ -965,10 +1009,10 @@ function MainApp() {
                     <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} />
                   </div>
                   <BookGrid
-                    books={sortBooks(groupedBooks.completed)}
+                    books={sortedCompleted}
                     loading={false}
-                    onItemClick={handleItemClick}
-                    onAuthorClick={handleAuthorClick}
+                    onItemClick={stableItemClick}
+                    onAuthorClick={stableAuthorClick}
                     showEmptyState={false}
                   />
                 </div>
@@ -1015,8 +1059,8 @@ function MainApp() {
             <BookGrid
               books={displayedBooks}
               loading={searchHook.searchLoading}
-              onItemClick={handleItemClick}
-              onAuthorClick={handleAuthorClick}
+              onItemClick={stableItemClick}
+              onAuthorClick={stableAuthorClick}
               showEmptyState={true}
               emptyTitle="Aucun résultat pour cette recherche"
               emptySubtitle="Essaie un autre titre, auteur, ou orthographe."
@@ -1025,7 +1069,9 @@ function MainApp() {
         </div>
       </main>
       
-      {/* Modals */}
+      {/* Modales : code chargé à la demande, d'où la frontière Suspense.
+          Fallback nul : la modale s'affiche dès que son code est là. */}
+      <Suspense fallback={null}>
       {booksHook.showBookModal && booksHook.selectedBook && (
         <BookDetailModal
           book={booksHook.selectedBook}
@@ -1178,6 +1224,8 @@ function MainApp() {
         />
       )}
       
+      </Suspense>
+
       {/* Toast notifications */}
       <Toaster
         position="bottom-right"
@@ -1188,11 +1236,15 @@ function MainApp() {
       />
       
       {/* Panneau "À venir" */}
-      <UpcomingPanel
-        isOpen={showUpcomingPanel}
-        onClose={() => setShowUpcomingPanel(false)}
-        userBooks={unifiedContent.books || []}
-      />
+      {showUpcomingPanel && (
+        <Suspense fallback={null}>
+          <UpcomingPanel
+            isOpen={showUpcomingPanel}
+            onClose={() => setShowUpcomingPanel(false)}
+            userBooks={unifiedContent.books || []}
+          />
+        </Suspense>
+      )}
       
       {/* PHASE 2.4 - Performance Widget */}
       <PerformanceWidget position="bottom-right" isVisible={false} />
@@ -1219,12 +1271,14 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <ErrorBoundary>
-            <Routes>
-              {/* Route publique */}
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
-              {/* Toutes les autres routes passent par AppWithAuth (vérification login) */}
-              <Route path="/*" element={<AppWithAuth />} />
-            </Routes>
+            <Suspense fallback={<RouteFallback />}>
+              <Routes>
+                {/* Route publique */}
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                {/* Toutes les autres routes passent par AppWithAuth (vérification login) */}
+                <Route path="/*" element={<AppWithAuth />} />
+              </Routes>
+            </Suspense>
           </ErrorBoundary>
         </AuthProvider>
       </ThemeProvider>

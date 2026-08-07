@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   BookOpenIcon,
   CheckCircleIcon,
@@ -645,8 +645,11 @@ const SeriesDetailModal = ({
     setMissingPreviousWarning(null);
   };
 
-  // Enrichir les données de série au chargement
-  const enrichedSeries = enrichSeriesData(series);
+  // Enrichir les données de série au chargement.
+  // Mémoïsé car la résolution parcourt tout le référentiel curé : sans cela le scan
+  // était refait à chaque rendu de la modale (frappe, changement de statut, etc.).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const enrichedSeries = useMemo(() => enrichSeriesData(series), [series]);
 
   // Options de statut pour les boutons rapides
   const statusOptions = [

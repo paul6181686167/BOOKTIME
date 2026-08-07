@@ -5,10 +5,27 @@ import { EXTENDED_SERIES_DATABASE } from './seriesDatabaseExtended.js';
 import { FuzzyMatcher } from './fuzzyMatcher.js';
 import { SeriesValidator } from './seriesValidator.js';
 
+// Le référentiel est un import statique immuable : à requête égale, le résultat est
+// identique. Ce cache évite de réexécuter le fuzzy matching sur les 123 séries à
+// chaque recherche (notamment lors des recherches répétées ou du retour arrière).
+const ADVANCED_SCORING_CACHE = new Map();
+const ADVANCED_SCORING_LIMIT = 300;
+
 export class SearchOptimizer {
-  
-  // Algorithme de détection avec scoring prioritaire optimisé - NOUVELLE ARCHITECTURE MODULAIRE
+
   static detectSeriesWithAdvancedScoring(searchQuery) {
+    const cacheKey = String(searchQuery || '').trim().toLowerCase();
+    if (ADVANCED_SCORING_CACHE.has(cacheKey)) {
+      return ADVANCED_SCORING_CACHE.get(cacheKey).slice();
+    }
+    const result = this._computeSeriesWithAdvancedScoring(searchQuery);
+    if (ADVANCED_SCORING_CACHE.size >= ADVANCED_SCORING_LIMIT) ADVANCED_SCORING_CACHE.clear();
+    ADVANCED_SCORING_CACHE.set(cacheKey, result);
+    return result.slice();
+  }
+
+  // Algorithme de détection avec scoring prioritaire optimisé - NOUVELLE ARCHITECTURE MODULAIRE
+  static _computeSeriesWithAdvancedScoring(searchQuery) {
     const detectedSeries = [];
     
     // Parcourir toutes les catégories de séries avec nouveaux modules

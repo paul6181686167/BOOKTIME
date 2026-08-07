@@ -38,6 +38,21 @@ const buildCuratedNameIndex = () => {
 };
 const CURATED_NAME_INDEX = buildCuratedNameIndex();
 
+// Le référentiel curé est un import statique immuable : les résolutions sont donc
+// déterministes et mémoïsables. Sans ce cache, une recherche déclenche des dizaines
+// de parcours complets du référentiel (fuzzy + Levenshtein) sur le thread principal.
+const MEMO_LIMIT = 2000;
+const memoGet = (cache, key, compute) => {
+  if (cache.has(key)) return cache.get(key);
+  const value = compute();
+  if (cache.size >= MEMO_LIMIT) cache.clear();
+  cache.set(key, value);
+  return value;
+};
+
+const NAME_RESOLUTION_CACHE = new Map();
+const BOOK_SERIES_CACHE = new Map();
+
 /**
  * Résout un nom de série (libellé brut) vers l'entrée curée correspondante.
  * @returns {{ key: string, data: object }|null}
@@ -46,13 +61,15 @@ export const resolveCuratedSeriesByName = (seriesName) => {
   if (!seriesName) return null;
   const norm = FuzzyMatcher.normalizeString(seriesName);
   if (!norm) return null;
-  if (CURATED_NAME_INDEX.has(norm)) return CURATED_NAME_INDEX.get(norm);
-  // Repli fuzzy léger (tolérance orthographique) sur les noms canoniques.
-  for (const [indexedNorm, entry] of CURATED_NAME_INDEX.entries()) {
-    if (indexedNorm.length < 4) continue;
-    if (FuzzyMatcher.fuzzyMatch(norm, indexedNorm, 2) >= 90) return entry;
-  }
-  return null;
+  return memoGet(NAME_RESOLUTION_CACHE, norm, () => {
+    if (CURATED_NAME_INDEX.has(norm)) return CURATED_NAME_INDEX.get(norm);
+    // Repli fuzzy léger (tolérance orthographique) sur les noms canoniques.
+    for (const [indexedNorm, entry] of CURATED_NAME_INDEX.entries()) {
+      if (indexedNorm.length < 4) continue;
+      if (FuzzyMatcher.fuzzyMatch(norm, indexedNorm, 2) >= 90) return entry;
+    }
+    return null;
+  });
 };
 
 const bookTitleCandidates = (book) => {
@@ -72,26 +89,32 @@ const bookTitleCandidates = (book) => {
 export const findCuratedSeriesForBook = (book) => {
   if (!book) return null;
   const author = book.author || '';
-  for (const title of bookTitleCandidates(book)) {
-    // a. Patterns titre + auteur (Harry Potter, LOTR, …)
-    const byPattern = SeriesDetector.analyzeBookTitle(title, author);
-    // b. Recherche dans le référentiel (nom / variations / titres de tomes, exclusions gérées)
-    const detection = byPattern.belongsToSeries
-      ? byPattern
-      : SeriesDetector.searchInSeriesDatabase(title, author);
-    if (detection.belongsToSeries) {
-      const resolved = resolveCuratedSeriesByName(detection.seriesName);
-      return {
-        seriesKey: resolved?.key || `curated_${FuzzyMatcher.normalizeString(detection.seriesName)}`,
-        seriesName: resolved?.data?.name || detection.seriesName,
-        seriesData: resolved?.data || null,
-        source: 'curated',
-        confidence: detection.confidence,
-        method: detection.method,
-      };
+  const candidates = bookTitleCandidates(book);
+  const cacheKey = `${candidates.join('\u0000')}\u0001${author}`;
+  const cached = memoGet(BOOK_SERIES_CACHE, cacheKey, () => {
+    for (const title of candidates) {
+      // a. Patterns titre + auteur (Harry Potter, LOTR, …)
+      const byPattern = SeriesDetector.analyzeBookTitle(title, author);
+      // b. Recherche dans le référentiel (nom / variations / titres de tomes, exclusions gérées)
+      const detection = byPattern.belongsToSeries
+        ? byPattern
+        : SeriesDetector.searchInSeriesDatabase(title, author);
+      if (detection.belongsToSeries) {
+        const resolved = resolveCuratedSeriesByName(detection.seriesName);
+        return {
+          seriesKey: resolved?.key || `curated_${FuzzyMatcher.normalizeString(detection.seriesName)}`,
+          seriesName: resolved?.data?.name || detection.seriesName,
+          seriesData: resolved?.data || null,
+          source: 'curated',
+          confidence: detection.confidence,
+          method: detection.method,
+        };
+      }
     }
-  }
-  return null;
+    return null;
+  });
+  // Copie défensive : les appelants enrichissent parfois l'attribution retournée.
+  return cached ? { ...cached } : null;
 };
 
 /**
@@ -204,17 +227,21 @@ export const attributeBookToSeries = (book, { wikidataMatcher } = {}) => {
  * Tolkien (y compris les titres anglais absents des `volume_titles` FR) sont rattachés.
  * @returns {{ seriesKey, seriesName, seriesData }|null}
  */
+const QUERY_SERIES_CACHE = new Map();
+
 export const findCuratedSeriesByQuery = (query) => {
   if (!query || !String(query).trim()) return null;
   const q = String(query).trim();
-  const direct = resolveCuratedSeriesByName(q);
-  if (direct) return { seriesKey: direct.key, seriesName: direct.data.name, seriesData: direct.data };
-  const detection = SeriesDetector.searchInSeriesDatabase(q, '');
-  if (detection.belongsToSeries) {
-    const resolved = resolveCuratedSeriesByName(detection.seriesName);
-    if (resolved) return { seriesKey: resolved.key, seriesName: resolved.data.name, seriesData: resolved.data };
-  }
-  return null;
+  return memoGet(QUERY_SERIES_CACHE, q.toLowerCase(), () => {
+    const direct = resolveCuratedSeriesByName(q);
+    if (direct) return { seriesKey: direct.key, seriesName: direct.data.name, seriesData: direct.data };
+    const detection = SeriesDetector.searchInSeriesDatabase(q, '');
+    if (detection.belongsToSeries) {
+      const resolved = resolveCuratedSeriesByName(detection.seriesName);
+      if (resolved) return { seriesKey: resolved.key, seriesName: resolved.data.name, seriesData: resolved.data };
+    }
+    return null;
+  });
 };
 
 const titleMatchesExclusion = (title, seriesData) => {

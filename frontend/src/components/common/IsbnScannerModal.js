@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { API_BASE_URL } from '../../config/environment';
 
 function normalizeIsbn(raw) {
@@ -131,6 +130,9 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
     handledRef.current = false;
     await stopScanner();
     try {
+      // Chargé à la demande : le décodeur de codes-barres pèse ~1,2 Mo et ne concerne
+      // que les utilisateurs qui activent la caméra.
+      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import('html5-qrcode');
       const scanner = new Html5Qrcode(readerId, {
         verbose: false,
         formatsToSupport: [
