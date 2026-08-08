@@ -349,6 +349,111 @@ class OpenLibraryService:
             return None
         return s
 
+    @staticmethod
+    def _french_title_alias(title: str) -> Optional[str]:
+        """Alias FR connus (même source que la recherche OL Booktime)."""
+        try:
+            from ..utils.book_synopsis import _FR_TITLE_ALIASES, _normalize_title
+            import re as _re
+
+            aliases = _FR_TITLE_ALIASES.get(_normalize_title(title) or "", ())
+            fr_hint = _re.compile(
+                r"[àâäéèêëïîôùûüçœæ]|^(le|la|les|l'|l’|un|une|des|du)\b",
+                _re.I,
+            )
+            for a in aliases:
+                if a and a.lower() != (title or "").lower() and fr_hint.search(a):
+                    return a
+            if fr_hint.search(title or ""):
+                return None
+        except Exception:
+            return None
+        return None
+
+    @staticmethod
+    def _saga_from_doc(doc: Dict, title: str = "") -> str:
+        """Nom de série depuis le champ OL series ou les sujets franchise/series."""
+        import re as _re
+
+        raw_series = doc.get("series") or []
+        if raw_series:
+            s = raw_series[0] if isinstance(raw_series, list) else raw_series
+            s = str(s or "").strip()
+            if s:
+                vol_match = _re.search(r"\s*[#,]\s*\d+", s)
+                name = s[: vol_match.start()].strip() if vol_match else s
+                if name and name.lower() != (title or "").lower():
+                    return name
+
+        title_l = (title or "").lower()
+        for subj in doc.get("subject") or []:
+            low = str(subj).lower()
+            if low.startswith("series:") or low.startswith("franchise:"):
+                name = str(subj).split(":", 1)[1].strip()
+                # Éviter « Iron Gold Tetralogy » quand on veut l'univers Red Rising
+                if not name or name.lower() == title_l:
+                    continue
+                if "tetralogy" in name.lower() or "trilogy" in name.lower():
+                    # Garder si pas d'autre candidat plus tard
+                    continue
+                return name
+        # Repli tetralogy / trilogy
+        for subj in doc.get("subject") or []:
+            low = str(subj).lower()
+            if low.startswith("series:"):
+                name = str(subj).split(":", 1)[1].strip()
+                if name and name.lower() != title_l:
+                    # « Iron Gold Tetralogy » → tenter de garder un nom propre
+                    cleaned = _re.sub(
+                        r"\s+(tetralogy|trilogy|saga|series)\s*$",
+                        "",
+                        name,
+                        flags=_re.I,
+                    ).strip()
+                    return cleaned or name
+        return ""
+
+    def _normalize_ol_book_doc(self, doc: Dict) -> Dict:
+        """Normalise un doc OL au format Booktime (titre FR, saga, ol_key…)."""
+        import re as _re
+
+        ol_title = (doc.get("title") or "").strip()
+        authors = doc.get("author_name") or []
+        langs = doc.get("language") or []
+        langs_l = [str(l).lower() for l in langs]
+        alias = self._french_title_alias(ol_title)
+        display_title = alias or ol_title
+        saga = self._saga_from_doc(doc, ol_title)
+        if saga:
+            saga = _re.sub(
+                r"\s+(saga|series|cycle|tetralogy|trilogy)\s*$",
+                "",
+                saga,
+                flags=_re.I,
+            ).strip() or saga
+        # title_fr uniquement si on a un vrai alias FR (pas le titre EN recopié)
+        title_fr = alias if alias and alias != ol_title else None
+        if not title_fr and any("fre" in x for x in langs_l):
+            # Édition FR indexée : le titre OL est déjà la forme FR
+            title_fr = ol_title
+            display_title = ol_title
+        return {
+            "title": display_title,
+            "original_title": ol_title if display_title != ol_title else None,
+            "title_fr": title_fr,
+            "display_title": display_title,
+            "author": ", ".join(authors),
+            "cover_url": self._get_cover_url(doc.get("cover_i")),
+            "publication_year": doc.get("first_publish_year"),
+            "ol_key": doc.get("key", ""),
+            "category": self._determine_category(doc.get("subject") or []),
+            "rating": doc.get("ratings_average", 0),
+            "subjects": (doc.get("subject") or [])[:8],
+            "saga": saga,
+            "available_languages": langs[:5] if langs else [],
+            "isFromOpenLibrary": True,
+        }
+
     def _rank_ol_subjects(self, raw: List[str]) -> List[str]:
         """Classe les sujets OL pour viser le genre / la franchise, pas « form:novel »."""
         genre_kw = (
@@ -398,7 +503,10 @@ class OpenLibraryService:
             seed_title = title.strip()
             seed_norm = seed_title.lower()[:50]
             seed_author = (author or "").split(",")[0].strip()
-            fields = "title,author_name,cover_i,first_publish_year,key,subject,ratings_average"
+            fields = (
+                "title,author_name,cover_i,first_publish_year,key,subject,"
+                "ratings_average,series,language"
+            )
 
             resolved_subjects = self._rank_ol_subjects(subjects or [])
 
@@ -480,16 +588,7 @@ class OpenLibraryService:
                 if key in seen_keys:
                     return False
                 seen_keys.add(key)
-                books.append({
-                    "title": t,
-                    "author": ", ".join(authors),
-                    "cover_url": self._get_cover_url(doc.get("cover_i")),
-                    "publication_year": doc.get("first_publish_year"),
-                    "ol_key": doc.get("key", ""),
-                    "category": self._determine_category(doc.get("subject") or []),
-                    "rating": doc.get("ratings_average", 0),
-                    "subjects": (doc.get("subject") or [])[:5],
-                })
+                books.append(self._normalize_ol_book_doc(doc))
                 if stop_at is not None and len(books) >= stop_at:
                     return True
                 return len(books) >= limit

@@ -1003,17 +1003,31 @@ class RecommendationService:
         return str(value)
 
     def _format_recommendation(self, rec: RecommendationItem) -> Dict:
-        """Formate une recommandation pour l'API"""
+        """Formate une recommandation pour l'API (shape Booktime + métadonnées)."""
+        meta = self._json_safe(rec.metadata or {}) if isinstance(rec.metadata, dict) else {}
+        title_fr = meta.get("title_fr") or meta.get("display_title")
+        display_title = meta.get("display_title") or title_fr or rec.title
+        ol_key = meta.get("ol_key") or (
+            rec.book_id if isinstance(rec.book_id, str) and "/works/" in str(rec.book_id) else None
+        )
         return {
-            'book_id': rec.book_id,
-            'title': rec.title,
-            'author': rec.author,
-            'category': rec.category,
-            'cover_url': rec.cover_url,
-            'confidence_score': round(rec.confidence_score, 2),
-            'reasons': rec.reasons,
-            'source': rec.source,
-            'metadata': self._json_safe(rec.metadata or {}),
+            "book_id": rec.book_id,
+            "title": display_title or rec.title,
+            "original_title": meta.get("original_title") or rec.title,
+            "title_fr": title_fr,
+            "display_title": display_title or rec.title,
+            "author": rec.author,
+            "category": rec.category,
+            "cover_url": rec.cover_url or meta.get("cover_url"),
+            "ol_key": ol_key or meta.get("ol_key") or "",
+            "saga": meta.get("saga") or "",
+            "subjects": meta.get("subjects") or [],
+            "publication_year": meta.get("publication_year") or meta.get("first_publish_year"),
+            "isFromOpenLibrary": True,
+            "confidence_score": round(rec.confidence_score, 2),
+            "reasons": rec.reasons,
+            "source": rec.source,
+            "metadata": meta,
         }
     
     async def _should_skip(self, user_profile: Dict, book_id: str, title: str, author: str) -> bool:
