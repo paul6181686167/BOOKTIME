@@ -489,10 +489,15 @@ class OpenLibraryService:
         return [s for _, s in scored[:4]]
 
     async def search_similar_books(
-        self, title: str, author: str = "", limit: int = 8, subjects: Optional[List[str]] = None
+        self,
+        title: str,
+        author: str = "",
+        limit: int = 8,
+        subjects: Optional[List[str]] = None,
+        category: str = "",
     ) -> List[Dict]:
         """
-        Livres similaires via sujets OL (franchise/genre), auteur, puis mots-clés.
+        Livres similaires via sujets OL (franchise/genre), puis repli par catégorie.
         """
         if not title or not title.strip():
             return []
@@ -503,12 +508,30 @@ class OpenLibraryService:
             seed_title = title.strip()
             seed_norm = seed_title.lower()[:50]
             seed_author = (author or "").split(",")[0].strip()
+            cat = (category or "").strip().lower()
+            if cat not in ("roman", "bd", "manga"):
+                cat = ""
             fields = (
                 "title,author_name,cover_i,first_publish_year,key,subject,"
                 "ratings_average,series,language"
             )
 
-            resolved_subjects = self._rank_ol_subjects(subjects or [])
+            # Amorcer les sujets selon la catégorie (Tintin → BD, pas fantasy YA)
+            cat_subjects = {
+                "bd": [
+                    "comics",
+                    "graphic novels",
+                    "bande dessinée",
+                    "comic books",
+                    "bandes dessinées",
+                ],
+                "manga": ["manga", "japanese comics", "graphic novels"],
+                "roman": [],
+            }
+            seed_subj = list(subjects or [])
+            if cat and cat_subjects.get(cat):
+                seed_subj = list(cat_subjects[cat]) + seed_subj
+            resolved_subjects = self._rank_ol_subjects(seed_subj)
 
             # 1) Résoudre sujets + auteur depuis le seed OL (titre FR + sans accents)
             async def _resolve_seed(query: str) -> None:
@@ -667,36 +690,54 @@ class OpenLibraryService:
                 if len(books) >= limit:
                     break
 
-            # Repli genres larges liés (mythologie, YA fantasy…)
+            # Repli selon la catégorie du seed (jamais de fantasy YA pour une BD)
             if len(books) < max(6, limit // 2):
-                for fallback in (
-                    "greek mythology",
-                    "mythology",
-                    "young adult fantasy",
-                    "fantasy fiction",
-                    "science fiction",
-                    "fantasy",
-                    "mystery",
-                    "romance",
-                    "young adult",
-                ):
-                    if any(fallback.split()[0] in s.lower() for s in (resolved_subjects or [fallback])):
-                        await _run_search({"subject": fallback, "sort": "rating desc"})
+                if cat == "bd":
+                    fallbacks = (
+                        "comics",
+                        "graphic novels",
+                        "bande dessinée",
+                        "comic strips",
+                        "adventure comics",
+                        "european comics",
+                    )
+                elif cat == "manga":
+                    fallbacks = (
+                        "manga",
+                        "japanese comics",
+                        "shonen",
+                        "graphic novels",
+                    )
+                else:
+                    # Romans : élargir à partir des sujets déjà résolus, sinon fiction générale
+                    fallbacks = tuple(
+                        s for s in (resolved_subjects or [])[:4]
+                    ) or (
+                        "adventure fiction",
+                        "mystery",
+                        "historical fiction",
+                        "fiction",
+                    )
+                for fallback in fallbacks:
+                    await _run_search({"subject": fallback, "sort": "rating desc", "language": "fre"})
+                    await _run_search({"subject": fallback, "sort": "rating desc"})
                     if len(books) >= limit:
                         break
 
-            if len(books) < max(4, limit // 2):
-                # Mots du titre sans chercher l'auteur (évite la série seed)
+            if len(books) < max(4, limit // 2) and cat not in ("bd", "manga"):
+                # Mots du titre (romans uniquement — trop bruyant pour BD/manga)
                 words = [w for w in seed_tokens if w not in {seed_plain}][:3]
-                # Pour « percy jackson » les tokens sont trop liés à la série :
-                # on bascule sur un genre générique
                 if words and not (len(words) >= 2 and all(w in seed_plain for w in words)):
                     await _run_search({"q": " ".join(words), "sort": "rating desc"})
 
             if len(books) < 4:
-                await _run_search({"subject": "fantasy", "sort": "rating desc"})
-            if len(books) < 4:
-                await _run_search({"q": "young adult fantasy", "sort": "rating desc"})
+                if cat == "bd":
+                    await _run_search({"q": "bande dessinee", "sort": "rating desc"})
+                    await _run_search({"subject": "comics", "sort": "rating desc"})
+                elif cat == "manga":
+                    await _run_search({"subject": "manga", "sort": "rating desc"})
+                else:
+                    await _run_search({"subject": "fiction", "sort": "rating desc"})
 
             return books[:limit]
 

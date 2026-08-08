@@ -98,6 +98,71 @@ class RecommendationService:
                 'generated_at': datetime.utcnow().isoformat()
             }
 
+    def _infer_seed_category(
+        self,
+        user_id: str,
+        *,
+        title: str = "",
+        series_name: str = "",
+        category: str = "",
+        subjects: Optional[List[str]] = None,
+    ) -> str:
+        """Déduit roman / bd / manga pour ancrer les similaires."""
+        cat = (category or "").strip().lower()
+        if cat in ("roman", "bd", "manga"):
+            return cat
+        blob = f"{title} {series_name} {' '.join(str(s) for s in (subjects or []))}".lower()
+        blob = blob.replace("é", "e").replace("è", "e")
+        manga_kw = ("manga", "one piece", "naruto", "dragon ball", "shonen", "shonen")
+        bd_kw = (
+            "tintin",
+            "asterix",
+            "asterix",
+            "lucky luke",
+            "spirou",
+            "gaston",
+            "blake et mortimer",
+            "bande dessinee",
+            "bande dessinee",
+            "comics",
+            "dog man",
+            "super chien",
+            "graphic novel",
+            "comic",
+        )
+        if any(k in blob for k in manga_kw):
+            return "manga"
+        if any(k in blob for k in bd_kw):
+            return "bd"
+        # Catégorie en bibliothèque pour cette série / ce titre
+        try:
+            target = self._normalize_title(series_name or title)
+            if target:
+                for book in self.db.books.find(
+                    {"user_id": user_id},
+                    {"title": 1, "saga": 1, "saga_name": 1, "series_name": 1, "category": 1},
+                ):
+                    c = (book.get("category") or "").lower()
+                    if c not in ("bd", "manga", "roman"):
+                        continue
+                    saga = book.get("saga") or book.get("saga_name") or book.get("series_name") or ""
+                    if saga and self._normalize_title(saga) == target:
+                        return c
+                    if self._normalize_title(book.get("title") or "") == target:
+                        return c
+                for series in self.db.series_library.find(
+                    {"user_id": user_id},
+                    {"series_name": 1, "name": 1, "category": 1},
+                ):
+                    name = series.get("series_name") or series.get("name") or ""
+                    if name and self._normalize_title(name) == target:
+                        c = (series.get("category") or "").lower()
+                        if c in ("bd", "manga", "roman"):
+                            return c
+        except Exception as exc:
+            logger.debug("infer seed category: %s", exc)
+        return "roman"
+
     async def get_similar_to_seed(
         self,
         user_id: str,
@@ -106,6 +171,7 @@ class RecommendationService:
         author: str = "",
         series_name: str = "",
         subjects: Optional[List[str]] = None,
+        category: str = "",
         limit: int = 18,
     ) -> Dict:
         """
@@ -135,6 +201,14 @@ class RecommendationService:
             if isinstance(seed_subjects, str):
                 seed_subjects = [seed_subjects]
 
+            seed_category = self._infer_seed_category(
+                user_id,
+                title=title,
+                series_name=series_name,
+                category=category,
+                subjects=seed_subjects,
+            )
+
             # Sur-fetch OL + Google Books (les deux sources, toujours)
             ol_n = max(limit * 2, 24)
             gb_n = max(limit, 16)
@@ -144,6 +218,7 @@ class RecommendationService:
                 seed_author,
                 limit=ol_n,
                 subjects=seed_subjects if seed_subjects else None,
+                category=seed_category,
             )
             gb_task = asyncio.to_thread(
                 google_books_service.search_similar_books,
@@ -151,6 +226,7 @@ class RecommendationService:
                 seed_author,
                 limit=gb_n,
                 subjects=seed_subjects if seed_subjects else None,
+                category=seed_category,
             )
             ol_books, gb_books = await asyncio.gather(
                 ol_task, gb_task, return_exceptions=True
@@ -164,11 +240,11 @@ class RecommendationService:
             ol_books = list(ol_books or [])
             gb_books = list(gb_books or [])
 
-            # Filet genre (PAS auteur / PAS série seed — sinon on renvoie les tomes Percy Jackson)
+            # Filet dans la MÊME catégorie (Tintin → BD, pas romans fantasy)
             if len(ol_books) < max(6, limit // 2):
                 try:
                     popular = await self.openlibrary_service.search_popular_books(
-                        "roman", limit=max(16, limit)
+                        seed_category or "roman", limit=max(16, limit)
                     )
                     ol_books.extend(popular or [])
                 except Exception as exc:
@@ -233,6 +309,20 @@ class RecommendationService:
                     return
                 if _is_seed_universe(book):
                     return
+                # Ancrage catégorie : Tintin (BD) ≠ Harry Potter (roman)
+                book_cat = (book.get("category") or "roman").lower()
+                subjects_b = " ".join(
+                    str(s) for s in (book.get("subjects") or [])[:12]
+                ).lower()
+                if seed_category == "bd":
+                    if book_cat != "bd" and not any(
+                        k in subjects_b
+                        for k in ("comic", "bande dessin", "graphic novel", "strip")
+                    ):
+                        return
+                elif seed_category == "manga":
+                    if book_cat != "manga" and "manga" not in subjects_b:
+                        return
                 # Série déjà possédée → pas dans les « similaires »
                 saga_b = (
                     book.get("saga")
@@ -267,7 +357,7 @@ class RecommendationService:
                         book_id=str(bid),
                         title=title_b,
                         author=author_b,
-                        category=book.get("category", "roman"),
+                        category=book.get("category") or seed_category or "roman",
                         cover_url=book.get("cover_url"),
                         confidence_score=confidence,
                         reasons=[reason],
@@ -277,6 +367,7 @@ class RecommendationService:
                             "seed_title": seed_title,
                             "seed_author": seed_author,
                             "seed_kind": kind,
+                            "seed_category": seed_category,
                             "provider": "google_books"
                             if source.endswith("_gb") or book.get("isFromGoogleBooks")
                             else "openlibrary",
@@ -326,8 +417,9 @@ class RecommendationService:
 
             if len(out) < 4:
                 try:
-                    popular = await self.openlibrary_service.get_popular_books(
-                        limit=max(20, limit)
+                    # Dernier recours : populaires de la même catégorie uniquement
+                    popular = await self.openlibrary_service.search_popular_books(
+                        seed_category or "roman", limit=max(20, limit)
                     )
                     for book in popular or []:
                         if len(out) >= limit:

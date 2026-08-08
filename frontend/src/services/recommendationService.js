@@ -96,11 +96,18 @@ export const recommendationService = {
    */
   async getSimilar(options = {}) {
     try {
-      const { title = '', author = '', series = '', limit = 18 } = options;
+      const {
+        title = '',
+        author = '',
+        series = '',
+        category = '',
+        limit = 18,
+      } = options;
       const params = { limit };
       if (title) params.title = title;
       if (author) params.author = author;
       if (series) params.series = series;
+      if (category) params.category = category;
       // Render + Open Library : laisser plus de marge que le timeout global
       const response = await api.get('/api/recommendations/similar', {
         params,

@@ -33,7 +33,10 @@ import {
   recoToBooktimeBook,
   isRecoAlreadyOwned,
 } from '../../utils/recommendationBooktime';
-import { attributeBookToSeries } from '../../utils/seriesAttribution';
+import {
+  attributeBookToSeries,
+  findCuratedSeriesByQuery,
+} from '../../utils/seriesAttribution';
 import SmartCover, {
   CARD_SHELL,
   COVER_FRAME,
@@ -45,7 +48,7 @@ import SeriesDetailModal from '../SeriesDetailModal';
 
 // ── Cache (sessionStorage) ────────────────────────────────────────────────
 // Évite de recalculer les recommandations à chaque visite de la page.
-const CACHE_PREFIX = 'booktime_reco_cache_v8_';
+const CACHE_PREFIX = 'booktime_reco_cache_v9_';
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 function readCache(tab) {
@@ -527,13 +530,20 @@ const RecommendationPage = () => {
     const title = searchParams.get('title') || '';
     const author = searchParams.get('author') || '';
     const series = searchParams.get('series') || '';
+    const categoryParam = searchParams.get('category') || '';
     if (title || series) {
+      const label = series || title;
+      const curated = findCuratedSeriesByQuery(label);
       return {
         kind: series ? 'series' : 'book',
         title: series || title,
         author,
         series: series || '',
-        label: series || title,
+        label,
+        category:
+          categoryParam ||
+          curated?.seriesData?.category ||
+          '',
       };
     }
     return null;
@@ -575,10 +585,16 @@ const RecommendationPage = () => {
   }, [seed, userBooks]);
 
   const seedOptions = useMemo(() => {
+    const categoryFor = (name, fallback = '') => {
+      const curated = findCuratedSeriesByQuery(name);
+      const c = curated?.seriesData?.category || fallback || '';
+      return ['roman', 'bd', 'manga'].includes(c) ? c : fallback || '';
+    };
     const books = (userBooks || [])
       .filter((b) => !b.isSeriesCard)
       .map((b) => {
         const title = displayBookTitleFrFirst(b) || b.title || '';
+        const attr = attributeBookToSeries(b);
         return {
           id: `b:${b.id}`,
           kind: 'book',
@@ -587,6 +603,11 @@ const RecommendationPage = () => {
           series: '',
           label: title,
           sub: b.author || '',
+          category:
+            attr?.seriesData?.category ||
+            b.category ||
+            categoryFor(title, 'roman') ||
+            'roman',
         };
       })
       .filter((o) => o.title);
@@ -616,6 +637,7 @@ const RecommendationPage = () => {
         series: name,
         label: name,
         sub: author ? `Série · ${author}` : 'Série',
+        category: s.category || categoryFor(name, 'roman') || 'roman',
       };
     }).filter((o) => o.title);
     // Cartes série de la grille biblio (si présentes dans books)
@@ -632,6 +654,7 @@ const RecommendationPage = () => {
           series: name,
           label: name,
           sub: author ? `Série · ${author}` : 'Série',
+          category: b.category || categoryFor(name, 'roman') || 'roman',
         };
       })
       .filter((o) => o.title);
@@ -726,11 +749,16 @@ const RecommendationPage = () => {
       const seedTitle = isSeries
         ? seedItem.series || seedItem.title || ''
         : seedItem.title || '';
+      const seedCategory =
+        seedItem.category ||
+        findCuratedSeriesByQuery(seedTitle)?.seriesData?.category ||
+        '';
       const res = await recommendationService.getSimilar({
         // Toujours envoyer le titre seed (série ou livre) pour les moteurs OL/GB
         title: seedTitle,
         author: seedItem.author || '',
         series: isSeries ? seedTitle : '',
+        category: seedCategory,
         limit: 24,
       });
       if (reqId !== similarReqId.current) return;
@@ -827,12 +855,18 @@ const RecommendationPage = () => {
 
   const selectSeed = useCallback(
     (option) => {
+      const category =
+        option.category ||
+        findCuratedSeriesByQuery(option.series || option.title || '')?.seriesData
+          ?.category ||
+        '';
       const next = {
         kind: option.kind,
         title: option.title,
         author: option.author || '',
         series: option.series || '',
         label: option.label,
+        category,
       };
       setSeed(next);
       setActiveTab('similaires');
@@ -842,6 +876,7 @@ const RecommendationPage = () => {
         params.set('title', next.title);
         if (next.author) params.set('author', next.author);
       }
+      if (category) params.set('category', category);
       setSearchParams(params, { replace: true });
       setSeedFilter('');
     },

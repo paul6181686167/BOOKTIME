@@ -112,6 +112,9 @@ async def get_similar_recommendations(
     title: Optional[str] = Query(None, description="Titre du livre seed"),
     author: Optional[str] = Query(None, description="Auteur du livre seed"),
     series: Optional[str] = Query(None, description="Nom de la série seed"),
+    category: Optional[str] = Query(
+        None, description="Catégorie seed : roman, bd ou manga"
+    ),
     limit: int = Query(18, ge=1, le=40, description="Nombre de propositions"),
 ):
     """
@@ -133,6 +136,7 @@ async def get_similar_recommendations(
             title=title or "",
             author=author or "",
             series_name=series or "",
+            category=category or "",
             limit=limit,
         )
         return {

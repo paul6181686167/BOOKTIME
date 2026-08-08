@@ -179,6 +179,7 @@ def search_similar_books(
     *,
     limit: int = 10,
     subjects: list[str] | None = None,
+    category: str = "",
 ) -> list[dict[str, Any]]:
     """
     Livres proches via Google Books (sujets / catégories du seed).
@@ -191,6 +192,9 @@ def search_similar_books(
         return []
     seed_author = (author or "").split(",")[0].strip()
     seed_norm = seed_title.lower()[:50]
+    cat = (category or "").strip().lower()
+    if cat not in ("roman", "bd", "manga"):
+        cat = ""
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
 
@@ -208,7 +212,8 @@ def search_similar_books(
             return
         t_norm = t.lower()
         author_b = (book.get("author") or "").lower()
-        blob = f"{t_norm} {' '.join(it.get('categories') or [])}".lower()
+        cats_b = " ".join(it.get("categories") or []).lower()
+        blob = f"{t_norm} {cats_b}"
         if seed_norm and (seed_norm in t_norm or seed_norm in blob):
             return
         if seed_tokens and all(tok in blob for tok in seed_tokens[:3]):
@@ -216,6 +221,15 @@ def search_similar_books(
         # Pas le même auteur (évite la même série)
         if seed_author_norm and seed_author_norm in author_b:
             return
+        book_cat = (book.get("category") or "roman").lower()
+        if cat in ("bd", "manga") and book_cat != cat:
+            # Tolérer graphic novels mal classés roman si le sujet le dit
+            if cat == "bd" and not any(
+                k in blob for k in ("comic", "graphic", "bande", "strip")
+            ):
+                return
+            if cat == "manga" and "manga" not in blob and book_cat != "manga":
+                return
         key = f"{t_norm}|{author_b}"
         if key in seen:
             return
@@ -266,19 +280,42 @@ def search_similar_books(
                 cats.append(s)
 
         # Uniquement des sujets / genres — jamais inauthor:seed
+        # Pas de fantasy YA générique (sinon Tintin → Harry Potter)
         queries: list[str] = []
         if cats:
             queries.append(f'subject:"{cats[0]}"')
             if len(cats) > 1:
                 queries.append(f'subject:"{cats[1]}"')
-        queries.extend(
-            [
-                'subject:"Juvenile Fiction" subject:Fantasy',
-                'subject:"Young Adult Fiction" mythology',
-                "mythology fantasy",
-            ]
-        )
-        queries.append("fantasy young adult")
+        if cat == "bd":
+            queries.extend(
+                [
+                    'subject:"Comics & Graphic Novels"',
+                    'subject:"Comic books, strips, etc"',
+                    "bande dessinee",
+                    "comics graphic novel adventure",
+                ]
+            )
+        elif cat == "manga":
+            queries.extend(
+                [
+                    'subject:"Comics & Graphic Novels" manga',
+                    'subject:"Manga"',
+                    "manga graphic novel",
+                ]
+            )
+        else:
+            # Romans : s'appuyer sur les catégories du seed, sinon fiction générale
+            if not cats:
+                queries.extend(
+                    [
+                        'subject:"Fiction"',
+                        "adventure fiction",
+                    ]
+                )
+            for s in (subjects or [])[:2]:
+                s = str(s).strip()
+                if s and f'subject:"{s}"' not in queries:
+                    queries.append(f'subject:"{s}"')
 
         for q in queries:
             if len(out) >= limit:
