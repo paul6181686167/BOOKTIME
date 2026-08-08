@@ -979,7 +979,16 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                   {(olDetails?.subjects || book.subjects || [])
                     .map((s) => (typeof s === 'string' ? s : s?.name || ''))
                     .filter(Boolean)
-                    .slice(0, 12)
+                    // Préférer les sujets FR (accents / mots courants) ; sinon garder un échantillon
+                    .sort((a, b) => {
+                      const score = (t) =>
+                        (/[àâäéèêëïîôùûç]/i.test(t) ? 2 : 0) +
+                        (/\b(roman|policier|fantastique|aventure|jeunesse|bande|dessin)/i.test(t)
+                          ? 1
+                          : 0);
+                      return score(b) - score(a);
+                    })
+                    .slice(0, 8)
                     .map((s, i) => (
                     <span key={i} className="px-2 py-0.5 text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full border border-blue-100 dark:border-blue-800">
                       {s}

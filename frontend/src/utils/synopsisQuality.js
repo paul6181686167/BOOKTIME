@@ -20,6 +20,11 @@ export function sanitizeSynopsis(text) {
   // Liens markdown orphelins / URLs
   t = t.replace(/https?:\/\/[^\s)]+/gi, ' ');
   t = t.replace(/\[([^\]]+)\]/g, '$1');
+  // Gras / italique markdown brut (**texte**, *texte*, __texte__)
+  t = t.replace(/\*\*([^*]+)\*\*/g, '$1');
+  t = t.replace(/__([^_]+)__/g, '$1');
+  t = t.replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,]|$)/g, '$1$2');
+  t = t.replace(/\*{1,2}/g, '');
   t = t.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
   t = t.replace(/[ \t]{2,}/g, ' ').trim();
   return t;

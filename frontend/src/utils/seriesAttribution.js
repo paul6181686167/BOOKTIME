@@ -93,6 +93,40 @@ export const findCuratedSeriesForBook = (book) => {
   const cacheKey = `${candidates.join('\u0000')}\u0001${author}`;
   const cached = memoGet(BOOK_SERIES_CACHE, cacheKey, () => {
     for (const title of candidates) {
+      // 0. Match exact sur le nom / variation curée (ex. « Dog Man » → série BD)
+      const exact = resolveCuratedSeriesByName(title);
+      if (
+        exact?.data &&
+        ((Number(exact.data.volumes) || 0) > 1 ||
+          Object.keys(exact.data.volume_titles || {}).length > 1)
+      ) {
+        // Si auteurs connus : accepter si pas d'auteur fourni, ou auteur proche
+        const authors = exact.data.authors || [];
+        const authorOk =
+          !author ||
+          !authors.length ||
+          authors.some(
+            (sa) =>
+              FuzzyMatcher.fuzzyMatch(
+                FuzzyMatcher.normalizeString(author),
+                FuzzyMatcher.normalizeString(sa)
+              ) >= 50 ||
+              FuzzyMatcher.normalizeString(author).includes(
+                FuzzyMatcher.normalizeString(sa).split(' ').pop()
+              )
+          );
+        if (authorOk) {
+          return {
+            seriesKey: exact.key,
+            seriesName: exact.data.name,
+            seriesData: exact.data,
+            source: 'curated',
+            confidence: 99,
+            method: 'curated_exact_name',
+          };
+        }
+      }
+
       // a. Patterns titre + auteur (Harry Potter, LOTR, …)
       const byPattern = SeriesDetector.analyzeBookTitle(title, author);
       // b. Recherche dans le référentiel (nom / variations / titres de tomes, exclusions gérées)

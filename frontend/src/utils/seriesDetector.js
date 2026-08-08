@@ -75,6 +75,12 @@ export class SeriesDetector {
         seriesName: 'Astérix',
         authors: ['rené goscinny', 'albert uderzo', 'goscinny', 'uderzo']
       },
+      // Patterns Dog Man / Super Chien
+      {
+        regex: /\b(dog\s*man|super\s*chien)\b/i,
+        seriesName: 'Dog Man',
+        authors: ['dav pilkey', 'pilkey']
+      },
       // Patterns Le Seigneur des Anneaux
       {
         regex: /(seigneur.*anneaux|lord.*rings)/i,
@@ -156,11 +162,24 @@ export class SeriesDetector {
         const seriesNameMatch = FuzzyMatcher.fuzzyMatch(titleNormalized, FuzzyMatcher.normalizeString(series.name));
         
         if (seriesNameMatch >= 70) {
+          // Nom exact (ou quasi) de la série → série, même si l'auteur est bruité
+          if (seriesNameMatch >= 92) {
+            return {
+              belongsToSeries: true,
+              seriesName: series.name,
+              confidence: seriesNameMatch,
+              method: 'series_database_exact_title'
+            };
+          }
           // Vérifier l'auteur si disponible
           if (author && series.authors && series.authors.length > 0) {
             const authorMatch = series.authors.some(seriesAuthor => {
               const seriesAuthorNormalized = FuzzyMatcher.normalizeString(seriesAuthor);
-              return FuzzyMatcher.fuzzyMatch(authorNormalized, seriesAuthorNormalized) >= 60;
+              return (
+                FuzzyMatcher.fuzzyMatch(authorNormalized, seriesAuthorNormalized) >= 50 ||
+                authorNormalized.includes(seriesAuthorNormalized) ||
+                seriesAuthorNormalized.includes(authorNormalized.split(' ').pop())
+              );
             });
             
             if (authorMatch) {

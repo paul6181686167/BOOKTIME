@@ -154,10 +154,47 @@ export function groupRecosAsBooktimeItems(recommendations, options = {}) {
   });
 
   const attributedKeys = attributed;
-  const standalone = list.filter((b) => {
+  let standalone = list.filter((b) => {
     const key = b.ol_key || b.id;
     return !attributedKeys.has(key);
   });
+
+  // 2e passe : livres isolés qui sont en fait le nom d'une série curée (ex. Dog Man)
+  const promoted = [];
+  standalone = standalone.filter((book) => {
+    const attr = attributeBookToSeries(book);
+    const curatedMulti =
+      attr?.seriesData &&
+      ((Number(attr.seriesData.volumes) || 0) > 1 ||
+        Object.keys(attr.seriesData.volume_titles || {}).length > 1);
+    if (!curatedMulti) return true;
+    const already = seriesCards.some(
+      (c) => (c.name || '').toLowerCase() === (attr.seriesName || '').toLowerCase()
+    );
+    if (already) return false;
+    promoted.push({
+      isSeriesCard: true,
+      fromOpenLibrary: !book.isFromGoogleBooks,
+      isFromOpenLibrary: !book.isFromGoogleBooks,
+      isFromGoogleBooks: !!book.isFromGoogleBooks,
+      id: `series_reco_${attr.seriesKey}`,
+      name: attr.seriesName,
+      title: attr.seriesName,
+      display_title: attr.seriesName,
+      author: book.author || attr.seriesData.authors?.[0] || '',
+      category: attr.seriesData.category || book.category || 'roman',
+      cover_url: book.cover_url || null,
+      totalBooks: attr.seriesData.volumes || 0,
+      books: [book],
+      description: attr.seriesData.description || book.description || '',
+      reason: book.reason || `Série · ${attr.seriesData.volumes || ''} tomes`,
+      score: book.score || 0,
+      source: book.source || 'seed_similarity',
+      book_id: book.ol_key || book.book_id,
+    });
+    return false;
+  });
+  seriesCards.push(...promoted);
 
   // Séries d'abord, puis livres — priorité aux items avec couverture
   const sortCover = (a, b) => Number(!!b.cover_url) - Number(!!a.cover_url);

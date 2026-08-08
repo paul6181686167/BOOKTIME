@@ -535,6 +535,11 @@ export const coverFallbackCandidates = (entity) => {
   const push = (u) => {
     const n = normalizeCoverUrl(u);
     if (n && isUsableCoverUrl(n) && !out.includes(n)) out.push(n);
+    // URL brute non normalisable mais potentiellement affichable (GB / archive)
+    const raw = String(u || '').trim();
+    if (raw && !out.includes(raw) && /^https?:\/\//i.test(raw)) {
+      if (isGoogleBooksCoverUrl(raw) || /archive\.org/i.test(raw)) out.push(raw);
+    }
   };
   push(entity.cover_url);
   push(entity.cover_image_url);
@@ -546,6 +551,14 @@ export const coverFallbackCandidates = (entity) => {
   if (isbn.length >= 10) push(`https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`);
   if (entity.cover_i != null) {
     push(`https://covers.openlibrary.org/b/id/${Number(entity.cover_i)}-M.jpg`);
+  }
+  // Cartes série : couvertures des tomes
+  for (const b of entity.books || entity.volumes || []) {
+    if (!b || typeof b !== 'object') continue;
+    push(b.cover_url);
+    push(b.cover_image_url);
+    const child = resolveOpenLibraryCoverUrl(b);
+    if (child) push(child);
   }
   // Google Books en dernier : souvent le placeholder « image not available »
   const trusted = out.filter((u) => !isGoogleBooksCoverUrl(u));

@@ -45,7 +45,7 @@ import SeriesDetailModal from '../SeriesDetailModal';
 
 // ── Cache (sessionStorage) ────────────────────────────────────────────────
 // Évite de recalculer les recommandations à chaque visite de la page.
-const CACHE_PREFIX = 'booktime_reco_cache_v7_';
+const CACHE_PREFIX = 'booktime_reco_cache_v8_';
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 function readCache(tab) {
@@ -258,11 +258,27 @@ const BookCard = ({
   const title = isSeries
     ? book.name || book.display_title || book.title
     : displayBookTitleFrFirst(book) || book.display_title || book.title;
-  const coverItem = localCover ? { ...book, cover_url: localCover } : book;
+  // Carte série sans cover : reprendre celle du 1er tome
+  const firstTomeCover =
+    isSeries && !book.cover_url
+      ? (book.books || []).find((b) => b?.cover_url || b?.cover_image_url)
+      : null;
+  const coverItem = localCover
+    ? { ...book, cover_url: localCover }
+    : firstTomeCover
+      ? {
+          ...book,
+          cover_url: firstTomeCover.cover_url || firstTomeCover.cover_image_url,
+          ol_key: book.ol_key || firstTomeCover.ol_key,
+          cover_i: book.cover_i ?? firstTomeCover.cover_i,
+          isbn: book.isbn || firstTomeCover.isbn,
+        }
+      : book;
   // Prefer URL brute si le pipeline OL rejette (GB / archive) — SmartCover gère l'ordre
   const coverSrc =
     resolveCoverForGridItem(coverItem) ||
     localCover ||
+    coverItem.cover_url ||
     book.cover_url ||
     book.cover_image_url ||
     null;
@@ -897,10 +913,12 @@ const RecommendationPage = () => {
         display_title: attr.seriesName,
         author: book.author || attr.seriesData.authors?.[0] || '',
         category: attr.seriesData.category || book.category || 'roman',
-        cover_url: book.cover_url || null,
+        cover_url: book.cover_url || book.cover_image_url || null,
         books: [book],
         totalBooks: attr.seriesData.volumes || 0,
-        description: attr.seriesData.description || book.description || '',
+        // Préférer le résumé curé FR (évite le blurb EN du tome 3)
+        description: attr.seriesData.description || '',
+        description_fr: attr.seriesData.description || '',
       });
       return;
     }
