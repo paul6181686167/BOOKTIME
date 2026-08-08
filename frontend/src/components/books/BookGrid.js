@@ -87,7 +87,7 @@ const CoverScrim = () => (
 );
 
 /** Image de couverture : ignore Google Books (souvent « image not available »). */
-const SmartCover = ({ item, alt, primarySrc, onCoverFound }) => {
+const SmartCover = ({ item, alt, primarySrc, onCoverFound, priority = false }) => {
   const candidates = useMemo(() => {
     const list = coverFallbackCandidates(item);
     if (primarySrc && !list.includes(primarySrc)) {
@@ -153,6 +153,7 @@ const SmartCover = ({ item, alt, primarySrc, onCoverFound }) => {
   }
 
   const imgSrc = coverImgSrc(src);
+  const needsPlaceholderCheck = isGoogleBooksCoverUrl(src);
 
   const failCurrent = () => {
     if (fetched) {
@@ -167,13 +168,15 @@ const SmartCover = ({ item, alt, primarySrc, onCoverFound }) => {
     <img
       src={imgSrc}
       alt={alt}
-      loading="lazy"
-      decoding="async"
-      crossOrigin={/wsrv\.nl/i.test(imgSrc) ? 'anonymous' : undefined}
+      loading={priority ? 'eager' : 'lazy'}
+      fetchPriority={priority ? 'high' : 'auto'}
+      decoding={priority ? 'sync' : 'async'}
+      // CORS seulement si on lit les pixels (placeholder GB) — sinon +lent
+      crossOrigin={needsPlaceholderCheck ? 'anonymous' : undefined}
       referrerPolicy="no-referrer"
       className={COVER_IMAGE}
       onLoad={(e) => {
-        if (isBlankOrPlaceholderCover(e.currentTarget)) {
+        if (needsPlaceholderCheck && isBlankOrPlaceholderCover(e.currentTarget)) {
           failCurrent();
           return;
         }
@@ -186,7 +189,7 @@ const SmartCover = ({ item, alt, primarySrc, onCoverFound }) => {
   );
 };
 
-const SeriesCardBody = ({ item, coverSrc, onCoverFound }) => {
+const SeriesCardBody = ({ item, coverSrc, onCoverFound, priority }) => {
   // Statut série : priorité au statut manuel, sinon progression des tomes
   const seriesStatus =
     item.status ||
@@ -206,6 +209,7 @@ const SeriesCardBody = ({ item, coverSrc, onCoverFound }) => {
           alt={item.name}
           primarySrc={coverSrc}
           onCoverFound={onCoverFound}
+          priority={priority}
         />
         <CoverScrim />
 
@@ -257,7 +261,7 @@ const SeriesCardBody = ({ item, coverSrc, onCoverFound }) => {
   );
 };
 
-const BookCardBody = ({ item, coverSrc, onCoverFound }) => {
+const BookCardBody = ({ item, coverSrc, onCoverFound, priority }) => {
   const title = displayBookTitleFrFirst(item);
 
   return (
@@ -269,6 +273,7 @@ const BookCardBody = ({ item, coverSrc, onCoverFound }) => {
           alt={title}
           primarySrc={coverSrc}
           onCoverFound={onCoverFound}
+          priority={priority}
         />
         <CoverScrim />
       </div>
@@ -327,6 +332,8 @@ const BookCardBody = ({ item, coverSrc, onCoverFound }) => {
 const GridCard = React.memo(({ item, index, onSelect, onCoverFound }) => {
   const coverSrc = resolveCoverForGridItem(item);
   const animated = index < ANIMATED_CARDS;
+  // Premier écran mobile (3×3) : chargement prioritaire, pas de lazy
+  const priority = index < 9;
 
   return (
     <div
@@ -337,9 +344,9 @@ const GridCard = React.memo(({ item, index, onSelect, onCoverFound }) => {
       onClick={() => onSelect(item)}
     >
       {item.isSeriesCard ? (
-        <SeriesCardBody item={item} coverSrc={coverSrc} onCoverFound={onCoverFound} />
+        <SeriesCardBody item={item} coverSrc={coverSrc} onCoverFound={onCoverFound} priority={priority} />
       ) : (
-        <BookCardBody item={item} coverSrc={coverSrc} onCoverFound={onCoverFound} />
+        <BookCardBody item={item} coverSrc={coverSrc} onCoverFound={onCoverFound} priority={priority} />
       )}
     </div>
   );

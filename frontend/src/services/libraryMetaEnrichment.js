@@ -465,7 +465,7 @@ export async function enrichLibraryMetadata({
 /** File visible : un peu plus large, OL/Wiki en priorité */
 const visibleCoverQueue = [];
 let visibleCoverActive = 0;
-const VISIBLE_COVER_MAX = 4;
+const VISIBLE_COVER_MAX = 6;
 const visibleCoverInflight = new Map();
 
 function pumpVisibleCoverQueue() {

@@ -353,9 +353,20 @@ export const normalizeCoverUrl = (url) => {
   return u.split('?')[0];
 };
 
+/** Params wsrv : vignette légère (grille ≈ 110–180px CSS, 2× ≈ 220–360). */
+const COVER_PROXY_PARAMS = 'w=200&q=72&output=webp&n=-1&maxage=31d';
+
+const viaWsrv = (hostPathOrUrl) => {
+  const hostPath = String(hostPathOrUrl || '')
+    .replace(/^https?:\/\//i, '')
+    .replace(/^\/\//, '');
+  if (!hostPath) return '';
+  return `https://wsrv.nl/?url=${encodeURIComponent(hostPath)}&${COVER_PROXY_PARAMS}`;
+};
+
 /**
- * src <img> : proxy wsrv.nl pour le CDN Open Library (souvent timeout
- * depuis FR) ; Google Books gardé en direct avec params fiables.
+ * src <img> : proxy wsrv.nl pour OL / Wikimedia / GB (latence FR + cache CDN).
+ * WebP + 200px : ~3–5× plus léger que l’ancien JPG 280px.
  */
 export const coverImgSrc = (url) => {
   const raw = String(url || '').trim();
@@ -365,9 +376,7 @@ export const coverImgSrc = (url) => {
     let n = raw.replace('http://', 'https://');
     n = n.replace(/([?&])zoom=\d/i, '$1zoom=0');
     if (!/[?&]edge=/.test(n)) n += (n.includes('?') ? '&' : '?') + 'edge=curl';
-    // Proxy aussi GB : évite 403 referrer + rate-limit navigateur
-    const hostPath = n.replace(/^https?:\/\//i, '');
-    return `https://wsrv.nl/?url=${encodeURIComponent(hostPath)}&w=280&output=jpg`;
+    return viaWsrv(n);
   }
 
   let n = normalizeCoverUrl(raw);
@@ -376,15 +385,12 @@ export const coverImgSrc = (url) => {
   if (/covers\.openlibrary\.org/i.test(n)) {
     const bare = n.split('?')[0];
     const hostPath = bare.replace(/^https?:\/\//i, '');
-    // default=false côté OL via &default=false sur l’URL source
     const proxied = `${hostPath}${hostPath.includes('?') ? '&' : '?'}default=false`;
-    return `https://wsrv.nl/?url=${encodeURIComponent(proxied)}&w=280&output=jpg`;
+    return viaWsrv(proxied);
   }
 
-  // Wikimedia : proxy pour CORS (détection placeholder) + cache CDN
   if (/upload\.wikimedia\.org/i.test(n)) {
-    const hostPath = n.replace(/^https?:\/\//i, '');
-    return `https://wsrv.nl/?url=${encodeURIComponent(hostPath)}&w=280&output=jpg`;
+    return viaWsrv(n);
   }
 
   return n;
