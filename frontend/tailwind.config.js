@@ -21,15 +21,18 @@ module.exports = {
           700: '#15803d',
           800: '#166534',
           900: '#14532d',
+          // Fond de page : vert doux mais bien présent
+          mist: '#bce8cb',
+          mistSoft: '#d0f0dc',
         },
-        // Extrémité sombre de l'échelle neutre reprise en main : les valeurs de
-        // Tailwind laissaient les cartes trop proches du fond de page, d'où un
-        // mode sombre plat. 900 = page, 800 = carte, 700 = bordure et relief.
-        // Les teintes claires restent celles de Tailwind (contraste du texte).
+        // Mode sombre en nuances de vert (plus de gris bleuté).
+        // 900 = page, 800 = carte, 700 = relief / bordures.
+        // Les teintes claires (50–500) restent celles de Tailwind.
+        // 900 = fond page, 800 = vignettes (un cran plus clair pour contraster moins fort)
         'gray': {
-          700: '#242b36',
-          800: '#171c24',
-          900: '#0d1117',
+          700: '#1e3a2c',
+          800: '#163528',
+          900: '#234f37',
         },
         'book': {
           'roman': '#3b82f6',

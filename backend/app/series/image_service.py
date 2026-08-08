@@ -65,7 +65,9 @@ class SeriesImageService:
             series_variants = self._get_series_variants(series_name)
             search_strategies.extend(series_variants)
             
-            # Essayer chaque stratégie
+            # Limiter les stratégies : OL est lent et saturait l'API
+            search_strategies = search_strategies[:3]
+
             for i, search_query in enumerate(search_strategies):
                 logger.info(f"🔍 Stratégie {i+1}/{len(search_strategies)} pour '{series_name}': {search_query}")
                 
@@ -73,12 +75,12 @@ class SeriesImageService:
                 search_url = f"{self.base_openlibrary_url}/search.json"
                 params = {
                     'q': search_query,
-                    'limit': 10,  # Plus de résultats pour plus de chances
+                    'limit': 5,
                     'fields': 'key,title,author_name,cover_i,first_publish_year,subject'
                 }
                 
                 try:
-                    async with session.get(search_url, params=params, timeout=10) as response:
+                    async with session.get(search_url, params=params, timeout=5) as response:
                         if response.status == 200:
                             data = await response.json()
                             docs = data.get('docs', [])
@@ -87,13 +89,10 @@ class SeriesImageService:
                             for doc in docs:
                                 cover_id = doc.get('cover_i')
                                 if cover_id:
-                                    # Construire l'URL de la couverture (utiliser taille L pour meilleure qualité)
-                                    cover_url = f"{self.base_covers_url}/id/{cover_id}-L.jpg"
-                                    
-                                    # Vérifier que l'image existe
-                                    if await self._verify_image_exists(cover_url):
-                                        logger.info(f"✅ Image trouvée pour '{series_name}' (stratégie {i+1}): {cover_url}")
-                                        return cover_url
+                                    # CDN OL direct — pas de HEAD de vérif (timeouts archive.org)
+                                    cover_url = f"{self.base_covers_url}/id/{cover_id}-M.jpg"
+                                    logger.info(f"✅ Image trouvée pour '{series_name}' (stratégie {i+1}): {cover_url}")
+                                    return cover_url
                         else:
                             logger.debug(f"⚠️ Stratégie {i+1} - Erreur Open Library: {response.status}")
                             

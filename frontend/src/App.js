@@ -39,8 +39,6 @@ import PerformanceWidget from './components/monitoring/PerformanceWidget';
 // Service imports
 import { bookService } from './services/bookService';
 import * as seriesLibraryService from './services/seriesLibraryService';
-import { seriesImageService } from './services/seriesImageService';
-
 // Hook imports
 import { useAdvancedSearch } from './hooks/useAdvancedSearch';
 import { useGroupedSearch } from './hooks/useGroupedSearch';
@@ -168,7 +166,7 @@ const useStableCallback = (fn) => {
 
 // Écran d'attente le temps qu'un morceau de code différé arrive
 const RouteFallback = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+  <div className="min-h-screen flex items-center justify-center bg-honeycomb">
     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
   </div>
 );
@@ -542,44 +540,34 @@ function MainApp() {
 
   // Fonction pour ajouter une série à la bibliothèque
   const handleAddSeries = async (series) => {
-    // CORRECTION RCA FINALE : Utiliser l'implémentation robuste de SeriesActions
     const apiStartTime = Date.now();
-    
-    try {
-      
-      // Utiliser l'implémentation complète et robuste de SeriesActions
-      await SeriesActions.handleAddSeriesToLibrary(series, {
-        setSeriesLibraryLoading: (loading) => {
-          // Mettre à jour l'état de chargement si nécessaire
-          console.log('📊 Chargement série:', loading);
-        },
-        loadUserSeriesLibrary: async () => {
-          // ✅ CORRECTION : Utiliser le bon système d'état (unifiedContent)
-          await unifiedContent.refreshAfterAdd('series');
-          console.log('✅ [REFRESH] Série ajoutée - Interface synchronisée avec unifiedContent');
-        }
-      });
-      
-      // Fermer le modal
-      seriesHook.closeSeriesModal();
-      
-      // Retour automatique à la bibliothèque avec clearSearch
-      searchHook.backToLibrary(clearSearch);
-      
-      // Mesure performance API
-      const apiTime = Date.now() - apiStartTime;
-      performanceMonitoring.measureApiResponse('add_series_seriesactions', apiStartTime, true);
 
-      // Analytics
+    try {
+      await SeriesActions.handleAddSeriesToLibrary(series, {
+        setSeriesLibraryLoading: () => {},
+        // Refresh léger en fond (1 passe, pas de retries qui retenaient l'UI)
+        loadUserSeriesLibrary: () =>
+          unifiedContent.loadUnifiedContent({
+            forceRefresh: true,
+            silent: true,
+            skipBooks: true,
+            skipStats: true,
+          }),
+      });
+
+      seriesHook.closeSeriesModal();
+      searchHook.backToLibrary(clearSearch);
+
+      performanceMonitoring.measureApiResponse('add_series_seriesactions', apiStartTime, true);
       userAnalytics.trackSeriesInteraction('add_to_library_seriesactions', {
         name: series.name,
-        category: series.category
+        category: series.category,
       });
-      
-      
     } catch (error) {
       console.error('❌ Erreur ajout série:', error);
-      toast.error(error.message || 'Erreur lors de l\'ajout de la série');
+      if (!String(error?.message || '').includes('409')) {
+        // toast déjà émis dans SeriesActions pour les cas connus
+      }
       performanceMonitoring.measureApiResponse('add_series_seriesactions', apiStartTime, false);
     }
   };
@@ -638,6 +626,37 @@ function MainApp() {
   const stableItemClick = useStableCallback(handleItemClick);
   const stableAuthorClick = useStableCallback(handleAuthorClick);
 
+  // Couverture trouvée pour une vignette → mémoriser dans l'état local
+  const handleCoverFound = useCallback((item, coverUrl) => {
+    if (!item || !coverUrl) return;
+    if (item.isSeriesCard || item.isOwnedSeries) {
+      const sid = item.librarySeriesId || item.seriesLibraryId || item.id;
+      unifiedContent.setUserSeriesLibrary((prev) =>
+        (prev || []).map((s) =>
+          s.id === sid
+            ? { ...s, cover_image_url: coverUrl, cover_url: coverUrl }
+            : s
+        )
+      );
+      // Propager aussi sur le 1er tome si carte regroupée
+      const firstBook = (item.books || []).find((b) => b?.id);
+      if (firstBook?.id) {
+        unifiedContent.setBooks((prev) =>
+          (prev || []).map((b) =>
+            b.id === firstBook.id && !b.cover_url ? { ...b, cover_url: coverUrl } : b
+          )
+        );
+      }
+      return;
+    }
+    unifiedContent.setBooks((prev) =>
+      (prev || []).map((b) =>
+        b.id === item.id ? { ...b, cover_url: coverUrl } : b
+      )
+    );
+  }, [unifiedContent]);
+  const stableCoverFound = useStableCallback(handleCoverFound);
+
   // Gestion changement d'onglet avec analytics
   const handleTabChange = (newTab) => {
     // PHASE 2.4 - Analytics catégories
@@ -689,28 +708,6 @@ function MainApp() {
       });
     }
   }, [unifiedContent.error, unifiedContent.loading]);
-
-  // Chargement initial au montage du composant
-  useEffect(() => {
-    if (user) {
-      // Les données sont automatiquement chargées par useUnifiedContent
-      // Seul l'auto-enrichissement des images est conservé ici
-      
-      // Auto-enrichissement images de séries — désactivé sur mobile (trop lourd)
-      const isMobile =
-        typeof window !== 'undefined' &&
-        (window.matchMedia('(max-width: 768px)').matches ||
-          /Mobi|Android/i.test(navigator.userAgent || ''));
-      if (!isMobile && !sessionStorage.getItem('series-enrich-done')) {
-        sessionStorage.setItem('series-enrich-done', 'true');
-        seriesImageService.autoEnrichPopularSeries().then(result => {
-          if (result) console.log('✅ Auto-enrichissement terminé:', result);
-        }).catch(error => {
-          console.warn('⚠️ Auto-enrichissement échoué (non critique):', error);
-        });
-      }
-    }
-  }, [user]);
 
   // Helper : recalcule isOwned depuis la bibliothèque courante (évite les faux "déjà possédé" après suppression)
   const recomputeOwnership = useCallback((olResults, localBooks) => {
@@ -784,7 +781,7 @@ function MainApp() {
   const sortedCompleted = useMemo(() => sortBooks(groupedBooks.completed || []), [sortBooks, groupedBooks.completed]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+    <div className="min-h-screen bg-honeycomb transition-colors duration-200">
       {/* Mobile: overlay de recherche */}
       <MobileSearchOverlay
         isOpen={showMobileSearch}
@@ -800,7 +797,7 @@ function MainApp() {
       {/* Header desktop + mobile compact */}
       {/* Header translucide : le contenu défile visiblement dessous, ce qui
           ancre la barre sans la faire peser comme un bandeau opaque. */}
-      <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-900/5 dark:border-white/5 sticky top-0 z-30">
+      <header className="bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl border-b border-booktime-mist/55 dark:border-booktime-800/50 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Desktop header */}
           <div className="hidden md:flex justify-between items-center h-16">
@@ -980,6 +977,7 @@ function MainApp() {
                     loading={false}
                     onItemClick={stableItemClick}
                     onAuthorClick={stableAuthorClick}
+                    onCoverFound={stableCoverFound}
                     showEmptyState={false}
                   />
                 </div>
@@ -999,6 +997,7 @@ function MainApp() {
                     loading={false}
                     onItemClick={stableItemClick}
                     onAuthorClick={stableAuthorClick}
+                    onCoverFound={stableCoverFound}
                     showEmptyState={false}
                   />
                 </div>
@@ -1018,6 +1017,7 @@ function MainApp() {
                     loading={false}
                     onItemClick={stableItemClick}
                     onAuthorClick={stableAuthorClick}
+                    onCoverFound={stableCoverFound}
                     showEmptyState={false}
                   />
                 </div>
@@ -1066,6 +1066,7 @@ function MainApp() {
               loading={searchHook.searchLoading}
               onItemClick={stableItemClick}
               onAuthorClick={stableAuthorClick}
+              onCoverFound={stableCoverFound}
               showEmptyState={true}
               emptyTitle="Aucun résultat pour cette recherche"
               emptySubtitle="Essaie un autre titre, auteur, ou orthographe."
@@ -1131,7 +1132,15 @@ function MainApp() {
           }}
           onAddSeries={async (series) => {
             await seriesHook.handleAddSeriesToLibrary(series);
-            await unifiedContent.refreshAfterAdd('series');
+            // Refresh en fond — ne pas bloquer sur les retries
+            unifiedContent
+              .loadUnifiedContent({
+                forceRefresh: true,
+                silent: true,
+                skipBooks: true,
+                skipStats: true,
+              })
+              .catch(() => {});
           }}
         />
       )}
@@ -1298,7 +1307,7 @@ function AppWithAuth() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-honeycomb">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
       </div>
     );

@@ -28,22 +28,21 @@
   --spacing-xl: 2rem;
 }
 
-/* Mode sombre — mêmes surfaces que l'échelle gray de tailwind.config.js,
-   sans quoi le fond de page restait sur l'ancien #111827 par cette variable. */
+/* Mode sombre — verts profonds (alignés sur gray 700–900 du theme) */
 .dark {
-  --color-bg-primary: #0d1117;
-  --color-bg-secondary: #171c24;
-  --color-bg-tertiary: #242b36;
-  --color-text-primary: #f9fafb;
-  --color-text-secondary: #d1d5db;
-  --color-border: #2b333f;
+  --color-bg-primary: #234f37;
+  --color-bg-secondary: #163528;
+  --color-bg-tertiary: #1e3a2c;
+  --color-text-primary: #f0fdf4;
+  --color-text-secondary: #c5e0d0;
+  --color-border: #3d7a55;
 }
 
-/* Mode clair */
+/* Mode clair — fond vert doux, un cran plus saturé */
 :root:not(.dark) {
-  --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f9fafb;
-  --color-bg-tertiary: #f3f4f6;
+  --color-bg-primary: #bce8cb;
+  --color-bg-secondary: #a8dfbb;
+  --color-bg-tertiary: #94d6ab;
   --color-text-primary: #111827;
   --color-text-secondary: #6b7280;
   --color-border: #e5e7eb;

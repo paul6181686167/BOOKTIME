@@ -230,7 +230,9 @@ async def health():
         }
     
     try:
-        client.admin.command('ping')
+        # ping Mongo hors de la boucle : un ping sync bloquait autrement toute l'API
+        import asyncio
+        await asyncio.to_thread(client.admin.command, "ping")
         return {
             "status": "ok", 
             "database": "connected", 

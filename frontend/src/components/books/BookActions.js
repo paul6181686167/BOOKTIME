@@ -183,6 +183,7 @@ const BookActions = {
 
       seriesCards.push({
         id: series.id,
+        librarySeriesId: series.id,
         isSeriesCard: true,
         isOwnedSeries: true,
         name: verdict.curated?.data?.name || name,
@@ -199,6 +200,7 @@ const BookActions = {
         toReadBooks: Math.max(0, total - completed),
         volumes,
         cover_url: series.cover_image_url || series.cover_url || null,
+        cover_image_url: series.cover_image_url || series.cover_url || null,
         title: verdict.curated?.data?.name || name,
         saga: verdict.curated?.data?.name || name,
         description: series.description_fr || `Collection ${name}`,

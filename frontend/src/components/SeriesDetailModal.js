@@ -835,14 +835,50 @@ const SeriesDetailModal = ({
 
   const loadSeriesBooks = async () => {
     if (!series?.name) return;
-    
+
+    // Données déjà présentes (série en bibliothèque) : affichage immédiat
+    const localVolumes =
+      series.volumes ||
+      series.mergedLibraryVolumes ||
+      series.books ||
+      [];
+    if (Array.isArray(localVolumes) && localVolumes.length > 0) {
+      const asBooks = localVolumes.map((v, i) =>
+        typeof v === 'object'
+          ? v
+          : { title: String(v), volume_number: i + 1 }
+      );
+      setBooks(
+        [...asBooks].sort((a, b) => (a.volume_number || 0) - (b.volume_number || 0))
+      );
+      setLoading(false);
+      // Refresh réseau en fond, non bloquant
+      bookService
+        .getBooksBySaga(series.name)
+        .then((booksData) => {
+          if (Array.isArray(booksData) && booksData.length > 0) {
+            setBooks(
+              [...booksData].sort(
+                (a, b) => (a.volume_number || 0) - (b.volume_number || 0)
+              )
+            );
+          }
+        })
+        .catch(() => {});
+      return;
+    }
+
     try {
       setLoading(true);
-      // Charger les livres depuis la bibliothèque perso
       const booksData = await bookService.getBooksBySaga(series.name);
-      setBooks(booksData.sort((a, b) => (a.volume_number || 0) - (b.volume_number || 0)));
+      setBooks(
+        (booksData || []).sort(
+          (a, b) => (a.volume_number || 0) - (b.volume_number || 0)
+        )
+      );
     } catch (error) {
-      console.error('Erreur lors du chargement des livres de la série:', error);
+      console.warn('Livres de saga indisponibles (timeout/réseau):', error?.message || error);
+      setBooks([]);
     } finally {
       setLoading(false);
     }

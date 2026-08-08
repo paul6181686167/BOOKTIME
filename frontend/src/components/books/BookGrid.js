@@ -1,6 +1,15 @@
-import React from 'react';
-import { resolveCoverForGridItem } from '../../utils/helpers';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  coverFallbackCandidates,
+  coverImgSrc,
+  isBlankOrPlaceholderCover,
+  isGoogleBooksCoverUrl,
+  isUsableCoverUrl,
+  normalizeCoverUrl,
+  resolveCoverForGridItem,
+} from '../../utils/helpers';
 import { displayBookTitleFrFirst } from '../../utils/openLibraryBookDisplay';
+import { resolveCoverForVisibleItem } from '../../services/libraryMetaEnrichment';
 
 const GRID_CLASSES =
   'grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 sm:gap-5 p-2 sm:p-6';
@@ -16,7 +25,7 @@ const VISIBLE_STEP = 30;
 // La couverture porte la carte : pas de bordure, un arrondi plus généreux et une
 // ombre large qui s'intensifie au survol (sur desktop seulement).
 const CARD_SHELL =
-  'h-full bg-white dark:bg-gray-800 rounded-xl shadow-card overflow-hidden relative transition-shadow duration-200 sm:group-hover:shadow-card-hover';
+  'h-full bg-white dark:bg-gray-800 dark:ring-1 dark:ring-black/40 rounded-xl shadow-card overflow-hidden relative transition-shadow duration-200 sm:group-hover:shadow-card-hover';
 
 const COVER_FRAME = 'aspect-[2/3] bg-gray-100 dark:bg-gray-700 relative overflow-hidden';
 const COVER_IMAGE =
@@ -76,7 +85,107 @@ const CoverScrim = () => (
   <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-black/25 to-transparent" />
 );
 
-const SeriesCardBody = ({ item, coverSrc }) => {
+/** Image de couverture : ignore Google Books (souvent « image not available »). */
+const SmartCover = ({ item, alt, primarySrc, onCoverFound }) => {
+  const candidates = useMemo(() => {
+    const list = coverFallbackCandidates(item);
+    if (primarySrc && !list.includes(primarySrc)) {
+      if (isGoogleBooksCoverUrl(primarySrc)) list.push(primarySrc);
+      else list.unshift(primarySrc);
+    }
+    // Ne jamais afficher une URL Google Books : placeholder trompeur
+    return list.filter((u) => !isGoogleBooksCoverUrl(u));
+  }, [item, primarySrc]);
+  const [idx, setIdx] = useState(0);
+  const [fetched, setFetched] = useState(null);
+  const [searchTried, setSearchTried] = useState(false);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    setIdx(0);
+    setFetched(null);
+    setSearchTried(false);
+    setSearching(false);
+  }, [item?.id, primarySrc, candidates[0]]);
+
+  const exhausted = !fetched && (candidates.length === 0 || idx >= candidates.length);
+
+  useEffect(() => {
+    if (!exhausted || fetched || searchTried) return;
+    let cancelled = false;
+    setSearchTried(true);
+    setSearching(true);
+    const safety = setTimeout(() => {
+      if (!cancelled) setSearching(false);
+    }, 28000);
+    resolveCoverForVisibleItem(item)
+      .then((url) => {
+        if (cancelled || !url) return;
+        // Google Books accepté seulement après validation visuelle (onLoad)
+        const cover = isGoogleBooksCoverUrl(url)
+          ? url
+          : normalizeCoverUrl(url) || url;
+        if (isUsableCoverUrl(cover) || isGoogleBooksCoverUrl(cover)) {
+          setFetched(cover);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setSearching(false);
+        clearTimeout(safety);
+      });
+    return () => {
+      cancelled = true;
+      clearTimeout(safety);
+    };
+  }, [item, exhausted, fetched, searchTried]);
+
+  const src = fetched || (idx < candidates.length ? candidates[idx] : null);
+
+  if (!src) {
+    if (searching || (!searchTried && exhausted)) {
+      return (
+        <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse" />
+      );
+    }
+    return <CoverPlaceholder text={alt} />;
+  }
+
+  const imgSrc = coverImgSrc(src);
+
+  const failCurrent = () => {
+    if (fetched) {
+      setFetched(null);
+      setSearchTried(false);
+      return;
+    }
+    setIdx((i) => i + 1);
+  };
+
+  return (
+    <img
+      src={imgSrc}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      crossOrigin={/wsrv\.nl/i.test(imgSrc) ? 'anonymous' : undefined}
+      referrerPolicy="no-referrer"
+      className={COVER_IMAGE}
+      onLoad={(e) => {
+        if (isBlankOrPlaceholderCover(e.currentTarget)) {
+          failCurrent();
+          return;
+        }
+        if (fetched && typeof onCoverFound === 'function') {
+          onCoverFound(item, fetched);
+        }
+      }}
+      onError={failCurrent}
+    />
+  );
+};
+
+const SeriesCardBody = ({ item, coverSrc, onCoverFound }) => {
   // Statut série : priorité au statut manuel, sinon progression des tomes
   const seriesStatus =
     item.status ||
@@ -91,25 +200,12 @@ const SeriesCardBody = ({ item, coverSrc }) => {
     <div className={CARD_SHELL}>
       {/* Couverture (même squelette que les livres individuels) */}
       <div className={COVER_FRAME}>
-        {coverSrc ? (
-          <>
-            <img
-              src={coverSrc}
-              alt={item.name}
-              loading="lazy"
-              decoding="async"
-              className={COVER_IMAGE}
-              onError={(e) => {
-                e.target.style.display = 'none';
-                const fb = e.target.nextElementSibling;
-                if (fb) fb.classList.remove('hidden');
-              }}
-            />
-            <CoverPlaceholder text={item.name} hidden />
-          </>
-        ) : (
-          <CoverPlaceholder text={item.name} />
-        )}
+        <SmartCover
+          item={item}
+          alt={item.name}
+          primarySrc={coverSrc}
+          onCoverFound={onCoverFound}
+        />
         <CoverScrim />
 
         {/* Badge identifiant "Série" — distinction claire avec un livre individuel */}
@@ -160,32 +256,19 @@ const SeriesCardBody = ({ item, coverSrc }) => {
   );
 };
 
-const BookCardBody = ({ item, coverSrc }) => {
+const BookCardBody = ({ item, coverSrc, onCoverFound }) => {
   const title = displayBookTitleFrFirst(item);
 
   return (
     <div className={CARD_SHELL}>
       {/* Couverture (Open Library en secours si pas d’URL) */}
       <div className={COVER_FRAME}>
-        {coverSrc ? (
-          <>
-            <img
-              src={coverSrc}
-              alt={item.display_title || item.title}
-              loading="lazy"
-              decoding="async"
-              className={COVER_IMAGE}
-              onError={(e) => {
-                e.target.style.display = 'none';
-                const fb = e.target.nextElementSibling;
-                if (fb) fb.classList.remove('hidden');
-              }}
-            />
-            <CoverPlaceholder text={title} hidden />
-          </>
-        ) : (
-          <CoverPlaceholder text={title} />
-        )}
+        <SmartCover
+          item={item}
+          alt={title}
+          primarySrc={coverSrc}
+          onCoverFound={onCoverFound}
+        />
         <CoverScrim />
       </div>
 
@@ -240,7 +323,7 @@ const BookCardBody = ({ item, coverSrc }) => {
 
 // Carte mémoïsée : sans cela, changer d'onglet ou de tri redessinait toutes les
 // cartes de la bibliothèque, ce qui se sentait nettement sur mobile.
-const GridCard = React.memo(({ item, index, onSelect }) => {
+const GridCard = React.memo(({ item, index, onSelect, onCoverFound }) => {
   const coverSrc = resolveCoverForGridItem(item);
   const animated = index < ANIMATED_CARDS;
 
@@ -253,9 +336,9 @@ const GridCard = React.memo(({ item, index, onSelect }) => {
       onClick={() => onSelect(item)}
     >
       {item.isSeriesCard ? (
-        <SeriesCardBody item={item} coverSrc={coverSrc} />
+        <SeriesCardBody item={item} coverSrc={coverSrc} onCoverFound={onCoverFound} />
       ) : (
-        <BookCardBody item={item} coverSrc={coverSrc} />
+        <BookCardBody item={item} coverSrc={coverSrc} onCoverFound={onCoverFound} />
       )}
     </div>
   );
@@ -268,6 +351,7 @@ const BookGrid = ({
   onBookClick,
   onItemClick,
   onAuthorClick,
+  onCoverFound,
   showEmptyState = true,
   emptyTitle = 'Aucun livre dans votre bibliothèque',
   emptySubtitle = 'Commencez par rechercher des livres à ajouter à votre collection.',
@@ -369,7 +453,13 @@ const BookGrid = ({
     <>
       <div className={GRID_CLASSES}>
         {visibleBooks.map((item, index) => (
-          <GridCard key={item.id} item={item} index={index} onSelect={handleSelect} />
+          <GridCard
+            key={item.id}
+            item={item}
+            index={index}
+            onSelect={handleSelect}
+            onCoverFound={onCoverFound}
+          />
         ))}
       </div>
       {hasMore && <div ref={sentinelRef} aria-hidden="true" className="h-px" />}

@@ -464,6 +464,33 @@ async def resolve_french_paperback_pages(
     }
 
 
+@router.get("/resolve-cover")
+async def resolve_cover_by_title(
+    title: str = Query(..., min_length=1),
+    author: str = Query(""),
+    isbn: str = Query(""),
+    ol_key: str = Query(""),
+    current_user: dict = Depends(get_current_user),
+):
+    """Recherche une couverture par titre/auteur (sans id livre)."""
+    import asyncio
+    from ..utils.cover_resolve import normalize_cover_url, resolve_cover_url
+
+    cover = await asyncio.to_thread(
+        resolve_cover_url,
+        title=title,
+        author=author,
+        isbn=isbn,
+        ol_key=ol_key,
+    )
+    cover = normalize_cover_url(cover)
+    return {
+        "cover_url": cover or "",
+        "found": bool(cover),
+        "source": "resolved" if cover else "none",
+    }
+
+
 @router.get("/resolve-synopsis")
 async def resolve_book_synopsis(
     title: str = Query(..., min_length=1),
@@ -704,11 +731,61 @@ async def get_book_synopsis(
     }
 
 
+@router.post("/{book_id}/cover")
+async def resolve_and_persist_book_cover(
+    book_id: str, current_user: dict = Depends(get_current_user)
+):
+    """Cherche une couverture manquante (OL/GB), la mémorise en base, renvoie l'URL."""
+    import asyncio
+    from ..utils.cover_resolve import (
+        is_usable_cover_url,
+        normalize_cover_url,
+        resolve_cover_url,
+    )
+
+    book = books_collection.find_one(
+        {"id": book_id, "user_id": current_user["id"]}, {"_id": 0}
+    )
+    if not book:
+        raise HTTPException(status_code=404, detail="Livre non trouvé")
+
+    existing = normalize_cover_url(book.get("cover_url"))
+    if is_usable_cover_url(existing):
+        if existing != (book.get("cover_url") or "").strip():
+            books_collection.update_one(
+                {"id": book_id, "user_id": current_user["id"]},
+                {"$set": {"cover_url": existing, "updated_at": datetime.utcnow()}},
+            )
+        return {"cover_url": existing, "persisted": True, "source": "existing"}
+
+    cover = await asyncio.to_thread(
+        resolve_cover_url,
+        title=book.get("title") or book.get("title_fr") or book.get("display_title") or "",
+        author=book.get("author") or "",
+        isbn=book.get("isbn") or book.get("isbn13") or "",
+        ol_key=book.get("ol_key") or "",
+    )
+    if not cover:
+        return {"cover_url": "", "persisted": False, "source": "none"}
+
+    cover = normalize_cover_url(cover)
+    if not is_usable_cover_url(cover):
+        return {"cover_url": "", "persisted": False, "source": "none"}
+
+    books_collection.update_one(
+        {"id": book_id, "user_id": current_user["id"]},
+        {"$set": {"cover_url": cover, "updated_at": datetime.utcnow()}},
+    )
+    return {"cover_url": cover, "persisted": True, "source": "resolved"}
+
+
 @router.post("/{book_id}/enrich")
 async def enrich_book(book_id: str, current_user: dict = Depends(get_current_user)):
     """Enrichir un livre avec couverture, description (4ᵉ) et genres."""
+    import asyncio
     import httpx
     from ..utils.book_synopsis import fetch_book_synopsis
+    from ..utils.cover_resolve import is_usable_cover_url, normalize_cover_url, resolve_cover_url
 
     book = books_collection.find_one({"id": book_id, "user_id": current_user["id"]}, {"_id": 0})
     if not book:
@@ -733,40 +810,38 @@ async def enrich_book(book_id: str, current_user: dict = Depends(get_current_use
         if syn.get("ol_key") and not book.get("ol_key"):
             enriched["ol_key"] = syn["ol_key"]
 
+    if not is_usable_cover_url(book.get("cover_url")):
+        cover = await asyncio.to_thread(
+            resolve_cover_url,
+            title=title,
+            author=author,
+            isbn=isbn or book.get("isbn13") or "",
+            ol_key=book.get("ol_key") or "",
+        )
+        if cover:
+            enriched["cover_url"] = normalize_cover_url(cover)
+
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            # Chercher par ISBN d'abord, puis par titre/auteur
-            if isbn:
-                ol_url = f"https://openlibrary.org/api/books?bibkeys=ISBN:{isbn}&jscmd=data&format=json"
-                r = await client.get(ol_url)
-                if r.status_code == 200:
-                    data = r.json()
-                    ol_data = data.get(f"ISBN:{isbn}", {})
-                    cover_ids = ol_data.get("cover", {})
-                    if cover_ids.get("large") and not book.get("cover_url"):
-                        enriched["cover_url"] = cover_ids["large"]
-                    elif cover_ids.get("medium") and not book.get("cover_url"):
-                        enriched["cover_url"] = cover_ids["medium"]
-                    subjects = [
-                        (s if isinstance(s, str) else s.get("name", ""))
-                        for s in ol_data.get("subjects", [])[:5]
-                    ]
-                    if subjects:
-                        enriched["genres"] = subjects
-
-            if title and ("cover_url" not in enriched or "genres" not in enriched):
+            if title and "genres" not in enriched:
                 q = f"{title} {author}".strip()
                 r = await client.get(
                     "https://openlibrary.org/search.json",
-                    params={"q": q, "limit": 1, "fields": "cover_i,subject,key"}
+                    params={"q": q, "limit": 1, "fields": "cover_i,subject,key"},
                 )
                 if r.status_code == 200:
                     docs = r.json().get("docs", [])
                     if docs:
                         doc = docs[0]
-                        if doc.get("cover_i") and not book.get("cover_url") and "cover_url" not in enriched:
-                            enriched["cover_url"] = f"https://covers.openlibrary.org/b/id/{doc['cover_i']}-L.jpg"
-                        if doc.get("subject") and "genres" not in enriched:
+                        if (
+                            doc.get("cover_i")
+                            and "cover_url" not in enriched
+                            and not is_usable_cover_url(book.get("cover_url"))
+                        ):
+                            enriched["cover_url"] = (
+                                f"https://covers.openlibrary.org/b/id/{doc['cover_i']}-M.jpg"
+                            )
+                        if doc.get("subject"):
                             enriched["genres"] = doc["subject"][:5]
 
     except Exception as e:

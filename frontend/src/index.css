@@ -17,13 +17,31 @@
 /* Hauteur plein écran mobile correct (évite le bug 100vh sur iOS) */
 .h-screen-mobile { height: 100dvh; }
 
+/* Motif nid d'abeille discret sur le fond vert */
+.bg-honeycomb {
+  background-color: #bce8cb;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath fill='none' stroke='%23166534' stroke-opacity='0.14' stroke-width='1.2' d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 34L0 84V50l28 16 28-16v34L28 100z'/%3E%3C/svg%3E");
+  background-size: 56px 100px;
+}
+
+@media (min-width: 768px) {
+  .bg-honeycomb {
+    background-attachment: fixed;
+  }
+}
+
+.dark .bg-honeycomb {
+  background-color: #234f37;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath fill='none' stroke='%23dcfce7' stroke-opacity='0.14' stroke-width='1.2' d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 34L0 84V50l28 16 28-16v34L28 100z'/%3E%3C/svg%3E");
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #a8dfbb;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -35,17 +53,17 @@
   background: #94a3b8;
 }
 
-/* Mode sombre pour la scrollbar — accordé aux nouvelles surfaces sombres */
+/* Mode sombre — scrollbar en vert profond */
 .dark ::-webkit-scrollbar-track {
-  background: #171c24;
+  background: #1e3a2c;
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: #374151;
+  background: #3d7a55;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #4b5563;
+  background: #4f9668;
 }
 
 /* CORRECTION: Transitions spécifiques optimisées */

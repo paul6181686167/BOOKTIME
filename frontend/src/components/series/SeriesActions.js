@@ -13,12 +13,26 @@
 
 import { toast } from 'react-hot-toast';
 import * as seriesLibraryService from '../../services/seriesLibraryService';
-import { DEFAULT_SERIES_COVER } from '../../utils/constants';
-import { seriesImageService } from '../../services/seriesImageService';
+import { EXTENDED_SERIES_DATABASE } from '../../utils/seriesDatabaseExtended.js';
 import {
   loadSeriesCache,
   saveSeriesCache,
 } from '../../utils/offlineLibraryCache';
+
+/** Couverture déjà connue sur la carte / les tomes — sans rappeler Open Library. */
+const resolveSeriesCover = (seriesData) => {
+  if (seriesData?.cover_url) return seriesData.cover_url;
+  if (seriesData?.cover_image_url) return seriesData.cover_image_url;
+  if (Array.isArray(seriesData?.mergedLibraryVolumes)) {
+    const hit = seriesData.mergedLibraryVolumes.find((r) => r.cover_url);
+    if (hit?.cover_url) return hit.cover_url;
+  }
+  if (Array.isArray(seriesData?.books)) {
+    const hit = seriesData.books.find((b) => b.cover_url);
+    if (hit?.cover_url) return hit.cover_url;
+  }
+  return '';
+};
 
 // CHARGEMENT DES SÉRIES UTILISATEUR
 export const loadUserSeriesLibrary = async (setSeriesLibraryLoading, setUserSeriesLibrary) => {
@@ -53,65 +67,39 @@ export const loadUserSeriesLibrary = async (setSeriesLibraryLoading, setUserSeri
   }
 };
 
-// ENRICHISSEMENT AUTOMATIQUE DES MÉTADONNÉES
-export const enrichSeriesMetadata = async (seriesData) => {
-  try {
-    let cover_image_url = '';
-    try {
-      const openLibraryUrl = await seriesImageService.fetchCoverFromOpenLibrary(seriesData.name);
-      cover_image_url = openLibraryUrl || DEFAULT_SERIES_COVER;
-    } catch (error) {
-      cover_image_url = DEFAULT_SERIES_COVER;
-    }
-    
-    // 2. Générer une description française enrichie
-    let description_fr = '';
-    try {
-      if (seriesData.description) {
-        description_fr = seriesData.description;
-      } else {
-        // Générer une description basique
-        const categoryText = {
-          'roman': 'roman',
-          'bd': 'bande dessinée', 
-          'manga': 'manga'
-        };
-        
-        const authorText = seriesData.authors?.length 
-          ? ` par ${seriesData.authors.join(', ')}`
-          : seriesData.author ? ` par ${seriesData.author}` : '';
-        
-        const volumeText = seriesData.volumes 
-          ? ` Comprend ${seriesData.volumes} tome${seriesData.volumes > 1 ? 's' : ''}.`
-          : '';
-        
-        description_fr = `Série de ${categoryText[seriesData.category] || 'livres'} populaire${authorText}.${volumeText}`;
-      }
-      
-    } catch (error) {
-      description_fr = `Série ${seriesData.category || 'populaire'}.`;
-    }
-    
-    return {
-      cover_image_url,
-      description_fr,
-      first_published: seriesData.first_published || '',
-      last_published: '',
-      publisher: ''
-    };
-    
-  } catch (error) {
-    console.error('❌ Erreur enrichissement métadonnées:', error);
-    
-    // Fallback sûr
-    return {
-      cover_image_url: DEFAULT_SERIES_COVER,
-      description_fr: `Série ${seriesData.category || 'populaire'}.`,
-      first_published: '',
-      last_published: '',
-      publisher: ''
-    };
-  }
+// Métadonnées locales uniquement — plus d'appel Open Library ici (il timeoutait
+// 3× avant chaque ajout et faisait paraître l'action bloquée 10–30 s).
+export const enrichSeriesMetadata = (seriesData) => {
+  const categoryText = {
+    roman: 'roman',
+    bd: 'bande dessinée',
+    manga: 'manga',
+  };
+  const authorText = seriesData.authors?.length
+    ? ` par ${seriesData.authors.join(', ')}`
+    : seriesData.author
+      ? ` par ${seriesData.author}`
+      : '';
+  const volumeCount =
+    seriesData.total_volumes ||
+    seriesData.totalBooks ||
+    (typeof seriesData.volumes === 'number' ? seriesData.volumes : 0) ||
+    0;
+  const volumeText = volumeCount
+    ? ` Comprend ${volumeCount} tome${volumeCount > 1 ? 's' : ''}.`
+    : '';
+
+  return {
+    // Vide si inconnue : l'enrichissement arrière-plan cherchera + mémorisera
+    cover_image_url: resolveSeriesCover(seriesData) || '',
+    description_fr:
+      seriesData.description ||
+      seriesData.description_fr ||
+      `Série de ${categoryText[seriesData.category] || 'livres'}${authorText}.${volumeText}`,
+    first_published: seriesData.first_published || '',
+    last_published: seriesData.last_published || '',
+    publisher: seriesData.publisher || '',
+  };
 };
 
 // AJOUT DE SÉRIE COMPLÈTE À LA BIBLIOTHÈQUE
@@ -120,14 +108,13 @@ export const handleAddSeriesToLibrary = async (seriesData, {
   loadUserSeriesLibrary
 }) => {
   try {
-    setSeriesLibraryLoading(true);
+    setSeriesLibraryLoading?.(true);
     const token = localStorage.getItem('token');
-    
-    // Importer le référentiel étendu
-    const { EXTENDED_SERIES_DATABASE } = await import('../../utils/seriesDatabaseExtended.js');
-    
-    // Générer les volumes avec titres depuis le référentiel
-    const volumes = seriesLibraryService.generateVolumesList(seriesData, EXTENDED_SERIES_DATABASE);
+
+    const volumes = seriesLibraryService.generateVolumesList(
+      seriesData,
+      EXTENDED_SERIES_DATABASE
+    );
 
     let authors = seriesData.authors || (seriesData.author ? [seriesData.author] : []);
     if (
@@ -143,56 +130,52 @@ export const handleAddSeriesToLibrary = async (seriesData, {
       authors = [...set];
     }
 
-    const enrichedMetadata = await enrichSeriesMetadata({ ...seriesData, authors });
+    const enrichedMetadata = enrichSeriesMetadata({ ...seriesData, authors });
 
-    let coverFromMerge = '';
-    if (Array.isArray(seriesData.mergedLibraryVolumes)) {
-      const hit = seriesData.mergedLibraryVolumes.find((r) => r.cover_url);
-      if (hit?.cover_url) coverFromMerge = hit.cover_url;
-    }
-
-    // Préparer les données de la série avec toutes les métadonnées
     const seriesPayload = {
       series_name: seriesData.name,
       author: seriesData.author || authors[0] || '',
       authors,
       category: seriesData.category || 'roman',
       total_volumes: volumes.length,
-      volumes: volumes,
+      volumes,
       description_fr: enrichedMetadata.description_fr,
-      cover_image_url: coverFromMerge || enrichedMetadata.cover_image_url,
-      first_published: enrichedMetadata.first_published || seriesData.first_published || '',
+      cover_image_url: enrichedMetadata.cover_image_url,
+      first_published: enrichedMetadata.first_published || '',
       last_published: enrichedMetadata.last_published || '',
       publisher: enrichedMetadata.publisher || '',
-      series_status: 'to_read'
+      series_status: 'to_read',
     };
-    
-    // Appel API pour ajouter la série
+
     const result = await seriesLibraryService.addSeriesToLibrary(seriesPayload, token);
-    
+
     if (result.success) {
-      await loadUserSeriesLibrary();
-      
-      // Message de succès détaillé
       toast.success(
-        `✅ Série "${seriesData.name}" ajoutée avec ${volumes.length} tome${volumes.length > 1 ? 's' : ''} !`,
-        { duration: 4000 }
+        `Série « ${seriesData.name} » ajoutée (${volumes.length} tome${volumes.length > 1 ? 's' : ''})`,
+        { duration: 3000 }
       );
-      
+
+      // Refresh hors chemin critique : l'UI peut fermer la modale tout de suite
+      if (typeof loadUserSeriesLibrary === 'function') {
+        Promise.resolve(loadUserSeriesLibrary()).catch((err) =>
+          console.warn('Refresh séries après ajout:', err)
+        );
+      }
     }
+    return result;
   } catch (error) {
     console.error('❌ Erreur ajout série:', error);
-    
-    // Gestion des erreurs spécifiques
-    if (error.message.includes('409')) {
+    const msg = error?.message || '';
+    if (msg.includes('409')) {
       toast.error('Cette série est déjà dans votre bibliothèque');
-    } else if (error.message.includes('400')) {
+    } else if (msg.includes('400')) {
       toast.error('Données de série invalides');
     } else {
-      toast.error('❌ Erreur lors de l\'ajout de la série');
+      toast.error("Erreur lors de l'ajout de la série");
     }
+    throw error;
   } finally {
-    setSeriesLibraryLoading(false);
+    setSeriesLibraryLoading?.(false);
   }
 };
 

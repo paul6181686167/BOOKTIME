@@ -146,6 +146,7 @@ async def update_series_status(
     has_desc = "description_fr" in series_data or "description" in series_data
     has_rating = "rating" in series_data
     has_review = "review" in series_data
+    has_cover = "cover_image_url" in series_data or "cover_url" in series_data
     if new_status is not None and new_status not in ["to_read", "reading", "completed"]:
         raise HTTPException(status_code=400, detail="Statut invalide")
     if (
@@ -155,12 +156,22 @@ async def update_series_status(
         and not has_desc
         and not has_rating
         and not has_review
+        and not has_cover
     ):
         raise HTTPException(status_code=400, detail="Aucune mise à jour fournie")
 
     update_fields: dict = {"updated_at": datetime.now(timezone.utc)}
     if new_status is not None:
         update_fields["series_status"] = new_status
+    if has_cover:
+        from ..utils.cover_resolve import normalize_cover_url
+
+        raw_cover = series_data.get("cover_image_url")
+        if raw_cover is None:
+            raw_cover = series_data.get("cover_url")
+        cover = normalize_cover_url(raw_cover)
+        if cover:
+            update_fields["cover_image_url"] = cover[:2000]
     if has_desc:
         raw_desc = series_data.get("description_fr")
         if raw_desc is None:

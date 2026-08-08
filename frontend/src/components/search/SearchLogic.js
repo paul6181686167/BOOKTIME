@@ -14,7 +14,6 @@
 import { toast } from 'react-hot-toast';
 import SearchOptimizer from '../../utils/searchOptimizer';
 import { calculateRelevanceScore, getRelevanceLevel } from './RelevanceEngine';
-import { AutoSeriesDetector } from '../../hooks/useAutoSeriesDetection';
 import SeriesDetector from '../../utils/seriesDetector';
 import { API_BASE_URL } from '../../config/environment';
 import { displayBookTitleFrFirst, mergeOpenLibraryBooksByVolume } from '../../utils/openLibraryBookDisplay';
@@ -31,6 +30,7 @@ import {
   buildWikidataSeriesMatcher,
   enrichWikidataCardFromCurated,
   findCuratedSeriesByQuery,
+  findCuratedSeriesForBook,
   resolveSeriesTotalBooks,
 } from '../../utils/seriesAttribution';
 
@@ -41,9 +41,10 @@ import {
 let searchSequence = 0;
 let inFlightSearch = null;
 
-// Au-delà de ce délai, on arrête d'attendre Open Library et on garde curé/Wikidata.
-// Évite l'écran « 0 résultat » pendant que le backend attend un timeout OL.
-const OL_CLIENT_TIMEOUT_MS = 8000;
+// OL ne bloque plus l'UI : ce timeout ne sert qu'à abandonner l'enrichissement
+// en arrière-plan. Wikidata (local) a son propre plafond bien plus court.
+const OL_CLIENT_TIMEOUT_MS = 10000;
+const WIKIDATA_CLIENT_TIMEOUT_MS = 2000;
 
 /** fetch avec timeout local, sans annuler le signal parent (Wikidata continue). */
 function fetchWithTimeout(url, options = {}, timeoutMs = OL_CLIENT_TIMEOUT_MS) {
@@ -161,235 +162,245 @@ export const searchOpenLibrary = async (query, {
     return results;
   };
 
-  // Afficher tout de suite le curé : l'utilisateur ne reste pas sur « 0 résultat »
-  // pendant les 8–12 s d'attente Open Library.
+  let didToast = false;
+  const toastOnce = (message, kind = 'success') => {
+    if (didToast || isStale()) return;
+    didToast = true;
+    if (kind === 'error') toast.error(message);
+    else toast.success(message);
+  };
+
+  // 1) Curé synchrone → l'UI a déjà des cartes (One Piece, etc.)
   const immediate = applyCuratedFallback([]);
-  
+  // Dès qu'il y a du local, on coupe le spinner : OL ne doit plus faire attendre.
+  if (immediate.length > 0) {
+    setSearchLoading(false);
+    toastOnce(`${immediate.length} résultat(s) trouvé(s)`);
+  }
+
+  const token = localStorage.getItem('token');
+  const backendUrl = API_BASE_URL;
+  const authHeaders = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    'Content-Type': 'application/json',
+  };
+
+  // 2) Wikidata (backend local, rapide) + OL (lent) en parallèle
+  const wdRace = Promise.race([
+    fetchWikidataSpotlight(query, token, backendUrl, controller.signal),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('wd-timeout')), WIKIDATA_CLIENT_TIMEOUT_MS)
+    ),
+  ]).catch(() => ({ wikidataSpotlight: [], wikidataMatcher: () => null }));
+
+  const olPromise = fetchWithTimeout(
+    `${backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}&limit=40`,
+    { headers: authHeaders, signal: controller.signal },
+    OL_CLIENT_TIMEOUT_MS
+  );
+
+  let wikidataSpotlight = [];
+  let wikidataMatcher = () => null;
+
   try {
-    console.log('✅ Début de la recherche globale Open Library (toutes catégories)');
-    
-    const token = localStorage.getItem('token');
-    const backendUrl = API_BASE_URL;
-    const authHeaders = {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      'Content-Type': 'application/json',
-    };
+    const wd = await wdRace;
+    if (!isStale()) {
+      wikidataSpotlight = wd.wikidataSpotlight || [];
+      wikidataMatcher = wd.wikidataMatcher || (() => null);
+      const merged = applyCuratedFallback(wikidataSpotlight);
+      setSearchLoading(false);
+      if (merged.length > 0) toastOnce(`${merged.length} résultat(s) trouvé(s)`);
+    }
+  } catch (_) {
+    if (!isStale()) setSearchLoading(false);
+  }
 
-    const [olSettled, wdSettled] = await Promise.allSettled([
-      fetchWithTimeout(
-        `${backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}&limit=40`,
-        { headers: authHeaders, signal: controller.signal },
-        OL_CLIENT_TIMEOUT_MS
-      ),
-      fetchWikidataSpotlight(query, token, backendUrl, controller.signal),
-    ]);
+  // 3) Open Library en arrière-plan : enrichit la grille sans bloquer
+  if (isStale()) {
+    if (inFlightSearch === controller) inFlightSearch = null;
+    return;
+  }
 
-    // Une recherche plus récente est partie entre-temps : ne rien afficher et
-    // surtout ne pas payer le post-traitement (attribution séries, tris, dédup).
+  try {
+    const response = await olPromise;
     if (isStale()) return;
 
-    const { wikidataSpotlight, wikidataMatcher } =
-      wdSettled.status === 'fulfilled'
-        ? wdSettled.value
-        : { wikidataSpotlight: [], wikidataMatcher: () => null };
-
-    // Fusionner Wikidata dès qu'il est là, même si OL n'a rien donné
-    if (wikidataSpotlight.length) {
-      applyCuratedFallback(wikidataSpotlight);
+    if (!response?.ok) {
+      const results = applyCuratedFallback(wikidataSpotlight);
+      if (results.length === 0) toastOnce('Aucun résultat trouvé', 'error');
+      return;
     }
 
-    const response = olSettled.status === 'fulfilled' ? olSettled.value : null;
+    const data = await response.json();
+    if (isStale()) return;
 
-    if (response?.ok) {
-      const data = await response.json();
-      if (isStale()) return;
+    if (data.source_unavailable || !(data.books || []).length) {
+      const results = applyCuratedFallback(wikidataSpotlight);
+      if (results.length === 0) {
+        toastOnce(
+          data.source_unavailable
+            ? 'Open Library indisponible — aucun résultat local'
+            : 'Aucun résultat trouvé',
+          'error'
+        );
+      }
+      return;
+    }
 
-      // Open Library a répondu mais sans livres utiles (timeout amont, panne soft) :
-      // garder curé + Wikidata déjà affichés.
-      if (data.source_unavailable || !(data.books || []).length) {
-        const results = applyCuratedFallback(wikidataSpotlight);
-        if (isStale()) return;
-        if (results.length > 0) {
-          toast.success(`${results.length} résultat(s) trouvé(s)`);
-        } else if (!immediate.length) {
-          toast.error(
-            data.source_unavailable
-              ? 'Open Library indisponible — aucun résultat local'
-              : 'Aucun résultat trouvé'
-          );
+    // ── 1. Dédoublonnage par ol_key ──────────────────────────────────────
+    const seen = new Set();
+    const uniqueBooks = (data.books || []).filter((b) => {
+      if (!b.ol_key || seen.has(b.ol_key)) return false;
+      seen.add(b.ol_key);
+      return true;
+    });
+
+    // ── 2. Enrichir chaque livre (ownership + badge) ─────────────────────
+    const ownershipIndex = buildOwnershipIndex(books);
+    const enriched = uniqueBooks.map((book) => {
+      const categoryBadge = getCategoryBadgeFromBook(book);
+      const display_title = displayBookTitleFrFirst(book);
+      const withDisplay = { ...book, display_title };
+      return {
+        ...withDisplay,
+        isFromOpenLibrary: true,
+        isOwned: isBookOwned(withDisplay, ownershipIndex),
+        id: `ol_${book.ol_key}`,
+        categoryBadge,
+        category: book.category || categoryBadge.key || 'roman',
+      };
+    });
+
+    // ── 3. ATTRIBUTION UNIQUE : chaque livre → une série ──
+    const wdSpotlightByQid = new Map(
+      wikidataSpotlight.filter((c) => c.wikidata_qid).map((c) => [c.wikidata_qid, c])
+    );
+    const seriesGroups = new Map();
+    const attributedIds = new Set();
+    const querySeries = findCuratedSeriesByQuery(query);
+
+    enriched.forEach((book) => {
+      let attr = attributeBookToSeries(book, { wikidataMatcher });
+      if (!attr && querySeries) attr = attachBookToQuerySeries(book, querySeries);
+      if (!attr) return;
+      if (!seriesGroups.has(attr.seriesKey)) seriesGroups.set(attr.seriesKey, { attr, books: [] });
+      seriesGroups.get(attr.seriesKey).books.push(book);
+      if (book.ol_key) attributedIds.add(book.ol_key);
+    });
+
+    // ── 4. Construire une carte série par groupe ─────────────────────────
+    const seriesCards = [];
+    seriesGroups.forEach(({ attr, books: groupBooks }) => {
+      const merged = mergeOpenLibraryBooksByVolume(groupBooks);
+      const cover = merged.find((b) => b.cover_url)?.cover_url || null;
+      const author = groupBooks.find((b) => b.author)?.author || '';
+
+      if (attr.source === 'wikidata') {
+        const card = wdSpotlightByQid.get(attr.wikidata_qid);
+        if (card) {
+          card.books = merged;
+          if (!card.cover_url && cover) card.cover_url = cover;
+          if (!card.author && author) card.author = author;
+          if (!card.totalBooks) card.totalBooks = merged.length;
+          return;
         }
-        return;
       }
 
-      // ── 1. Dédoublonnage par ol_key ──────────────────────────────────────
-      const seen = new Set();
-      const uniqueBooks = (data.books || []).filter(b => {
-        if (!b.ol_key || seen.has(b.ol_key)) return false;
-        seen.add(b.ol_key);
-        return true;
+      seriesCards.push({
+        isSeriesCard: true,
+        id: `series_${attr.source}_${attr.seriesKey}`,
+        name: attr.seriesName,
+        author,
+        category: attr.seriesData?.category || groupBooks[0]?.category || 'roman',
+        cover_url: cover,
+        totalBooks: resolveSeriesTotalBooks(attr.seriesData, merged.length),
+        books: merged,
+        description: attr.seriesData?.description || `Série de ${attr.seriesName}`,
+        relevanceScore: attr.source === 'saga' ? 100000 : 96000,
+        fromStaticDB: attr.source === 'curated',
+        fromOpenLibrary: attr.source === 'saga',
       });
+    });
 
-      // ── 2. Enrichir chaque livre (ownership + badge) ─────────────────────
-      // Index construit une seule fois pour toute la bibliothèque
-      const ownershipIndex = buildOwnershipIndex(books);
-      const enriched = uniqueBooks.map(book => {
-        const categoryBadge = getCategoryBadgeFromBook(book);
-        const display_title = displayBookTitleFrFirst(book);
-        const withDisplay = { ...book, display_title };
-        return {
-          ...withDisplay,
-          isFromOpenLibrary: true,
-          isOwned: isBookOwned(withDisplay, ownershipIndex),
-          id: `ol_${book.ol_key}`,
-          categoryBadge,
-          category: book.category || categoryBadge.key || 'roman',
-        };
-      });
+    // ── 5. Heuristique de repli : auteur + mots du query ──
+    const remaining = enriched.filter((b) => !attributedIds.has(b.ol_key));
+    const authorGroups = {};
+    remaining.forEach((book) => {
+      if (!book.author) return;
+      const key = book.author.toLowerCase().trim();
+      if (!authorGroups[key]) authorGroups[key] = { author: book.author, books: [], category: book.category };
+      authorGroups[key].books.push(book);
+    });
 
-      // ── 3. ATTRIBUTION UNIQUE : chaque livre → une série (curé → Wikidata → saga) ──
-      const wdSpotlightByQid = new Map(
-        wikidataSpotlight.filter(c => c.wikidata_qid).map(c => [c.wikidata_qid, c])
-      );
-      const seriesGroups = new Map();
-      const attributedIds = new Set();
-      const querySeries = findCuratedSeriesByQuery(query);
-
-      enriched.forEach(book => {
-        let attr = attributeBookToSeries(book, { wikidataMatcher });
-        if (!attr && querySeries) attr = attachBookToQuerySeries(book, querySeries);
-        if (!attr) return;
-        if (!seriesGroups.has(attr.seriesKey)) seriesGroups.set(attr.seriesKey, { attr, books: [] });
-        seriesGroups.get(attr.seriesKey).books.push(book);
-        if (book.ol_key) attributedIds.add(book.ol_key);
-      });
-
-      // ── 4. Construire une carte série par groupe ─────────────────────────
-      const seriesCards = [];
-      seriesGroups.forEach(({ attr, books: groupBooks }) => {
-        const merged = mergeOpenLibraryBooksByVolume(groupBooks);
-        const cover = merged.find(b => b.cover_url)?.cover_url || null;
-        const author = groupBooks.find(b => b.author)?.author || '';
-
-        if (attr.source === 'wikidata') {
-          const card = wdSpotlightByQid.get(attr.wikidata_qid);
-          if (card) {
-            card.books = merged;
-            if (!card.cover_url && cover) card.cover_url = cover;
-            if (!card.author && author) card.author = author;
-            if (!card.totalBooks) card.totalBooks = merged.length;
-            return;
-          }
-        }
-
-        seriesCards.push({
-          isSeriesCard: true,
-          id: `series_${attr.source}_${attr.seriesKey}`,
-          name: attr.seriesName,
-          author,
-          category: attr.seriesData?.category || groupBooks[0]?.category || 'roman',
-          cover_url: cover,
-          totalBooks: resolveSeriesTotalBooks(attr.seriesData, merged.length),
-          books: merged,
-          description: attr.seriesData?.description || `Série de ${attr.seriesName}`,
-          relevanceScore: attr.source === 'saga' ? 100000 : 96000,
-          fromStaticDB: attr.source === 'curated',
-          fromOpenLibrary: attr.source === 'saga',
-        });
-      });
-
-      // ── 5. Heuristique de repli : auteur + mots du query ──
-      const remaining = enriched.filter(b => !attributedIds.has(b.ol_key));
-      const authorGroups = {};
-      remaining.forEach(book => {
-        if (!book.author) return;
-        const key = book.author.toLowerCase().trim();
-        if (!authorGroups[key]) authorGroups[key] = { author: book.author, books: [], category: book.category };
-        authorGroups[key].books.push(book);
-      });
-
-      const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length >= 3);
-      Object.values(authorGroups).forEach(group => {
-        if (group.books.length < 2) return;
-        const matchingBooks = queryWords.length > 0
-          ? group.books.filter(b => {
+    const queryWords = query.toLowerCase().split(/\s+/).filter((w) => w.length >= 3);
+    Object.values(authorGroups).forEach((group) => {
+      if (group.books.length < 2) return;
+      const matchingBooks =
+        queryWords.length > 0
+          ? group.books.filter((b) => {
               const blob = `${b.display_title || ''} ${b.title || ''}`.toLowerCase();
-              return queryWords.some(w => blob.includes(w));
+              return queryWords.some((w) => blob.includes(w));
             })
           : group.books;
-        if (matchingBooks.length < 2) return;
+      if (matchingBooks.length < 2) return;
 
-        const seriesName = queryWords.length > 0 ? query.trim() : group.author;
-        matchingBooks.forEach(b => {
-          if (b.ol_key) attributedIds.add(b.ol_key);
-        });
-        const mergedMatching = mergeOpenLibraryBooksByVolume(matchingBooks);
-
-        seriesCards.push({
-          isSeriesCard: true,
-          id: `series_author_${seriesName.toLowerCase().replace(/\s+/g, '_')}`,
-          name: seriesName,
-          author: group.author,
-          category: group.category,
-          cover_url: mergedMatching.find(b => b.cover_url)?.cover_url || null,
-          totalBooks: mergedMatching.length,
-          books: mergedMatching,
-          description: `Série de ${mergedMatching.length} tome(s) de ${group.author}`,
-          relevanceScore: 90000,
-          fromOpenLibrary: true,
-        });
+      const seriesName = queryWords.length > 0 ? query.trim() : group.author;
+      matchingBooks.forEach((b) => {
+        if (b.ol_key) attributedIds.add(b.ol_key);
       });
+      const mergedMatching = mergeOpenLibraryBooksByVolume(matchingBooks);
 
-      // ── 6. Séries de la base statique — toujours, même si OL a peu de hits ──
-      const allSeriesNames = new Set([
-        ...seriesCards.map(c => (c.name || '').toLowerCase()),
-        ...wikidataSpotlight.map(c => (c.name || '').toLowerCase()),
-      ]);
-      const staticSeriesCards = generateSeriesCardsForSearch(query, data.books) || [];
-      const dedupedStatic = staticSeriesCards.filter(
-        c => !allSeriesNames.has((c.name || '').toLowerCase())
-      );
+      seriesCards.push({
+        isSeriesCard: true,
+        id: `series_author_${seriesName.toLowerCase().replace(/\s+/g, '_')}`,
+        name: seriesName,
+        author: group.author,
+        category: group.category,
+        cover_url: mergedMatching.find((b) => b.cover_url)?.cover_url || null,
+        totalBooks: mergedMatching.length,
+        books: mergedMatching,
+        description: `Série de ${mergedMatching.length} tome(s) de ${group.author}`,
+        relevanceScore: 90000,
+        fromOpenLibrary: true,
+      });
+    });
 
-      // ── 7. Livres individuels (réellement hors série) ────────────────────
-      const standaloneBooks = enriched.filter(b => !attributedIds.has(b.ol_key));
+    // ── 6. Séries de la base statique ──
+    const allSeriesNames = new Set([
+      ...seriesCards.map((c) => (c.name || '').toLowerCase()),
+      ...wikidataSpotlight.map((c) => (c.name || '').toLowerCase()),
+    ]);
+    const staticSeriesCards = generateSeriesCardsForSearch(query, data.books) || [];
+    const dedupedStatic = staticSeriesCards.filter(
+      (c) => !allSeriesNames.has((c.name || '').toLowerCase())
+    );
 
-      // ── 8. Fusion + dédup ───────────────────────────────────────────────
-      let finalResults = [
-        ...seriesCards,
-        ...dedupedStatic,
-        ...wikidataSpotlight,
-        ...standaloneBooks,
-      ];
-      finalResults = dedupeWikidataStaticSeriesOverOpenLibrary(finalResults);
-      finalResults = dedupeSeriesCardsByName(finalResults);
+    // ── 7–8. Livres individuels + fusion ──
+    const standaloneBooks = enriched.filter((b) => !attributedIds.has(b.ol_key));
+    let finalResults = [
+      ...seriesCards,
+      ...dedupedStatic,
+      ...wikidataSpotlight,
+      ...standaloneBooks,
+    ];
+    finalResults = dedupeWikidataStaticSeriesOverOpenLibrary(finalResults);
+    finalResults = dedupeSeriesCardsByName(finalResults);
 
-      const totalSeries = finalResults.filter(c => c.isSeriesCard).length;
-      setOpenLibraryResults(finalResults);
-      toast.success(
-        `${standaloneBooks.length} livre(s)` +
+    if (isStale()) return;
+    setOpenLibraryResults(finalResults);
+    const totalSeries = finalResults.filter((c) => c.isSeriesCard).length;
+    // Toast seulement si on n'avait encore rien annoncé (titre inconnu du curé)
+    toastOnce(
+      `${standaloneBooks.length} livre(s)` +
         (totalSeries > 0 ? ` + ${totalSeries} série(s)` : '') +
         ` trouvé(s)`
-      );
-    } else {
-      // OL indisponible / timeout client : curé + Wikidata déjà (ou encore) affichés
-      const results = applyCuratedFallback(wikidataSpotlight);
-      if (results.length > 0) {
-        toast.success(`${results.length} résultat(s) trouvé(s)`);
-      } else if (!immediate.length) {
-        toast.error('Erreur lors de la recherche Open Library');
-      }
-    }
+    );
   } catch (error) {
-    // Recherche abandonnée au profit d'une plus récente : silence complet.
     if (isStale() || error?.name === 'AbortError') return;
-    console.error('Erreur recherche Open Library:', error);
-    const results = applyCuratedFallback([]);
-    if (results.length > 0) {
-      toast.success(`${results.length} résultat(s) trouvé(s)`);
-    } else if (!immediate.length) {
-      toast.error('Erreur lors de la recherche Open Library');
-    }
+    console.error('Erreur recherche Open Library (arrière-plan):', error);
+    const results = applyCuratedFallback(wikidataSpotlight);
+    if (results.length === 0) toastOnce('Aucun résultat trouvé', 'error');
   } finally {
-    // Ne pas éteindre l'indicateur d'une recherche encore en cours
     if (!isStale()) setSearchLoading(false);
     if (inFlightSearch === controller) inFlightSearch = null;
   }
@@ -412,119 +423,126 @@ export const handleAddFromOpenLibrary = async (openLibraryBook, {
 }) => {
   // Empêcher les clics multiples sur le même livre
   if (addingBooks.has(openLibraryBook.ol_key)) {
-    return; // Si le livre est déjà en cours d'ajout, ne rien faire
+    return;
+  }
+
+  const addTitle =
+    openLibraryBook.display_title ||
+    openLibraryBook.title_fr ||
+    openLibraryBook.title;
+  const categoryBadge =
+    openLibraryBook.categoryBadge || getCategoryBadgeFromBook(openLibraryBook);
+  let targetCategory = categoryBadge?.key;
+  if (!targetCategory || !['roman', 'bd', 'manga'].includes(targetCategory)) {
+    targetCategory = ['roman', 'bd', 'manga'].includes(activeTab)
+      ? activeTab
+      : 'roman';
+  }
+
+  // Détection de série locale (synchrone) — plus d'aller-retour /api/series/detect
+  let saga = openLibraryBook.saga || null;
+  let volume_number = openLibraryBook.volume_number || null;
+  let auto_detected_series = false;
+  let detection_confidence = null;
+  if (!saga) {
+    const curated = findCuratedSeriesForBook({
+      title: addTitle,
+      display_title: addTitle,
+      original_title: openLibraryBook.original_title,
+      author: openLibraryBook.author,
+    });
+    if (curated?.seriesName) {
+      saga = curated.seriesName;
+      auto_detected_series = true;
+      detection_confidence = curated.confidence || null;
+    }
   }
 
   try {
-    // Marquer le livre comme en cours d'ajout
-    setAddingBooks(prev => new Set([...prev, openLibraryBook.ol_key]));
-    
+    setAddingBooks((prev) => new Set([...prev, openLibraryBook.ol_key]));
+
+    // Feedback immédiat : la grille et le toast ne dépendent plus du reload bibliothèque
+    setOpenLibraryResults((prev) =>
+      prev.map((book) =>
+        book.ol_key === openLibraryBook.ol_key ? { ...book, isOwned: true } : book
+      )
+    );
+
     const token = localStorage.getItem('token');
     const backendUrl = API_BASE_URL;
-    
-    // PLACEMENT INTELLIGENT : Déterminer la catégorie automatiquement via le badge
-    const categoryBadge = openLibraryBook.categoryBadge || getCategoryBadgeFromBook(openLibraryBook);
-    let targetCategory = categoryBadge.key; // Utiliser la catégorie détectée par le badge
-    
-    // Validation : s'assurer que la catégorie est valide
-    if (!targetCategory || !['roman', 'bd', 'manga'].includes(targetCategory)) {
-      // Si pas de catégorie ou catégorie invalide, utiliser l'onglet actuel par défaut
-      targetCategory = activeTab;
-    }
-    
-    // 🔍 DÉTECTION AUTOMATIQUE DE SÉRIE
-    console.log('🔍 DÉTECTION AUTOMATIQUE: Analyse du livre pour séries...');
-    const autoDetector = new AutoSeriesDetector();
-    
-    // Préparer les données du livre pour la détection
-    const addTitle = openLibraryBook.display_title || openLibraryBook.title;
-    const bookData = {
-      title: addTitle,
-      author: openLibraryBook.author,
-      category: targetCategory,
-      cover_url: openLibraryBook.cover_url || "",
-      ol_key: openLibraryBook.ol_key
-    };
-    
-    // Lancer la détection automatique
-    const enhancedBookData = await autoDetector.detectAndEnhanceBook(bookData);
-    
-    // Utiliser les données enrichies pour l'import
+
     const response = await fetch(`${backendUrl}/api/openlibrary/import`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         ol_key: openLibraryBook.ol_key,
         category: targetCategory,
-        cover_url: openLibraryBook.cover_url || "",
-        original_title: openLibraryBook.original_title || openLibraryBook.title || null,
-        saga: enhancedBookData.saga || null,
-        volume_number: enhancedBookData.volume_number || null,
-        auto_detected_series: enhancedBookData.auto_detected_series || false,
-        detection_confidence: enhancedBookData.detection_confidence || null
-      })
+        title: addTitle,
+        title_fr: openLibraryBook.title_fr || null,
+        author: openLibraryBook.author || '',
+        cover_url: openLibraryBook.cover_url || '',
+        original_title:
+          openLibraryBook.original_title || openLibraryBook.title || null,
+        isbn: openLibraryBook.isbn || '',
+        description: openLibraryBook.description || '',
+        first_publish_year: openLibraryBook.first_publish_year || null,
+        saga,
+        volume_number,
+        auto_detected_series,
+        detection_confidence,
+      }),
     });
 
     if (response.ok) {
-      // Message de succès immédiat
-      const categoryLabels = {
-        'roman': 'Roman',
-        'bd': 'BD',
-        'manga': 'Manga'
-      };
-      toast.success(`"${addTitle}" ajouté avec succès ! 📚`, {
-        duration: 2000
-      });
-      
-      // Rafraîchir la bibliothèque
-      if (loadStats) {
-        await Promise.all([loadBooks(), loadStats()]);
-      } else {
-        await loadBooks();
-      }
+      toast.success(`« ${addTitle} » ajouté`, { duration: 2000 });
 
-      // Déclencher immédiatement le retour à la bibliothèque (import confirmé par response.ok)
-      window.dispatchEvent(new CustomEvent('backToLibrary', {
-        detail: {
-          reason: 'book_added_success',
-          bookTitle: addTitle,
-          targetCategory,
-        }
-      }));
-      
-      // Mettre à jour le statut de possession dans les résultats
-      setOpenLibraryResults(prev => 
-        prev.map(book => 
-          book.ol_key === openLibraryBook.ol_key 
-            ? { ...book, isOwned: true }
-            : book
-        )
+      window.dispatchEvent(
+        new CustomEvent('backToLibrary', {
+          detail: {
+            reason: 'book_added_success',
+            bookTitle: addTitle,
+            targetCategory,
+          },
+        })
       );
+
+      // Reload bibliothèque en arrière-plan (ne bloque plus le clic)
+      Promise.resolve()
+        .then(() =>
+          loadStats ? Promise.all([loadBooks(), loadStats()]) : loadBooks()
+        )
+        .catch((err) => console.warn('Refresh bibliothèque après ajout:', err));
     } else {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({}));
       if (response.status === 409) {
         toast.error('Ce livre est déjà dans votre collection');
-        // Marquer le livre comme possédé même si l'ajout a échoué pour cause de doublon
-        setOpenLibraryResults(prev => 
-          prev.map(book => 
-            book.ol_key === openLibraryBook.ol_key 
-              ? { ...book, isOwned: true }
+      } else {
+        // Annuler l'optimistic "possédé" si l'import a réellement échoué
+        setOpenLibraryResults((prev) =>
+          prev.map((book) =>
+            book.ol_key === openLibraryBook.ol_key
+              ? { ...book, isOwned: false }
               : book
           )
         );
-      } else {
-        toast.error(error.detail || 'Erreur lors de l\'ajout du livre');
+        toast.error(error.detail || "Erreur lors de l'ajout du livre");
       }
     }
   } catch (error) {
     console.error('Erreur ajout livre:', error);
-    toast.error('Erreur lors de l\'ajout du livre');
+    setOpenLibraryResults((prev) =>
+      prev.map((book) =>
+        book.ol_key === openLibraryBook.ol_key
+          ? { ...book, isOwned: false }
+          : book
+      )
+    );
+    toast.error("Erreur lors de l'ajout du livre");
   } finally {
-    // Retirer le livre de la liste des livres en cours d'ajout
-    setAddingBooks(prev => {
+    setAddingBooks((prev) => {
       const newSet = new Set(prev);
       newSet.delete(openLibraryBook.ol_key);
       return newSet;

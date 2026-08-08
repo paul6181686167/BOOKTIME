@@ -320,6 +320,134 @@ export const classNames = (...classes) => {
  * @param {object} entity
  * @returns {string|null}
  */
+/** True si l'URL est une vraie couverture (pas placeholder SVG / archive.org). */
+export const isUsableCoverUrl = (url) => {
+  const u = String(url || '').trim();
+  if (!u || u.includes('undefined')) return false;
+  if (u.startsWith('data:')) return false;
+  if (/\/b\/(?:id|olid)\/OL\d+W/i.test(u)) return false;
+  if (/archive\.org/i.test(u)) return false;
+  return true;
+};
+
+/** Réécrit archive.org / -L.jpg vers le CDN OL -M (plus rapide). */
+export const normalizeCoverUrl = (url) => {
+  let u = String(url || '').trim();
+  if (!u) return '';
+  u = u.replace('http://', 'https://');
+  // Google Books : les query params (id, printsec, img…) sont obligatoires
+  if (/books\.google\./i.test(u) || /googleusercontent\.com/i.test(u)) {
+    u = u.replace(/([?&])zoom=\d/i, '$1zoom=0');
+    if (!/[?&]edge=/.test(u)) u += (u.includes('?') ? '&' : '?') + 'edge=curl';
+    return u;
+  }
+  if (/archive\.org/i.test(u)) {
+    const arch = u.match(/(?:\/|=)(\d+)-[LM]\.jpe?g/i);
+    if (arch) return `https://covers.openlibrary.org/b/id/${arch[1]}-M.jpg`;
+    return '';
+  }
+  u = u.replace(
+    /(covers\.openlibrary\.org\/b\/(?:id|olid|isbn)\/[^/?]+)-[LS]\.jpe?g/i,
+    '$1-M.jpg'
+  );
+  return u.split('?')[0];
+};
+
+/**
+ * src <img> : proxy wsrv.nl pour le CDN Open Library (souvent timeout
+ * depuis FR) ; Google Books gardé en direct avec params fiables.
+ */
+export const coverImgSrc = (url) => {
+  const raw = String(url || '').trim();
+  if (!raw) return '';
+
+  if (/books\.google\./i.test(raw) || /googleusercontent\.com/i.test(raw)) {
+    let n = raw.replace('http://', 'https://');
+    n = n.replace(/([?&])zoom=\d/i, '$1zoom=0');
+    if (!/[?&]edge=/.test(n)) n += (n.includes('?') ? '&' : '?') + 'edge=curl';
+    // Proxy aussi GB : évite 403 referrer + rate-limit navigateur
+    const hostPath = n.replace(/^https?:\/\//i, '');
+    return `https://wsrv.nl/?url=${encodeURIComponent(hostPath)}&w=280&output=jpg`;
+  }
+
+  let n = normalizeCoverUrl(raw);
+  if (!n) return '';
+
+  if (/covers\.openlibrary\.org/i.test(n)) {
+    const bare = n.split('?')[0];
+    const hostPath = bare.replace(/^https?:\/\//i, '');
+    // default=false côté OL via &default=false sur l’URL source
+    const proxied = `${hostPath}${hostPath.includes('?') ? '&' : '?'}default=false`;
+    return `https://wsrv.nl/?url=${encodeURIComponent(proxied)}&w=280&output=jpg`;
+  }
+
+  // Wikimedia : proxy pour CORS (détection placeholder) + cache CDN
+  if (/upload\.wikimedia\.org/i.test(n)) {
+    const hostPath = n.replace(/^https?:\/\//i, '');
+    return `https://wsrv.nl/?url=${encodeURIComponent(hostPath)}&w=280&output=jpg`;
+  }
+
+  return n;
+};
+
+/** true si l'image Google Books a besoin d'un referrer « normal ». */
+export const coverNeedsReferrer = (url) =>
+  /books\.google\./i.test(url || '') || /googleusercontent\.com/i.test(url || '');
+
+/** Google Books sert souvent le faux « image not available ». */
+export const isGoogleBooksCoverUrl = (url) =>
+  /books\.google\./i.test(url || '') || /googleusercontent\.com/i.test(url || '');
+
+/**
+ * Détecte les fausses couvertures Google « image not available »
+ * (coins gris clairs ; le texte au centre fausse une moyenne globale).
+ */
+export const isBlankOrPlaceholderCover = (img) => {
+  if (!img) return true;
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
+  if (!(w > 0 && h > 0)) return true;
+  if (w < 40 || h < 40) return true;
+  try {
+    const tw = 32;
+    const th = 32;
+    const canvas = document.createElement('canvas');
+    canvas.width = tw;
+    canvas.height = th;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return false;
+    ctx.drawImage(img, 0, 0, tw, th);
+    const { data } = ctx.getImageData(0, 0, tw, th);
+    const isLightGray = (i) => {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const avg = (r + g + b) / 3;
+      return Math.abs(r - g) < 18 && Math.abs(g - b) < 18 && avg > 160 && avg < 250;
+    };
+    // Coins uniquement (évite le texte « image not available » au centre)
+    const corners = [
+      0,
+      (tw - 1) * 4,
+      (th - 1) * tw * 4,
+      ((th - 1) * tw + (tw - 1)) * 4,
+      (2 * tw + 2) * 4,
+      (2 * tw + (tw - 3)) * 4,
+    ];
+    const cornerHits = corners.filter((i) => isLightGray(i)).length;
+    if (cornerHits >= 5) return true;
+
+    let lightGray = 0;
+    const total = tw * th;
+    for (let i = 0; i < data.length; i += 4) {
+      if (isLightGray(i)) lightGray += 1;
+    }
+    return lightGray / total > 0.65;
+  } catch (_) {
+    return false;
+  }
+};
+
 export const resolveOpenLibraryCoverUrl = (entity) => {
   if (!entity || typeof entity !== 'object') return null;
 
@@ -327,10 +455,10 @@ export const resolveOpenLibraryCoverUrl = (entity) => {
   const isInvalidOlCover = (url) =>
     /\/b\/(?:id|olid)\/OL\d+W/i.test(url) || /\/b\/id\/\d{10,13}-/i.test(url);
 
-  const u = entity.cover_url;
-  if (u && String(u).trim() && !String(u).includes('undefined')) {
-    const url = String(u).trim();
-    if (!isInvalidOlCover(url)) return url;
+  const rawCover = entity.cover_url || entity.cover_image_url;
+  if (rawCover && String(rawCover).trim() && !String(rawCover).includes('undefined')) {
+    const url = normalizeCoverUrl(rawCover);
+    if (url && !isInvalidOlCover(url) && isUsableCoverUrl(url)) return url;
   }
   if (entity.cover_i != null && Number.isFinite(Number(entity.cover_i))) {
     return `https://covers.openlibrary.org/b/id/${Number(entity.cover_i)}-M.jpg`;
@@ -349,19 +477,47 @@ export const resolveOpenLibraryCoverUrl = (entity) => {
   if (Array.isArray(isbn)) isbn = isbn[0];
   isbn = String(isbn || '').replace(/[^0-9X]/gi, '');
   if (isbn.length >= 10) {
-    // Sans default=false : OL renvoie une image par défaut au lieu d'un 404
     return `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`;
   }
   return null;
+};
+
+/** Chaîne de secours si la 1ʳᵉ URL échoue au chargement. */
+export const coverFallbackCandidates = (entity) => {
+  if (!entity) return [];
+  const out = [];
+  const push = (u) => {
+    const n = normalizeCoverUrl(u);
+    if (n && isUsableCoverUrl(n) && !out.includes(n)) out.push(n);
+  };
+  push(entity.cover_url);
+  push(entity.cover_image_url);
+  const primary = resolveOpenLibraryCoverUrl(entity);
+  if (primary) push(primary);
+  let isbn = entity.isbn || entity.isbn13 || entity.isbn10;
+  if (Array.isArray(isbn)) isbn = isbn[0];
+  isbn = String(isbn || '').replace(/[^0-9X]/gi, '');
+  if (isbn.length >= 10) push(`https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`);
+  if (entity.cover_i != null) {
+    push(`https://covers.openlibrary.org/b/id/${Number(entity.cover_i)}-M.jpg`);
+  }
+  // Google Books en dernier : souvent le placeholder « image not available »
+  const trusted = out.filter((u) => !isGoogleBooksCoverUrl(u));
+  const google = out.filter((u) => isGoogleBooksCoverUrl(u));
+  return [...trusted, ...google];
 };
 
 /** Couverture pour une carte grille (livre ou série avec books[]). */
 export const resolveCoverForGridItem = (item) => {
   if (!item) return null;
   if (item.isSeriesCard) {
-    const direct = resolveOpenLibraryCoverUrl({ ...item, cover_url: item.cover_url });
+    const direct = resolveOpenLibraryCoverUrl({
+      ...item,
+      cover_url: item.cover_url || item.cover_image_url,
+    });
     if (direct) return direct;
-    for (const b of item.books || []) {
+    for (const b of item.books || item.volumes || []) {
+      if (typeof b !== 'object') continue;
       const c = resolveOpenLibraryCoverUrl(b);
       if (c) return c;
     }

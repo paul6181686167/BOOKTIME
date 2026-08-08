@@ -15,6 +15,10 @@ from ..utils.category_buffer import set_cached_category
 
 logger = logging.getLogger("booktime.openlibrary")
 
+# Au plus 2 recherches OL en parallèle : au-delà, les suggestions à la frappe
+# saturaient le thread-pool asyncio et rendaient login /health injoignables.
+_OL_SEARCH_SEM = asyncio.Semaphore(2)
+
 def _normalize_query(s: str) -> str:
     """Supprime accents et ponctuation pour une recherche élargie"""
     no_accent = unicodedata.normalize('NFD', s).encode('ascii', 'ignore').decode('utf-8')
@@ -300,19 +304,95 @@ async def search_open_library(
     Stratégie large : requête originale + version sans accents, fusionnées et dédupliquées.
     Retourne original_title pour que le front puisse l'afficher en sous-titre.
     """
-    # Exécuter le travail bloquant hors de la boucle asyncio, sinon une seule
-    # recherche OL lente empêche Wikidata, /health et les autres clients de répondre.
-    return await asyncio.to_thread(
-        _search_open_library_sync,
-        q,
-        limit,
-        year_start,
-        year_end,
-        language,
-        min_pages,
-        max_pages,
-        author_filter,
-    )
+    # Semaphore : évite que 10 suggestions empilent 10 threads bloqués sur OL
+    # et rendent login/auth injoignables (thread-pool asyncio saturé).
+    async with _OL_SEARCH_SEM:
+        return await asyncio.to_thread(
+            _search_open_library_sync,
+            q,
+            limit,
+            year_start,
+            year_end,
+            language,
+            min_pages,
+            max_pages,
+            author_filter,
+        )
+
+
+def _get_series_books_sync(name: str, author: Optional[str], limit: int) -> dict:
+    """HTTP Open Library synchrone — à appeler via asyncio.to_thread uniquement."""
+    import re as _re
+
+    def normalize(s):
+        return _re.sub(r'\s+', ' ', (s or '').lower().strip())
+
+    name_norm = normalize(name)
+    name_words = [w for w in name_norm.split() if len(w) >= 3]
+
+    query = f'"{name}"'
+    if author:
+        query += f' author:"{author}"'
+
+    params = {
+        "q": query,
+        "limit": limit,
+        "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,number_of_pages_median,series",
+    }
+    resp = requests.get("https://openlibrary.org/search.json", params=params, timeout=(3, 8))
+    resp.raise_for_status()
+    docs = resp.json().get("docs", [])
+
+    if len(docs) < 3:
+        params2 = dict(params)
+        params2["q"] = f"{name}" + (f' author:"{author}"' if author else "")
+        resp2 = requests.get("https://openlibrary.org/search.json", params=params2, timeout=(3, 8))
+        if resp2.ok:
+            seen_keys = {d.get("key") for d in docs}
+            for d in resp2.json().get("docs", []):
+                if d.get("key") not in seen_keys:
+                    docs.append(d)
+                    seen_keys.add(d.get("key"))
+
+    def is_relevant(doc):
+        title_norm = normalize(doc.get("title", ""))
+        series_field = doc.get("series", [])
+        series_str = normalize(series_field[0] if series_field else "")
+        if series_str and any(w in series_str for w in name_words):
+            return True
+        if name_words and all(w in title_norm for w in name_words[:2]):
+            return True
+        return False
+
+    relevant = [d for d in docs if is_relevant(d)] or docs
+
+    books = []
+    seen = set()
+    for doc in relevant:
+        key = doc.get("key", "")
+        if key in seen:
+            continue
+        seen.add(key)
+
+        raw_series = doc.get("series", [])
+        series_name = ""
+        if raw_series:
+            s = raw_series[0] if isinstance(raw_series, list) else raw_series
+            vol_match = _re.search(r'\s*[#,]\s*\d+', s)
+            series_name = s[:vol_match.start()].strip() if vol_match else s.strip()
+
+        books.append({
+            "ol_key": key,
+            "title": doc.get("title", ""),
+            "author": ", ".join(doc.get("author_name", [])) if doc.get("author_name") else (author or ""),
+            "cover_url": extract_cover_url(doc.get("cover_i")),
+            "first_publish_year": doc.get("first_publish_year"),
+            "saga": series_name or name,
+            "category": detect_category_from_subjects(doc.get("subject", [])),
+        })
+
+    books.sort(key=lambda b: b.get("first_publish_year") or 9999)
+    return {"books": books, "series_name": name, "total": len(books)}
 
 
 @router.get("/series-books")
@@ -322,289 +402,228 @@ async def get_series_books(
     limit: int = 20,
     current_user: dict = Depends(get_current_user)
 ):
-    """Récupère tous les volumes d'une série depuis Open Library."""
-    import re as _re
-
-    def normalize(s):
-        return _re.sub(r'\s+', ' ', (s or '').lower().strip())
-
-    name_norm = normalize(name)
-    # Mots significatifs du nom de série (longueur ≥ 3)
-    name_words = [w for w in name_norm.split() if len(w) >= 3]
-
+    """Récupère les volumes d'une série depuis Open Library (hors event loop)."""
     try:
-        # Requête 1 : chercher le nom exact de la série
-        query = f'"{name}"'
-        if author:
-            query += f' author:"{author}"'
-
-        params = {
-            "q": query,
-            "limit": limit,
-            "fields": "key,title,author_name,first_publish_year,isbn,cover_i,subject,number_of_pages_median,series"
-        }
-        resp = requests.get("https://openlibrary.org/search.json", params=params, timeout=10)
-        resp.raise_for_status()
-        data = resp.json()
-        docs = data.get("docs", [])
-
-        # Requête 2 (fallback) : si peu de résultats, chercher sans guillemets
-        if len(docs) < 3:
-            params2 = dict(params)
-            params2["q"] = f"{name}" + (f' author:"{author}"' if author else "")
-            resp2 = requests.get("https://openlibrary.org/search.json", params=params2, timeout=10)
-            if resp2.ok:
-                docs2 = resp2.json().get("docs", [])
-                seen_keys = {d.get("key") for d in docs}
-                for d in docs2:
-                    if d.get("key") not in seen_keys:
-                        docs.append(d)
-                        seen_keys.add(d.get("key"))
-
-        # Filtrer : garder les livres dont le titre contient des mots-clés de la série
-        def is_relevant(doc):
-            title_norm = normalize(doc.get("title", ""))
-            series_field = doc.get("series", [])
-            series_str = normalize(series_field[0] if series_field else "")
-            # Appartient à la série si : series field match OU titre contient les mots clés
-            if series_str and any(w in series_str for w in name_words):
-                return True
-            if name_words and all(w in title_norm for w in name_words[:2]):
-                return True
-            return False
-
-        relevant = [d for d in docs if is_relevant(d)]
-        if not relevant:
-            relevant = docs  # garder tout si rien ne passe le filtre
-
-        books = []
-        seen = set()
-        for doc in relevant:
-            key = doc.get("key", "")
-            if key in seen:
-                continue
-            seen.add(key)
-
-            raw_series = doc.get("series", [])
-            series_name = ""
-            if raw_series:
-                s = raw_series[0] if isinstance(raw_series, list) else raw_series
-                vol_match = _re.search(r'\s*[#,]\s*\d+', s)
-                series_name = s[:vol_match.start()].strip() if vol_match else s.strip()
-
-            books.append({
-                "ol_key": key,
-                "title": doc.get("title", ""),
-                "author": ", ".join(doc.get("author_name", [])) if doc.get("author_name") else (author or ""),
-                "cover_url": extract_cover_url(doc.get("cover_i")),
-                "first_publish_year": doc.get("first_publish_year"),
-                "saga": series_name or name,
-                "category": detect_category_from_subjects(doc.get("subject", [])),
-            })
-
-        # Trier par année de publication
-        books.sort(key=lambda b: b.get("first_publish_year") or 9999)
-
-        return {"books": books, "series_name": name, "total": len(books)}
-
+        async with _OL_SEARCH_SEM:
+            return await asyncio.to_thread(_get_series_books_sync, name, author, limit)
     except requests.RequestException as e:
         raise HTTPException(status_code=500, detail=f"Erreur OL: {str(e)}")
+
+
+def _import_from_ol_sync(import_data: dict, user_id: str) -> dict:
+    """Import OL côté thread : chemin rapide si le front envoie déjà titre/auteur/couverture.
+
+    L'ancien flux enchaînait work + editions + N auteurs + synopsis (souvent >15 s)
+    dans un `async def`, ce qui bloquait aussi le reste de l'API.
+    """
+    ol_key = import_data.get("ol_key") or ""
+    if ol_key and not ol_key.startswith("/"):
+        ol_key = f"/{ol_key}"
+
+    validated_category = validate_category(import_data.get("category", "roman"))
+
+    # Doublon rapide par ol_key (si déjà importé)
+    if ol_key:
+        existing = books_collection.find_one(
+            {"user_id": user_id, "ol_key": ol_key}, {"id": 1, "title": 1}
+        )
+        if existing:
+            existing.pop("_id", None)
+            raise HTTPException(
+                status_code=409,
+                detail="Ce livre est déjà dans votre collection",
+            )
+
+    title = (
+        import_data.get("title")
+        or import_data.get("title_fr")
+        or import_data.get("display_title")
+        or ""
+    ).strip()
+    author_str = (import_data.get("author") or "").strip()
+    original_title = (import_data.get("original_title") or "").strip() or None
+    cover_url = (import_data.get("cover_url") or "").strip()
+    isbn = (import_data.get("isbn") or "").strip()
+    saga_name = (import_data.get("saga") or "").strip()
+    volume_number = import_data.get("volume_number")
+    description = (import_data.get("description") or "").strip()
+    subjects: list = []
+    total_pages = import_data.get("total_pages") or import_data.get("number_of_pages")
+    publication_year = import_data.get("publication_year") or import_data.get("first_publish_year")
+    publisher = import_data.get("publisher") or ""
+
+    # Repli OL uniquement si métadonnées essentielles manquantes (timeout court)
+    work_data = {}
+    if ol_key and (not title or not author_str):
+        try:
+            resp = requests.get(f"https://openlibrary.org{ol_key}.json", timeout=4)
+            if resp.ok:
+                work_data = resp.json()
+                if not title:
+                    title = (work_data.get("title") or "").strip()
+                if not original_title:
+                    original_title = title or None
+                if not author_str and work_data.get("authors"):
+                    # Un seul auteur max — assez pour l'affichage, évite la cascade
+                    author_key = (
+                        work_data["authors"][0].get("author", {}) or {}
+                    ).get("key", "")
+                    if author_key:
+                        ar = requests.get(
+                            f"https://openlibrary.org{author_key}.json", timeout=3
+                        )
+                        if ar.ok:
+                            author_str = ar.json().get("name", "") or ""
+                subjects = work_data.get("subjects") or []
+        except requests.RequestException as exc:
+            logger.warning("Import OL: work indisponible pour %s: %s", ol_key, exc)
+
+    if not title:
+        raise HTTPException(status_code=400, detail="Titre manquant pour l'import")
+
+    if not original_title:
+        original_title = title
+    if not title or title == original_title:
+        alias = _alias_french_title(original_title)
+        if alias:
+            title = alias
+
+    if subjects:
+        detected = detect_category_from_subjects(subjects, title=title or original_title)
+        if detected == "roman" and validated_category in ("bd", "manga"):
+            validated_category = "roman"
+        elif detected in ("bd", "manga"):
+            validated_category = detected
+
+    if not saga_name and work_data.get("series"):
+        raw_series = work_data["series"][0] if isinstance(work_data["series"][0], str) else ""
+        vol_match = _re_global.search(
+            r"[,\s]+(vol\.?|tome|book|#)\s*(\d+)", raw_series, _re_global.IGNORECASE
+        )
+        if vol_match:
+            if volume_number is None:
+                volume_number = int(vol_match.group(2))
+            saga_name = raw_series[: vol_match.start()].strip()
+        else:
+            saga_name = raw_series.strip()
+
+    # Couverture de secours sans télécharger toute la liste d'éditions
+    if not cover_url and ol_key:
+        cover_url = f"https://covers.openlibrary.org/b/olid/{ol_key.split('/')[-1]}-M.jpg"
+
+    book_id = str(uuid.uuid4())
+    book = {
+        "id": book_id,
+        "user_id": user_id,
+        "title": title,
+        "original_title": original_title if original_title != title else None,
+        "author": author_str,
+        "category": validated_category,
+        "description": description,
+        "genre": ", ".join(subjects[:3]) if subjects else "",
+        "total_pages": total_pages,
+        "publication_year": publication_year,
+        "publisher": publisher if isinstance(publisher, str) else "",
+        "isbn": isbn,
+        "cover_url": cover_url,
+        "ol_key": ol_key or None,
+        "status": "to_read",
+        "current_page": None,
+        "rating": None,
+        "review": "",
+        "saga": saga_name,
+        "volume_number": volume_number,
+        "auto_added": False,
+        "date_added": datetime.utcnow(),
+        "date_started": None,
+        "date_completed": None,
+        "updated_at": datetime.utcnow(),
+    }
+
+    books_collection.insert_one(book)
+    book.pop("_id", None)
+
+    try:
+        set_cached_category(
+            title,
+            author_str,
+            category=validated_category,
+            source="openlibrary_import",
+            meta={"ol_key": ol_key},
+        )
+    except Exception:
+        pass
+
+    return {
+        "success": True,
+        "message": "Livre importé avec succès",
+        "book": book,
+        "type": "book",
+        "_needs_synopsis": not bool(description),
+    }
+
+
+def _fill_synopsis_sync(book_id: str, user_id: str, title: str, author: str, isbn: str, ol_key: str):
+    try:
+        from ..utils.book_synopsis import (
+            fetch_book_synopsis,
+            looks_english,
+            is_usable_synopsis,
+        )
+
+        syn = fetch_book_synopsis(
+            title=title,
+            author=author,
+            isbn=isbn or "",
+            ol_key=ol_key or "",
+            want_pages=False,
+        )
+        cand = (syn.get("description") or "").strip()
+        if is_usable_synopsis(cand) and not looks_english(cand):
+            books_collection.update_one(
+                {"id": book_id, "user_id": user_id},
+                {"$set": {"description": cand, "updated_at": datetime.utcnow()}},
+            )
+    except Exception as exc:
+        logger.debug("Synopsis différé import fail: %s", exc)
 
 
 @router.post("/import")
 async def import_from_open_library(
     import_data: dict,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
-    """Importer un livre depuis Open Library"""
+    """Importer un livre depuis Open Library (chemin rapide si métadonnées fournies)."""
     ol_key = import_data.get("ol_key")
-    category = import_data.get("category", "roman")
-    
-    # Valider la catégorie
-    validated_category = validate_category(category)
-    if not ol_key:
-        raise HTTPException(status_code=400, detail="Clé Open Library ou données série requises")
-    
+    if not ol_key and not import_data.get("title"):
+        raise HTTPException(
+            status_code=400, detail="Clé Open Library ou titre requis"
+        )
     try:
-        # Récupérer les détails du livre
-        work_url = f"https://openlibrary.org{ol_key}.json"
-        response = requests.get(work_url, timeout=10)
-        response.raise_for_status()
-        work_data = response.json()
-        
-        # Récupérer les éditions pour plus de détails
-        editions_url = f"https://openlibrary.org{ol_key}/editions.json"
-        editions_response = requests.get(editions_url, timeout=10)
-        editions_data = editions_response.json() if editions_response.status_code == 200 else {"entries": []}
-        
-        # Titre original depuis OL (langue d'origine du work)
-        original_title = import_data.get("original_title") or work_data.get("title", "")
-        title = original_title  # par défaut = titre original
-
-        # Chercher éditions FR en parallèle avec la récupération des auteurs (timeout court)
-        import concurrent.futures as _cf
-
-        def _find_fr_title():
-            try:
-                fr_resp = requests.get(
-                    f"https://openlibrary.org{ol_key}/editions.json",
-                    params={"language": "fre", "limit": 5},
-                    timeout=3
-                )
-                if fr_resp.ok:
-                    for entry in fr_resp.json().get("entries", []):
-                        langs = [l.get("key", "") for l in entry.get("languages", [])]
-                        if "/languages/fre" in langs and entry.get("title"):
-                            return entry["title"]
-            except Exception:
-                pass
-            return None
-
-        # Lancer en tâche de fond (non bloquant, on récupère après les auteurs)
-        _fr_executor = _cf.ThreadPoolExecutor(max_workers=1)
-        _fr_future = _fr_executor.submit(_find_fr_title)
-
-        authors = []
-        if work_data.get("authors"):
-            for author_ref in work_data["authors"]:
-                author_key = author_ref.get("author", {}).get("key", "")
-                if author_key:
-                    author_response = requests.get(f"https://openlibrary.org{author_key}.json", timeout=5)
-                    if author_response.status_code == 200:
-                        author_data = author_response.json()
-                        authors.append(author_data.get("name", ""))
-        
-        author_str = ", ".join(authors) if authors else ""
-        
-        # Extraire sujets
-        subjects = work_data.get("subjects", [])
-
-        # Recalcule prudent côté serveur (évite bd/manga trop agressifs du front)
-        detected = detect_category_from_subjects(subjects, title=title or original_title)
-        if detected == "roman" and validated_category in ("bd", "manga"):
-            validated_category = "roman"
-        elif subjects and detected in ("bd", "manga"):
-            validated_category = detected
-
-        # Extraire la série depuis OL (champ "series" du work ou titre tomeN)
-        series_list = work_data.get("series", [])
-        saga_name = ""
-        volume_number = None
-        if series_list:
-            # OL renvoie souvent "Harry Potter, Vol. 1" — on extrait nom + tome
-            raw_series = series_list[0] if isinstance(series_list[0], str) else ""
-            import re as _re
-            vol_match = _re.search(r'[,\s]+(vol\.?|tome|book|#)\s*(\d+)', raw_series, _re.IGNORECASE)
-            if vol_match:
-                volume_number = int(vol_match.group(2))
-                saga_name = raw_series[:vol_match.start()].strip()
-            else:
-                saga_name = raw_series.strip()
-        # Récupérer volume depuis import_data s'il est fourni explicitement
-        if import_data.get("volume_number"):
-            volume_number = import_data["volume_number"]
-        if import_data.get("saga"):
-            saga_name = import_data["saga"]
-
-        # Récupérer le titre français (lancé en parallèle plus haut)
-        fr_title = None
-        try:
-            fr_title = _fr_future.result(timeout=3)
-            if fr_title:
-                title = fr_title
-        except Exception:
-            pass
-        finally:
-            _fr_executor.shutdown(wait=False)
-
-        if not fr_title:
-            alias = _alias_french_title(original_title or title)
-            if alias:
-                title = alias
-
-        # Résumé en français (GB / Wiki FR) — éviter la description work OL souvent EN
-        description = ""
-        try:
-            from ..utils.book_synopsis import (
-                fetch_book_synopsis,
-                looks_french,
-                looks_english,
-                is_usable_synopsis,
-            )
-            syn = fetch_book_synopsis(
-                title=title or original_title,
-                author=author_str,
-                isbn=import_data.get("isbn") or "",
-                ol_key=ol_key,
-                want_pages=False,
-            )
-            cand = (syn.get("description") or "").strip()
-            if is_usable_synopsis(cand) and not looks_english(cand):
-                description = cand
-            elif is_usable_synopsis(cand) and looks_french(cand):
-                description = cand
-            if not description and work_data.get("description"):
-                raw = work_data["description"]
-                raw_desc = raw.get("value", "") if isinstance(raw, dict) else str(raw or "")
-                if is_usable_synopsis(raw_desc) and looks_french(raw_desc):
-                    description = raw_desc
-        except Exception as exc:
-            logger.debug("Synopsis FR import fail: %s", exc)
-
-        # Récupérer des détails depuis la première édition
-        first_edition = editions_data.get("entries", [{}])[0]
-
-        # Créer le livre
-        book_id = str(uuid.uuid4())
-        book = {
-            "id": book_id,
-            "user_id": current_user["id"],
-            "title": title,
-            "original_title": original_title if original_title != title else None,
-            "author": author_str,
-            "category": validated_category,
-            "description": description,
-            "genre": ", ".join(subjects[:3]) if subjects else "",
-            "total_pages": first_edition.get("number_of_pages"),
-            "publication_year": first_edition.get("publish_date"),
-            "publisher": ", ".join(first_edition.get("publishers", [])) if first_edition.get("publishers") else "",
-            "isbn": first_edition.get("isbn_13", [""])[0] if first_edition.get("isbn_13") else "",
-            "cover_url": import_data.get("cover_url", "") or extract_cover_url(first_edition.get("covers", [None])[0]),
-            "status": "to_read",
-            "current_page": None,
-            "rating": None,
-            "review": "",
-            "saga": saga_name,
-            "volume_number": volume_number,
-            "auto_added": False,
-            "date_added": datetime.utcnow(),
-            "date_started": None,
-            "date_completed": None,
-            "updated_at": datetime.utcnow()
-        }
-        
-        books_collection.insert_one(book)
-        book.pop("_id", None)
-        try:
-            set_cached_category(
-                title,
-                author_str,
-                category=validated_category,
-                source="openlibrary_import",
-                meta={"ol_key": ol_key},
-            )
-        except Exception:
-            pass
-
-        return {
-            "success": True,
-            "message": "Livre importé avec succès",
-            "book": book,
-            "type": "book"
-        }
-        
+        result = await asyncio.to_thread(
+            _import_from_ol_sync, import_data, current_user["id"]
+        )
+    except HTTPException:
+        raise
     except requests.RequestException as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de l'import: {str(e)}")
+
+    # Synopsis après coup, hors chemin critique
+    if result.pop("_needs_synopsis", False):
+        book = result.get("book") or {}
+        asyncio.create_task(
+            asyncio.to_thread(
+                _fill_synopsis_sync,
+                book.get("id"),
+                current_user["id"],
+                book.get("title") or "",
+                book.get("author") or "",
+                book.get("isbn") or "",
+                book.get("ol_key") or "",
+            )
+        )
+
+    return result
 
 @router.get("/search-advanced")
 async def search_open_library_advanced(

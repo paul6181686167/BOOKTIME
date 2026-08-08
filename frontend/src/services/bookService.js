@@ -169,13 +169,15 @@ export const bookService = {
     }
   },
 
-  // Récupérer les livres d'une saga
+  // Récupérer les livres d'une saga (timeout court : endpoint Mongo local)
   async getBooksBySaga(sagaName) {
     try {
-      const response = await api.get(`/api/sagas/${encodeURIComponent(sagaName)}/books`);
+      const response = await api.get(`/api/sagas/${encodeURIComponent(sagaName)}/books`, {
+        timeout: 8000,
+      });
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération des livres de la saga:', error);
+      console.warn('Erreur lors de la récupération des livres de la saga:', error?.message || error);
       throw new Error('Erreur lors de la récupération des livres de la saga');
     }
   },

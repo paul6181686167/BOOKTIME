@@ -53,64 +53,12 @@ const UnifiedSearchBar = React.memo(({
     }
   }, []);
 
-  // Suggestions OL : debounce + annulation + timeout court, pour ne pas
-  // empiler des recherches serveur à chaque frappe quand OL est lent.
-  const suggestionsAbortRef = useRef(null);
-
-  const searchUniversal = useCallback(async (query) => {
-    if (!query.trim() || query.length < 3) {
-      setUniversalResults([]);
-      return;
-    }
-
-    if (suggestionsAbortRef.current) suggestionsAbortRef.current.abort();
-    const controller = new AbortController();
-    suggestionsAbortRef.current = controller;
-    const timer = setTimeout(() => controller.abort(), 5000);
-
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `${backendUrl}/api/openlibrary/search?q=${encodeURIComponent(query)}&limit=5`,
-        {
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal,
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setUniversalResults((data.books ?? []).slice(0, 3));
-      }
-    } catch (error) {
-      if (error?.name !== 'AbortError') {
-        console.error('Erreur recherche universelle:', error);
-      }
-    } finally {
-      clearTimeout(timer);
-      if (suggestionsAbortRef.current === controller) {
-        suggestionsAbortRef.current = null;
-      }
-    }
-  }, [backendUrl]);
-
-  // Suggestions OL avec debounce 600ms (déclenche uniquement si > 3 chars et panel ouvert)
+  // Pas de suggestions Open Library pendant la saisie : chaque frappe lançait
+  // une recherche OL (5–8 s) qui saturait le backend et cassait le login.
+  // Les suggestions locales (bibliothèque) restent ; OL ne part qu'à Entrée.
   useEffect(() => {
-    if (!localSearchTerm || localSearchTerm.length < 3 || !showSuggestions) {
-      setUniversalResults([]);
-      return;
-    }
-    const timer = setTimeout(() => {
-      searchUniversal(localSearchTerm);
-    }, 600);
-    return () => {
-      clearTimeout(timer);
-      if (suggestionsAbortRef.current) suggestionsAbortRef.current.abort();
-    };
-  }, [localSearchTerm, showSuggestions, searchUniversal]);
+    setUniversalResults([]);
+  }, [localSearchTerm]);
 
   // Sauvegarder les recherches récentes
   const saveRecentSearch = useCallback((term) => {

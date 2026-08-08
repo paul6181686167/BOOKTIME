@@ -471,6 +471,91 @@ async def update_series_status_endpoint(
     # Déléguer l'appel à la fonction existante
     return await update_series_status(series_id, series_data, current_user)
 
+
+@router.post("/library/{series_id}/cover")
+async def resolve_and_persist_series_cover(
+    series_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Cherche une couverture pour une série de bibliothèque et la mémorise."""
+    from ..utils.cover_resolve import (
+        is_usable_cover_url,
+        normalize_cover_url,
+        resolve_cover_url,
+    )
+
+    series = series_library_collection.find_one(
+        {"id": series_id, "user_id": current_user["id"]}, {"_id": 0}
+    )
+    if not series:
+        raise HTTPException(status_code=404, detail="Série non trouvée")
+
+    existing = normalize_cover_url(
+        series.get("cover_image_url") or series.get("cover_url")
+    )
+    if is_usable_cover_url(existing):
+        if existing != (series.get("cover_image_url") or ""):
+            series_library_collection.update_one(
+                {"id": series_id, "user_id": current_user["id"]},
+                {
+                    "$set": {
+                        "cover_image_url": existing,
+                        "updated_at": datetime.utcnow(),
+                    }
+                },
+            )
+        return {"cover_url": existing, "persisted": True, "source": "existing"}
+
+    title = series.get("series_name") or series.get("name") or ""
+    author = ""
+    if isinstance(series.get("authors"), list) and series["authors"]:
+        author = series["authors"][0]
+    else:
+        author = series.get("author") or ""
+
+    # Essayer nom de série, puis 1er tome avec titre
+    title_candidates = [title]
+    for vol in series.get("volumes") or []:
+        if not isinstance(vol, dict):
+            continue
+        vt = (vol.get("volume_title") or vol.get("title") or "").strip()
+        if vt and vt not in title_candidates:
+            title_candidates.append(vt)
+        if len(title_candidates) >= 3:
+            break
+
+    cover = None
+    for t in title_candidates:
+        if not t:
+            continue
+        cover = await asyncio.to_thread(
+            resolve_cover_url,
+            title=t,
+            author=author,
+            isbn=series.get("isbn") or "",
+            ol_key=series.get("ol_key") or "",
+        )
+        if cover:
+            break
+
+    if not cover:
+        return {"cover_url": "", "persisted": False, "source": "none"}
+
+    cover = normalize_cover_url(cover)
+    if not is_usable_cover_url(cover):
+        return {"cover_url": "", "persisted": False, "source": "none"}
+
+    series_library_collection.update_one(
+        {"id": series_id, "user_id": current_user["id"]},
+        {
+            "$set": {
+                "cover_image_url": cover,
+                "updated_at": datetime.utcnow(),
+            }
+        },
+    )
+    return {"cover_url": cover, "persisted": True, "source": "resolved"}
+
 @router.delete("/library/{series_id}")
 async def delete_series_from_library_endpoint(
     series_id: str,
@@ -710,20 +795,15 @@ async def enrich_sample_series(
     Enrichir un échantillon de séries populaires avec des images
     """
     try:
-        # Récupérer un échantillon de séries populaires
+        # Pas d'appel Open Library ici : l'ancien batch_enrich gelait l'API au login.
         popular_response = await get_popular_series(None, "fr", count, current_user)
-        series_list = popular_response["series"]
-        
-        # Enrichir chaque série avec une image
-        enriched_series = await image_service.batch_enrich_series(series_list, max_concurrent=3)
-        
+        series_list = popular_response.get("series") or []
         return {
-            "message": f"Échantillon de {len(enriched_series)} séries enrichi",
-            "enriched_count": sum(1 for s in enriched_series if s.get('cover_url')),
-            "total_count": len(enriched_series),
-            "series": enriched_series
+            "message": f"Échantillon de {len(series_list)} séries (sans enrichissement OL)",
+            "enriched_count": sum(1 for s in series_list if s.get("cover_url")),
+            "total_count": len(series_list),
+            "series": series_list,
         }
-        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de l'enrichissement de l'échantillon: {str(e)}")
 
