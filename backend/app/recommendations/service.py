@@ -176,8 +176,8 @@ class RecommendationService:
 
             short = seed_title if len(seed_title) <= 42 else seed_title[:39] + "…"
             kind = "série" if (series_name or "").strip() else "livre"
-            reason_ol = f"Similaire à {kind} « {short} » · Open Library"
-            reason_gb = f"Similaire à {kind} « {short} » · Google Books"
+            reason_ol = f"Proche de {kind} « {short} »"
+            reason_gb = f"Proche de {kind} « {short} »"
             reason_pop = f"Dans le même esprit que « {short} »"
 
             out: List[RecommendationItem] = []

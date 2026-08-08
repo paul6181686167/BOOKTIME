@@ -20,6 +20,47 @@ export function sanitizeBookTitle(title) {
   return t;
 }
 
+/** Alias d'affichage FR pour titres EN fréquents (recos / recherche). */
+const FR_DISPLAY_ALIASES = {
+  hobbit: 'Le Hobbit',
+  'the hobbit': 'Le Hobbit',
+  'two towers': 'Les Deux Tours',
+  'the two towers': 'Les Deux Tours',
+  'fellowship of the ring': "La Communauté de l'Anneau",
+  'the fellowship of the ring': "La Communauté de l'Anneau",
+  'return of the king': 'Le Retour du Roi',
+  'the return of the king': 'Le Retour du Roi',
+  'song of achilles': "Le Chant d'Achille",
+  'the song of achilles': "Le Chant d'Achille",
+  circe: 'Circé',
+  'snow crash': 'Le Samouraï virtuel',
+  odyssey: "L'Odyssée",
+  'the odyssey': "L'Odyssée",
+  'ὀδύσσεια': "L'Odyssée",
+  iliade: "L'Iliade",
+  'the iliad': "L'Iliade",
+  'brief lives': 'Vies brèves',
+  'norse mythology': 'Mythes nordiques',
+  "hitchhiker's guide to the galaxy": 'Le Guide du voyageur galactique',
+  'the hitchhiker\'s guide to the galaxy': 'Le Guide du voyageur galactique',
+  'the martian': 'Seul sur Mars',
+  'six of crows': 'Six de Cœur',
+  "ender's game": 'La Stratégie Ender',
+};
+
+function aliasFrenchDisplayTitle(title) {
+  const t = String(title || '').trim();
+  if (!t) return '';
+  // Titres grecs classiques
+  if (/ὀδύσσ|οδυσσ|odysseia/i.test(t)) return "L'Odyssée";
+  if (/ἰλιάς|ιλιας|iliad/i.test(t) && t.length < 40) return "L'Iliade";
+  const key = t.toLowerCase();
+  if (FR_DISPLAY_ALIASES[key]) return FR_DISPLAY_ALIASES[key];
+  const stripped = key.replace(/^the\s+/, '');
+  if (FR_DISPLAY_ALIASES[stripped]) return FR_DISPLAY_ALIASES[stripped];
+  return '';
+}
+
 /**
  * Titre à afficher en priorisant le français (langue OL, heuristique accents).
  */
@@ -54,6 +95,8 @@ export function displayBookTitleFrFirst(book) {
       }
     }
   }
+  const aliased = aliasFrenchDisplayTitle(raw) || aliasFrenchDisplayTitle(book?.title) || aliasFrenchDisplayTitle(book?.original_title);
+  if (aliased) return sanitizeBookTitle(aliased);
   return sanitizeBookTitle(raw);
 }
 

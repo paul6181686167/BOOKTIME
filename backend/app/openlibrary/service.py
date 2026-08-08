@@ -661,6 +661,8 @@ class OpenLibraryService:
                 return _append_orig(doc, require_author=require_author, stop_at=stop_at)
 
             for subj in resolved_subjects[:3]:
+                # Préférer les éditions FR quand disponibles
+                await _run_search({"subject": subj, "sort": "rating desc", "language": "fre"})
                 await _run_search({"subject": subj, "sort": "rating desc"})
                 if len(books) >= limit:
                     break

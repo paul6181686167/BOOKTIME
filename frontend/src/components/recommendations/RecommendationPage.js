@@ -45,7 +45,7 @@ const SeriesDetailModal = lazy(() => import('../SeriesDetailModal'));
 
 // ── Cache (sessionStorage) ────────────────────────────────────────────────
 // Évite de recalculer les recommandations à chaque visite de la page.
-const CACHE_PREFIX = 'booktime_reco_cache_v3_';
+const CACHE_PREFIX = 'booktime_reco_cache_v4_';
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 function readCache(tab) {
@@ -184,12 +184,23 @@ const SECTION_CONFIG = {
     color: 'indigo',
     title: () => 'Similaires à tes coups de cœur · Google Books',
   },
+  seed_similar: {
+    icon: SparklesIcon,
+    color: 'purple',
+    title: (items) => {
+      const seed =
+        items[0]?._seedLabel ||
+        items[0]?.metadata?.seed_title ||
+        items[0]?.seed_title;
+      return seed ? `Proches de « ${seed} »` : 'Livres et séries similaires';
+    },
+  },
   seed_similarity: {
     icon: SparklesIcon,
     color: 'purple',
     title: (items) => {
       const seed = items[0]?.metadata?.seed_title || items[0]?._seedLabel;
-      return seed ? `Open Library · proches de « ${seed} »` : 'Open Library · similaires';
+      return seed ? `Proches de « ${seed} »` : 'Livres similaires';
     },
   },
   seed_similarity_gb: {
@@ -197,7 +208,7 @@ const SECTION_CONFIG = {
     color: 'indigo',
     title: (items) => {
       const seed = items[0]?.metadata?.seed_title || items[0]?._seedLabel;
-      return seed ? `Google Books · proches de « ${seed} »` : 'Google Books · similaires';
+      return seed ? `Proches de « ${seed} »` : 'Livres similaires';
     },
   },
   algorithm_category: {
@@ -237,6 +248,7 @@ const BookCard = ({
   onNotInterested,
   onFeedback,
   userBooks = [],
+  compact = false,
 }) => {
   const [adding, setAdding] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -371,13 +383,13 @@ const BookCard = ({
         <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
           {book.author}
         </p>
-        {book.reason && (
+        {!compact && book.reason && !/open library|google books/i.test(book.reason) && (
           <p className="text-xs text-gray-400 dark:text-gray-500 italic line-clamp-2 mt-0.5">
             {book.reason}
           </p>
         )}
 
-        {!isSeries && (book.book_id || book.ol_key) && !alreadyIn && (
+        {!compact && !isSeries && (book.book_id || book.ol_key) && !alreadyIn && (
           <div className="flex items-center gap-2 mt-1">
             <button
               type="button"
@@ -462,6 +474,7 @@ const RecommendationSection = ({
   onNotInterested,
   onFeedback,
   userBooks,
+  compact = false,
 }) => {
   const cfg = SECTION_CONFIG[source] || SECTION_CONFIG.popular;
   const colors = COLOR_CLASSES[cfg.color];
@@ -486,7 +499,7 @@ const RecommendationSection = ({
       ? `${seriesCount} série${seriesCount > 1 ? 's' : ''} · ${bookCount} livre${bookCount > 1 ? 's' : ''}`
       : seriesCount > 0
         ? `${seriesCount} série${seriesCount > 1 ? 's' : ''}`
-        : `${bookCount} livre${bookCount > 1 ? 's' : ''}`;
+        : `${bookCount} suggestion${bookCount > 1 ? 's' : ''}`;
 
   return (
     <div className="mb-10">
@@ -501,7 +514,7 @@ const RecommendationSection = ({
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-        {visible.slice(0, 18).map((book, idx) => (
+        {visible.slice(0, 24).map((book, idx) => (
           <BookCard
             key={book.id || book.book_id || book.ol_key || `${source}-${idx}`}
             book={book}
@@ -510,6 +523,7 @@ const RecommendationSection = ({
             onNotInterested={onNotInterested}
             onFeedback={onFeedback}
             userBooks={userBooks}
+            compact={compact}
           />
         ))}
       </div>
@@ -773,20 +787,26 @@ const RecommendationPage = () => {
         res?.recommendations ||
         (Array.isArray(res?.data) ? res.data : []) ||
         [];
-      const grouped = {};
-      list.forEach((r) => {
-        const src = r.source || 'seed_similarity';
-        if (!grouped[src]) grouped[src] = [];
-        grouped[src].push({
-          ...r,
-          reason: r.reason || (Array.isArray(r.reasons) ? r.reasons[0] : undefined),
-          score: r.score ?? r.confidence_score,
-          _seedLabel: seedItem.label || seedItem.title,
-        });
-      });
-      setSections(
-        toBooktimeSections(grouped, seedItem.label || seedItem.title || seedItem.series || '')
+      const seedLabel = seedItem.label || seedItem.title || seedItem.series || '';
+      // Une seule grille Booktime : fusion OL + Google Books (plus de bandeaux séparés)
+      const unified = list.map((r) => ({
+        ...r,
+        score: r.score ?? r.confidence_score,
+        _seedLabel: seedLabel,
+        // Ne pas afficher « · Open Library » sur les vignettes
+        reason: undefined,
+      }));
+      const items = groupRecosAsBooktimeItems(unified, { seedLabel }).filter(
+        (b) => b.isSeriesCard || b.cover_url
       );
+      // Si trop filtrés sans cover, garder quand même des titres
+      const finalItems =
+        items.length >= 6
+          ? items
+          : groupRecosAsBooktimeItems(unified, { seedLabel });
+      setSections({
+        seed_similar: finalItems.map((b) => ({ ...b, _seedLabel: seedLabel })),
+      });
     } catch (err) {
       if (reqId !== similarReqId.current) return;
       console.error('Erreur similaires:', err);
@@ -985,7 +1005,7 @@ const RecommendationPage = () => {
 
   const ORDER =
     activeTab === 'similaires'
-      ? ['seed_similarity', 'seed_similarity_gb']
+      ? ['seed_similar', 'seed_similarity', 'seed_similarity_gb']
       : activeTab === 'aime'
         ? ['algorithm_similarity', 'algorithm_similarity_gb', 'algorithm_category', 'popular']
         : activeTab === 'lisez'
@@ -1228,6 +1248,7 @@ const RecommendationPage = () => {
                 onNotInterested={handleNotInterested}
                 onFeedback={handleFeedback}
                 userBooks={userBooks}
+                compact={activeTab === 'similaires'}
               />
             ) : null
           )}
@@ -1243,6 +1264,7 @@ const RecommendationPage = () => {
                 onNotInterested={handleNotInterested}
                 onFeedback={handleFeedback}
                 userBooks={userBooks}
+                compact={activeTab === 'similaires'}
               />
             ))}
         </div>
