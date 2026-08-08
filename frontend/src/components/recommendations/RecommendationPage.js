@@ -95,7 +95,7 @@ const GENRE_TABS = [
 
 const TAB_SECTION_FILTER = {
   pour_toi: null, // toutes les sources
-  aime: ['algorithm_similarity', 'algorithm_category'],
+  aime: ['algorithm_similarity', 'algorithm_similarity_gb', 'algorithm_category'],
   lisez: ['algorithm_author', 'algorithm_series'],
 };
 
@@ -155,14 +155,27 @@ const SECTION_CONFIG = {
   algorithm_similarity: {
     icon: SparklesIcon,
     color: 'purple',
-    title: () => 'Similaires à tes coups de cœur',
+    title: () => 'Similaires à tes coups de cœur · Open Library',
+  },
+  algorithm_similarity_gb: {
+    icon: SparklesIcon,
+    color: 'indigo',
+    title: () => 'Similaires à tes coups de cœur · Google Books',
   },
   seed_similarity: {
     icon: SparklesIcon,
     color: 'purple',
     title: (items) => {
       const seed = items[0]?.metadata?.seed_title || items[0]?._seedLabel;
-      return seed ? `Similaires à « ${seed} »` : 'Similaires à ton choix';
+      return seed ? `Open Library · proches de « ${seed} »` : 'Open Library · similaires';
+    },
+  },
+  seed_similarity_gb: {
+    icon: SparklesIcon,
+    color: 'indigo',
+    title: (items) => {
+      const seed = items[0]?.metadata?.seed_title || items[0]?._seedLabel;
+      return seed ? `Google Books · proches de « ${seed} »` : 'Google Books · similaires';
     },
   },
   algorithm_category: {
@@ -635,13 +648,17 @@ const RecommendationPage = () => {
         series: seedItem.kind === 'series' ? seedItem.series || seedItem.title : '',
         limit: 24,
       });
-      const recs = (res?.data?.recommendations || []).map((r) => ({
-        ...r,
-        reason: r.reason || (Array.isArray(r.reasons) ? r.reasons[0] : undefined),
-        score: r.score ?? r.confidence_score,
-        _seedLabel: seedItem.label || seedItem.title,
-      }));
-      const grouped = recs.length ? { seed_similarity: recs } : {};
+      const grouped = {};
+      (res?.data?.recommendations || []).forEach((r) => {
+        const src = r.source || 'seed_similarity';
+        if (!grouped[src]) grouped[src] = [];
+        grouped[src].push({
+          ...r,
+          reason: r.reason || (Array.isArray(r.reasons) ? r.reasons[0] : undefined),
+          score: r.score ?? r.confidence_score,
+          _seedLabel: seedItem.label || seedItem.title,
+        });
+      });
       setSections(grouped);
     } catch (err) {
       console.error('Erreur similaires:', err);
@@ -784,15 +801,16 @@ const RecommendationPage = () => {
 
   const ORDER =
     activeTab === 'similaires'
-      ? ['seed_similarity']
+      ? ['seed_similarity', 'seed_similarity_gb']
       : activeTab === 'aime'
-        ? ['algorithm_similarity', 'algorithm_category', 'popular']
+        ? ['algorithm_similarity', 'algorithm_similarity_gb', 'algorithm_category', 'popular']
         : activeTab === 'lisez'
           ? ['algorithm_author', 'algorithm_series', 'popular']
           : [
               'algorithm_series',
               'algorithm_author',
               'algorithm_similarity',
+              'algorithm_similarity_gb',
               'algorithm_category',
               'algorithm_genre',
               'popular',

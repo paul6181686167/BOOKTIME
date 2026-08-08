@@ -171,3 +171,99 @@ def lookup_isbn(isbn: str, *, max_results: int = 5) -> dict[str, Any]:
     if len(clean) not in (10, 13):
         raise ValueError("ISBN invalide (attendu 10 ou 13 caractères utiles)")
     return search_volumes_simplified(f"isbn:{clean}", max_results=max_results)
+
+
+def search_similar_books(
+    title: str,
+    author: str = "",
+    *,
+    limit: int = 10,
+    subjects: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    """
+    Livres proches via Google Books (sujets / catégories du seed).
+    Retourne le format « integration book » (title, author, cover_url, …).
+    """
+    if not is_enabled():
+        return []
+    seed_title = (title or "").strip()
+    if not seed_title:
+        return []
+    seed_author = (author or "").split(",")[0].strip()
+    seed_norm = seed_title.lower()[:50]
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    def _append(it: dict[str, Any]) -> None:
+        book = simplified_volume_to_integration_book(it)
+        t = (book.get("title") or "").strip()
+        if not t:
+            return
+        t_norm = t.lower()
+        if seed_norm and (seed_norm in t_norm or t_norm[:40] in seed_norm):
+            return
+        key = f"{t_norm}|{(book.get('author') or '').lower()}"
+        if key in seen:
+            return
+        seen.add(key)
+        book["ol_key"] = f"gbooks_{book.get('google_books_id') or ''}"
+        book["subjects"] = it.get("categories") or []
+        out.append(book)
+
+    try:
+        # 1) Retrouver le seed pour extraire ses catégories GB
+        q_seed = f'intitle:"{seed_title[:70]}"'
+        if seed_author:
+            q_seed += f' inauthor:"{seed_author[:40]}"'
+        seed_raw = search_volumes(
+            q_seed, max_results=3, lang_restrict="fr", print_type="books"
+        )
+        cats: list[str] = []
+        for item in seed_raw.get("items") or []:
+            if not isinstance(item, dict):
+                continue
+            simplified = simplify_item(item)
+            for c in simplified.get("categories") or []:
+                c = str(c).strip()
+                if c and c not in cats and 2 < len(c) < 60:
+                    cats.append(c)
+            if cats:
+                break
+        for s in subjects or []:
+            s = str(s).strip()
+            if s and s not in cats and 2 < len(s) < 60:
+                cats.append(s)
+
+        queries: list[str] = []
+        if cats:
+            queries.append(f'subject:"{cats[0]}"')
+            if len(cats) > 1:
+                queries.append(f'subject:"{cats[1]}"')
+        words = [w for w in re.split(r"[\s:–—\-]+", seed_title) if len(w) > 3][:3]
+        if words:
+            queries.append(" ".join(words))
+        if seed_author and words:
+            queries.append(f'{" ".join(words[:2])} inauthor:"{seed_author[:40]}"')
+
+        for q in queries:
+            if len(out) >= limit:
+                break
+            try:
+                raw = search_volumes(
+                    q,
+                    max_results=min(limit + 6, 20),
+                    lang_restrict="fr",
+                    print_type="books",
+                )
+            except Exception:
+                raw = search_volumes(q, max_results=min(limit + 6, 20), print_type="books")
+            for item in raw.get("items") or []:
+                if not isinstance(item, dict):
+                    continue
+                _append(simplify_item(item))
+                if len(out) >= limit:
+                    break
+    except Exception:
+        return out[:limit]
+
+    return out[:limit]

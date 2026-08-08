@@ -18,6 +18,7 @@ import asyncio
 
 from ..database.connection import client
 from ..openlibrary.service import OpenLibraryService
+from ..google_books import service as google_books_service
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
@@ -136,68 +137,109 @@ class RecommendationService:
             if isinstance(seed_subjects, str):
                 seed_subjects = [seed_subjects]
 
-            similar_books = await self.openlibrary_service.search_similar_books(
+            ol_n = max(limit, 12)
+            gb_n = max(limit // 2, 8)
+
+            ol_task = self.openlibrary_service.search_similar_books(
                 seed_title,
                 seed_author,
-                limit=max(limit * 2, 24),
+                limit=ol_n,
                 subjects=seed_subjects if seed_subjects else None,
             )
+            gb_task = asyncio.to_thread(
+                google_books_service.search_similar_books,
+                seed_title,
+                seed_author,
+                limit=gb_n,
+                subjects=seed_subjects if seed_subjects else None,
+            )
+            ol_books, gb_books = await asyncio.gather(
+                ol_task, gb_task, return_exceptions=True
+            )
+            if isinstance(ol_books, Exception):
+                logger.warning("similar OL: %s", ol_books)
+                ol_books = []
+            if isinstance(gb_books, Exception):
+                logger.warning("similar Google Books: %s", gb_books)
+                gb_books = []
 
             # Série : compléter avec d'autres volumes / œuvres liées au nom
-            if (series_name or "").strip() and len(similar_books) < limit:
+            if (series_name or "").strip() and len(ol_books) < limit:
                 try:
                     extra = await self.openlibrary_service.search_series(
                         seed_title, limit=max(8, limit // 2)
                     )
                     for book in extra or []:
-                        similar_books.append(book)
+                        ol_books.append(book)
                 except Exception as exc:
                     logger.debug("similar series fallback: %s", exc)
 
             short = seed_title if len(seed_title) <= 42 else seed_title[:39] + "…"
             kind = "série" if (series_name or "").strip() else "livre"
-            reason = f"Similaire à {kind} « {short} »"
+            reason_ol = f"Similaire à {kind} « {short} » · Open Library"
+            reason_gb = f"Similaire à {kind} « {short} » · Google Books"
 
             out: List[RecommendationItem] = []
             seen = set()
             seed_norm = self._normalize_title(seed_title)
 
-            for book in similar_books:
+            async def _push(book: Dict, *, source: str, reason: str, confidence: float):
                 title_b = (book.get("title") or "").strip()
                 author_b = (book.get("author") or "").strip()
                 if not title_b:
-                    continue
+                    return
                 if self._normalize_title(title_b) == seed_norm:
-                    continue
+                    return
                 key = self._book_key(title_b, author_b)
                 if key in seen:
-                    continue
+                    return
                 seen.add(key)
-                if await self._should_skip(
-                    user_profile, book.get("ol_key", ""), title_b, author_b
-                ):
-                    continue
-
+                bid = book.get("ol_key") or book.get("google_books_id") or key
+                if await self._should_skip(user_profile, bid, title_b, author_b):
+                    return
                 out.append(
                     RecommendationItem(
-                        book_id=book.get("ol_key", "") or key,
+                        book_id=str(bid),
                         title=title_b,
                         author=author_b,
                         category=book.get("category", "roman"),
                         cover_url=book.get("cover_url"),
-                        confidence_score=0.8,
+                        confidence_score=confidence,
                         reasons=[reason],
-                        source="seed_similarity",
+                        source=source,
                         metadata={
                             **book,
                             "seed_title": seed_title,
                             "seed_author": seed_author,
                             "seed_kind": kind,
+                            "provider": "google_books"
+                            if source.endswith("_gb")
+                            else "openlibrary",
                         },
                     )
                 )
+
+            # Alterner OL / GB pour diversifier la grille
+            ol_i = gb_i = 0
+            while len(out) < limit and (ol_i < len(ol_books) or gb_i < len(gb_books)):
+                if ol_i < len(ol_books):
+                    await _push(
+                        ol_books[ol_i],
+                        source="seed_similarity",
+                        reason=reason_ol,
+                        confidence=0.82,
+                    )
+                    ol_i += 1
                 if len(out) >= limit:
                     break
+                if gb_i < len(gb_books):
+                    await _push(
+                        gb_books[gb_i],
+                        source="seed_similarity_gb",
+                        reason=reason_gb,
+                        confidence=0.78,
+                    )
+                    gb_i += 1
 
             return {
                 "recommendations": [self._format_recommendation(r) for r in out],
@@ -206,6 +248,10 @@ class RecommendationService:
                     "author": seed_author,
                     "series_name": (series_name or "").strip() or None,
                     "kind": kind,
+                },
+                "sources": {
+                    "openlibrary": len(ol_books or []),
+                    "google_books": len(gb_books or []),
                 },
                 "count": len(out),
                 "generated_at": datetime.utcnow().isoformat(),
@@ -537,7 +583,7 @@ class RecommendationService:
             return []
     
     async def _recommend_by_similarity(self, user_profile: Dict, limit: int) -> List[RecommendationItem]:
-        """Livres similaires aux titres bien notés (≥ 4) de l'utilisateur via Open Library."""
+        """Livres similaires aux titres bien notés — Open Library + Google Books."""
         try:
             seeds = list(user_profile.get('high_rated_books') or [])
             # Repli : livres terminés correctement notés si peu de coups de cœur
@@ -576,47 +622,82 @@ class RecommendationService:
                 if isinstance(seed_subjects, str):
                     seed_subjects = [seed_subjects]
 
-                similar_books = await self.openlibrary_service.search_similar_books(
+                ol_task = self.openlibrary_service.search_similar_books(
                     seed_title,
                     seed_author,
                     limit=per_seed,
                     subjects=seed_subjects if isinstance(seed_subjects, list) else None,
                 )
+                gb_task = asyncio.to_thread(
+                    google_books_service.search_similar_books,
+                    seed_title,
+                    seed_author,
+                    limit=max(3, per_seed // 2),
+                    subjects=seed_subjects if isinstance(seed_subjects, list) else None,
+                )
+                ol_books, gb_books = await asyncio.gather(
+                    ol_task, gb_task, return_exceptions=True
+                )
+                if isinstance(ol_books, Exception):
+                    ol_books = []
+                if isinstance(gb_books, Exception):
+                    gb_books = []
 
                 short_title = seed_title if len(seed_title) <= 42 else seed_title[:39] + '…'
                 if seed_rating:
-                    reason = f"Parce que tu as aimé « {short_title} » ({seed_rating}/5)"
+                    reason_ol = f"Parce que tu as aimé « {short_title} » ({seed_rating}/5) · Open Library"
+                    reason_gb = f"Parce que tu as aimé « {short_title} » ({seed_rating}/5) · Google Books"
                 else:
-                    reason = f"Parce que tu as aimé « {short_title} »"
+                    reason_ol = f"Parce que tu as aimé « {short_title} » · Open Library"
+                    reason_gb = f"Parce que tu as aimé « {short_title} » · Google Books"
 
                 base_confidence = 0.72 + 0.04 * min(5, float(seed_rating or 4))
                 out: List[RecommendationItem] = []
+                seen_local = set()
 
-                for book in similar_books:
+                async def _add(book: Dict, *, source: str, reason: str, conf: float):
                     title = book.get('title', '')
                     author = book.get('author', '')
-                    if await self._should_skip(
-                        user_profile, book.get('ol_key', ''), title, author
-                    ):
-                        continue
+                    key = self._book_key(title, author)
+                    if key in seen_local:
+                        return
+                    seen_local.add(key)
+                    bid = book.get('ol_key') or book.get('google_books_id') or ''
+                    if await self._should_skip(user_profile, bid, title, author):
+                        return
                     if seed_author and self._normalize_author(author) == self._normalize_author(seed_author):
-                        continue
-
+                        return
                     out.append(RecommendationItem(
-                        book_id=book.get('ol_key', ''),
+                        book_id=str(bid or key),
                         title=title,
                         author=author,
                         category=book.get('category', 'roman'),
                         cover_url=book.get('cover_url'),
-                        confidence_score=min(0.95, base_confidence),
+                        confidence_score=min(0.95, conf),
                         reasons=[reason],
-                        source='algorithm_similarity',
+                        source=source,
                         metadata={
                             **book,
                             'seed_title': seed_title,
                             'seed_rating': seed_rating,
+                            'provider': 'google_books' if source.endswith('_gb') else 'openlibrary',
                         },
                     ))
+
+                for book in ol_books or []:
+                    await _add(
+                        book,
+                        source='algorithm_similarity',
+                        reason=reason_ol,
+                        conf=base_confidence,
+                    )
+                for book in gb_books or []:
+                    await _add(
+                        book,
+                        source='algorithm_similarity_gb',
+                        reason=reason_gb,
+                        conf=base_confidence - 0.04,
+                    )
                 return out
 
             batches = await asyncio.gather(
