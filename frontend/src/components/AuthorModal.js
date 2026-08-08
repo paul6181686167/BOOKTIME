@@ -322,10 +322,10 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
     <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1100 }}>
       <div className="modal-content-wide w-full md:w-auto" onClick={(e) => e.stopPropagation()}>
         {/* Barre mobile avec bouton fermeture */}
-        <div className="flex items-center justify-between px-4 pt-3 pb-2 md:hidden border-b border-gray-100 dark:border-gray-800">
+        <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 md:hidden border-b border-booktime-mist/55 dark:border-booktime-800/50 bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl">
           <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Auteur</span>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
-            <XMarkIcon className="w-5 h-5" />
+          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+            <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
         <div className="flex items-start justify-between mb-6">

@@ -261,14 +261,14 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
       }}
     >
       <div
-        className="bg-white dark:bg-gray-800 w-full md:max-w-md md:rounded-2xl max-h-[94dvh] flex flex-col shadow-2xl"
+        className="bg-[#f3faf6] dark:bg-gray-800 w-full md:max-w-md md:rounded-2xl max-h-[94dvh] flex flex-col shadow-2xl safe-area-bottom"
         style={{ borderRadius: '20px 20px 0 0' }}
       >
         <div className="md:hidden flex justify-center pt-2.5 pb-1">
-          <div className="w-9 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
+          <div className="w-9 h-1 bg-booktime-mist dark:bg-booktime-700 rounded-full" />
         </div>
 
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-booktime-mist/55 dark:border-booktime-800/50 bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl">
           <div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">
               Scanner un ISBN

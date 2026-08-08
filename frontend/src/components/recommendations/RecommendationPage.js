@@ -623,12 +623,13 @@ const RecommendationPage = () => {
           ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-honeycomb">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-8">
       {/* Bouton retour */}
       <div className="mb-6">
         <button
           onClick={() => navigate('/')}
-          className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors duration-200"
+          className="inline-flex items-center space-x-2 px-4 py-2 bg-booktime-600 hover:bg-booktime-700 text-white rounded-lg transition-colors duration-200"
         >
           <ArrowLeftIcon className="h-5 w-5" />
           <span>Retour à la bibliothèque</span>
@@ -782,6 +783,7 @@ const RecommendationPage = () => {
             ))}
         </div>
       )}
+    </div>
     </div>
   );
 };

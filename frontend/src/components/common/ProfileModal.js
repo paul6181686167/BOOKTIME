@@ -292,13 +292,13 @@ function ProfileModal({
       className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 md:p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white dark:bg-gray-800 md:rounded-2xl shadow-2xl w-full md:max-w-lg max-h-[92dvh] md:max-h-[90vh] flex flex-col modal-animate" style={{ borderRadius: '20px 20px 0 0' }}>
+      <div className="bg-[#f3faf6] dark:bg-gray-800 md:rounded-2xl shadow-2xl w-full md:max-w-lg max-h-[92dvh] md:max-h-[90vh] flex flex-col modal-animate safe-area-bottom" style={{ borderRadius: '20px 20px 0 0' }}>
         {/* Poignée mobile */}
         <div className="md:hidden flex justify-center pt-2.5 pb-1 flex-shrink-0">
-          <div className="w-9 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
+          <div className="w-9 h-1 bg-booktime-mist dark:bg-booktime-700 rounded-full" />
         </div>
         {/* Header */}
-        <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex-shrink-0 p-4 border-b border-booktime-mist/55 dark:border-booktime-800/50 bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Profil</h2>

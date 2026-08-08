@@ -45,7 +45,7 @@ const Header = ({
   const preferredLangInfo = getLanguageByCode(preferredLanguage);
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
+    <header className="bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl shadow-sm border-b border-booktime-mist/55 dark:border-booktime-800/50 sticky top-0 z-40 safe-area-top">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo et titre */}

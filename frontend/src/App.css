@@ -32,7 +32,7 @@
 }
 
 .modal-content {
-  background: white;
+  background: #f3faf6;
   border-radius: 12px;
   padding: 24px;
   max-width: 500px;
@@ -46,7 +46,7 @@
 
 /* MODIFICATION: Classe spécifique pour les fiches livres et séries - même largeur */
 .modal-content-wide {
-  background: white;
+  background: #f3faf6;
   border-radius: 12px;
   padding: 24px;
   max-width: 1024px; /* Équivalent à max-w-4xl */
@@ -59,15 +59,15 @@
 }
 
 .dark .modal-content {
-  background: #1f2937;
-  border: 1px solid #374151;
+  background: #163528;
+  border: 1px solid #1e3a2c;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
 }
 
 /* Mode sombre pour la classe wide */
 .dark .modal-content-wide {
-  background: #1f2937;
-  border: 1px solid #374151;
+  background: #163528;
+  border: 1px solid #1e3a2c;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
 }
 
@@ -327,10 +327,15 @@ input:checked + .theme-slider:before {
     display: block;
     width: 36px;
     height: 4px;
-    background: #d1d5db;
+    background: #94d6ab;
     border-radius: 2px;
     margin: 10px auto 0;
     flex-shrink: 0;
+  }
+
+  .dark .modal-content::before,
+  .dark .modal-content-wide::before {
+    background: #3d7a55;
   }
 
   @keyframes mobileSlideUp {
