@@ -797,7 +797,7 @@ function MainApp() {
       {/* Header desktop + mobile compact */}
       {/* Header translucide : le contenu défile visiblement dessous, ce qui
           ancre la barre sans la faire peser comme un bandeau opaque. */}
-      <header className="bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl border-b border-booktime-mist/55 dark:border-booktime-800/50 sticky top-0 z-30 safe-area-top">
+      <header className="bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl border-b-0 sm:border-b border-booktime-mist/55 dark:border-booktime-800/50 sticky top-0 z-30 safe-area-top">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Desktop header */}
           <div className="hidden md:flex justify-between items-center h-16">
@@ -927,7 +927,7 @@ function MainApp() {
                       { value: reading,   label: 'En cours', color: 'text-blue-600 dark:text-blue-400',     bg: 'bg-blue-50 dark:bg-blue-900/20',      border: 'border-blue-200 dark:border-blue-800'   },
                       { value: toRead,    label: 'À lire',   color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/20',  border: 'border-orange-200 dark:border-orange-800'},
                     ].map((s, i) => (
-                      <div key={s.label} className={`flex items-center gap-2 px-4 py-2 rounded-full border ${s.bg} ${s.border} shadow-sm section-appear`} style={{ animationDelay: `${i * 80}ms` }}>
+                      <div key={s.label} className={`flex items-center gap-2 px-4 py-2 rounded-full border-0 sm:border ${s.bg} ${s.border} sm:shadow-sm section-appear`} style={{ animationDelay: `${i * 80}ms` }}>
                         <AnimatedCounter value={s.value} className={`text-xl font-bold ${s.color}`} />
                         <span className={`text-sm ${s.color} opacity-80`}>{s.label}</span>
                       </div>

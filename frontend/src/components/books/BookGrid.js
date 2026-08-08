@@ -22,17 +22,18 @@ const ANIMATED_CARDS = 12;
 const INITIAL_VISIBLE = 30;
 const VISIBLE_STEP = 30;
 
-// La couverture porte la carte : pas de bordure, un arrondi plus généreux et une
-// ombre large qui s'intensifie au survol (sur desktop seulement).
+// Couverture porte la carte : pas de bordure / ring. Sur mobile, pas d’ombre
+// ni de fond « carte » (évite le cadre blanc) ; ombre discrète desktop seulement.
 const CARD_SHELL =
-  'h-full bg-booktime-mistSoft/90 dark:bg-gray-800 dark:ring-1 dark:ring-black/40 rounded-xl shadow-card overflow-hidden relative transition-shadow duration-200 sm:bg-white sm:group-hover:shadow-card-hover';
+  'h-full bg-transparent sm:bg-white sm:dark:bg-gray-800 rounded-xl overflow-hidden relative transition-shadow duration-200 sm:shadow-card sm:group-hover:shadow-card-hover';
 
-const COVER_FRAME = 'aspect-[2/3] bg-booktime-mist/40 dark:bg-gray-700 relative overflow-hidden';
+const COVER_FRAME =
+  'aspect-[2/3] rounded-xl sm:rounded-none bg-booktime-mist/35 dark:bg-gray-700 relative overflow-hidden';
 const COVER_IMAGE =
   'h-full w-full object-cover transition-transform duration-300 sm:group-hover:scale-[1.04]';
 
-// Pastille translucide et floutée, lisible sur n'importe quelle couverture
-const PILL = 'backdrop-blur-sm ring-1 ring-white/15';
+// Pastille translucide — sans ring sur mobile (contour superflu)
+const PILL = 'backdrop-blur-sm sm:ring-1 sm:ring-white/15';
 
 // Teintes sourdes des vignettes de secours, tenables en clair comme en sombre
 const PLACEHOLDER_TINTS = [
@@ -221,15 +222,15 @@ const SeriesCardBody = ({ item, coverSrc, onCoverFound }) => {
             <span className={`hidden sm:inline-flex px-1.5 py-0.5 rounded-md text-mini font-semibold bg-booktime-600/90 text-white ${PILL}`}>
               ✓
             </span>
-            {/* Version mobile: point coloré */}
-            <span className="sm:hidden w-2.5 h-2.5 rounded-full block ring-2 ring-white/80 bg-booktime-500" />
+            {/* Version mobile: point coloré, sans anneau */}
+            <span className="sm:hidden w-2.5 h-2.5 rounded-full block bg-booktime-500" />
           </div>
         )}
       </div>
 
       {/* Barre de progression de la série — même endroit (bas de carte) et même couleur que les livres */}
       {item.progressPercent > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200 dark:bg-gray-700">
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/10 dark:bg-white/10 sm:bg-gray-200 sm:dark:bg-gray-700">
           <div
             key={`${item.id}-${item.completedBooks}`}
             className="h-1 bg-blue-500 series-progress-spring"
@@ -238,7 +239,7 @@ const SeriesCardBody = ({ item, coverSrc, onCoverFound }) => {
         </div>
       )}
 
-      <div className="p-1.5 sm:p-3">
+      <div className="pt-1.5 px-0.5 sm:p-3">
         <h3 className="font-medium text-gray-900 dark:text-white text-tiny sm:text-sm line-clamp-2 leading-tight">
           {item.name}
         </h3>
@@ -274,7 +275,7 @@ const BookCardBody = ({ item, coverSrc, onCoverFound }) => {
 
       {/* Barre de progression */}
       {item.status === 'reading' && item.total_pages > 0 && item.current_page > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200 dark:bg-gray-700">
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/10 dark:bg-white/10 sm:bg-gray-200 sm:dark:bg-gray-700">
           <div
             className="h-1 bg-blue-500 reading-progress-bar"
             style={{ width: `${Math.min(100, Math.round(((item.current_page || 0) / item.total_pages) * 100))}%` }}
@@ -288,12 +289,12 @@ const BookCardBody = ({ item, coverSrc, onCoverFound }) => {
           <span className={`hidden sm:inline-flex px-1.5 py-0.5 rounded-md text-mini font-semibold bg-booktime-600/90 text-white ${PILL}`}>
             ✓
           </span>
-          {/* Version mobile: point coloré */}
-          <span className="sm:hidden w-2.5 h-2.5 rounded-full block ring-2 ring-white/80 bg-booktime-500" />
+          {/* Version mobile: point coloré, sans anneau */}
+          <span className="sm:hidden w-2.5 h-2.5 rounded-full block bg-booktime-500" />
         </div>
       )}
 
-      <div className="p-1.5 sm:p-3">
+      <div className="pt-1.5 px-0.5 sm:p-3">
         <h3 className="font-medium text-gray-900 dark:text-white text-tiny sm:text-sm line-clamp-2 leading-tight">
           {title}
         </h3>
