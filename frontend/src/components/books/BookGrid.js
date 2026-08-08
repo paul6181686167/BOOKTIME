@@ -169,8 +169,9 @@ const SmartCover = ({ item, alt, primarySrc, onCoverFound, priority = false }) =
       src={imgSrc}
       alt={alt}
       loading={priority ? 'eager' : 'lazy'}
-      fetchPriority={priority ? 'high' : 'auto'}
       decoding={priority ? 'sync' : 'async'}
+      // React 18 : attribut HTML natif (fetchPriority n’est typé qu’en React 19)
+      {...(priority ? { fetchpriority: 'high' } : {})}
       // CORS seulement si on lit les pixels (placeholder GB) — sinon +lent
       crossOrigin={needsPlaceholderCheck ? 'anonymous' : undefined}
       referrerPolicy="no-referrer"
