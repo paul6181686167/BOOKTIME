@@ -110,9 +110,13 @@ export function groupRecosAsBooktimeItems(recommendations, options = {}) {
 
   const seriesCards = [];
   seriesGroups.forEach(({ attr, books: groupBooks }) => {
-    // Une série Booktime : au moins 2 tomes, sinon on laisse en livre
+    // Série Booktime : ≥2 tomes trouvés, OU série curée multi-tomes (ex. Dog Man)
     const merged = mergeOpenLibraryBooksByVolume(groupBooks);
-    if (merged.length < 2 && !attr.seriesData) {
+    const curatedMulti =
+      attr.seriesData &&
+      ((Number(attr.seriesData.volumes) || 0) > 1 ||
+        Object.keys(attr.seriesData.volume_titles || {}).length > 1);
+    if (merged.length < 2 && !curatedMulti) {
       return;
     }
     merged.forEach((b) => {

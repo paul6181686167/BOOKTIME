@@ -33,6 +33,7 @@ import {
   recoToBooktimeBook,
   isRecoAlreadyOwned,
 } from '../../utils/recommendationBooktime';
+import { attributeBookToSeries } from '../../utils/seriesAttribution';
 import SmartCover, {
   CARD_SHELL,
   COVER_FRAME,
@@ -44,7 +45,7 @@ import SeriesDetailModal from '../SeriesDetailModal';
 
 // ── Cache (sessionStorage) ────────────────────────────────────────────────
 // Évite de recalculer les recommandations à chaque visite de la page.
-const CACHE_PREFIX = 'booktime_reco_cache_v6_';
+const CACHE_PREFIX = 'booktime_reco_cache_v7_';
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 function readCache(tab) {
@@ -843,22 +844,61 @@ const RecommendationPage = () => {
 
   const handleOpenItem = useCallback((item) => {
     if (!item) return;
-    if (item.isSeriesCard) {
+
+    const openSeriesModal = (seriesLike) => {
       setSelectedBook(null);
       setShowBookModal(false);
       setSelectedSeries({
-        ...item,
-        name: item.name || item.title || item.display_title || '',
-        series_name: item.name || item.title || item.display_title || '',
-        author: item.author || '',
-        cover_url: item.cover_url || null,
-        books: Array.isArray(item.books) ? item.books : [],
-        status: item.status || 'to_read',
+        ...seriesLike,
+        isSeriesCard: true,
+        name: seriesLike.name || seriesLike.title || seriesLike.display_title || '',
+        series_name:
+          seriesLike.series_name ||
+          seriesLike.name ||
+          seriesLike.title ||
+          seriesLike.display_title ||
+          '',
+        author: seriesLike.author || '',
+        cover_url: seriesLike.cover_url || null,
+        books: Array.isArray(seriesLike.books) ? seriesLike.books : [],
+        totalBooks:
+          seriesLike.totalBooks ||
+          seriesLike.total_books ||
+          seriesLike.books?.length ||
+          0,
+        status: seriesLike.status || 'to_read',
       });
       setShowSeriesModal(true);
+    };
+
+    if (item.isSeriesCard) {
+      openSeriesModal(item);
       return;
     }
+
     const book = recoToBooktimeBook(item) || item;
+    // Livre qui est en réalité une série curée (ex. Dog Man) → fiche série
+    const attr = attributeBookToSeries(book);
+    const curatedMulti =
+      attr?.seriesData &&
+      ((Number(attr.seriesData.volumes) || 0) > 1 ||
+        Object.keys(attr.seriesData.volume_titles || {}).length > 1);
+    if (curatedMulti) {
+      openSeriesModal({
+        ...book,
+        name: attr.seriesName,
+        title: attr.seriesName,
+        display_title: attr.seriesName,
+        author: book.author || attr.seriesData.authors?.[0] || '',
+        category: attr.seriesData.category || book.category || 'roman',
+        cover_url: book.cover_url || null,
+        books: [book],
+        totalBooks: attr.seriesData.volumes || 0,
+        description: attr.seriesData.description || book.description || '',
+      });
+      return;
+    }
+
     const fromGb =
       book.isFromGoogleBooks ||
       String(book.ol_key || book.book_id || '').startsWith('gbooks_');
