@@ -1,7 +1,8 @@
 {
   "framework": "create-react-app",
-  "buildCommand": "npx react-scripts build",
-  "outputDirectory": "build",
+  "installCommand": "npm ci --prefix frontend --include=dev",
+  "buildCommand": "npm run build --prefix frontend",
+  "outputDirectory": "frontend/build",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ],
