@@ -23,29 +23,29 @@ import {
   PlusIcon,
   CheckIcon,
   ClockIcon,
-  HandThumbUpIcon,
-  HandThumbDownIcon,
 } from '@heroicons/react/24/outline';
-import {
-  HandThumbUpIcon as HandThumbUpIconSolid,
-  HandThumbDownIcon as HandThumbDownIconSolid,
-} from '@heroicons/react/24/solid';
 import { recommendationService } from '../../services/recommendationService';
 import { addSeriesToLibrary } from '../../services/seriesLibraryService';
 import { API_BASE_URL } from '../../config/environment';
 import { displayBookTitleFrFirst } from '../../utils/openLibraryBookDisplay';
-import { coverImgSrc } from '../../utils/helpers';
+import { resolveCoverForGridItem } from '../../utils/helpers';
 import {
   groupRecosAsBooktimeItems,
   recoToBooktimeBook,
 } from '../../utils/recommendationBooktime';
+import SmartCover, {
+  CARD_SHELL,
+  COVER_FRAME,
+  CoverScrim,
+  PILL,
+} from '../books/SmartCover';
 
 const BookDetailModal = lazy(() => import('../BookDetailModal'));
 const SeriesDetailModal = lazy(() => import('../SeriesDetailModal'));
 
 // ── Cache (sessionStorage) ────────────────────────────────────────────────
 // Évite de recalculer les recommandations à chaque visite de la page.
-const CACHE_PREFIX = 'booktime_reco_cache_v4_';
+const CACHE_PREFIX = 'booktime_reco_cache_v5_';
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 function readCache(tab) {
@@ -239,27 +239,26 @@ const COLOR_CLASSES = {
   orange: { badge: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300', icon: 'text-orange-500', border: 'border-orange-200 dark:border-orange-800' },
 };
 
-// ── Carte Booktime (livre ou série) ───────────────────────────────────────
+// ── Carte Booktime = même squelette que la bibliothèque (SmartCover) ─────
 
 const BookCard = ({
   book,
   onOpen,
   onAdd,
   onNotInterested,
-  onFeedback,
   userBooks = [],
-  compact = false,
+  priority = false,
 }) => {
   const [adding, setAdding] = useState(false);
   const [dismissed, setDismissed] = useState(false);
-  const [feedback, setFeedback] = useState(null);
-  const [coverFailed, setCoverFailed] = useState(false);
+  const [localCover, setLocalCover] = useState(book.cover_url || null);
 
   const isSeries = !!book.isSeriesCard;
   const title = isSeries
     ? book.name || book.display_title || book.title
     : displayBookTitleFrFirst(book) || book.display_title || book.title;
-  const coverSrc = coverImgSrc(book.cover_url);
+  const coverItem = localCover ? { ...book, cover_url: localCover } : book;
+  const coverSrc = resolveCoverForGridItem(coverItem);
 
   const alreadyIn = userBooks.some((b) => {
     if (isSeries) {
@@ -306,158 +305,110 @@ const BookCard = ({
     }
   };
 
-  const handleFeedback = async (type, e) => {
-    e?.stopPropagation?.();
-    if (feedback) return;
-    setFeedback(type);
-    try {
-      await onFeedback?.(book.book_id || book.ol_key, type);
-    } catch {
-      // ignore
-    }
-    if (type === 'like') {
-      toast.success("Merci ! On t'en proposera plus comme ça");
-    } else {
-      toast.success('Noté, on affinera tes suggestions');
-      setTimeout(() => setDismissed(true), 400);
-    }
-  };
-
   const upcoming = !isSeries && isUpcoming(book);
 
   return (
-    <div className="group relative flex flex-col bg-transparent sm:bg-white sm:dark:bg-gray-800 rounded-xl overflow-hidden sm:shadow-sm sm:hover:shadow-md transition-shadow duration-200">
-      {upcoming && (
-        <div className="absolute top-2 left-2 z-10 flex items-center gap-1 bg-amber-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full shadow">
-          <ClockIcon className="h-3 w-3" />
-          À paraître
-        </div>
-      )}
-      {isSeries && (
-        <div className="absolute top-2 left-2 z-10 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-600/90 text-white shadow">
-          Série
-          {book.totalBooks || book.books?.length
-            ? ` · ${book.totalBooks || book.books.length}`
-            : ''}
-        </div>
-      )}
-
-      <button
-        type="button"
-        onClick={handleDismiss}
-        className="absolute top-2 right-2 z-10 p-1 rounded-full bg-white/80 dark:bg-gray-900/80 hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 transition-colors"
-        title="Pas intéressé"
-      >
-        <XMarkIcon className="h-4 w-4" />
-      </button>
-
-      <button
-        type="button"
-        className="aspect-[2/3] rounded-xl sm:rounded-none bg-booktime-mist/35 dark:bg-gray-700 relative overflow-hidden cursor-pointer text-left"
-        onClick={() => onOpen?.(book)}
-      >
-        {coverSrc && !coverFailed ? (
-          <img
-            src={coverSrc}
+    <div
+      className="col-span-1 group cursor-pointer transform transition-transform duration-200 sm:hover:-translate-y-1"
+      onClick={() => onOpen?.(book)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen?.(book);
+        }
+      }}
+      role="button"
+      tabIndex={0}
+    >
+      <div className={CARD_SHELL}>
+        <div className={COVER_FRAME}>
+          <SmartCover
+            item={coverItem}
             alt={title}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
-            loading="lazy"
-            onError={() => setCoverFailed(true)}
+            primarySrc={coverSrc || localCover}
+            priority={priority}
+            onCoverFound={(_, url) => {
+              if (url) setLocalCover(url);
+            }}
           />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
-            <span className="font-semibold text-lg tracking-tight px-2 text-center line-clamp-3">
-              {title}
-            </span>
-          </div>
-        )}
-      </button>
+          <CoverScrim />
 
-      <div className="flex flex-col flex-1 p-2 sm:p-3 gap-1">
-        <h3
-          className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 leading-tight cursor-pointer hover:text-emerald-700 dark:hover:text-emerald-300"
-          onClick={() => onOpen?.(book)}
-        >
-          {title}
-        </h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
-          {book.author}
-        </p>
-        {!compact && book.reason && !/open library|google books/i.test(book.reason) && (
-          <p className="text-xs text-gray-400 dark:text-gray-500 italic line-clamp-2 mt-0.5">
-            {book.reason}
-          </p>
-        )}
-
-        {!compact && !isSeries && (book.book_id || book.ol_key) && !alreadyIn && (
-          <div className="flex items-center gap-2 mt-1">
-            <button
-              type="button"
-              onClick={(e) => handleFeedback('like', e)}
-              disabled={!!feedback}
-              title="J'aime cette suggestion"
-              className={`p-1.5 rounded-full transition-colors ${
-                feedback === 'like'
-                  ? 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400'
-                  : 'text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
-              } disabled:cursor-default`}
-            >
-              {feedback === 'like' ? (
-                <HandThumbUpIconSolid className="h-4 w-4" />
-              ) : (
-                <HandThumbUpIcon className="h-4 w-4" />
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={(e) => handleFeedback('dislike', e)}
-              disabled={!!feedback}
-              title="Pas pour moi"
-              className={`p-1.5 rounded-full transition-colors ${
-                feedback === 'dislike'
-                  ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400'
-                  : 'text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
-              } disabled:cursor-default`}
-            >
-              {feedback === 'dislike' ? (
-                <HandThumbDownIconSolid className="h-4 w-4" />
-              ) : (
-                <HandThumbDownIcon className="h-4 w-4" />
-              )}
-            </button>
-          </div>
-        )}
-
-        <div className="mt-auto pt-2">
-          {alreadyIn ? (
-            <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium">
-              <CheckIcon className="h-4 w-4" />
-              Dans ta bibliothèque
+          {isSeries && (
+            <div className="absolute top-1 left-1 sm:top-2 sm:left-2">
+              <span
+                className={`inline-flex items-center rounded-md bg-black/50 px-1.5 py-0.5 text-micro font-medium text-white sm:px-2 sm:py-1 sm:text-xs ${PILL}`}
+              >
+                Série
+                {book.totalBooks || book.books?.length
+                  ? ` · ${book.totalBooks || book.books.length}`
+                  : ''}
+              </span>
             </div>
-          ) : (
+          )}
+          {upcoming && (
+            <div className="absolute top-1 left-1 sm:top-2 sm:left-2">
+              <span
+                className={`inline-flex items-center gap-1 rounded-md bg-amber-500/90 px-1.5 py-0.5 text-micro font-medium text-white sm:text-xs ${PILL}`}
+              >
+                <ClockIcon className="h-3 w-3" />
+                À paraître
+              </span>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleDismiss}
+            className="absolute top-1 right-1 sm:top-2 sm:right-2 z-10 p-1 rounded-full bg-black/40 hover:bg-red-600/90 text-white transition-colors"
+            title="Pas intéressé"
+          >
+            <XMarkIcon className="h-3.5 w-3.5" />
+          </button>
+
+          {!alreadyIn && (
             <button
               type="button"
               onClick={handleAdd}
               disabled={adding}
-              className="btn-ripple w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white rounded-lg transition-colors disabled:opacity-60"
+              className={`absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 z-10 inline-flex items-center justify-center rounded-full bg-booktime-600 hover:bg-booktime-700 text-white shadow-md h-8 w-8 sm:h-9 sm:w-9 transition-colors disabled:opacity-60 ${PILL}`}
+              title={isSeries ? 'Ajouter la série' : 'Ajouter'}
             >
               {adding ? (
                 <span
                   className="btn-spinner"
-                  style={{ width: '0.7rem', height: '0.7rem', borderWidth: '1.5px' }}
+                  style={{ width: '0.75rem', height: '0.75rem', borderWidth: '1.5px' }}
                 />
               ) : (
-                <PlusIcon className="h-3.5 w-3.5" />
+                <PlusIcon className="h-4 w-4" />
               )}
-              {adding
-                ? 'Ajout…'
-                : isSeries
-                  ? 'Ajouter la série'
-                  : upcoming
-                    ? 'Ajouter aux À venir'
-                    : 'Ajouter'}
             </button>
           )}
+          {alreadyIn && (
+            <div className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 z-10">
+              <span
+                className={`inline-flex items-center justify-center rounded-full bg-booktime-600/90 text-white h-8 w-8 sm:h-9 sm:w-9 ${PILL}`}
+                title="Dans ta bibliothèque"
+              >
+                <CheckIcon className="h-4 w-4" />
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="pt-1.5 px-0.5 sm:p-3">
+          <h3 className="font-medium text-gray-900 dark:text-white text-tiny sm:text-sm line-clamp-2 leading-tight">
+            {title}
+          </h3>
+          {book.original_title &&
+            book.original_title !== title &&
+            !isSeries && (
+              <p className="text-micro sm:text-mini text-gray-400 dark:text-gray-500 italic line-clamp-1 mt-0.5 leading-tight">
+                {book.original_title}
+              </p>
+            )}
+          <p className="text-mini sm:text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">
+            {book.author}
+          </p>
         </div>
       </div>
     </div>
@@ -472,9 +423,7 @@ const RecommendationSection = ({
   onOpen,
   onAdd,
   onNotInterested,
-  onFeedback,
   userBooks,
-  compact = false,
 }) => {
   const cfg = SECTION_CONFIG[source] || SECTION_CONFIG.popular;
   const colors = COLOR_CLASSES[cfg.color];
@@ -513,7 +462,7 @@ const RecommendationSection = ({
         </span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+      <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 sm:gap-5">
         {visible.slice(0, 24).map((book, idx) => (
           <BookCard
             key={book.id || book.book_id || book.ol_key || `${source}-${idx}`}
@@ -521,9 +470,8 @@ const RecommendationSection = ({
             onOpen={onOpen}
             onAdd={onAdd}
             onNotInterested={onNotInterested}
-            onFeedback={onFeedback}
             userBooks={userBooks}
-            compact={compact}
+            priority={idx < 12}
           />
         ))}
       </div>
@@ -796,14 +744,9 @@ const RecommendationPage = () => {
         // Ne pas afficher « · Open Library » sur les vignettes
         reason: undefined,
       }));
-      const items = groupRecosAsBooktimeItems(unified, { seedLabel }).filter(
-        (b) => b.isSeriesCard || b.cover_url
+      const finalItems = groupRecosAsBooktimeItems(unified, { seedLabel }).sort(
+        (a, b) => Number(!!b.cover_url) - Number(!!a.cover_url)
       );
-      // Si trop filtrés sans cover, garder quand même des titres
-      const finalItems =
-        items.length >= 6
-          ? items
-          : groupRecosAsBooktimeItems(unified, { seedLabel });
       setSections({
         seed_similar: finalItems.map((b) => ({ ...b, _seedLabel: seedLabel })),
       });
@@ -1217,7 +1160,7 @@ const RecommendationPage = () => {
                   Tendances du moment — par où commencer ?
                 </h2>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 sm:gap-5">
                 {groupRecosAsBooktimeItems(
                   coldStartBooks.map((b) => ({ ...b, book_id: b.ol_key }))
                 ).map((book, idx) => (
@@ -1227,8 +1170,8 @@ const RecommendationPage = () => {
                     onOpen={handleOpenItem}
                     onAdd={handleAdd}
                     onNotInterested={handleNotInterested}
-                    onFeedback={handleFeedback}
                     userBooks={userBooks}
+                    priority={idx < 12}
                   />
                 ))}
               </div>
@@ -1246,9 +1189,7 @@ const RecommendationPage = () => {
                 onOpen={handleOpenItem}
                 onAdd={handleAdd}
                 onNotInterested={handleNotInterested}
-                onFeedback={handleFeedback}
                 userBooks={userBooks}
-                compact={activeTab === 'similaires'}
               />
             ) : null
           )}
@@ -1262,9 +1203,7 @@ const RecommendationPage = () => {
                 onOpen={handleOpenItem}
                 onAdd={handleAdd}
                 onNotInterested={handleNotInterested}
-                onFeedback={handleFeedback}
                 userBooks={userBooks}
-                compact={activeTab === 'similaires'}
               />
             ))}
         </div>
