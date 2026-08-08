@@ -91,6 +91,25 @@ export const recommendationService = {
   },
 
   /**
+   * Propositions similaires à un livre ou une série choisis
+   * @param {{ title?: string, author?: string, series?: string, limit?: number }} options
+   */
+  async getSimilar(options = {}) {
+    try {
+      const { title = '', author = '', series = '', limit = 18 } = options;
+      const params = { limit };
+      if (title) params.title = title;
+      if (author) params.author = author;
+      if (series) params.series = series;
+      const response = await api.get('/api/recommendations/similar', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Erreur recommandations similaires:', error);
+      throw new Error('Erreur lors des recommandations similaires');
+    }
+  },
+
+  /**
    * Récupère les recommandations par auteur
    * @param {string} authorName - Nom de l'auteur
    * @param {number} limit - Nombre de recommandations

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   BookOpenIcon,
   CheckCircleIcon,
@@ -6,7 +7,8 @@ import {
   PlusIcon,
   ExclamationTriangleIcon,
   XMarkIcon,
-  TrashIcon
+  TrashIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 import { bookService } from '../services/bookService';
 import { deleteSeriesFromLibrary } from '../services/seriesLibraryService';
@@ -92,6 +94,7 @@ const SeriesDetailModal = ({
   onAuthorClick,
   userSeriesLibrary = []
 }) => {
+  const navigate = useNavigate();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedTomes, setSelectedTomes] = useState(new Set());
@@ -1143,6 +1146,24 @@ const SeriesDetailModal = ({
                       olBooks.length || books.length || (series?.books?.length) || 0
                     )} tome(s)
                   </span>
+                  {series?.name ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const params = new URLSearchParams({
+                          tab: 'similaires',
+                          series: series.name,
+                        });
+                        if (series.author) params.set('author', series.author);
+                        onClose?.();
+                        navigate(`/recommendations?${params}`);
+                      }}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full font-medium bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-900/60"
+                    >
+                      <SparklesIcon className="h-3.5 w-3.5" />
+                      Similaires
+                    </button>
+                  ) : null}
                   {series.fromStaticWikidata && series.staticWikidataDetail && (
                     <>
                       <a

@@ -1,8 +1,8 @@
 /**
  * Page de Recommandations — sections contextuelles, filtre par onglet actif
  */
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import {
   SparklesIcon,
@@ -24,6 +24,7 @@ import {
 } from '@heroicons/react/24/solid';
 import { recommendationService } from '../../services/recommendationService';
 import { API_BASE_URL } from '../../config/environment';
+import { displayBookTitleFrFirst } from '../../utils/openLibraryBookDisplay';
 
 // ── Cache (sessionStorage) ────────────────────────────────────────────────
 // Évite de recalculer les recommandations à chaque visite de la page.
@@ -78,6 +79,7 @@ const PRIMARY_TABS = [
   { id: 'pour_toi', label: 'Pour toi' },
   { id: 'aime', label: 'Parce que vous avez aimé' },
   { id: 'lisez', label: 'Parce que vous lisez' },
+  { id: 'similaires', label: 'Similaires à…' },
 ];
 
 const GENRE_TABS = [
@@ -154,6 +156,14 @@ const SECTION_CONFIG = {
     icon: SparklesIcon,
     color: 'purple',
     title: () => 'Similaires à tes coups de cœur',
+  },
+  seed_similarity: {
+    icon: SparklesIcon,
+    color: 'purple',
+    title: (items) => {
+      const seed = items[0]?.metadata?.seed_title || items[0]?._seedLabel;
+      return seed ? `Similaires à « ${seed} »` : 'Similaires à ton choix';
+    },
   },
   algorithm_category: {
     icon: SparklesIcon,
@@ -447,23 +457,113 @@ const SkeletonSection = () => (
 
 const RecommendationPage = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [sections, setSections] = useState({});
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('pour_toi');
+  const initialTab = searchParams.get('tab') === 'similaires' ? 'similaires' : 'pour_toi';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [userBooks, setUserBooks] = useState([]);
+  const [userSeries, setUserSeries] = useState([]);
+  const [seed, setSeed] = useState(() => {
+    const title = searchParams.get('title') || '';
+    const author = searchParams.get('author') || '';
+    const series = searchParams.get('series') || '';
+    if (title || series) {
+      return {
+        kind: series ? 'series' : 'book',
+        title: series || title,
+        author,
+        series: series || '',
+        label: series || title,
+      };
+    }
+    return null;
+  });
+  const [seedFilter, setSeedFilter] = useState('');
 
-  // Charge la liste des livres de l'utilisateur pour détecter "déjà dans bibliothèque"
+  // Charge la liste des livres / séries pour détecter "déjà dans bibliothèque" + picker
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
-    fetch(`${API_BASE_URL}/api/books/all?limit=1000`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    const headers = { Authorization: `Bearer ${token}` };
+    fetch(`${API_BASE_URL}/api/books/all?limit=1000`, { headers })
       .then((r) => r.json())
       .then((data) => setUserBooks(Array.isArray(data) ? data : data.books || data.items || []))
       .catch(() => {});
+    fetch(`${API_BASE_URL}/api/series/library`, { headers })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        const list = Array.isArray(data) ? data : data.series || data.items || [];
+        setUserSeries(list);
+      })
+      .catch(() => {});
   }, []);
+
+  const seedOptions = useMemo(() => {
+    const books = (userBooks || [])
+      .filter((b) => !b.isSeriesCard)
+      .map((b) => {
+        const title = displayBookTitleFrFirst(b) || b.title || '';
+        return {
+          id: `b:${b.id}`,
+          kind: 'book',
+          title,
+          author: b.author || '',
+          series: '',
+          label: title,
+          sub: b.author || '',
+        };
+      })
+      .filter((o) => o.title);
+    const series = (userSeries || []).map((s) => {
+      const name = s.series_name || s.name || s.title || '';
+      return {
+        id: `s:${s.id || name}`,
+        kind: 'series',
+        title: name,
+        author: s.author || '',
+        series: name,
+        label: name,
+        sub: s.author ? `Série · ${s.author}` : 'Série',
+      };
+    }).filter((o) => o.title);
+    // Cartes série de la grille biblio (si présentes dans books)
+    const seriesCards = (userBooks || [])
+      .filter((b) => b.isSeriesCard)
+      .map((b) => {
+        const name = b.name || b.title || '';
+        return {
+          id: `sc:${b.id || name}`,
+          kind: 'series',
+          title: name,
+          author: b.author || '',
+          series: name,
+          label: name,
+          sub: b.author ? `Série · ${b.author}` : 'Série',
+        };
+      })
+      .filter((o) => o.title);
+    const seen = new Set();
+    return [...series, ...seriesCards, ...books].filter((o) => {
+      const k = `${o.kind}:${o.label.toLowerCase()}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  }, [userBooks, userSeries]);
+
+  const filteredSeedOptions = useMemo(() => {
+    const q = seedFilter.trim().toLowerCase();
+    if (!q) return seedOptions.slice(0, 40);
+    return seedOptions
+      .filter(
+        (o) =>
+          o.label.toLowerCase().includes(q) ||
+          (o.sub || '').toLowerCase().includes(q)
+      )
+      .slice(0, 40);
+  }, [seedOptions, seedFilter]);
 
   const loadPersonalizedBundle = useCallback(async ({ force = false } = {}) => {
     if (!force) {
@@ -522,7 +622,47 @@ const RecommendationPage = () => {
     return grouped;
   }, []);
 
+  const loadSimilarForSeed = useCallback(async (seedItem) => {
+    if (!seedItem?.title && !seedItem?.series) {
+      setSections({});
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const res = await recommendationService.getSimilar({
+        title: seedItem.kind === 'series' ? '' : seedItem.title,
+        author: seedItem.author || '',
+        series: seedItem.kind === 'series' ? seedItem.series || seedItem.title : '',
+        limit: 24,
+      });
+      const recs = (res?.data?.recommendations || []).map((r) => ({
+        ...r,
+        reason: r.reason || (Array.isArray(r.reasons) ? r.reasons[0] : undefined),
+        score: r.score ?? r.confidence_score,
+        _seedLabel: seedItem.label || seedItem.title,
+      }));
+      const grouped = recs.length ? { seed_similarity: recs } : {};
+      setSections(grouped);
+    } catch (err) {
+      console.error('Erreur similaires:', err);
+      toast.error('Impossible de charger les similaires');
+      setSections({});
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const loadRecommendations = useCallback(async (tab, { force = false } = {}) => {
+    if (tab === 'similaires') {
+      if (seed) {
+        await loadSimilarForSeed(seed);
+      } else {
+        setSections({});
+        setIsLoading(false);
+      }
+      return;
+    }
+
     if (!force) {
       const cached = readCache(tab);
       const hasItems = cached?.sections && Object.values(cached.sections).some((a) => a?.length);
@@ -564,11 +704,40 @@ const RecommendationPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [loadPersonalizedBundle]);
+  }, [loadPersonalizedBundle, loadSimilarForSeed, seed]);
 
   useEffect(() => {
     loadRecommendations(activeTab);
   }, [activeTab, loadRecommendations]);
+
+  const selectSeed = useCallback(
+    (option) => {
+      const next = {
+        kind: option.kind,
+        title: option.title,
+        author: option.author || '',
+        series: option.series || '',
+        label: option.label,
+      };
+      setSeed(next);
+      setActiveTab('similaires');
+      const params = new URLSearchParams({ tab: 'similaires' });
+      if (next.kind === 'series') params.set('series', next.series || next.title);
+      else {
+        params.set('title', next.title);
+        if (next.author) params.set('author', next.author);
+      }
+      setSearchParams(params, { replace: true });
+      setSeedFilter('');
+    },
+    [setSearchParams]
+  );
+
+  const clearSeed = useCallback(() => {
+    setSeed(null);
+    setSections({});
+    setSearchParams({ tab: 'similaires' }, { replace: true });
+  }, [setSearchParams]);
 
   const handleRefresh = useCallback(() => {
     clearRecoCache();
@@ -600,7 +769,12 @@ const RecommendationPage = () => {
   // Cold start : catalogue populaire si aucune reco perso
   const [coldStartBooks, setColdStartBooks] = useState([]);
   useEffect(() => {
-    if (!isLoading && totalRecs === 0 && !String(activeTab).startsWith('genre_')) {
+    if (
+      !isLoading &&
+      totalRecs === 0 &&
+      !String(activeTab).startsWith('genre_') &&
+      activeTab !== 'similaires'
+    ) {
       fetch(`${API_BASE_URL}/api/catalog/popular?limit=18`)
         .then((r) => (r.ok ? r.json() : { books: [] }))
         .then((d) => setColdStartBooks(d.books || []))
@@ -609,18 +783,20 @@ const RecommendationPage = () => {
   }, [isLoading, totalRecs, activeTab]);
 
   const ORDER =
-    activeTab === 'aime'
-      ? ['algorithm_similarity', 'algorithm_category', 'popular']
-      : activeTab === 'lisez'
-        ? ['algorithm_author', 'algorithm_series', 'popular']
-        : [
-            'algorithm_series',
-            'algorithm_author',
-            'algorithm_similarity',
-            'algorithm_category',
-            'algorithm_genre',
-            'popular',
-          ];
+    activeTab === 'similaires'
+      ? ['seed_similarity']
+      : activeTab === 'aime'
+        ? ['algorithm_similarity', 'algorithm_category', 'popular']
+        : activeTab === 'lisez'
+          ? ['algorithm_author', 'algorithm_series', 'popular']
+          : [
+              'algorithm_series',
+              'algorithm_author',
+              'algorithm_similarity',
+              'algorithm_category',
+              'algorithm_genre',
+              'popular',
+            ];
 
   return (
     <div className="min-h-screen bg-honeycomb">
@@ -683,7 +859,20 @@ const RecommendationPage = () => {
         {PRIMARY_TABS.map((t) => (
           <button
             key={t.id}
-            onClick={() => setActiveTab(t.id)}
+            onClick={() => {
+              setActiveTab(t.id);
+              if (t.id === 'similaires') {
+                const params = new URLSearchParams({ tab: 'similaires' });
+                if (seed?.kind === 'series') params.set('series', seed.series || seed.title);
+                else if (seed?.title) {
+                  params.set('title', seed.title);
+                  if (seed.author) params.set('author', seed.author);
+                }
+                setSearchParams(params, { replace: true });
+              } else {
+                setSearchParams({}, { replace: true });
+              }
+            }}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === t.id
                 ? 'bg-blue-600 text-white shadow-sm'
@@ -696,6 +885,7 @@ const RecommendationPage = () => {
       </div>
 
       {/* Genres littéraires */}
+      {activeTab !== 'similaires' && (
       <div className="flex gap-2 mb-8 flex-wrap">
         {GENRE_TABS.map((t) => (
           <button
@@ -711,6 +901,65 @@ const RecommendationPage = () => {
           </button>
         ))}
       </div>
+      )}
+
+      {/* Sélecteur « similaires à un livre / série » */}
+      {activeTab === 'similaires' && (
+        <div className="mb-8 rounded-xl border border-purple-200 dark:border-purple-800 bg-white/80 dark:bg-gray-800/80 p-4">
+          <p className="text-sm font-medium text-gray-800 dark:text-gray-100 mb-2">
+            Choisis un livre ou une série de ta bibliothèque
+          </p>
+          {seed ? (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200">
+                {seed.kind === 'series' ? 'Série' : 'Livre'} · {seed.label}
+                <button
+                  type="button"
+                  onClick={clearSeed}
+                  className="ml-1 rounded-full p-0.5 hover:bg-purple-200/80 dark:hover:bg-purple-800"
+                  aria-label="Changer de référence"
+                >
+                  <XMarkIcon className="h-4 w-4" />
+                </button>
+              </span>
+            </div>
+          ) : null}
+          <input
+            type="search"
+            value={seedFilter}
+            onChange={(e) => setSeedFilter(e.target.value)}
+            placeholder="Rechercher dans ta bibliothèque…"
+            className="w-full mb-3 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+          />
+          <div className="max-h-48 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700 rounded-lg border border-gray-100 dark:border-gray-700">
+            {filteredSeedOptions.length === 0 ? (
+              <p className="p-3 text-sm text-gray-500">
+                Aucun titre trouvé. Ajoute des livres à ta bibliothèque pour commencer.
+              </p>
+            ) : (
+              filteredSeedOptions.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => selectSeed(opt)}
+                  className={`w-full text-left px-3 py-2.5 text-sm hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors ${
+                    seed?.label === opt.label && seed?.kind === opt.kind
+                      ? 'bg-purple-50 dark:bg-purple-900/30'
+                      : ''
+                  }`}
+                >
+                  <span className="font-medium text-gray-900 dark:text-white">{opt.label}</span>
+                  {opt.sub ? (
+                    <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      {opt.sub}
+                    </span>
+                  ) : null}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Contenu */}
       {isLoading ? (
@@ -723,13 +972,21 @@ const RecommendationPage = () => {
           <div className="text-center py-8">
             <SparklesIcon className="h-12 w-12 text-gray-200 dark:text-gray-700 mx-auto mb-3" />
             <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-1">
-              Pas encore de recommandations personnalisées
+              {activeTab === 'similaires'
+                ? seed
+                  ? 'Aucune proposition similaire trouvée'
+                  : 'Choisis un livre ou une série ci-dessus'
+                : 'Pas encore de recommandations personnalisées'}
             </h2>
             <p className="text-gray-500 dark:text-gray-400 text-sm max-w-sm mx-auto">
-              Ajoute des livres à ta bibliothèque pour recevoir des suggestions adaptées à tes goûts.
+              {activeTab === 'similaires'
+                ? seed
+                  ? 'Essaie un autre titre, ou rafraîchis dans un instant.'
+                  : 'On te proposera des lectures proches de ton choix.'
+                : 'Ajoute des livres à ta bibliothèque pour recevoir des suggestions adaptées à tes goûts.'}
             </p>
           </div>
-          {coldStartBooks.length > 0 && (
+          {activeTab !== 'similaires' && coldStartBooks.length > 0 && (
             <div className="mt-4">
               <div className="flex items-center gap-2 mb-4 pb-2 border-b border-orange-200 dark:border-orange-800">
                 <FireIcon className="h-5 w-5 text-orange-500" />

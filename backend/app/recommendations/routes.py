@@ -106,6 +106,50 @@ async def get_popular_recommendations(
             detail=f"Erreur lors de la récupération des recommandations populaires: {str(e)}"
         )
 
+@router.get("/similar")
+async def get_similar_recommendations(
+    current_user: dict = Depends(get_current_user),
+    title: Optional[str] = Query(None, description="Titre du livre seed"),
+    author: Optional[str] = Query(None, description="Auteur du livre seed"),
+    series: Optional[str] = Query(None, description="Nom de la série seed"),
+    limit: int = Query(18, ge=1, le=40, description="Nombre de propositions"),
+):
+    """
+    Propositions similaires à un livre ou une série choisis.
+    """
+    try:
+        user_id = current_user.get("id") or current_user.get("user_id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Utilisateur non identifié")
+
+        if not (title or series):
+            raise HTTPException(
+                status_code=400,
+                detail="Indiquez title ou series",
+            )
+
+        data = await recommendation_service.get_similar_to_seed(
+            user_id,
+            title=title or "",
+            author=author or "",
+            series_name=series or "",
+            limit=limit,
+        )
+        return {
+            "success": True,
+            "data": data,
+            "count": data.get("count") or len(data.get("recommendations") or []),
+            "generated_at": datetime.utcnow().isoformat(),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur lors des recommandations similaires: {str(e)}",
+        )
+
+
 @router.get("/by-author/{author_name}")
 async def get_recommendations_by_author(
     author_name: str,

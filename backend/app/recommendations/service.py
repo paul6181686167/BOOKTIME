@@ -96,6 +96,128 @@ class RecommendationService:
                 'error': str(e),
                 'generated_at': datetime.utcnow().isoformat()
             }
+
+    async def get_similar_to_seed(
+        self,
+        user_id: str,
+        *,
+        title: str = "",
+        author: str = "",
+        series_name: str = "",
+        subjects: Optional[List[str]] = None,
+        limit: int = 18,
+    ) -> Dict:
+        """
+        Propositions similaires à un livre ou une série choisis par l'utilisateur.
+        """
+        seed_title = (series_name or title or "").strip()
+        seed_author = (author or "").strip()
+        if not seed_title:
+            return {
+                "recommendations": [],
+                "seed": None,
+                "error": "title_or_series_required",
+                "generated_at": datetime.utcnow().isoformat(),
+            }
+
+        try:
+            user_profile = await self._analyze_user_library(user_id)
+            if not user_profile.get("has_books"):
+                user_profile = {
+                    "has_books": False,
+                    "owned_keys": set(),
+                    "owned_titles": set(),
+                    "disliked_book_ids": [],
+                    "high_rated_books": [],
+                    "completed_books": [],
+                }
+
+            seed_subjects = subjects or []
+            if isinstance(seed_subjects, str):
+                seed_subjects = [seed_subjects]
+
+            similar_books = await self.openlibrary_service.search_similar_books(
+                seed_title,
+                seed_author,
+                limit=max(limit * 2, 24),
+                subjects=seed_subjects if seed_subjects else None,
+            )
+
+            # Série : compléter avec d'autres volumes / œuvres liées au nom
+            if (series_name or "").strip() and len(similar_books) < limit:
+                try:
+                    extra = await self.openlibrary_service.search_series(
+                        seed_title, limit=max(8, limit // 2)
+                    )
+                    for book in extra or []:
+                        similar_books.append(book)
+                except Exception as exc:
+                    logger.debug("similar series fallback: %s", exc)
+
+            short = seed_title if len(seed_title) <= 42 else seed_title[:39] + "…"
+            kind = "série" if (series_name or "").strip() else "livre"
+            reason = f"Similaire à {kind} « {short} »"
+
+            out: List[RecommendationItem] = []
+            seen = set()
+            seed_norm = self._normalize_title(seed_title)
+
+            for book in similar_books:
+                title_b = (book.get("title") or "").strip()
+                author_b = (book.get("author") or "").strip()
+                if not title_b:
+                    continue
+                if self._normalize_title(title_b) == seed_norm:
+                    continue
+                key = self._book_key(title_b, author_b)
+                if key in seen:
+                    continue
+                seen.add(key)
+                if await self._should_skip(
+                    user_profile, book.get("ol_key", ""), title_b, author_b
+                ):
+                    continue
+
+                out.append(
+                    RecommendationItem(
+                        book_id=book.get("ol_key", "") or key,
+                        title=title_b,
+                        author=author_b,
+                        category=book.get("category", "roman"),
+                        cover_url=book.get("cover_url"),
+                        confidence_score=0.8,
+                        reasons=[reason],
+                        source="seed_similarity",
+                        metadata={
+                            **book,
+                            "seed_title": seed_title,
+                            "seed_author": seed_author,
+                            "seed_kind": kind,
+                        },
+                    )
+                )
+                if len(out) >= limit:
+                    break
+
+            return {
+                "recommendations": [self._format_recommendation(r) for r in out],
+                "seed": {
+                    "title": seed_title,
+                    "author": seed_author,
+                    "series_name": (series_name or "").strip() or None,
+                    "kind": kind,
+                },
+                "count": len(out),
+                "generated_at": datetime.utcnow().isoformat(),
+            }
+        except Exception as e:
+            logger.error("Erreur similarité seed: %s", e)
+            return {
+                "recommendations": [],
+                "seed": {"title": seed_title, "author": seed_author},
+                "error": str(e),
+                "generated_at": datetime.utcnow().isoformat(),
+            }
     
     async def _analyze_user_library(self, user_id: str) -> Dict:
         """Analyse la bibliothèque utilisateur pour créer un profil"""

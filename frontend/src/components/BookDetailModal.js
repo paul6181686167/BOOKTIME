@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { XMarkIcon, StarIcon, TrashIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { useNavigate } from 'react-router-dom';
+import { XMarkIcon, StarIcon, TrashIcon, ArrowPathIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 import LanguageSelector from './LanguageSelector';
@@ -25,6 +26,7 @@ const launchConfetti = () => {
 };
 
 const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibrary, onAuthorClick }) => {
+  const navigate = useNavigate();
   const titleMain = useMemo(() => displayBookTitleFrFirst(book), [book]);
   const [isEditing, setIsEditing] = useState(false);
   const [bouncing, setBouncing] = useState(null); // id du bouton en train de bouncer
@@ -473,7 +475,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             </p>
             
             {/* Catégorie */}
-            <div className="flex items-center space-x-3 mb-4">
+            <div className="flex flex-wrap items-center gap-2 mb-4">
               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-booktime-100 dark:bg-booktime-900/30 text-booktime-800 dark:text-booktime-300">
                 {book.category === 'roman' && '📚'} 
                 {book.category === 'bd' && '🎨'} 
@@ -483,6 +485,24 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getCurrentStatus().color}`}>
                 {getCurrentStatus().label}
               </span>
+              {titleMain ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const params = new URLSearchParams({
+                      tab: 'similaires',
+                      title: titleMain,
+                    });
+                    if (book.author) params.set('author', book.author);
+                    onClose?.();
+                    navigate(`/recommendations?${params}`);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-900/60 transition-colors"
+                >
+                  <SparklesIcon className="h-4 w-4" />
+                  Similaires
+                </button>
+              ) : null}
             </div>
 
             {/* Résumé / 4ᵉ de couverture — au-dessus du statut (comme les fiches séries) */}
