@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import LanguageSelector from './LanguageSelector';
 import { API_BASE_URL } from '../config/environment';
 import { displayBookTitleFrFirst } from '../utils/openLibraryBookDisplay';
-import { isUsableSynopsis } from '../utils/synopsisQuality';
+import { displaySynopsis as formatSynopsis, isUsableSynopsis, sanitizeSynopsis } from '../utils/synopsisQuality';
 import AddToCollectionMenu from './common/AddToCollectionMenu';
 import CommunityReviews from './common/CommunityReviews';
 import confetti from 'canvas-confetti';
@@ -59,11 +59,8 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   onUpdateRef.current = onUpdate;
 
   const totalPages = resolvedTotalPages || book.total_pages || 0;
-  const displaySynopsis = isUsableSynopsis(olDetails?.description)
-    ? olDetails.description
-    : isUsableSynopsis(book.description)
-      ? book.description
-      : '';
+  const displaySynopsis =
+    formatSynopsis(olDetails?.description) || formatSynopsis(book.description) || '';
 
   useEffect(() => {
     setEditData({
@@ -81,7 +78,9 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     setResolvedTotalPages(book.total_pages > 0 ? book.total_pages : null);
     // Nouveau livre → reset résumé enrichi (sauf si déjà une vraie 4ᵉ en base)
     setOlDetails(
-      isUsableSynopsis(book.description) ? { description: book.description.trim() } : null
+      isUsableSynopsis(book.description)
+        ? { description: sanitizeSynopsis(book.description) }
+        : null
     );
     pagesFetchDoneRef.current = null;
     metaReqIdRef.current += 1;
@@ -110,7 +109,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     const applyMeta = async ({ description, pages } = {}) => {
       const patch = {};
       if (needsDesc && isUsableSynopsis(description)) {
-        const text = description.trim();
+        const text = sanitizeSynopsis(description);
         // Afficher tout de suite même si une persistance concurrente tourne
         setOlDetails({ description: text });
         patch.description = text;
@@ -528,11 +527,12 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                       .then((r) => (r.ok ? r.json() : null))
                       .then(async (data) => {
                         if (isUsableSynopsis(data?.description)) {
-                          setOlDetails({ description: data.description.trim() });
+                          const text = sanitizeSynopsis(data.description);
+                          setOlDetails({ description: text });
                           if (book.id && !book.isFromOpenLibrary && onUpdateRef.current) {
                             try {
                               await onUpdateRef.current(book.id, {
-                                description: data.description.trim(),
+                                description: text,
                               });
                             } catch (_) {
                               /* ignore */

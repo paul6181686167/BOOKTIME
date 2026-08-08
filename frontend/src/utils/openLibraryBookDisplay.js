@@ -8,36 +8,53 @@ function frenchAccentScore(str) {
 }
 
 /**
+ * Corrige les corruptions fréquentes de titres (ex. « Q.I. » → « Cui »).
+ */
+export function sanitizeBookTitle(title) {
+  let t = String(title || '').trim();
+  if (!t) return '';
+  // « Juliette a-t-elle un grand Cui ? » → Q.I.
+  t = t.replace(/\bCui\b/gi, 'Q.I.');
+  t = t.replace(/\bQ\s*\.\s*I\s*\.?/gi, 'Q.I.');
+  t = t.replace(/\bQI\b/g, 'Q.I.');
+  return t;
+}
+
+/**
  * Titre à afficher en priorisant le français (langue OL, heuristique accents).
  */
 export function displayBookTitleFrFirst(book) {
   if (!book) return '';
+  let raw = '';
   if (book.display_title != null && String(book.display_title).trim() !== '') {
-    return String(book.display_title).trim();
+    raw = String(book.display_title).trim();
+  } else {
+    const titleFr = (book.title_fr || '').trim();
+    if (titleFr) {
+      raw = titleFr;
+    } else {
+      const t = (book.title || '').trim();
+      const o = (book.original_title || '').trim();
+      const langs = book.available_languages || [];
+      const langJoined = langs.map((l) => String(l).toLowerCase()).join(' ');
+
+      if (langJoined.includes('fre') && t) {
+        raw = t;
+      } else {
+        const scoreT = frenchAccentScore(t);
+        const scoreO = frenchAccentScore(o);
+        if (o && scoreO > scoreT) raw = o;
+        else if (t && scoreT > scoreO) raw = t;
+        else {
+          const frHint = /\b(le|la|les|un|une|des|du|de|et|l['’])/i;
+          if (o && frHint.test(o) && !frHint.test(t)) raw = o;
+          else if (t && frHint.test(t) && !frHint.test(o)) raw = t;
+          else raw = t || o;
+        }
+      }
+    }
   }
-  const titleFr = (book.title_fr || '').trim();
-  if (titleFr) return titleFr;
-
-  const t = (book.title || '').trim();
-  const o = (book.original_title || '').trim();
-  const langs = book.available_languages || [];
-  const langJoined = langs.map((l) => String(l).toLowerCase()).join(' ');
-
-  // Langue FR déclarée → titre courant
-  if (langJoined.includes('fre') && t) return t;
-
-  // Entre title et original_title, garder celui qui « sonne » le plus français
-  const scoreT = frenchAccentScore(t);
-  const scoreO = frenchAccentScore(o);
-  if (o && scoreO > scoreT) return o;
-  if (t && scoreT > scoreO) return t;
-
-  // Mots français typiques dans l'un des deux
-  const frHint = /\b(le|la|les|un|une|des|du|de|et|l['’])/i;
-  if (o && frHint.test(o) && !frHint.test(t)) return o;
-  if (t && frHint.test(t) && !frHint.test(o)) return t;
-
-  return t || o;
+  return sanitizeBookTitle(raw);
 }
 
 function extractVolumeNumberForMerge(book) {

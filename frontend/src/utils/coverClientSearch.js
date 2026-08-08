@@ -4,19 +4,20 @@
  * Les échecs ne sont PAS mis en cache (évite de bloquer un livre après un timeout).
  */
 import { isUsableCoverUrl, normalizeCoverUrl } from './helpers';
+import { sanitizeBookTitle } from './openLibraryBookDisplay';
 
 const cache = new Map(); // uniquement les succès
-const CACHE_PREFIX = 'bt_cover_v4:';
+const CACHE_PREFIX = 'bt_cover_v5:';
 
 let gbCooldownUntil = 0;
 
 const cleanTitle = (title) => {
-  let t = String(title || '').trim();
+  let t = sanitizeBookTitle(title);
   t = t.replace(
     /\s*[,:\-–—]?\s*(tome|t\.?|vol\.?|volume|book|n°|no\.?)\s*\d+.*$/i,
     ''
   );
-  return t.trim() || String(title || '').trim();
+  return t.trim() || sanitizeBookTitle(title);
 };
 
 /** Variantes FR/EN pour titres courts (ex. Choses → Les Choses). */
@@ -170,6 +171,15 @@ async function searchWikipediaCover(title, author) {
     if (!data || data.__rateLimited) return null;
     if (data.type === 'disambiguation') return null;
     const pageNorm = norm(pageTitle || data.title);
+    const desc = String(data.description || data.extract || '').slice(0, 280);
+    const blob = `${pageTitle || ''} ${data.title || ''} ${desc}`;
+    // Page personne (acteur, auteur…) → photo, pas couverture
+    const isPerson =
+      /\b(actress|actor|actrice|acteur|singer|chanteur|chanteuse|écrivain|écrivaine|writer|author|novelist|romancier|romanci[eè]re|personnalité|politician|footballer|footballeur|painter|peintre)\b/i.test(
+        desc
+      ) &&
+      !/\b(novel|roman|novella|livre|récit|ouvrage|thriller|manga|bande dessin)/i.test(blob);
+    if (isPerson) return null;
     // Page = nom de l'auteur seul → ignorer
     if (authorNorm && pageNorm === authorNorm) return null;
     if (authorNorm && pageNorm.startsWith(authorNorm) && !pageNorm.includes(titleNorm.split(' ')[0] || '___')) {
@@ -178,8 +188,16 @@ async function searchWikipediaCover(title, author) {
         return null;
       }
     }
+    // Exiger un chevauchement de mots significatifs avec le titre du livre
+    const titleWords = titleNorm.split(/\s+/).filter((w) => w.length > 3);
+    if (titleWords.length >= 2) {
+      const hits = titleWords.filter((w) => pageNorm.includes(w)).length;
+      if (hits < Math.min(2, titleWords.length)) return null;
+    }
     const thumb = data.originalimage?.source || data.thumbnail?.source;
     if (!thumb || /\.svg($|\?)/i.test(thumb)) return null;
+    // Portraits Commons fréquents
+    if (/\/(commons\/)?a\/a[0-9]\/.*portrait/i.test(thumb)) return null;
     return String(thumb).split('?')[0].replace('http://', 'https://');
   };
 

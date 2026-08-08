@@ -4,6 +4,7 @@ import {
   coverImgSrc,
   isBlankOrPlaceholderCover,
   isGoogleBooksCoverUrl,
+  isLikelyPhotoNotCover,
   isUsableCoverUrl,
   normalizeCoverUrl,
   resolveCoverForGridItem,
@@ -177,7 +178,13 @@ const SmartCover = ({ item, alt, primarySrc, onCoverFound, priority = false }) =
       referrerPolicy="no-referrer"
       className={COVER_IMAGE}
       onLoad={(e) => {
-        if (needsPlaceholderCheck && isBlankOrPlaceholderCover(e.currentTarget)) {
+        const img = e.currentTarget;
+        // Photos auteur / célébrité (mauvais ratio) → candidat suivant
+        if (isLikelyPhotoNotCover(img)) {
+          failCurrent();
+          return;
+        }
+        if (needsPlaceholderCheck && isBlankOrPlaceholderCover(img)) {
           failCurrent();
           return;
         }

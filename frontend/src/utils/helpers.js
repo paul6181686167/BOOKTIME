@@ -405,6 +405,21 @@ export const isGoogleBooksCoverUrl = (url) =>
   /books\.google\./i.test(url || '') || /googleusercontent\.com/i.test(url || '');
 
 /**
+ * Photo (célèbre / auteur) plutôt qu’une couverture livre (ratio ~2:3).
+ * Pas besoin de CORS : naturalWidth/Height suffisent.
+ */
+export const isLikelyPhotoNotCover = (img) => {
+  if (!img) return true;
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
+  if (!(w > 0 && h > 0)) return true;
+  const ratio = w / h;
+  // Couverture typique ≈ 0.62–0.75 ; portrait photo / paysage / carré wiki → hors plage
+  if (ratio > 0.86 || ratio < 0.42) return true;
+  return false;
+};
+
+/**
  * Détecte les fausses couvertures Google « image not available »
  * (coins gris clairs ; le texte au centre fausse une moyenne globale).
  */

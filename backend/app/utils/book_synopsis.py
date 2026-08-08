@@ -167,14 +167,34 @@ _PLACEHOLDER_SYNOPSIS = re.compile(
 )
 
 
+def _sanitize_synopsis(text: str) -> str:
+    """Retire markdown OL, sections annexes et URLs."""
+    t = text or ""
+    t = re.sub(r"<[^>]+>", " ", t)
+    t = re.split(
+        r"(?is)(?:^|\n)\s*(?:Also contained in|Contenu dans|See also|Voir aussi|"
+        r"External links|Liens externes|References|Références)\s*:?",
+        t,
+        maxsplit=1,
+    )[0]
+    t = re.sub(r"\[([^\]]+)\]\((?:https?://)?[^)]+\)", r"\1", t)
+    t = re.sub(r"https?://\S+", " ", t)
+    t = re.sub(r"\s+", " ", t).strip()
+    return t
+
+
 def is_usable_synopsis(text: str | None) -> bool:
     """True si le texte ressemble à une 4ᵉ de couverture, pas à une meta technique."""
-    t = (text or "").strip()
+    t = _sanitize_synopsis(text or "")
     if len(t) < 28:
         return False
     if _PLACEHOLDER_SYNOPSIS.search(t):
         return False
     if re.search(r"(?i)wikidata\s*[·•|]", t):
+        return False
+    if re.search(r"(?i)^also contained in\b", t):
+        return False
+    if len(re.findall(r"\]\(", t)) >= 2:
         return False
     return True
 
@@ -349,9 +369,7 @@ def _as_text(value: Any) -> str:
 
 
 def _clean(text: str) -> str:
-    text = re.sub(r"<[^>]+>", " ", text or "")
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
+    return _sanitize_synopsis(text or "")
 
 
 def _is_french_lang(lang_value: Any) -> bool:
@@ -1257,7 +1275,9 @@ def fetch_book_synopsis(
                 description = gb["description"]
                 source = "google_books"
 
-    if not is_usable_synopsis(description):
+    if is_usable_synopsis(description):
+        description = _sanitize_synopsis(description)
+    else:
         description = ""
         if source not in (
             "google_books",

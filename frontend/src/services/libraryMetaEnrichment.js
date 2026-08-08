@@ -3,7 +3,7 @@
  * Couvertures : priorité à la recherche navigateur (fiable), puis persist backend.
  */
 import { API_BASE_URL } from '../config/environment';
-import { isUsableSynopsis } from '../utils/synopsisQuality';
+import { isUsableSynopsis, sanitizeSynopsis } from '../utils/synopsisQuality';
 import { evaluateOwnedSeriesForDisplay } from '../utils/seriesAttribution';
 import { isMobileClient } from '../utils/device';
 import {
@@ -304,7 +304,7 @@ async function enrichBookMeta(item, { setBooks }) {
   );
   if (syn) {
     if (needsDesc && isUsableSynopsis(syn.description)) {
-      description = syn.description.trim();
+      description = sanitizeSynopsis(syn.description);
       needsDesc = false;
     }
     const n = parseInt(syn.pages, 10);
@@ -317,7 +317,7 @@ async function enrichBookMeta(item, { setBooks }) {
   if (needsDesc && (item.title || '').trim()) {
     const data = await resolveSynopsis(item);
     if (isUsableSynopsis(data?.description)) {
-      description = data.description.trim();
+      description = sanitizeSynopsis(data.description);
     }
   }
 
@@ -357,7 +357,7 @@ async function enrichDemoted(item, { setUserSeriesLibrary }) {
   let pages = null;
   if (item.needsDesc && (item.title || '').trim()) {
     const data = await resolveSynopsis(item);
-    if (isUsableSynopsis(data?.description)) description = data.description.trim();
+    if (isUsableSynopsis(data?.description)) description = sanitizeSynopsis(data.description);
   }
   if (item.needsPages && (item.title || '').trim()) {
     const data = await resolvePages(item);
