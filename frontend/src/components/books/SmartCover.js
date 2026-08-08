@@ -75,15 +75,37 @@ export const CoverScrim = () => (
   <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-black/25 to-transparent" />
 );
 
-/** Image de couverture : ignore Google Books (souvent « image not available »). */
+/**
+ * Image de couverture.
+ * Google Books en dernier recours (souvent « image not available ») — mais on
+ * l'affiche quand c'est la seule source (sinon vignette vide alors que la modale a l'image).
+ */
 const SmartCover = ({ item, alt, primarySrc, onCoverFound, priority = false }) => {
   const candidates = useMemo(() => {
     const list = coverFallbackCandidates(item);
-    if (primarySrc && !list.includes(primarySrc)) {
-      if (isGoogleBooksCoverUrl(primarySrc)) list.push(primarySrc);
-      else list.unshift(primarySrc);
+    if (primarySrc) {
+      const n = normalizeCoverUrl(primarySrc) || primarySrc;
+      if (n && !list.includes(n) && !list.includes(primarySrc)) {
+        if (isGoogleBooksCoverUrl(n) || isGoogleBooksCoverUrl(primarySrc)) {
+          list.push(n);
+        } else {
+          list.unshift(n);
+        }
+      }
     }
-    return list.filter((u) => !isGoogleBooksCoverUrl(u));
+    // Si cover_url brut existe mais a été écarté par isUsableCoverUrl (ex. archive.org),
+    // le tenter quand même — la modale l'affiche tel quel.
+    const raw = item?.cover_url || item?.cover_image_url;
+    if (raw && String(raw).trim()) {
+      const rawS = String(raw).trim();
+      if (!list.includes(rawS) && !list.some((u) => u === normalizeCoverUrl(rawS))) {
+        if (isGoogleBooksCoverUrl(rawS)) list.push(rawS);
+        else list.push(rawS);
+      }
+    }
+    const trusted = list.filter((u) => u && !isGoogleBooksCoverUrl(u));
+    const google = list.filter((u) => u && isGoogleBooksCoverUrl(u));
+    return [...trusted, ...google];
   }, [item, primarySrc]);
   const [idx, setIdx] = useState(0);
   const [fetched, setFetched] = useState(null);
@@ -186,8 +208,9 @@ const SmartCover = ({ item, alt, primarySrc, onCoverFound, priority = false }) =
           failCurrent();
           return;
         }
-        if (fetched && typeof onCoverFound === 'function') {
-          onCoverFound(item, fetched);
+        // Notifier aussi les covers déjà présentes (pas seulement la recherche)
+        if (typeof onCoverFound === 'function' && (fetched || src)) {
+          onCoverFound(item, fetched || src);
         }
       }}
       onError={failCurrent}

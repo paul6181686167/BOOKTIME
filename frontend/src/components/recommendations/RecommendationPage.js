@@ -259,7 +259,13 @@ const BookCard = ({
     ? book.name || book.display_title || book.title
     : displayBookTitleFrFirst(book) || book.display_title || book.title;
   const coverItem = localCover ? { ...book, cover_url: localCover } : book;
-  const coverSrc = resolveCoverForGridItem(coverItem);
+  // Prefer URL brute si le pipeline OL rejette (GB / archive) — SmartCover gère l'ordre
+  const coverSrc =
+    resolveCoverForGridItem(coverItem) ||
+    localCover ||
+    book.cover_url ||
+    book.cover_image_url ||
+    null;
 
   const alreadyIn = isRecoAlreadyOwned(book, userBooks, userSeries);
 

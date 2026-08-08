@@ -326,7 +326,11 @@ export const isUsableCoverUrl = (url) => {
   if (!u || u.includes('undefined')) return false;
   if (u.startsWith('data:')) return false;
   if (/\/b\/(?:id|olid)\/OL\d+W/i.test(u)) return false;
-  if (/archive\.org/i.test(u)) return false;
+  // archive.org : OK s'il s'agit d'une image de couverture OL miroir (/download/…jpg)
+  // sinon normalizeCoverUrl tentera de le réécrire vers covers.openlibrary.org
+  if (/archive\.org/i.test(u) && !/\.(jpe?g|png|webp)(\?|$)/i.test(u) && !/\/download\//i.test(u)) {
+    return false;
+  }
   return true;
 };
 
@@ -389,6 +393,16 @@ export const coverImgSrc = (url, { forceProxy = false } = {}) => {
     n = n.replace(/([?&])zoom=\d/i, '$1zoom=0');
     if (!/[?&]edge=/.test(n)) n += (n.includes('?') ? '&' : '?') + 'edge=curl';
     return viaWsrv(n);
+  }
+
+  // archive.org : tenter la réécriture OL, sinon proxy direct (modale affiche souvent ça)
+  if (/archive\.org/i.test(raw)) {
+    const rewritten = normalizeCoverUrl(raw);
+    if (rewritten && /covers\.openlibrary\.org/i.test(rewritten)) {
+      const direct = olCoverDirect(rewritten);
+      return forceProxy ? viaWsrv(direct) : direct;
+    }
+    return viaWsrv(raw.replace('http://', 'https://'));
   }
 
   let n = normalizeCoverUrl(raw);
