@@ -42,6 +42,14 @@
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   animation: modalSlideIn 0.3s ease-out;
   transition: background-color 0.3s ease;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.modal-content::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* MODIFICATION: Classe spécifique pour les fiches livres et séries - même largeur */
@@ -56,6 +64,26 @@
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   animation: modalSlideIn 0.3s ease-out;
   transition: background-color 0.3s ease;
+  /* Garde le scroll, masque la barre */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.modal-content-wide::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.modal-content {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.modal-content::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .dark .modal-content {
