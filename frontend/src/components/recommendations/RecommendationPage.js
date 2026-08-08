@@ -45,7 +45,7 @@ const SeriesDetailModal = lazy(() => import('../SeriesDetailModal'));
 
 // ── Cache (sessionStorage) ────────────────────────────────────────────────
 // Évite de recalculer les recommandations à chaque visite de la page.
-const CACHE_PREFIX = 'booktime_reco_cache_v2_';
+const CACHE_PREFIX = 'booktime_reco_cache_v3_';
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 function readCache(tab) {
@@ -81,16 +81,16 @@ function clearRecoCache() {
   }
 }
 
-function toBooktimeSections(grouped) {
+function toBooktimeSections(grouped, seedLabel = '') {
   const out = {};
   Object.entries(grouped || {}).forEach(([src, items]) => {
     const list = items || [];
-    // Déjà au format Booktime (cartes série / livres hydratés)
-    if (list.some((i) => i?.isSeriesCard || i?.display_title)) {
-      out[src] = list.map((i) => (i.isSeriesCard ? i : recoToBooktimeBook(i) || i));
-    } else {
-      out[src] = groupRecosAsBooktimeItems(list);
+    // Déjà regroupé en cartes série Booktime
+    if (list.some((i) => i?.isSeriesCard)) {
+      out[src] = list;
+      return;
     }
+    out[src] = groupRecosAsBooktimeItems(list, { seedLabel });
   });
   return out;
 }
@@ -784,7 +784,9 @@ const RecommendationPage = () => {
           _seedLabel: seedItem.label || seedItem.title,
         });
       });
-      setSections(toBooktimeSections(grouped));
+      setSections(
+        toBooktimeSections(grouped, seedItem.label || seedItem.title || seedItem.series || '')
+      );
     } catch (err) {
       if (reqId !== similarReqId.current) return;
       console.error('Erreur similaires:', err);
@@ -903,10 +905,16 @@ const RecommendationPage = () => {
       return;
     }
     const book = recoToBooktimeBook(item) || item;
+    const fromGb =
+      book.isFromGoogleBooks ||
+      String(book.ol_key || book.book_id || '').startsWith('gbooks_');
     setSelectedBook({
       ...book,
-      isFromOpenLibrary: true,
+      isFromOpenLibrary: !fromGb,
+      isFromGoogleBooks: fromGb,
       display_title: displayBookTitleFrFirst(book) || book.title,
+      // Synopsis GB déjà éventuellement présent
+      description: book.description || book.metadata?.description || '',
     });
     setShowBookModal(true);
   }, []);

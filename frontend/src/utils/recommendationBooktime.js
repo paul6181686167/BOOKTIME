@@ -52,13 +52,38 @@ export function recoToBooktimeBook(reco) {
   return book;
 }
 
+function normSeed(s) {
+  return (s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /**
  * Regroupe une liste de recos en cartes série + livres individuels (format recherche Booktime).
  * @param {object[]} recommendations
+ * @param {{ seedLabel?: string }} [options] — exclut la série seed (ex. Percy Jackson)
  * @returns {object[]}
  */
-export function groupRecosAsBooktimeItems(recommendations) {
-  const list = (recommendations || []).map(recoToBooktimeBook).filter(Boolean);
+export function groupRecosAsBooktimeItems(recommendations, options = {}) {
+  const seedN = normSeed(options.seedLabel || '');
+  const seedTokens = seedN.split(/\s+/).filter((w) => w.length >= 4);
+
+  const list = (recommendations || [])
+    .map(recoToBooktimeBook)
+    .filter(Boolean)
+    .filter((book) => {
+      if (!seedN) return true;
+      const blob = normSeed(
+        `${book.title || ''} ${book.display_title || ''} ${book.saga || ''} ${book.name || ''}`
+      );
+      if (blob.includes(seedN)) return false;
+      if (seedTokens.length >= 2 && seedTokens.every((t) => blob.includes(t))) return false;
+      return true;
+    });
   if (!list.length) return [];
 
   const seriesGroups = new Map();
@@ -67,6 +92,14 @@ export function groupRecosAsBooktimeItems(recommendations) {
   list.forEach((book) => {
     const attr = attributeBookToSeries(book);
     if (!attr) return;
+    const seriesN = normSeed(attr.seriesName);
+    // Ne jamais créer une carte pour la série seed elle-même
+    if (seedN && (seriesN === seedN || seriesN.includes(seedN) || seedN.includes(seriesN))) {
+      return;
+    }
+    if (seedTokens.length >= 2 && seedTokens.every((t) => seriesN.includes(t))) {
+      return;
+    }
     if (!seriesGroups.has(attr.seriesKey)) {
       seriesGroups.set(attr.seriesKey, { attr, books: [] });
     }
@@ -91,10 +124,14 @@ export function groupRecosAsBooktimeItems(recommendations) {
     const reason =
       groupBooks.find((b) => b.reason)?.reason ||
       `Série proche de ta sélection`;
+    const fromGb = groupBooks.some(
+      (b) => b.isFromGoogleBooks || String(b.source || '').endsWith('_gb')
+    );
     seriesCards.push({
       isSeriesCard: true,
-      fromOpenLibrary: true,
-      isFromOpenLibrary: true,
+      fromOpenLibrary: !fromGb,
+      isFromOpenLibrary: !fromGb,
+      isFromGoogleBooks: fromGb,
       id: `series_reco_${attr.seriesKey}`,
       name: attr.seriesName,
       title: attr.seriesName,

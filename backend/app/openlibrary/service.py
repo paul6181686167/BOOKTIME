@@ -619,38 +619,82 @@ class OpenLibraryService:
                 except Exception as exc:
                     logger.debug("similar OL query failed %s: %s", params, exc)
 
-            # 2) Auteur (quota partiel) + 1–2 sujets (pas plus, pour limiter la latence)
-            author_quota = max(3, limit // 3) if seed_author else 0
-            if seed_author:
-                await _run_search(
-                    {"author": seed_author, "sort": "rating desc"},
-                    require_author=True,
-                    stop_at=author_quota,
-                )
+            # 2) Genres / sujets d'abord — PAS l'auteur seed
+            # (sinon on renvoie les autres tomes de la même série, ex. Percy Jackson)
+            import re as _re_sim
 
-            for subj in resolved_subjects[:2]:
+            seed_plain = _strip_accents(seed_norm)
+            seed_tokens = [
+                w for w in _re_sim.split(r"\s+", seed_plain)
+                if len(w) >= 4 and w not in {"tome", "book", "volume", "part"}
+            ]
+
+            def _is_same_series_doc(doc: Dict) -> bool:
+                blob = _strip_accents(
+                    " ".join(
+                        [
+                            (doc.get("title") or ""),
+                            " ".join(doc.get("series") or [])
+                            if isinstance(doc.get("series"), list)
+                            else str(doc.get("series") or ""),
+                            " ".join(doc.get("subject") or [])[:400],
+                        ]
+                    ).lower()
+                )
+                if seed_plain and seed_plain in blob:
+                    return True
+                # Tous les tokens significatifs du seed présents → même univers
+                if seed_tokens and all(t in blob for t in seed_tokens[:3]):
+                    return True
+                return False
+
+            # Enrichir _append_doc : rejeter même série + même auteur (similaire ≠ même plume)
+            _append_orig = _append_doc
+
+            def _append_doc(doc: Dict, *, require_author: bool = False, stop_at: Optional[int] = None) -> bool:
+                if _is_same_series_doc(doc):
+                    return False
+                authors = doc.get("author_name") or []
+                if author_norm and any(author_norm in (a or "").lower() for a in authors):
+                    # Autres livres du même auteur = souvent la même saga
+                    return False
+                return _append_orig(doc, require_author=require_author, stop_at=stop_at)
+
+            for subj in resolved_subjects[:3]:
                 await _run_search({"subject": subj, "sort": "rating desc"})
                 if len(books) >= limit:
                     break
 
-            if len(books) < max(4, limit // 2):
-                words = [
-                    w for w in _strip_accents(seed_title).replace(":", " ").replace("-", " ").split()
-                    if len(w) > 2
-                ][:4]
-                if words:
-                    await _run_search({"q": " ".join(words), "sort": "rating desc"})
-
-            # Repli genre détecté
-            if len(books) < 4 and resolved_subjects:
-                for fallback in ("science fiction", "fantasy", "mystery", "romance", "young adult"):
-                    if any(fallback in s.lower() for s in resolved_subjects):
+            # Repli genres larges liés (mythologie, YA fantasy…)
+            if len(books) < max(6, limit // 2):
+                for fallback in (
+                    "greek mythology",
+                    "mythology",
+                    "young adult fantasy",
+                    "fantasy fiction",
+                    "science fiction",
+                    "fantasy",
+                    "mystery",
+                    "romance",
+                    "young adult",
+                ):
+                    if any(fallback.split()[0] in s.lower() for s in (resolved_subjects or [fallback])):
                         await _run_search({"subject": fallback, "sort": "rating desc"})
+                    if len(books) >= limit:
                         break
 
-            # Repli ultime : fiction populaire — évite les listes vides
+            if len(books) < max(4, limit // 2):
+                # Mots du titre sans chercher l'auteur (évite la série seed)
+                words = [w for w in seed_tokens if w not in {seed_plain}][:3]
+                # Pour « percy jackson » les tokens sont trop liés à la série :
+                # on bascule sur un genre générique
+                if words and not (len(words) >= 2 and all(w in seed_plain for w in words)):
+                    await _run_search({"q": " ".join(words), "sort": "rating desc"})
+
             if len(books) < 4:
-                await _run_search({"q": "fiction", "sort": "rating desc"})
+                await _run_search({"subject": "fantasy", "sort": "rating desc"})
+            if len(books) < 4:
+                await _run_search({"q": "young adult fantasy", "sort": "rating desc"})
 
             return books[:limit]
 

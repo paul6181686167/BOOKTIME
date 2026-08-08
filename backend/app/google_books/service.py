@@ -194,25 +194,43 @@ def search_similar_books(
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
 
+    seed_author_norm = seed_author.lower()
+    seed_tokens = [
+        w.lower()
+        for w in re.split(r"[\s:–—\-]+", seed_title)
+        if len(w) >= 4
+    ]
+
     def _append(it: dict[str, Any]) -> None:
         book = simplified_volume_to_integration_book(it)
         t = (book.get("title") or "").strip()
         if not t:
             return
         t_norm = t.lower()
-        if seed_norm and (seed_norm in t_norm or t_norm[:40] in seed_norm):
+        author_b = (book.get("author") or "").lower()
+        blob = f"{t_norm} {' '.join(it.get('categories') or [])}".lower()
+        if seed_norm and (seed_norm in t_norm or seed_norm in blob):
             return
-        key = f"{t_norm}|{(book.get('author') or '').lower()}"
+        if seed_tokens and all(tok in blob for tok in seed_tokens[:3]):
+            return
+        # Pas le même auteur (évite la même série)
+        if seed_author_norm and seed_author_norm in author_b:
+            return
+        key = f"{t_norm}|{author_b}"
         if key in seen:
             return
         seen.add(key)
         book["ol_key"] = f"gbooks_{book.get('google_books_id') or ''}"
+        book["google_books_id"] = book.get("google_books_id") or it.get("google_books_id")
         book["subjects"] = it.get("categories") or []
+        book["isFromGoogleBooks"] = True
+        book["isFromOpenLibrary"] = False
+        book["display_title"] = t
+        book["saga"] = ""
         out.append(book)
 
     try:
-        # 1) Retrouver le seed pour extraire ses catégories GB
-        # (souvent titres EN : ne pas se limiter au français)
+        # 1) Catégories du seed (sans tirer toute la bibliographie de l'auteur)
         q_seed = f'intitle:"{seed_title[:70]}"'
         if seed_author:
             q_seed += f' inauthor:"{seed_author[:40]}"'
@@ -230,6 +248,7 @@ def search_similar_books(
                 authors = simplified.get("authors") or []
                 if authors:
                     seed_author = str(authors[0]).split(",")[0].strip()
+                    seed_author_norm = seed_author.lower()
                     break
         for item in seed_raw.get("items") or []:
             if not isinstance(item, dict):
@@ -246,18 +265,20 @@ def search_similar_books(
             if s and s not in cats and 2 < len(s) < 60:
                 cats.append(s)
 
+        # Uniquement des sujets / genres — jamais inauthor:seed
         queries: list[str] = []
         if cats:
             queries.append(f'subject:"{cats[0]}"')
             if len(cats) > 1:
                 queries.append(f'subject:"{cats[1]}"')
-        if seed_author:
-            queries.append(f'inauthor:"{seed_author[:40]}" subject:fiction')
-        words = [w for w in re.split(r"[\s:–—\-]+", seed_title) if len(w) > 3][:3]
-        if words:
-            queries.append(" ".join(words))
-        if seed_author and words:
-            queries.append(f'{" ".join(words[:2])} inauthor:"{seed_author[:40]}"')
+        queries.extend(
+            [
+                'subject:"Juvenile Fiction" subject:Fantasy',
+                'subject:"Young Adult Fiction" mythology',
+                "mythology fantasy",
+            ]
+        )
+        queries.append("fantasy young adult")
 
         for q in queries:
             if len(out) >= limit:

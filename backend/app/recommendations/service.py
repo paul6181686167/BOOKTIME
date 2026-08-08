@@ -135,9 +135,9 @@ class RecommendationService:
             if isinstance(seed_subjects, str):
                 seed_subjects = [seed_subjects]
 
-            # Sur-fetch : beaucoup de candidats sont exclus (déjà en biblio)
-            ol_n = max(limit * 2, 20)
-            gb_n = max(limit, 12)
+            # Sur-fetch OL + Google Books (les deux sources, toujours)
+            ol_n = max(limit * 2, 24)
+            gb_n = max(limit, 16)
 
             ol_task = self.openlibrary_service.search_similar_books(
                 seed_title,
@@ -164,26 +164,11 @@ class RecommendationService:
             ol_books = list(ol_books or [])
             gb_books = list(gb_books or [])
 
-            # Compléter si peu de résultats (auteur / série / populaire)
-            if len(ol_books) < limit:
-                try:
-                    if seed_author:
-                        extra = await self.openlibrary_service.search_books_by_author(
-                            seed_author, limit=max(12, limit)
-                        )
-                        ol_books.extend(extra or [])
-                    elif (series_name or "").strip():
-                        extra = await self.openlibrary_service.search_series(
-                            seed_title, limit=max(8, limit // 2)
-                        )
-                        ol_books.extend(extra or [])
-                except Exception as exc:
-                    logger.debug("similar author/series fallback: %s", exc)
-
+            # Filet genre (PAS auteur / PAS série seed — sinon on renvoie les tomes Percy Jackson)
             if len(ol_books) < max(6, limit // 2):
                 try:
-                    popular = await self.openlibrary_service.get_popular_books(
-                        limit=max(12, limit)
+                    popular = await self.openlibrary_service.search_popular_books(
+                        "roman", limit=max(16, limit)
                     )
                     ol_books.extend(popular or [])
                 except Exception as exc:
@@ -198,6 +183,37 @@ class RecommendationService:
             out: List[RecommendationItem] = []
             seen = set()
             seed_norm = self._normalize_title(seed_title)
+            series_norm = self._normalize_title(series_name or seed_title)
+            author_norm = self._normalize_author(seed_author)
+            seed_tokens = [
+                w
+                for w in seed_norm.split()
+                if len(w) >= 4 and w not in {"tome", "book", "volume", "part", "serie", "series"}
+            ]
+
+            def _is_seed_universe(book: Dict) -> bool:
+                """True si le livre appartient à la même série / même auteur seed."""
+                title_b = self._normalize_title(book.get("title") or "")
+                saga_b = self._normalize_title(
+                    book.get("saga") or book.get("series_name") or ""
+                )
+                author_b = self._normalize_author(book.get("author") or "")
+                subjects_b = " ".join(
+                    str(s) for s in (book.get("subjects") or [])[:12]
+                ).lower()
+                blob = f"{title_b} {saga_b} {subjects_b}"
+                if seed_norm and seed_norm in blob:
+                    return True
+                if series_norm and series_norm in blob:
+                    return True
+                if seed_tokens and all(t in blob for t in seed_tokens[:3]):
+                    return True
+                # Même auteur = souvent la même saga (Riordan / Percy Jackson)
+                if author_norm and author_norm == author_b:
+                    return True
+                if author_norm and author_norm in author_b:
+                    return True
+                return False
 
             async def _push(
                 book: Dict,
@@ -207,11 +223,15 @@ class RecommendationService:
                 confidence: float,
                 skip_owned: bool = True,
             ):
-                title_b = (book.get("title") or "").strip()
+                title_b = (
+                    book.get("display_title") or book.get("title_fr") or book.get("title") or ""
+                ).strip()
                 author_b = (book.get("author") or "").strip()
                 if not title_b:
                     return
                 if self._normalize_title(title_b) == seed_norm:
+                    return
+                if _is_seed_universe(book):
                     return
                 key = self._book_key(title_b, author_b)
                 if key in seen:
@@ -238,7 +258,7 @@ class RecommendationService:
                             "seed_author": seed_author,
                             "seed_kind": kind,
                             "provider": "google_books"
-                            if source.endswith("_gb")
+                            if source.endswith("_gb") or book.get("isFromGoogleBooks")
                             else "openlibrary",
                         },
                     )
@@ -266,14 +286,14 @@ class RecommendationService:
                     )
                     gb_i += 1
 
-            # Si la biblio a tout filtré : 2e passe sans filtre possession (sauf seed exact)
-            if len(out) < 4:
+            # 2e passe sans filtre possession (toujours hors univers seed)
+            if len(out) < 6:
                 for book in ol_books + gb_books:
                     if len(out) >= limit:
                         break
                     src = (
                         "seed_similarity_gb"
-                        if book.get("google_books_id")
+                        if book.get("google_books_id") or book.get("isFromGoogleBooks")
                         else "seed_similarity"
                     )
                     await _push(
@@ -284,11 +304,10 @@ class RecommendationService:
                         skip_owned=False,
                     )
 
-            # Dernier filet : populaires fiction
             if len(out) < 4:
                 try:
                     popular = await self.openlibrary_service.get_popular_books(
-                        limit=max(16, limit)
+                        limit=max(20, limit)
                     )
                     for book in popular or []:
                         if len(out) >= limit:
@@ -301,6 +320,12 @@ class RecommendationService:
                         )
                 except Exception as exc:
                     logger.debug("similar last-resort popular: %s", exc)
+
+            # Mémoire tampon catalogue : créer les entrées absentes (vignettes Booktime)
+            try:
+                self._upsert_similar_into_catalog(out)
+            except Exception as exc:
+                logger.debug("catalog upsert similaires: %s", exc)
 
             return {
                 "recommendations": [self._format_recommendation(r) for r in out],
@@ -325,6 +350,57 @@ class RecommendationService:
                 "error": str(e),
                 "generated_at": datetime.utcnow().isoformat(),
             }
+
+    def _upsert_similar_into_catalog(self, items: List[RecommendationItem]) -> int:
+        """Crée dans books_catalog les livres similaires absents (mémoire tampon)."""
+        try:
+            catalog = self.db.books_catalog
+        except Exception:
+            return 0
+        created = 0
+        for rec in items or []:
+            meta = rec.metadata if isinstance(rec.metadata, dict) else {}
+            ol_key = (meta.get("ol_key") or rec.book_id or "").strip()
+            gb_id = (meta.get("google_books_id") or "").strip()
+            if not ol_key and not gb_id:
+                continue
+            lookup = {"ol_key": ol_key} if ol_key and not str(ol_key).startswith("gbooks_") else None
+            if not lookup and gb_id:
+                lookup = {"google_books_id": gb_id}
+            if not lookup and ol_key:
+                lookup = {"ol_key": ol_key}
+            if not lookup:
+                continue
+            try:
+                existing = catalog.find_one(lookup, {"_id": 1})
+                if existing:
+                    continue
+                doc = {
+                    "ol_key": ol_key or f"gbooks_{gb_id}",
+                    "google_books_id": gb_id or None,
+                    "title": rec.title,
+                    "display_title": meta.get("display_title") or rec.title,
+                    "title_fr": meta.get("title_fr"),
+                    "original_title": meta.get("original_title"),
+                    "author": rec.author,
+                    "category": rec.category or "roman",
+                    "cover_url": rec.cover_url or meta.get("cover_url") or "",
+                    "subjects": (meta.get("subjects") or [])[:8],
+                    "saga": meta.get("saga") or "",
+                    "first_publish_year": meta.get("publication_year")
+                    or meta.get("first_publish_year"),
+                    "description": (meta.get("description") or "")[:2000],
+                    "source": "similar_reco",
+                    "popularity_score": 0,
+                    "indexed_at": datetime.utcnow().isoformat(),
+                }
+                catalog.update_one(lookup, {"$setOnInsert": doc}, upsert=True)
+                created += 1
+            except Exception as exc:
+                logger.debug("upsert catalog skip %s: %s", lookup, exc)
+        if created:
+            logger.info("Catalogue: %s entrées similaires ajoutées", created)
+        return created
 
     async def _ownership_profile(self, user_id: str) -> Dict:
         """Profil minimal pour exclure les livres déjà en bibliothèque."""
