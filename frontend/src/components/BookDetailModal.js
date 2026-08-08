@@ -137,9 +137,12 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     };
 
     const loadMeta = async () => {
-      if (needsDesc || needsPages) setOlLoading(true);
+      if (needsDesc) setOlLoading(true);
       let gotDesc = !needsDesc;
       let gotPages = !needsPages;
+      const markDescDone = () => {
+        if (isLive() && gotDesc) setOlLoading(false);
+      };
       try {
         // 1) Livre réel en bibliothèque
         if (book.id && !book.isFromOpenLibrary && !book.isDemotedSeries) {
@@ -155,30 +158,62 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             });
             gotDesc = !needsDesc || isUsableSynopsis(data?.description);
             gotPages = !needsPages || !!data?.pages;
+            markDescDone();
           }
         }
 
-        // 2) Résumé rapide par titre (séries rétrogradées / ex-0/0 tomes)
-        if (!gotDesc && isLive() && (book.title || '').trim()) {
-          const params = new URLSearchParams({
-            title: book.title || '',
-            author: book.author && book.author !== 'Auteur inconnu' ? book.author : '',
-            include_pages: 'false',
-          });
-          if (book.isbn) params.set('isbn', book.isbn);
-          if (book.ol_key) params.set('ol_key', book.ol_key);
-          const r = await fetch(
-            `${API_BASE_URL}/api/books/resolve-synopsis?${params}`,
-            { headers, cache: 'no-store' }
-          );
-          if (r.ok && isLive()) {
+        // 2) Résumé : OL direct + resolve-synopsis en parallèle (premier résultat gagne)
+        if (!gotDesc && isLive() && (book.title || book.ol_key)) {
+          const olKey = book.ol_key || '';
+          const isOlWork =
+            olKey &&
+            String(olKey).includes('works/') &&
+            !String(olKey).startsWith('gbooks_');
+
+          const fetchResolve = async () => {
+            if (!(book.title || '').trim()) return null;
+            const params = new URLSearchParams({
+              title: book.title || '',
+              author:
+                book.author && book.author !== 'Auteur inconnu' ? book.author : '',
+              include_pages: 'false',
+            });
+            if (book.isbn) params.set('isbn', book.isbn);
+            if (olKey) params.set('ol_key', olKey);
+            const r = await fetch(
+              `${API_BASE_URL}/api/books/resolve-synopsis?${params}`,
+              { headers, cache: 'no-store' }
+            );
+            if (!r.ok) return null;
             const data = await r.json();
-            await applyMeta({ description: data?.description });
-            gotDesc = isUsableSynopsis(data?.description);
+            return isUsableSynopsis(data?.description) ? data.description : null;
+          };
+
+          const fetchOlDirect = async () => {
+            if (!isOlWork) return null;
+            const stripped = olKey.startsWith('/') ? olKey.slice(1) : olKey;
+            const r = await fetch(`${API_BASE_URL}/api/openlibrary/book/${stripped}`, {
+              headers,
+              cache: 'no-store',
+            });
+            if (!r.ok) return null;
+            const data = await r.json();
+            return isUsableSynopsis(data?.description) ? data.description : null;
+          };
+
+          const results = await Promise.allSettled([fetchOlDirect(), fetchResolve()]);
+          if (!isLive()) return;
+          for (const res of results) {
+            if (res.status === 'fulfilled' && res.value) {
+              await applyMeta({ description: res.value });
+              gotDesc = true;
+              break;
+            }
           }
+          markDescDone();
         }
 
-        // 3) Pages poche FR à part
+        // 3) Pages poche FR en arrière-plan (ne bloque plus l'UI du résumé)
         if (!gotPages && isLive() && (book.title || '').trim()) {
           const params = new URLSearchParams({
             title: book.title || '',
@@ -195,25 +230,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             if (data?.pages) {
               await applyMeta({ pages: data.pages });
               gotPages = true;
-            }
-          }
-        }
-
-        // 4) Fallback OL par clé
-        if (!gotDesc && isLive()) {
-          const olKey = book.ol_key;
-          if (olKey && (book.isFromOpenLibrary || String(olKey).includes('works/'))) {
-            const stripped = olKey.startsWith('/') ? olKey.slice(1) : olKey;
-            const r = await fetch(`${API_BASE_URL}/api/openlibrary/book/${stripped}`, {
-              headers,
-              cache: 'no-store',
-            });
-            if (r.ok && isLive()) {
-              const data = await r.json();
-              if (isUsableSynopsis(data?.description)) {
-                await applyMeta({ description: data.description });
-                gotDesc = true;
-              }
             }
           }
         }

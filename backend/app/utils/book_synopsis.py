@@ -16,8 +16,8 @@ import requests
 
 logger = logging.getLogger("booktime.synopsis")
 
-_OL_TIMEOUT = 12
-_GB_TIMEOUT = 12
+_OL_TIMEOUT = 6
+_GB_TIMEOUT = 6
 
 _POCHE_PUBLISHERS = (
     "livre de poche",
@@ -1016,16 +1016,34 @@ def _fast_book_description(
     *, title: str = "", author: str = "", isbn: str = "", ol_key: str = ""
 ) -> tuple[str, str, str]:
     """
-    Résumé rapide priorisant le français.
-    Ordre : Google Books FR → Wikipédia FR → Open Library (si FR) → replis.
-    Retourne (description, source, ol_key_trouvée).
+    Résumé rapide priorisant le français — et la latence.
+
+    Ordre :
+    0) Open Library par ol_key (1 requête, souvent <1s) → retour immédiat si utilisable
+    1) Google Books FR
+    2) Wikipédia FR
+    3) Open Library search
+    4) Replis EN
     """
     found_key = (ol_key or "").strip()
     title_tries = _french_title_candidates(title)
     candidates: list[tuple[str, str]] = []
+    # Clés OL typiques : /works/OL…W ou works/OL…W
+    has_ol_work = bool(
+        found_key
+        and "works/" in found_key
+        and not found_key.lower().startswith("gbooks_")
+    )
 
-    # 1) Google Books en français d'abord (meilleure 4ᵉ de couverture FR)
-    for t_try in title_tries:
+    # 0) Chemin rapide : work OL connue → 1 GET puis retour immédiat
+    # (priorité latence : mieux un résumé tout de suite qu'un FR après 10–20s)
+    if has_ol_work:
+        desc = _ol_work_description_only(found_key)
+        if is_usable_synopsis(desc):
+            return desc, "openlibrary", found_key
+
+    # 1) Google Books en français (meilleure 4ᵉ) — limité aux 2 premiers titres
+    for t_try in title_tries[:2]:
         gb = _description_from_google_books(
             title=t_try, author=author, isbn=isbn if t_try == title else "", prefer_lang="fr"
         )
@@ -1035,35 +1053,28 @@ def _fast_book_description(
                 return desc, "google_books", found_key
             candidates.append((desc, "google_books"))
 
-    # 2) Wikipédia FR (puis EN en interne — filtré ensuite)
-    for t_try in title_tries:
+    # 2) Wikipédia FR
+    for t_try in title_tries[:2]:
         wiki = _description_from_wikipedia(t_try, author, langs=("fr",))
         if is_usable_synopsis(wiki):
             if looks_french(wiki):
                 return wiki, "wikipedia", found_key
             candidates.append((wiki, "wikipedia"))
 
-    # 3) Open Library — accepter seulement si le texte est FR
-    ol_candidates: list[tuple[str, str, str]] = []  # desc, source, key
-    if found_key:
-        desc = _ol_work_description_only(found_key)
-        if is_usable_synopsis(desc):
-            if looks_french(desc):
-                return desc, "openlibrary", found_key
-            ol_candidates.append((desc, "openlibrary", found_key))
-
-    for t_try in title_tries:
-        key = _ol_key_from_search(t_try, author, language="fre")
-        if not key:
-            key = _ol_key_from_search(t_try, author, language=None)
-        if key:
-            if not found_key:
-                found_key = key
-            desc = _ol_work_description_only(key)
-            if is_usable_synopsis(desc):
-                if looks_french(desc):
-                    return desc, "openlibrary_search", key
-                ol_candidates.append((desc, "openlibrary_search", key))
+    # 3) Open Library search (si pas déjà de work key)
+    if not has_ol_work:
+        for t_try in title_tries[:2]:
+            key = _ol_key_from_search(t_try, author, language="fre")
+            if not key:
+                key = _ol_key_from_search(t_try, author, language=None)
+            if key:
+                if not found_key or found_key.lower().startswith("gbooks_"):
+                    found_key = key
+                desc = _ol_work_description_only(key)
+                if is_usable_synopsis(desc):
+                    if looks_french(desc):
+                        return desc, "openlibrary_search", key
+                    candidates.append((desc, "openlibrary_search"))
 
     if isbn:
         ol_isbn = _from_openlibrary_isbn(isbn)
@@ -1072,13 +1083,8 @@ def _fast_book_description(
                 return ol_isbn, "openlibrary_isbn", found_key
             candidates.append((ol_isbn, "openlibrary_isbn"))
 
-    for desc, source, key in ol_candidates:
-        candidates.append((desc, source))
-        if key and not found_key:
-            found_key = key
-
-    # 4) Wikipédia avec repli EN si rien en FR
-    for t_try in title_tries:
+    # 4) Wikipédia EN en dernier recours
+    for t_try in title_tries[:1]:
         wiki = _description_from_wikipedia(t_try, author, langs=("fr", "en"))
         if is_usable_synopsis(wiki):
             candidates.append((wiki, "wikipedia"))

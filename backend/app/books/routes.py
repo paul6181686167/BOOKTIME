@@ -507,6 +507,44 @@ async def resolve_book_synopsis(
     Résout résumé (+ pages optionnelles) sans id livre (séries rétrogradées).
     """
     from ..utils.book_synopsis import fetch_book_synopsis, is_usable_synopsis
+    from ..database.connection import db
+
+    # Cache catalogue (mémoire tampon Booktime) — réponse quasi immédiate
+    cached_desc = ""
+    cached_pages = None
+    key = (ol_key or "").strip()
+    try:
+        catalog = db.books_catalog
+        lookup = None
+        if key and not key.lower().startswith("gbooks_"):
+            lookup = {"$or": [{"ol_key": key}, {"ol_key": key.lstrip("/")}, {"ol_key": "/" + key.lstrip("/")}]}
+        elif key.lower().startswith("gbooks_"):
+            lookup = {"ol_key": key}
+        if lookup:
+            hit = catalog.find_one(lookup, {"description": 1, "total_pages": 1, "pages": 1})
+            if hit:
+                cached_desc = (hit.get("description") or "").strip()
+                if not is_usable_synopsis(cached_desc):
+                    cached_desc = ""
+                for pfield in ("total_pages", "pages"):
+                    try:
+                        n = int(hit.get(pfield) or 0)
+                        if n > 0:
+                            cached_pages = n
+                            break
+                    except (TypeError, ValueError):
+                        pass
+    except Exception:
+        pass
+
+    if cached_desc and (not include_pages or cached_pages):
+        return {
+            "description": cached_desc,
+            "pages": cached_pages,
+            "source": "catalog",
+            "ol_key": ol_key or None,
+            "found": True,
+        }
 
     result = fetch_book_synopsis(
         title=title,
@@ -517,18 +555,41 @@ async def resolve_book_synopsis(
     )
     description = (result.get("description") or "").strip()
     if not is_usable_synopsis(description):
-        description = ""
-    pages = result.get("pages")
+        description = cached_desc or ""
+    pages = result.get("pages") if include_pages else cached_pages
     try:
         pages = int(pages) if pages is not None else None
         if pages is not None and pages <= 0:
             pages = None
     except (TypeError, ValueError):
         pages = None
+
+    # Persister dans le catalogue pour les prochains ouvertures
+    if description and key:
+        try:
+            catalog = db.books_catalog
+            set_doc = {"description": description[:2000]}
+            if pages:
+                set_doc["total_pages"] = pages
+            catalog.update_one(
+                {"ol_key": key if key.startswith("/") or key.startswith("gbooks_") else key},
+                {"$set": set_doc},
+                upsert=False,
+            )
+            # Aussi tenter avec/sans slash
+            if "works/" in key:
+                alt = key.lstrip("/")
+                catalog.update_one(
+                    {"ol_key": {"$in": [alt, "/" + alt, key]}},
+                    {"$set": set_doc},
+                )
+        except Exception:
+            pass
+
     return {
         "description": description,
         "pages": pages,
-        "source": result.get("source") or "none",
+        "source": result.get("source") or ("catalog" if description == cached_desc else "none"),
         "ol_key": result.get("ol_key") or ol_key or None,
         "found": bool(description or pages),
     }
