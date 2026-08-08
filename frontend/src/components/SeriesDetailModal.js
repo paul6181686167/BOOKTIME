@@ -95,6 +95,16 @@ const SeriesDetailModal = ({
   userSeriesLibrary = []
 }) => {
   const navigate = useNavigate();
+  const seriesDisplayName = series?.name || series?.series_name || series?.title || '';
+  const goToSimilar = () => {
+    const name = seriesDisplayName;
+    if (!name) return;
+    const params = new URLSearchParams({ tab: 'similaires', series: name });
+    const author = series?.author || series?.authors?.[0] || '';
+    if (author) params.set('author', author);
+    onClose?.();
+    navigate(`/recommendations?${params}`);
+  };
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedTomes, setSelectedTomes] = useState(new Set());
@@ -1146,18 +1156,10 @@ const SeriesDetailModal = ({
                       olBooks.length || books.length || (series?.books?.length) || 0
                     )} tome(s)
                   </span>
-                  {series?.name ? (
+                  {seriesDisplayName ? (
                     <button
                       type="button"
-                      onClick={() => {
-                        const params = new URLSearchParams({
-                          tab: 'similaires',
-                          series: series.name,
-                        });
-                        if (series.author) params.set('author', series.author);
-                        onClose?.();
-                        navigate(`/recommendations?${params}`);
-                      }}
+                      onClick={goToSimilar}
                       className="inline-flex items-center gap-1 px-2 py-1 rounded-full font-medium bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-900/60"
                     >
                       <SparklesIcon className="h-3.5 w-3.5" />
@@ -1464,6 +1466,20 @@ const SeriesDetailModal = ({
             onClose={() => {/* Optionnel: logique fermeture section */}} 
           />
         )}
+
+        {/* Similaires — CTA bien visible */}
+        {seriesDisplayName ? (
+          <div className="px-4 sm:px-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              type="button"
+              onClick={goToSimilar}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 active:bg-purple-800 rounded-xl transition-colors shadow-sm"
+            >
+              <SparklesIcon className="h-5 w-5" />
+              Voir des séries / livres similaires
+            </button>
+          </div>
+        ) : null}
 
         {/* Collection + Retirer */}
         {(isSeriesOwned || series.isOwnedSeries || series.isLibrarySeries || series.isSeriesCard || (series.books && series.books.length > 0) || books.length > 0) && (
