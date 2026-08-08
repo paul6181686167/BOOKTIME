@@ -67,7 +67,10 @@ html {
   scroll-behavior: smooth;
 }
 
-body {
+html,
+body,
+#root {
+  min-height: 100%;
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
 }

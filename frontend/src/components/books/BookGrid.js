@@ -25,9 +25,9 @@ const VISIBLE_STEP = 30;
 // La couverture porte la carte : pas de bordure, un arrondi plus généreux et une
 // ombre large qui s'intensifie au survol (sur desktop seulement).
 const CARD_SHELL =
-  'h-full bg-white dark:bg-gray-800 dark:ring-1 dark:ring-black/40 rounded-xl shadow-card overflow-hidden relative transition-shadow duration-200 sm:group-hover:shadow-card-hover';
+  'h-full bg-booktime-mistSoft/90 dark:bg-gray-800 dark:ring-1 dark:ring-black/40 rounded-xl shadow-card overflow-hidden relative transition-shadow duration-200 sm:bg-white sm:group-hover:shadow-card-hover';
 
-const COVER_FRAME = 'aspect-[2/3] bg-gray-100 dark:bg-gray-700 relative overflow-hidden';
+const COVER_FRAME = 'aspect-[2/3] bg-booktime-mist/40 dark:bg-gray-700 relative overflow-hidden';
 const COVER_IMAGE =
   'h-full w-full object-cover transition-transform duration-300 sm:group-hover:scale-[1.04]';
 

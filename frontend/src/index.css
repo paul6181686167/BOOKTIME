@@ -17,10 +17,10 @@
 /* Hauteur plein écran mobile correct (évite le bug 100vh sur iOS) */
 .h-screen-mobile { height: 100dvh; }
 
-/* Motif nid d'abeille discret sur le fond vert */
+/* Motif nid d'abeille discret sur le fond vert (mobile + desktop) */
 .bg-honeycomb {
-  background-color: #bce8cb;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath fill='none' stroke='%23166534' stroke-opacity='0.14' stroke-width='1.2' d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 34L0 84V50l28 16 28-16v34L28 100z'/%3E%3C/svg%3E");
+  background-color: #bce8cb !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath fill='none' stroke='%23166534' stroke-opacity='0.14' stroke-width='1.2' d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 34L0 84V50l28 16 28-16v34L28 100z'/%3E%3C/svg%3E") !important;
   background-size: 56px 100px;
 }
 

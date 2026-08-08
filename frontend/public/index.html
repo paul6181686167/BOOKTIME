@@ -75,13 +75,14 @@
         display: none;
       }
 
-      /* Empêche le bounce overscroll sur iOS en mode app */
-      html, body {
+      /* Empêche le bounce overscroll ; fond vert dès le 1er paint (mobile/PWA/natif) */
+      html, body, #root {
         overscroll-behavior-y: none;
-        background: #f9fafb;
+        min-height: 100%;
+        background-color: #bce8cb;
       }
       @media (prefers-color-scheme: dark) {
-        html, body { background: #111827; }
+        html, body, #root { background-color: #234f37; }
       }
     </style>
   </head>
