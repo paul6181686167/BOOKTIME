@@ -30,7 +30,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "cross-env CI=false react-scripts build",
+    "build": "react-scripts build",
     "build:native": "cross-env CI=false REACT_APP_NATIVE_BUILD=true REACT_APP_BACKEND_URL=https://booktime-uo15.onrender.com REACT_APP_API_URL=https://booktime-uo15.onrender.com react-scripts build",
     "android:sync": "npm run build:native && cap sync android",
     "android:open": "cap open android",
