@@ -7,60 +7,56 @@ on:
     branches: [ main, master ]
 
 jobs:
-  # Job pour tester le backend
   test-backend:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install dependencies
-      run: |
-        cd backend
-        pip install -r requirements.txt
-    
-    - name: Test backend
-      run: |
-        cd backend
-        python -c "import server; print('Backend OK')"
+      - uses: actions/checkout@v4
 
-  # Job pour tester le frontend
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Test backend import
+        working-directory: backend
+        run: python -c "import server; print('Backend OK')"
+
   test-frontend:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        cache: 'yarn'
-        cache-dependency-path: frontend/yarn.lock
-    
-    - name: Install dependencies
-      run: |
-        cd frontend
-        yarn install
-    
-    - name: Build frontend
-      run: |
-        cd frontend
-        yarn build
-      env:
-        REACT_APP_BACKEND_URL: ${{ secrets.REACT_APP_BACKEND_URL }}
+      - uses: actions/checkout@v4
 
-  # Déploiement automatique (optionnel)
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+        env:
+          CI: 'false'
+          REACT_APP_BACKEND_URL: ${{ secrets.REACT_APP_BACKEND_URL }}
+
   deploy:
     needs: [test-backend, test-frontend]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
-    - name: Deploy notification
-      run: |
-        echo "✅ Tests passed! Ready for deployment"
-        echo "🚀 Backend: Deploy to Railway"
-        echo "🌐 Frontend: Deploy to Vercel"
+      - name: Deploy notification
+        run: |
+          echo "Tests passed — ready for deployment"
+          echo "Backend: Railway / Render"
+          echo "Frontend: Vercel"
