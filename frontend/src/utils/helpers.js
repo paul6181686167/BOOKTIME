@@ -353,8 +353,8 @@ export const normalizeCoverUrl = (url) => {
   return u.split('?')[0];
 };
 
-/** Params wsrv : vignette légère (grille ≈ 110–180px CSS, 2× ≈ 220–360). */
-const COVER_PROXY_PARAMS = 'w=200&q=72&output=webp&n=-1&maxage=31d';
+/** Params wsrv : vignette légère (grille mobile ≈ 110px CSS → 160–180 px suffit). */
+const COVER_PROXY_PARAMS = 'w=160&q=68&output=webp&n=-1&maxage=31d';
 
 const viaWsrv = (hostPathOrUrl) => {
   const hostPath = String(hostPathOrUrl || '')
@@ -364,11 +364,23 @@ const viaWsrv = (hostPathOrUrl) => {
   return `https://wsrv.nl/?url=${encodeURIComponent(hostPath)}&${COVER_PROXY_PARAMS}`;
 };
 
+const olCoverDirect = (url) => {
+  const bare = String(url || '').split('?')[0];
+  // -M = bon compromis vignette ; default=false évite le placeholder OL
+  return `${bare}${bare.includes('?') ? '&' : '?'}default=false`;
+};
+
+/** True si on peut retenter via wsrv après échec du CDN direct. */
+export const coverCanProxyFallback = (url) =>
+  /covers\.openlibrary\.org/i.test(String(url || ''));
+
 /**
- * src <img> : proxy wsrv.nl pour OL / Wikimedia / GB (latence FR + cache CDN).
- * WebP + 200px : ~3–5× plus léger que l’ancien JPG 280px.
+ * src <img> :
+ * - Open Library en direct (plus rapide ; pas de hop wsrv)
+ * - GB / Wiki via wsrv (WebP léger)
+ * - forceProxy: secours si le CDN OL timeout depuis FR
  */
-export const coverImgSrc = (url) => {
+export const coverImgSrc = (url, { forceProxy = false } = {}) => {
   const raw = String(url || '').trim();
   if (!raw) return '';
 
@@ -383,10 +395,9 @@ export const coverImgSrc = (url) => {
   if (!n) return '';
 
   if (/covers\.openlibrary\.org/i.test(n)) {
-    const bare = n.split('?')[0];
-    const hostPath = bare.replace(/^https?:\/\//i, '');
-    const proxied = `${hostPath}${hostPath.includes('?') ? '&' : '?'}default=false`;
-    return viaWsrv(proxied);
+    const direct = olCoverDirect(n);
+    if (!forceProxy) return direct;
+    return viaWsrv(direct);
   }
 
   if (/upload\.wikimedia\.org/i.test(n)) {

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  coverCanProxyFallback,
   coverFallbackCandidates,
   coverImgSrc,
   isBlankOrPlaceholderCover,
@@ -102,12 +103,15 @@ const SmartCover = ({ item, alt, primarySrc, onCoverFound, priority = false }) =
   const [fetched, setFetched] = useState(null);
   const [searchTried, setSearchTried] = useState(false);
   const [searching, setSearching] = useState(false);
+  // OL direct d'abord ; wsrv seulement si le CDN timeout
+  const [proxyFallback, setProxyFallback] = useState(false);
 
   useEffect(() => {
     setIdx(0);
     setFetched(null);
     setSearchTried(false);
     setSearching(false);
+    setProxyFallback(false);
   }, [item?.id, primarySrc, candidates[0]]);
 
   const exhausted = !fetched && (candidates.length === 0 || idx >= candidates.length);
@@ -144,6 +148,11 @@ const SmartCover = ({ item, alt, primarySrc, onCoverFound, priority = false }) =
 
   const src = fetched || (idx < candidates.length ? candidates[idx] : null);
 
+  // Changement de candidat → repartir en direct (pas rester en mode proxy)
+  useEffect(() => {
+    setProxyFallback(false);
+  }, [src]);
+
   if (!src) {
     if (searching || (!searchTried && exhausted)) {
       return (
@@ -153,10 +162,17 @@ const SmartCover = ({ item, alt, primarySrc, onCoverFound, priority = false }) =
     return <CoverPlaceholder text={alt} />;
   }
 
-  const imgSrc = coverImgSrc(src);
+  const imgSrc = coverImgSrc(src, { forceProxy: proxyFallback });
   const needsPlaceholderCheck = isGoogleBooksCoverUrl(src);
+  const isWikiSrc = /upload\.wikimedia\.org/i.test(src || '');
 
   const failCurrent = () => {
+    // 1er échec OL : retenter via proxy (sans passer au candidat suivant)
+    if (!proxyFallback && coverCanProxyFallback(src)) {
+      setProxyFallback(true);
+      return;
+    }
+    setProxyFallback(false);
     if (fetched) {
       setFetched(null);
       setSearchTried(false);
@@ -169,8 +185,11 @@ const SmartCover = ({ item, alt, primarySrc, onCoverFound, priority = false }) =
     <img
       src={imgSrc}
       alt={alt}
+      width={160}
+      height={240}
+      sizes="(max-width: 640px) 33vw, 160px"
       loading={priority ? 'eager' : 'lazy'}
-      decoding={priority ? 'sync' : 'async'}
+      decoding="async"
       // React 18 : attribut HTML natif (fetchPriority n’est typé qu’en React 19)
       {...(priority ? { fetchpriority: 'high' } : {})}
       // CORS seulement si on lit les pixels (placeholder GB) — sinon +lent
@@ -179,8 +198,8 @@ const SmartCover = ({ item, alt, primarySrc, onCoverFound, priority = false }) =
       className={COVER_IMAGE}
       onLoad={(e) => {
         const img = e.currentTarget;
-        // Photos auteur / célébrité (mauvais ratio) → candidat suivant
-        if (isLikelyPhotoNotCover(img)) {
+        // Ratio suspect seulement pour Wiki (évite faux positifs OL → rechargements)
+        if (isWikiSrc && isLikelyPhotoNotCover(img)) {
           failCurrent();
           return;
         }
@@ -340,8 +359,8 @@ const BookCardBody = ({ item, coverSrc, onCoverFound, priority }) => {
 const GridCard = React.memo(({ item, index, onSelect, onCoverFound }) => {
   const coverSrc = resolveCoverForGridItem(item);
   const animated = index < ANIMATED_CARDS;
-  // Premier écran mobile (3×3) : chargement prioritaire, pas de lazy
-  const priority = index < 9;
+  // Premier écran + un peu sous la ligne de flottaison
+  const priority = index < 15;
 
   return (
     <div
