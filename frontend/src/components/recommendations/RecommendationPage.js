@@ -1,7 +1,7 @@
 /**
  * Page de Recommandations — sections contextuelles, filtre par onglet actif
  */
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import {
@@ -513,6 +513,22 @@ const RecommendationPage = () => {
       .catch(() => {});
   }, []);
 
+  // Enrichir l'auteur du seed (URL / série sans auteur) dès que la biblio est chargée
+  useEffect(() => {
+    if (!seed || seed.author || !userBooks?.length) return;
+    const n = (seed.series || seed.title || '').trim().toLowerCase();
+    if (!n) return;
+    const match = userBooks.find((b) => {
+      if (b.isSeriesCard || !b.author) return false;
+      const saga = (b.saga_name || b.series_name || '').trim().toLowerCase();
+      const title = (b.title || '').trim().toLowerCase();
+      return saga === n || title === n;
+    });
+    if (match?.author) {
+      setSeed((prev) => (prev && !prev.author ? { ...prev, author: match.author } : prev));
+    }
+  }, [seed, userBooks]);
+
   const seedOptions = useMemo(() => {
     const books = (userBooks || [])
       .filter((b) => !b.isSeriesCard)
@@ -529,16 +545,32 @@ const RecommendationPage = () => {
         };
       })
       .filter((o) => o.title);
+    const authorForSeries = (name) => {
+      const n = (name || '').trim().toLowerCase();
+      if (!n) return '';
+      const fromSeries = (userSeries || []).find(
+        (s) => (s.series_name || s.name || s.title || '').trim().toLowerCase() === n && s.author
+      );
+      if (fromSeries?.author) return fromSeries.author;
+      const fromBook = (userBooks || []).find((b) => {
+        if (b.isSeriesCard) return false;
+        const saga = (b.saga_name || b.series_name || '').trim().toLowerCase();
+        const title = (b.title || '').trim().toLowerCase();
+        return b.author && (saga === n || title === n);
+      });
+      return fromBook?.author || '';
+    };
     const series = (userSeries || []).map((s) => {
       const name = s.series_name || s.name || s.title || '';
+      const author = s.author || authorForSeries(name);
       return {
         id: `s:${s.id || name}`,
         kind: 'series',
         title: name,
-        author: s.author || '',
+        author,
         series: name,
         label: name,
-        sub: s.author ? `Série · ${s.author}` : 'Série',
+        sub: author ? `Série · ${author}` : 'Série',
       };
     }).filter((o) => o.title);
     // Cartes série de la grille biblio (si présentes dans books)
@@ -546,14 +578,15 @@ const RecommendationPage = () => {
       .filter((b) => b.isSeriesCard)
       .map((b) => {
         const name = b.name || b.title || '';
+        const author = b.author || authorForSeries(name);
         return {
           id: `sc:${b.id || name}`,
           kind: 'series',
           title: name,
-          author: b.author || '',
+          author,
           series: name,
           label: name,
-          sub: b.author ? `Série · ${b.author}` : 'Série',
+          sub: author ? `Série · ${author}` : 'Série',
         };
       })
       .filter((o) => o.title);
@@ -635,21 +668,34 @@ const RecommendationPage = () => {
     return grouped;
   }, []);
 
+  const similarReqId = useRef(0);
   const loadSimilarForSeed = useCallback(async (seedItem) => {
     if (!seedItem?.title && !seedItem?.series) {
       setSections({});
       return;
     }
+    const reqId = ++similarReqId.current;
     setIsLoading(true);
     try {
+      const isSeries = seedItem.kind === 'series';
+      const seedTitle = isSeries
+        ? seedItem.series || seedItem.title || ''
+        : seedItem.title || '';
       const res = await recommendationService.getSimilar({
-        title: seedItem.kind === 'series' ? '' : seedItem.title,
+        // Toujours envoyer le titre seed (série ou livre) pour les moteurs OL/GB
+        title: seedTitle,
         author: seedItem.author || '',
-        series: seedItem.kind === 'series' ? seedItem.series || seedItem.title : '',
+        series: isSeries ? seedTitle : '',
         limit: 24,
       });
+      if (reqId !== similarReqId.current) return;
+      const list =
+        res?.data?.recommendations ||
+        res?.recommendations ||
+        (Array.isArray(res?.data) ? res.data : []) ||
+        [];
       const grouped = {};
-      (res?.data?.recommendations || []).forEach((r) => {
+      list.forEach((r) => {
         const src = r.source || 'seed_similarity';
         if (!grouped[src]) grouped[src] = [];
         grouped[src].push({
@@ -661,11 +707,12 @@ const RecommendationPage = () => {
       });
       setSections(grouped);
     } catch (err) {
+      if (reqId !== similarReqId.current) return;
       console.error('Erreur similaires:', err);
       toast.error('Impossible de charger les similaires');
       setSections({});
     } finally {
-      setIsLoading(false);
+      if (reqId === similarReqId.current) setIsLoading(false);
     }
   }, []);
 
@@ -949,7 +996,7 @@ const RecommendationPage = () => {
             placeholder="Rechercher dans ta bibliothèque…"
             className="w-full mb-3 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
           />
-          <div className="max-h-48 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700 rounded-lg border border-gray-100 dark:border-gray-700">
+          <div className="max-h-48 overflow-y-auto scrollbar-hide divide-y divide-gray-100 dark:divide-gray-700 rounded-lg border border-gray-100 dark:border-gray-700">
             {filteredSeedOptions.length === 0 ? (
               <p className="p-3 text-sm text-gray-500">
                 Aucun titre trouvé. Ajoute des livres à ta bibliothèque pour commencer.

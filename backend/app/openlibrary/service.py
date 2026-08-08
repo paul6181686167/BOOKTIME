@@ -8,6 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import aiohttp
 import asyncio
+import unicodedata
 from typing import List, Dict, Optional
 import logging
 from datetime import datetime
@@ -15,17 +16,23 @@ import json
 
 logger = logging.getLogger(__name__)
 
+def _strip_accents(text: str) -> str:
+    if not text:
+        return ""
+    norm = unicodedata.normalize("NFD", text)
+    return "".join(c for c in norm if unicodedata.category(c) != "Mn")
+
 class OpenLibraryService:
     """Service étendu pour l'API Open Library"""
     
     def __init__(self):
         self.base_url = "https://openlibrary.org"
         self.session = None
-        self.timeout = 10
+        self.timeout = 18
     
     async def _get_session(self):
         """Obtient une session HTTP réutilisable"""
-        if self.session is None:
+        if self.session is None or self.session.closed:
             self.session = aiohttp.ClientSession(
                 timeout=aiohttp.ClientTimeout(total=self.timeout)
             )
@@ -312,11 +319,75 @@ class OpenLibraryService:
         """Extrait le premier ISBN"""
         return isbn_list[0] if isbn_list else None
 
+    @staticmethod
+    def _normalize_ol_subject(raw: str) -> Optional[str]:
+        """Nettoie un sujet OL (genre:/franchise:/series:) pour la recherche."""
+        if not raw:
+            return None
+        s = str(raw).strip()
+        if not s or len(s) < 3 or len(s) > 60:
+            return None
+        low = s.lower()
+        # Sujets trop génériques / non littéraires
+        banned = (
+            "form:novel", "form:fiction", "biography", "nyt:", "accessible book",
+            "protected daisy", "in library", "internet archive", "overdrive",
+            "large type", "audiobook", "paperback", "hardcover",
+        )
+        if any(b in low for b in banned):
+            return None
+        # franchise:Red Rising → Red Rising ; genre:science fiction → science fiction
+        for prefix in ("genre:", "franchise:", "series:", "subject:", "place:", "person:"):
+            if low.startswith(prefix):
+                s = s.split(":", 1)[1].strip()
+                low = s.lower()
+                break
+        if not s or len(s) < 3:
+            return None
+        # Écarter les étiquettes purement structurelles
+        if low in {"fiction", "novel", "literature", "novels", "english", "french"}:
+            return None
+        return s
+
+    def _rank_ol_subjects(self, raw: List[str]) -> List[str]:
+        """Classe les sujets OL pour viser le genre / la franchise, pas « form:novel »."""
+        genre_kw = (
+            "fantasy", "science fiction", "sci-fi", "mystery", "thriller",
+            "romance", "horror", "historical", "adventure", "young adult",
+            "crime", "detective", "manga", "comics", "bande dessinee",
+            "polar", "dystop", "space", "military", "epic",
+        )
+        scored: List[tuple] = []
+        seen = set()
+        for item in raw or []:
+            cleaned = self._normalize_ol_subject(item)
+            if not cleaned:
+                continue
+            key = cleaned.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            raw_low = str(item).lower()
+            score = 0
+            if raw_low.startswith("franchise:") or raw_low.startswith("series:"):
+                score += 40
+            if raw_low.startswith("genre:"):
+                score += 30
+            if any(k in key for k in genre_kw):
+                score += 20
+            if " " in cleaned:
+                score += 2
+            if score <= 0:
+                score = 1
+            scored.append((score, cleaned))
+        scored.sort(key=lambda x: (-x[0], x[1]))
+        return [s for _, s in scored[:4]]
+
     async def search_similar_books(
         self, title: str, author: str = "", limit: int = 8, subjects: Optional[List[str]] = None
     ) -> List[Dict]:
         """
-        Trouve des livres similaires (max 2 appels HTTP) via un sujet Open Library.
+        Livres similaires via sujets OL (franchise/genre), auteur, puis mots-clés.
         """
         if not title or not title.strip():
             return []
@@ -326,58 +397,92 @@ class OpenLibraryService:
             url = f"{self.base_url}/search.json"
             seed_title = title.strip()
             seed_norm = seed_title.lower()[:50]
-            preferred_kw = (
-                "fiction", "novel", "literature", "fantasy", "mystery",
-                "thriller", "romance", "science fiction", "horror",
-                "historical", "adventure", "young adult", "crime",
-                "detective", "manga", "comics", "bande", "polar",
-            )
+            seed_author = (author or "").split(",")[0].strip()
+            fields = "title,author_name,cover_i,first_publish_year,key,subject,ratings_average"
 
-            def _pick_subjects(raw: List[str]) -> List[str]:
-                preferred = [
-                    s for s in (raw or [])
-                    if any(k in s.lower() for k in preferred_kw) and 3 < len(s) < 50
-                ]
-                if preferred:
-                    return preferred[:2]
-                return [s for s in (raw or []) if 3 < len(s) < 40][:2]
+            resolved_subjects = self._rank_ol_subjects(subjects or [])
 
-            resolved_subjects = _pick_subjects(subjects or [])
-
-            # 1) Si pas de sujets fournis : 1 appel pour les récupérer
-            if not resolved_subjects:
+            # 1) Résoudre sujets + auteur depuis le seed OL (titre FR + sans accents)
+            async def _resolve_seed(query: str) -> None:
+                nonlocal seed_author, resolved_subjects
                 seed_params = {
-                    "q": seed_title[:80],
-                    "limit": 3,
+                    "q": query[:80],
+                    "limit": 5,
                     "fields": "title,author_name,subject",
                 }
-                if author:
-                    seed_params["author"] = author.split(",")[0].strip()
-                async with session.get(url, params=seed_params) as response:
-                    if response.status == 200:
+                if seed_author:
+                    seed_params["author"] = seed_author
+                try:
+                    async with session.get(url, params=seed_params) as response:
+                        if response.status != 200:
+                            return
                         data = await response.json()
                         for doc in data.get("docs", []):
-                            resolved_subjects = _pick_subjects(doc.get("subject") or [])
-                            if resolved_subjects:
-                                break
+                            doc_title = (doc.get("title") or "").strip().lower()
+                            doc_plain = _strip_accents(doc_title)
+                            q_plain = _strip_accents(seed_norm)
+                            title_ok = (
+                                seed_norm in doc_title
+                                or doc_title[:20] in seed_norm
+                                or (q_plain and q_plain in doc_plain)
+                            )
+                            if not title_ok and resolved_subjects and seed_author:
+                                continue
+                            if not seed_author:
+                                names = doc.get("author_name") or []
+                                if names:
+                                    seed_author = str(names[0]).strip()
+                            ranked = self._rank_ol_subjects(doc.get("subject") or [])
+                            if ranked:
+                                merged = []
+                                for s in ranked + resolved_subjects:
+                                    if s.lower() not in {x.lower() for x in merged}:
+                                        merged.append(s)
+                                resolved_subjects = merged[:4]
+                            if resolved_subjects and seed_author:
+                                return
+                except Exception as exc:
+                    logger.debug("similar OL seed resolve failed: %s", exc)
+
+            if not resolved_subjects or not seed_author:
+                await _resolve_seed(seed_title)
+            if (not resolved_subjects or not seed_author) and _strip_accents(seed_title) != seed_title:
+                await _resolve_seed(_strip_accents(seed_title))
 
             books: List[Dict] = []
             seen_keys = set()
+            author_norm = seed_author.lower() if seed_author else ""
 
-            def _append_doc(doc: Dict) -> None:
+            def _append_doc(doc: Dict, *, require_author: bool = False, stop_at: Optional[int] = None) -> bool:
+                """Ajoute un doc. Retourne True si la limite (globale ou stop_at) est atteinte."""
+                if stop_at is not None and len(books) >= stop_at:
+                    return True
+                if len(books) >= limit:
+                    return True
                 t = (doc.get("title") or "").strip()
                 if not t:
-                    return
+                    return False
                 t_norm = t.lower()
-                if seed_norm and (seed_norm in t_norm or t_norm[:40] in seed_norm):
-                    return
-                key = doc.get("key") or f"{t}|{','.join(doc.get('author_name') or [])}"
+                t_plain = _strip_accents(t_norm)
+                seed_plain = _strip_accents(seed_norm)
+                if seed_norm and (
+                    seed_norm in t_norm
+                    or t_norm[:40] in seed_norm
+                    or (seed_plain and seed_plain in t_plain)
+                ):
+                    return False
+                authors = doc.get("author_name") or []
+                if require_author and author_norm:
+                    # Évite les homonymes flous (ex. « Marcia Brown » pour Pierce Brown)
+                    if not any(author_norm in (a or "").lower() for a in authors):
+                        return False
+                key = doc.get("key") or f"{t}|{','.join(authors)}"
                 if key in seen_keys:
-                    return
+                    return False
                 seen_keys.add(key)
                 books.append({
                     "title": t,
-                    "author": ", ".join(doc.get("author_name") or []),
+                    "author": ", ".join(authors),
                     "cover_url": self._get_cover_url(doc.get("cover_i")),
                     "publication_year": doc.get("first_publish_year"),
                     "ol_key": doc.get("key", ""),
@@ -385,33 +490,73 @@ class OpenLibraryService:
                     "rating": doc.get("ratings_average", 0),
                     "subjects": (doc.get("subject") or [])[:5],
                 })
+                if stop_at is not None and len(books) >= stop_at:
+                    return True
+                return len(books) >= limit
 
-            # 2) Un seul appel sujet (ou repli mots-clés)
-            query_params = {
-                "limit": max(limit + 6, 12),
-                "sort": "rating desc",
-                "fields": "title,author_name,cover_i,first_publish_year,key,subject,ratings_average",
-            }
-            if resolved_subjects:
-                query_params["subject"] = resolved_subjects[0]
-            else:
-                words = [w for w in seed_title.replace(":", " ").split() if len(w) > 3][:3]
-                if not words:
-                    return []
-                query_params["q"] = " ".join(words)
+            async def _run_search(
+                params: Dict,
+                *,
+                require_author: bool = False,
+                stop_at: Optional[int] = None,
+            ) -> None:
+                if len(books) >= limit:
+                    return
+                if stop_at is not None and len(books) >= stop_at:
+                    return
+                query = {
+                    "limit": max(limit + 8, 16),
+                    "fields": fields,
+                    **params,
+                }
+                try:
+                    async with session.get(url, params=query) as response:
+                        if response.status != 200:
+                            return
+                        data = await response.json()
+                        for doc in data.get("docs", []):
+                            if _append_doc(doc, require_author=require_author, stop_at=stop_at):
+                                break
+                except Exception as exc:
+                    logger.debug("similar OL query failed %s: %s", params, exc)
 
-            async with session.get(url, params=query_params) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    for doc in data.get("docs", []):
-                        _append_doc(doc)
-                        if len(books) >= limit:
-                            break
+            # 2) Auteur (quota partiel) + 1–2 sujets (pas plus, pour limiter la latence)
+            author_quota = max(3, limit // 3) if seed_author else 0
+            if seed_author:
+                await _run_search(
+                    {"author": seed_author, "sort": "rating desc"},
+                    require_author=True,
+                    stop_at=author_quota,
+                )
+
+            for subj in resolved_subjects[:2]:
+                await _run_search({"subject": subj, "sort": "rating desc"})
+                if len(books) >= limit:
+                    break
+
+            if len(books) < max(4, limit // 2):
+                words = [
+                    w for w in _strip_accents(seed_title).replace(":", " ").replace("-", " ").split()
+                    if len(w) > 2
+                ][:4]
+                if words:
+                    await _run_search({"q": " ".join(words), "sort": "rating desc"})
+
+            # Repli genre détecté
+            if len(books) < 4 and resolved_subjects:
+                for fallback in ("science fiction", "fantasy", "mystery", "romance", "young adult"):
+                    if any(fallback in s.lower() for s in resolved_subjects):
+                        await _run_search({"subject": fallback, "sort": "rating desc"})
+                        break
+
+            # Repli ultime : fiction populaire — évite les listes vides
+            if len(books) < 4:
+                await _run_search({"q": "fiction", "sort": "rating desc"})
 
             return books[:limit]
 
         except Exception as e:
-            logger.error(f"Erreur recherche similaires pour « {title} »: {str(e)}")
+            logger.error("Erreur recherche similaires pour %r: %s", title, e)
             return []
     
     async def close(self):

@@ -101,7 +101,11 @@ export const recommendationService = {
       if (title) params.title = title;
       if (author) params.author = author;
       if (series) params.series = series;
-      const response = await api.get('/api/recommendations/similar', { params });
+      // Render + Open Library : laisser plus de marge que le timeout global
+      const response = await api.get('/api/recommendations/similar', {
+        params,
+        timeout: 90000,
+      });
       return response.data;
     } catch (error) {
       console.error('Erreur recommandations similaires:', error);

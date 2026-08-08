@@ -212,13 +212,25 @@ def search_similar_books(
 
     try:
         # 1) Retrouver le seed pour extraire ses catégories GB
+        # (souvent titres EN : ne pas se limiter au français)
         q_seed = f'intitle:"{seed_title[:70]}"'
         if seed_author:
             q_seed += f' inauthor:"{seed_author[:40]}"'
-        seed_raw = search_volumes(
-            q_seed, max_results=3, lang_restrict="fr", print_type="books"
-        )
+        seed_raw = search_volumes(q_seed, max_results=5, print_type="books")
+        if not (seed_raw.get("items") or []):
+            seed_raw = search_volumes(
+                q_seed, max_results=5, lang_restrict="fr", print_type="books"
+            )
         cats: list[str] = []
+        if not seed_author:
+            for item in seed_raw.get("items") or []:
+                if not isinstance(item, dict):
+                    continue
+                simplified = simplify_item(item)
+                authors = simplified.get("authors") or []
+                if authors:
+                    seed_author = str(authors[0]).split(",")[0].strip()
+                    break
         for item in seed_raw.get("items") or []:
             if not isinstance(item, dict):
                 continue
@@ -239,6 +251,8 @@ def search_similar_books(
             queries.append(f'subject:"{cats[0]}"')
             if len(cats) > 1:
                 queries.append(f'subject:"{cats[1]}"')
+        if seed_author:
+            queries.append(f'inauthor:"{seed_author[:40]}" subject:fiction')
         words = [w for w in re.split(r"[\s:–—\-]+", seed_title) if len(w) > 3][:3]
         if words:
             queries.append(" ".join(words))
@@ -252,11 +266,12 @@ def search_similar_books(
                 raw = search_volumes(
                     q,
                     max_results=min(limit + 6, 20),
-                    lang_restrict="fr",
                     print_type="books",
                 )
             except Exception:
-                raw = search_volumes(q, max_results=min(limit + 6, 20), print_type="books")
+                raw = search_volumes(
+                    q, max_results=min(limit + 6, 20), lang_restrict="fr", print_type="books"
+                )
             for item in raw.get("items") or []:
                 if not isinstance(item, dict):
                     continue

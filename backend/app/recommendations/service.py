@@ -122,23 +122,22 @@ class RecommendationService:
             }
 
         try:
-            user_profile = await self._analyze_user_library(user_id)
-            if not user_profile.get("has_books"):
-                user_profile = {
-                    "has_books": False,
-                    "owned_keys": set(),
-                    "owned_titles": set(),
-                    "disliked_book_ids": [],
-                    "high_rated_books": [],
-                    "completed_books": [],
-                }
+            # Profil léger (possession + feedback) — évite l'analyse complète trop lente
+            user_profile = await self._ownership_profile(user_id)
+
+            # Auteur manquant : le déduire des tomes en bibliothèque
+            if not seed_author:
+                seed_author = self._author_from_library(
+                    user_id, seed_title, series_name=series_name
+                )
 
             seed_subjects = subjects or []
             if isinstance(seed_subjects, str):
                 seed_subjects = [seed_subjects]
 
-            ol_n = max(limit, 12)
-            gb_n = max(limit // 2, 8)
+            # Sur-fetch : beaucoup de candidats sont exclus (déjà en biblio)
+            ol_n = max(limit * 2, 20)
+            gb_n = max(limit, 12)
 
             ol_task = self.openlibrary_service.search_similar_books(
                 seed_title,
@@ -162,28 +161,52 @@ class RecommendationService:
             if isinstance(gb_books, Exception):
                 logger.warning("similar Google Books: %s", gb_books)
                 gb_books = []
+            ol_books = list(ol_books or [])
+            gb_books = list(gb_books or [])
 
-            # Série : compléter avec d'autres volumes / œuvres liées au nom
-            if (series_name or "").strip() and len(ol_books) < limit:
+            # Compléter si peu de résultats (auteur / série / populaire)
+            if len(ol_books) < limit:
                 try:
-                    extra = await self.openlibrary_service.search_series(
-                        seed_title, limit=max(8, limit // 2)
-                    )
-                    for book in extra or []:
-                        ol_books.append(book)
+                    if seed_author:
+                        extra = await self.openlibrary_service.search_books_by_author(
+                            seed_author, limit=max(12, limit)
+                        )
+                        ol_books.extend(extra or [])
+                    elif (series_name or "").strip():
+                        extra = await self.openlibrary_service.search_series(
+                            seed_title, limit=max(8, limit // 2)
+                        )
+                        ol_books.extend(extra or [])
                 except Exception as exc:
-                    logger.debug("similar series fallback: %s", exc)
+                    logger.debug("similar author/series fallback: %s", exc)
+
+            if len(ol_books) < max(6, limit // 2):
+                try:
+                    popular = await self.openlibrary_service.get_popular_books(
+                        limit=max(12, limit)
+                    )
+                    ol_books.extend(popular or [])
+                except Exception as exc:
+                    logger.debug("similar popular fallback: %s", exc)
 
             short = seed_title if len(seed_title) <= 42 else seed_title[:39] + "…"
             kind = "série" if (series_name or "").strip() else "livre"
             reason_ol = f"Similaire à {kind} « {short} » · Open Library"
             reason_gb = f"Similaire à {kind} « {short} » · Google Books"
+            reason_pop = f"Dans le même esprit que « {short} »"
 
             out: List[RecommendationItem] = []
             seen = set()
             seed_norm = self._normalize_title(seed_title)
 
-            async def _push(book: Dict, *, source: str, reason: str, confidence: float):
+            async def _push(
+                book: Dict,
+                *,
+                source: str,
+                reason: str,
+                confidence: float,
+                skip_owned: bool = True,
+            ):
                 title_b = (book.get("title") or "").strip()
                 author_b = (book.get("author") or "").strip()
                 if not title_b:
@@ -195,7 +218,9 @@ class RecommendationService:
                     return
                 seen.add(key)
                 bid = book.get("ol_key") or book.get("google_books_id") or key
-                if await self._should_skip(user_profile, bid, title_b, author_b):
+                if skip_owned and await self._should_skip(
+                    user_profile, bid, title_b, author_b
+                ):
                     return
                 out.append(
                     RecommendationItem(
@@ -241,6 +266,42 @@ class RecommendationService:
                     )
                     gb_i += 1
 
+            # Si la biblio a tout filtré : 2e passe sans filtre possession (sauf seed exact)
+            if len(out) < 4:
+                for book in ol_books + gb_books:
+                    if len(out) >= limit:
+                        break
+                    src = (
+                        "seed_similarity_gb"
+                        if book.get("google_books_id")
+                        else "seed_similarity"
+                    )
+                    await _push(
+                        book,
+                        source=src,
+                        reason=reason_pop,
+                        confidence=0.65,
+                        skip_owned=False,
+                    )
+
+            # Dernier filet : populaires fiction
+            if len(out) < 4:
+                try:
+                    popular = await self.openlibrary_service.get_popular_books(
+                        limit=max(16, limit)
+                    )
+                    for book in popular or []:
+                        if len(out) >= limit:
+                            break
+                        await _push(
+                            book,
+                            source="seed_similarity",
+                            reason=reason_pop,
+                            confidence=0.55,
+                        )
+                except Exception as exc:
+                    logger.debug("similar last-resort popular: %s", exc)
+
             return {
                 "recommendations": [self._format_recommendation(r) for r in out],
                 "seed": {
@@ -264,6 +325,65 @@ class RecommendationService:
                 "error": str(e),
                 "generated_at": datetime.utcnow().isoformat(),
             }
+
+    async def _ownership_profile(self, user_id: str) -> Dict:
+        """Profil minimal pour exclure les livres déjà en bibliothèque."""
+        try:
+            owned_keys = set()
+            owned_titles = set()
+            cursor = self.db.books.find(
+                {"user_id": user_id},
+                {"title": 1, "author": 1},
+            )
+            for book in cursor:
+                title = (book.get("title") or "").strip()
+                author = (book.get("author") or "").strip()
+                norm = self._normalize_title(title)
+                if norm:
+                    owned_titles.add(norm)
+                    owned_keys.add(self._book_key(title, author))
+            return {
+                "has_books": bool(owned_titles),
+                "owned_keys": owned_keys,
+                "owned_titles": owned_titles,
+                "disliked_book_ids": list(self._load_disliked_ids(user_id)),
+                "high_rated_books": [],
+                "completed_books": [],
+            }
+        except Exception as e:
+            logger.warning("ownership profile: %s", e)
+            return {
+                "has_books": False,
+                "owned_keys": set(),
+                "owned_titles": set(),
+                "disliked_book_ids": [],
+                "high_rated_books": [],
+                "completed_books": [],
+            }
+
+    def _author_from_library(
+        self, user_id: str, seed_title: str, *, series_name: str = ""
+    ) -> str:
+        """Retrouve l'auteur d'un titre / série dans la biblio utilisateur."""
+        try:
+            target = self._normalize_title(series_name or seed_title)
+            if not target:
+                return ""
+            cursor = self.db.books.find(
+                {"user_id": user_id},
+                {"author": 1, "saga_name": 1, "series_name": 1, "title": 1},
+            )
+            for book in cursor:
+                if not book.get("author"):
+                    continue
+                saga = book.get("saga_name") or book.get("series_name") or ""
+                if saga and self._normalize_title(saga) == target:
+                    return str(book.get("author")).split(",")[0].strip()
+                if self._normalize_title(book.get("title") or "") == target:
+                    return str(book.get("author")).split(",")[0].strip()
+        except Exception as e:
+            logger.debug("author_from_library: %s", e)
+        return ""
     
     async def _analyze_user_library(self, user_id: str) -> Dict:
         """Analyse la bibliothèque utilisateur pour créer un profil"""
