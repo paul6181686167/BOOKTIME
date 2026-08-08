@@ -34,7 +34,7 @@
   "display_override": ["standalone", "browser"],
   "orientation": "portrait-primary",
   "theme_color": "#16a34a",
-  "background_color": "#f9fafb",
+  "background_color": "#bce8cb",
   "categories": ["books", "lifestyle", "entertainment"],
   "lang": "fr",
   "dir": "ltr",

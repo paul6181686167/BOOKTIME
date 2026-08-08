@@ -21,11 +21,11 @@ const MobileSearchOverlay = ({ isOpen, onClose, searchTerm, onSearchChange, onSe
   if (!isOpen) return null;
 
   return (
-    <div className="md:hidden fixed inset-0 z-50 bg-white dark:bg-gray-900 flex flex-col">
+    <div className="md:hidden fixed inset-0 z-50 bg-honeycomb flex flex-col">
       {/* Barre de recherche */}
       <form
         onSubmit={handleSubmit}
-        className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700 safe-area-top"
+        className="flex items-center gap-3 px-4 py-3 bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl border-b border-booktime-mist/55 dark:border-booktime-800/50 safe-area-top"
       >
         <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
         <input

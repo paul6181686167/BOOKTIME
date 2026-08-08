@@ -797,7 +797,7 @@ function MainApp() {
       {/* Header desktop + mobile compact */}
       {/* Header translucide : le contenu défile visiblement dessous, ce qui
           ancre la barre sans la faire peser comme un bandeau opaque. */}
-      <header className="bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl border-b border-booktime-mist/55 dark:border-booktime-800/50 sticky top-0 z-30">
+      <header className="bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl border-b border-booktime-mist/55 dark:border-booktime-800/50 sticky top-0 z-30 safe-area-top">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Desktop header */}
           <div className="hidden md:flex justify-between items-center h-16">

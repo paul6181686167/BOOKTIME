@@ -316,9 +316,9 @@ const UpcomingPanel = ({ isOpen, onClose }) => {
     <>
       <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" onClick={onClose} />
 
-      <div className="fixed top-0 left-0 h-full w-80 sm:w-96 bg-white dark:bg-gray-900 shadow-2xl z-50 flex flex-col transition-transform duration-300">
+      <div className="fixed top-0 left-0 h-full w-80 sm:w-96 bg-honeycomb shadow-2xl z-50 flex flex-col transition-transform duration-300">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl border-b border-booktime-mist/55 dark:border-booktime-800/50 flex-shrink-0 safe-area-top">
           <div className="flex items-center gap-2">
             <ClockIcon className="h-5 w-5 text-amber-500" />
             <h2 className="text-base font-semibold text-gray-900 dark:text-white">

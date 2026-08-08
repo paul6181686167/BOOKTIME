@@ -11,8 +11,8 @@
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* Safe area iPhone notch / home bar */
-.safe-area-top    { padding-top:    max(env(safe-area-inset-top),    12px); }
-.safe-area-bottom { padding-bottom: max(env(safe-area-inset-bottom), 8px);  }
+.safe-area-top    { padding-top:    env(safe-area-inset-top, 0px); }
+.safe-area-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
 /* Hauteur plein écran mobile correct (évite le bug 100vh sur iOS) */
 .h-screen-mobile { height: 100dvh; }
