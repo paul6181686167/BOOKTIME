@@ -75,17 +75,6 @@
   height: 0;
 }
 
-.modal-content {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.modal-content::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
-}
-
 .dark .modal-content {
   background: #163528;
   border: 1px solid #1e3a2c;
