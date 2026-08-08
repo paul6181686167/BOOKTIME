@@ -1,5 +1,5 @@
 /* Booktime PWA Service Worker */
-const SW_VERSION = 'booktime-v7-honeycomb';
+const SW_VERSION = 'booktime-v8-autoupdate';
 const SHELL_CACHE = `${SW_VERSION}-shell`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const API_CACHE = `${SW_VERSION}-api`;
@@ -26,16 +26,39 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(
-          keys
-            .filter((key) => key.startsWith('booktime-') && !key.startsWith(SW_VERSION))
-            .map((key) => caches.delete(key))
-        )
-      )
-      .then(() => self.clients.claim())
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys
+          .filter((key) => key.startsWith('booktime-') && !key.startsWith(SW_VERSION))
+          .map((key) => caches.delete(key))
+      );
+      await self.clients.claim();
+      // Force le rechargement des fenêtres déjà ouvertes (PWA mobile figée)
+      const clients = await self.clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
+      await Promise.all(
+        clients.map((client) => {
+          if (typeof client.navigate === 'function') {
+            return client.navigate(client.url).catch(() => {
+              try {
+                client.postMessage({ type: 'SW_UPDATED' });
+              } catch (_) {
+                /* ignore */
+              }
+            });
+          }
+          try {
+            client.postMessage({ type: 'SW_UPDATED' });
+          } catch (_) {
+            /* ignore */
+          }
+          return undefined;
+        })
+      );
+    })()
   );
 });
 
@@ -59,21 +82,6 @@ function isNavigationRequest(request) {
 
 function isStaticAsset(url) {
   return /\.(?:js|css|png|jpg|jpeg|webp|svg|ico|woff2?|ttf|json)$/i.test(url.pathname);
-}
-
-async function networkFirst(request, cacheName) {
-  const cache = await caches.open(cacheName);
-  try {
-    const response = await fetch(request);
-    if (response && response.ok) {
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch (error) {
-    const cached = await cache.match(request);
-    if (cached) return cached;
-    throw error;
-  }
 }
 
 async function isNonEmptyJsonArray(response) {
@@ -111,22 +119,14 @@ async function staleWhileRevalidate(request, cacheName) {
   return cached || networkPromise;
 }
 
-async function cacheFirst(request, cacheName) {
-  const cache = await caches.open(cacheName);
-  const cached = await cache.match(request);
-  if (cached) return cached;
-  const response = await fetch(request);
-  if (response && response.ok) {
-    cache.put(request, response.clone());
-  }
-  return response;
-}
-
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
+
+  // Ne jamais intercepter le SW lui-même (sinon mises à jour bloquées)
+  if (url.pathname.endsWith('/sw.js')) return;
 
   // Same-origin navigations → network first, fallback shell
   if (isNavigationRequest(request) && url.origin === self.location.origin) {
