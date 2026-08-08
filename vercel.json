@@ -1,10 +1,10 @@
 {
-  "framework": "create-react-app",
+  "framework": null,
   "installCommand": "npm ci --prefix frontend --include=dev",
-  "buildCommand": "npm run build --prefix frontend",
+  "buildCommand": "rm -rf frontend/build && npm run build --prefix frontend",
   "outputDirectory": "frontend/build",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!sw\\.js|version\\.json).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
@@ -12,6 +12,12 @@
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
         { "key": "Service-Worker-Allowed", "value": "/" }
+      ]
+    },
+    {
+      "source": "/version.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
       ]
     },
     {
