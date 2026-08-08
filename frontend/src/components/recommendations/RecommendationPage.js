@@ -7,9 +7,8 @@ import React, {
   useCallback,
   useMemo,
   useRef,
-  lazy,
-  Suspense,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import {
@@ -32,6 +31,7 @@ import { resolveCoverForGridItem } from '../../utils/helpers';
 import {
   groupRecosAsBooktimeItems,
   recoToBooktimeBook,
+  isRecoAlreadyOwned,
 } from '../../utils/recommendationBooktime';
 import SmartCover, {
   CARD_SHELL,
@@ -39,13 +39,12 @@ import SmartCover, {
   CoverScrim,
   PILL,
 } from '../books/SmartCover';
-
-const BookDetailModal = lazy(() => import('../BookDetailModal'));
-const SeriesDetailModal = lazy(() => import('../SeriesDetailModal'));
+import BookDetailModal from '../BookDetailModal';
+import SeriesDetailModal from '../SeriesDetailModal';
 
 // ── Cache (sessionStorage) ────────────────────────────────────────────────
 // Évite de recalculer les recommandations à chaque visite de la page.
-const CACHE_PREFIX = 'booktime_reco_cache_v5_';
+const CACHE_PREFIX = 'booktime_reco_cache_v6_';
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 function readCache(tab) {
@@ -247,6 +246,7 @@ const BookCard = ({
   onAdd,
   onNotInterested,
   userBooks = [],
+  userSeries = [],
   priority = false,
 }) => {
   const [adding, setAdding] = useState(false);
@@ -260,20 +260,7 @@ const BookCard = ({
   const coverItem = localCover ? { ...book, cover_url: localCover } : book;
   const coverSrc = resolveCoverForGridItem(coverItem);
 
-  const alreadyIn = userBooks.some((b) => {
-    if (isSeries) {
-      const n = (book.name || '').toLowerCase();
-      return (
-        (b.saga_name || b.series_name || b.name || '').toLowerCase() === n ||
-        (b.isSeriesCard && (b.name || b.title || '').toLowerCase() === n)
-      );
-    }
-    return (
-      b.title?.toLowerCase() === book.title?.toLowerCase() ||
-      (book.ol_key && b.ol_key === book.ol_key) ||
-      (book.book_id && (b.ol_key === book.book_id || b.id === book.book_id))
-    );
-  });
+  const alreadyIn = isRecoAlreadyOwned(book, userBooks, userSeries);
 
   if (dismissed) return null;
 
@@ -307,18 +294,16 @@ const BookCard = ({
 
   const upcoming = !isSeries && isUpcoming(book);
 
+  const openDetails = (e) => {
+    // Ne pas ouvrir si le clic vient d'un bouton (+ / X)
+    if (e?.target?.closest?.('button')) return;
+    onOpen?.(book);
+  };
+
   return (
     <div
       className="col-span-1 group cursor-pointer transform transition-transform duration-200 sm:hover:-translate-y-1"
-      onClick={() => onOpen?.(book)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onOpen?.(book);
-        }
-      }}
-      role="button"
-      tabIndex={0}
+      onClick={openDetails}
     >
       <div className={CARD_SHELL}>
         <div className={COVER_FRAME}>
@@ -334,7 +319,7 @@ const BookCard = ({
           <CoverScrim />
 
           {isSeries && (
-            <div className="absolute top-1 left-1 sm:top-2 sm:left-2">
+            <div className="absolute top-1 left-1 sm:top-2 sm:left-2 pointer-events-none">
               <span
                 className={`inline-flex items-center rounded-md bg-black/50 px-1.5 py-0.5 text-micro font-medium text-white sm:px-2 sm:py-1 sm:text-xs ${PILL}`}
               >
@@ -346,7 +331,7 @@ const BookCard = ({
             </div>
           )}
           {upcoming && (
-            <div className="absolute top-1 left-1 sm:top-2 sm:left-2">
+            <div className="absolute top-1 left-1 sm:top-2 sm:left-2 pointer-events-none">
               <span
                 className={`inline-flex items-center gap-1 rounded-md bg-amber-500/90 px-1.5 py-0.5 text-micro font-medium text-white sm:text-xs ${PILL}`}
               >
@@ -384,7 +369,7 @@ const BookCard = ({
             </button>
           )}
           {alreadyIn && (
-            <div className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 z-10">
+            <div className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 z-10 pointer-events-none">
               <span
                 className={`inline-flex items-center justify-center rounded-full bg-booktime-600/90 text-white h-8 w-8 sm:h-9 sm:w-9 ${PILL}`}
                 title="Dans ta bibliothèque"
@@ -424,20 +409,15 @@ const RecommendationSection = ({
   onAdd,
   onNotInterested,
   userBooks,
+  userSeries,
 }) => {
   const cfg = SECTION_CONFIG[source] || SECTION_CONFIG.popular;
   const colors = COLOR_CLASSES[cfg.color];
   const Icon = cfg.icon;
 
-  const visible = items.filter((b) => {
-    if (b.isSeriesCard) return true;
-    return !userBooks.some(
-      (u) =>
-        u.title?.toLowerCase() === b.title?.toLowerCase() ||
-        (b.ol_key && u.ol_key === b.ol_key) ||
-        (b.book_id && (u.ol_key === b.book_id || u.id === b.book_id))
-    );
-  });
+  const visible = items.filter(
+    (b) => !isRecoAlreadyOwned(b, userBooks, userSeries)
+  );
 
   if (visible.length === 0) return null;
 
@@ -471,6 +451,7 @@ const RecommendationSection = ({
             onAdd={onAdd}
             onNotInterested={onNotInterested}
             userBooks={userBooks}
+            userSeries={userSeries}
             priority={idx < 12}
           />
         ))}
@@ -863,7 +844,17 @@ const RecommendationPage = () => {
   const handleOpenItem = useCallback((item) => {
     if (!item) return;
     if (item.isSeriesCard) {
-      setSelectedSeries(item);
+      setSelectedBook(null);
+      setShowBookModal(false);
+      setSelectedSeries({
+        ...item,
+        name: item.name || item.title || item.display_title || '',
+        series_name: item.name || item.title || item.display_title || '',
+        author: item.author || '',
+        cover_url: item.cover_url || null,
+        books: Array.isArray(item.books) ? item.books : [],
+        status: item.status || 'to_read',
+      });
       setShowSeriesModal(true);
       return;
     }
@@ -871,13 +862,18 @@ const RecommendationPage = () => {
     const fromGb =
       book.isFromGoogleBooks ||
       String(book.ol_key || book.book_id || '').startsWith('gbooks_');
+    setSelectedSeries(null);
+    setShowSeriesModal(false);
     setSelectedBook({
       ...book,
+      status: book.status || 'to_read',
       isFromOpenLibrary: !fromGb,
       isFromGoogleBooks: fromGb,
       display_title: displayBookTitleFrFirst(book) || book.title,
-      // Synopsis GB déjà éventuellement présent
       description: book.description || book.metadata?.description || '',
+      subjects: Array.isArray(book.subjects)
+        ? book.subjects.map((s) => (typeof s === 'string' ? s : s?.name || String(s))).filter(Boolean)
+        : [],
     });
     setShowBookModal(true);
   }, []);
@@ -1163,7 +1159,9 @@ const RecommendationPage = () => {
               <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 sm:gap-5">
                 {groupRecosAsBooktimeItems(
                   coldStartBooks.map((b) => ({ ...b, book_id: b.ol_key }))
-                ).map((book, idx) => (
+                )
+                  .filter((book) => !isRecoAlreadyOwned(book, userBooks, userSeries))
+                  .map((book, idx) => (
                   <BookCard
                     key={book.id || book.ol_key || idx}
                     book={book}
@@ -1171,6 +1169,7 @@ const RecommendationPage = () => {
                     onAdd={handleAdd}
                     onNotInterested={handleNotInterested}
                     userBooks={userBooks}
+                    userSeries={userSeries}
                     priority={idx < 12}
                   />
                 ))}
@@ -1190,6 +1189,7 @@ const RecommendationPage = () => {
                 onAdd={handleAdd}
                 onNotInterested={handleNotInterested}
                 userBooks={userBooks}
+                userSeries={userSeries}
               />
             ) : null
           )}
@@ -1204,6 +1204,7 @@ const RecommendationPage = () => {
                 onAdd={handleAdd}
                 onNotInterested={handleNotInterested}
                 userBooks={userBooks}
+                userSeries={userSeries}
               />
             ))}
         </div>
@@ -1211,46 +1212,50 @@ const RecommendationPage = () => {
     </div>
     </div>
 
-      <Suspense fallback={null}>
-        {showBookModal && selectedBook && (
-          <BookDetailModal
-            book={selectedBook}
-            isOpen={showBookModal}
-            onClose={() => {
-              setShowBookModal(false);
-              setSelectedBook(null);
-            }}
-            onUpdate={async () => {}}
-            onDelete={async () => {
-              setShowBookModal(false);
-              setSelectedBook(null);
-            }}
-            onAddFromOpenLibrary={handleAddFromOpenLibrary}
-          />
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <>
+            {showBookModal && selectedBook && (
+              <BookDetailModal
+                book={selectedBook}
+                isOpen={showBookModal}
+                onClose={() => {
+                  setShowBookModal(false);
+                  setSelectedBook(null);
+                }}
+                onUpdate={async () => {}}
+                onDelete={async () => {
+                  setShowBookModal(false);
+                  setSelectedBook(null);
+                }}
+                onAddFromOpenLibrary={handleAddFromOpenLibrary}
+              />
+            )}
+            {showSeriesModal && selectedSeries && (
+              <SeriesDetailModal
+                series={selectedSeries}
+                isOpen={showSeriesModal}
+                onClose={() => {
+                  setShowSeriesModal(false);
+                  setSelectedSeries(null);
+                }}
+                onUpdate={() => {}}
+                onDelete={() => {
+                  setShowSeriesModal(false);
+                  setSelectedSeries(null);
+                }}
+                onAddSeries={async (series) => {
+                  await handleAdd({ ...series, isSeriesCard: true });
+                  setShowSeriesModal(false);
+                  setSelectedSeries(null);
+                  toast.success('Série ajoutée à ta bibliothèque');
+                }}
+                userSeriesLibrary={userSeries || []}
+              />
+            )}
+          </>,
+          document.body
         )}
-        {showSeriesModal && selectedSeries && (
-          <SeriesDetailModal
-            series={selectedSeries}
-            isOpen={showSeriesModal}
-            onClose={() => {
-              setShowSeriesModal(false);
-              setSelectedSeries(null);
-            }}
-            onUpdate={() => {}}
-            onDelete={() => {
-              setShowSeriesModal(false);
-              setSelectedSeries(null);
-            }}
-            onAddSeries={async (series) => {
-              await handleAdd({ ...series, isSeriesCard: true });
-              setShowSeriesModal(false);
-              setSelectedSeries(null);
-              toast.success('Série ajoutée à ta bibliothèque');
-            }}
-            userSeriesLibrary={userSeries || []}
-          />
-        )}
-      </Suspense>
     </>
   );
 };

@@ -233,13 +233,33 @@ class RecommendationService:
                     return
                 if _is_seed_universe(book):
                     return
+                # Série déjà possédée → pas dans les « similaires »
+                saga_b = (
+                    book.get("saga")
+                    or book.get("series_name")
+                    or book.get("saga_name")
+                    or ""
+                )
+                owned_series = set(user_profile.get("owned_series") or [])
+                if saga_b and self._normalize_title(saga_b) in owned_series:
+                    return
                 key = self._book_key(title_b, author_b)
                 if key in seen:
                     return
                 seen.add(key)
                 bid = book.get("ol_key") or book.get("google_books_id") or key
                 if skip_owned and await self._should_skip(
-                    user_profile, bid, title_b, author_b
+                    user_profile,
+                    bid,
+                    title_b,
+                    author_b,
+                    ol_key=book.get("ol_key") or book.get("google_books_id"),
+                    saga=saga_b,
+                    alt_titles=[
+                        book.get("original_title"),
+                        book.get("display_title"),
+                        book.get("title_fr"),
+                    ],
                 ):
                     return
                 out.append(
@@ -286,7 +306,7 @@ class RecommendationService:
                     )
                     gb_i += 1
 
-            # 2e passe sans filtre possession (toujours hors univers seed)
+            # 2e passe : toujours hors univers seed ET hors bibliothèque
             if len(out) < 6:
                 for book in ol_books + gb_books:
                     if len(out) >= limit:
@@ -301,7 +321,7 @@ class RecommendationService:
                         source=src,
                         reason=reason_pop,
                         confidence=0.65,
-                        skip_owned=False,
+                        skip_owned=True,
                     )
 
             if len(out) < 4:
@@ -403,25 +423,75 @@ class RecommendationService:
         return created
 
     async def _ownership_profile(self, user_id: str) -> Dict:
-        """Profil minimal pour exclure les livres déjà en bibliothèque."""
+        """Profil minimal pour exclure livres / séries déjà en bibliothèque."""
         try:
             owned_keys = set()
             owned_titles = set()
-            cursor = self.db.books.find(
-                {"user_id": user_id},
-                {"title": 1, "author": 1},
-            )
-            for book in cursor:
-                title = (book.get("title") or "").strip()
-                author = (book.get("author") or "").strip()
-                norm = self._normalize_title(title)
+            owned_ol_keys = set()
+            owned_series = set()
+
+            def _add_title(title: str, author: str = ""):
+                t = (title or "").strip()
+                if not t:
+                    return
+                norm = self._normalize_title(t)
                 if norm:
                     owned_titles.add(norm)
-                    owned_keys.add(self._book_key(title, author))
+                    owned_keys.add(self._book_key(t, author))
+
+            def _add_ol(key):
+                if not key:
+                    return
+                k = str(key).strip()
+                if not k:
+                    return
+                owned_ol_keys.add(k)
+                owned_ol_keys.add(k.lstrip("/"))
+                if not k.startswith("/"):
+                    owned_ol_keys.add("/" + k)
+
+            cursor = self.db.books.find(
+                {"user_id": user_id},
+                {
+                    "title": 1,
+                    "author": 1,
+                    "original_title": 1,
+                    "display_title": 1,
+                    "title_fr": 1,
+                    "ol_key": 1,
+                    "saga": 1,
+                    "saga_name": 1,
+                    "series_name": 1,
+                },
+            )
+            for book in cursor:
+                author = (book.get("author") or "").strip()
+                for field in ("title", "original_title", "display_title", "title_fr"):
+                    _add_title(book.get(field) or "", author)
+                _add_ol(book.get("ol_key"))
+                for field in ("saga", "saga_name", "series_name"):
+                    saga = (book.get(field) or "").strip()
+                    if saga:
+                        owned_series.add(self._normalize_title(saga))
+
+            try:
+                for series in self.db.series_library.find(
+                    {"user_id": user_id},
+                    {"series_name": 1, "name": 1, "title": 1},
+                ):
+                    for field in ("series_name", "name", "title"):
+                        name = (series.get(field) or "").strip()
+                        if name:
+                            owned_series.add(self._normalize_title(name))
+            except Exception as exc:
+                logger.debug("ownership series_library: %s", exc)
+
             return {
-                "has_books": bool(owned_titles),
+                "has_books": bool(owned_titles or owned_series),
                 "owned_keys": owned_keys,
                 "owned_titles": owned_titles,
+                "owned_ol_keys": owned_ol_keys,
+                "owned_series": owned_series,
                 "disliked_book_ids": list(self._load_disliked_ids(user_id)),
                 "high_rated_books": [],
                 "completed_books": [],
@@ -432,6 +502,8 @@ class RecommendationService:
                 "has_books": False,
                 "owned_keys": set(),
                 "owned_titles": set(),
+                "owned_ol_keys": set(),
+                "owned_series": set(),
                 "disliked_book_ids": [],
                 "high_rated_books": [],
                 "completed_books": [],
@@ -487,6 +559,8 @@ class RecommendationService:
             # Index de toute la bibliothèque pour une déduplication fiable
             owned_keys = set()   # clé titre|auteur normalisée
             owned_titles = set() # titre normalisé seul (repli)
+            owned_ol_keys = set()
+            owned_series = set()
             
             for book in books:
                 author = (book.get('author') or '').strip()
@@ -523,11 +597,33 @@ class RecommendationService:
                     completed_books.append(book)
 
                 # Indexer pour la déduplication (toute la bibliothèque)
-                title = book.get('title') or ''
-                norm_title = self._normalize_title(title)
-                if norm_title:
-                    owned_titles.add(norm_title)
-                    owned_keys.add(self._book_key(title, author))
+                for field in ('title', 'original_title', 'display_title', 'title_fr'):
+                    title = book.get(field) or ''
+                    norm_title = self._normalize_title(title)
+                    if norm_title:
+                        owned_titles.add(norm_title)
+                        owned_keys.add(self._book_key(title, author))
+                ol_key = book.get('ol_key')
+                if ol_key:
+                    owned_ol_keys.add(str(ol_key))
+                    owned_ol_keys.add(str(ol_key).lstrip('/'))
+                for field in ('saga', 'saga_name', 'series_name'):
+                    saga = (book.get(field) or '').strip()
+                    if saga:
+                        owned_series.add(self._normalize_title(saga))
+
+            # Séries en library
+            try:
+                for series in self.db.series_library.find(
+                    {"user_id": user_id},
+                    {"series_name": 1, "name": 1, "title": 1},
+                ):
+                    for field in ("series_name", "name", "title"):
+                        name = (series.get(field) or "").strip()
+                        if name:
+                            owned_series.add(self._normalize_title(name))
+            except Exception:
+                pass
 
             # Prioriser les meilleurs scores pour les suggestions « aimé »
             high_rated_books.sort(
@@ -579,6 +675,8 @@ class RecommendationService:
                 # Données internes pour un scoring plus pertinent (non affichées)
                 'owned_keys': list(owned_keys),
                 'owned_titles': list(owned_titles),
+                'owned_ol_keys': list(owned_ol_keys),
+                'owned_series': list(owned_series),
                 'author_affinity': author_affinity_norm,
                 'category_affinity': category_affinity_norm,
                 'disliked_book_ids': list(disliked_book_ids),
@@ -589,15 +687,18 @@ class RecommendationService:
             return {'has_books': False, 'error': str(e)}
 
     def _normalize_title(self, title: str) -> str:
-        """Normalise un titre pour la comparaison (casse, ponctuation, espaces).
+        """Normalise un titre pour la comparaison (casse, accents, ponctuation).
 
         Conserve les numéros de tome afin de ne pas confondre deux tomes
         différents d'une même série.
         """
         if not title:
             return ''
+        import unicodedata
         t = title.lower().strip()
-        t = re.sub(r'[^a-z0-9àâäéèêëïîôöùûüç ]', ' ', t)
+        t = unicodedata.normalize('NFD', t)
+        t = ''.join(ch for ch in t if unicodedata.category(ch) != 'Mn')
+        t = re.sub(r'[^a-z0-9 ]', ' ', t)
         t = re.sub(r'\s+', ' ', t).strip()
         return t
 
@@ -1106,7 +1207,17 @@ class RecommendationService:
             "metadata": meta,
         }
     
-    async def _should_skip(self, user_profile: Dict, book_id: str, title: str, author: str) -> bool:
+    async def _should_skip(
+        self,
+        user_profile: Dict,
+        book_id: str,
+        title: str,
+        author: str,
+        *,
+        ol_key: str = None,
+        saga: str = None,
+        alt_titles: list = None,
+    ) -> bool:
         """Détermine si un livre doit être écarté des recommandations.
 
         Un livre est écarté s'il est déjà dans la bibliothèque (comparaison sur
@@ -1120,14 +1231,30 @@ class RecommendationService:
         # 2. Déjà possédé — comparaison sur toute la bibliothèque
         owned_keys = set(user_profile.get('owned_keys', []))
         owned_titles = set(user_profile.get('owned_titles', []))
-        norm_title = self._normalize_title(title)
+        owned_ol_keys = set(user_profile.get('owned_ol_keys', []))
 
-        if norm_title and norm_title in owned_titles:
-            return True
-        if self._book_key(title, author) in owned_keys:
-            return True
+        candidates = [title] + list(alt_titles or [])
+        for cand in candidates:
+            norm_title = self._normalize_title(cand or '')
+            if norm_title and norm_title in owned_titles:
+                return True
+            if cand and self._book_key(cand, author) in owned_keys:
+                return True
+
+        # Clé OL / Google Books
+        for key in (ol_key, book_id):
+            if not key:
+                continue
+            k = str(key).strip()
+            if k in owned_ol_keys or k.lstrip('/') in owned_ol_keys:
+                return True
+
+        # Note: on n'exclut PAS toute une série ici — `_recommend_by_series`
+        # doit pouvoir proposer les tomes manquants d'une série déjà commencée.
+        # L'exclusion de cartes série se fait côté similaires / frontend.
 
         # 3. Repli pour les profils factices (by-author / by-category)
+        norm_title = self._normalize_title(title)
         for book in user_profile.get('high_rated_books', []) + user_profile.get('completed_books', []):
             if (self._normalize_title(book.get('title', '')) == norm_title and
                     self._normalize_author(book.get('author', '')) == self._normalize_author(author)):

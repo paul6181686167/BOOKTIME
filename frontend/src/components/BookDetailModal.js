@@ -960,7 +960,11 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               <div>
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Genres & Sujets</h3>
                 <div className="flex flex-wrap gap-1">
-                  {(olDetails?.subjects || book.subjects || []).slice(0, 12).map((s, i) => (
+                  {(olDetails?.subjects || book.subjects || [])
+                    .map((s) => (typeof s === 'string' ? s : s?.name || ''))
+                    .filter(Boolean)
+                    .slice(0, 12)
+                    .map((s, i) => (
                     <span key={i} className="px-2 py-0.5 text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full border border-blue-100 dark:border-blue-800">
                       {s}
                     </span>
@@ -970,7 +974,9 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             )}
 
             {/* Lien Open Library */}
-            {book.ol_key && (
+            {book.ol_key &&
+              typeof book.ol_key === 'string' &&
+              !book.ol_key.startsWith('gbooks_') && (
               <div className="pt-2">
                 <a
                   href={`https://openlibrary.org${book.ol_key.startsWith('/') ? book.ol_key : '/' + book.ol_key}`}

@@ -159,3 +159,98 @@ export function groupRecosAsBooktimeItems(recommendations, options = {}) {
   const sortCover = (a, b) => Number(!!b.cover_url) - Number(!!a.cover_url);
   return [...seriesCards.sort(sortCover), ...standalone.sort(sortCover)];
 }
+
+/** Normalise un titre pour comparaison ownership (casse, accents, ponctuation). */
+export function normOwnedTitle(s) {
+  return (s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function collectOwnedIndex(userBooks = [], userSeries = []) {
+  const titles = new Set();
+  const olKeys = new Set();
+  const series = new Set();
+
+  const addTitle = (t) => {
+    const n = normOwnedTitle(t);
+    if (n) titles.add(n);
+  };
+  const addOl = (k) => {
+    if (!k) return;
+    const s = String(k).trim();
+    if (!s) return;
+    olKeys.add(s);
+    olKeys.add(s.replace(/^\/+/, ''));
+  };
+  const addSeries = (name) => {
+    const n = normOwnedTitle(name);
+    if (n) series.add(n);
+  };
+
+  (userBooks || []).forEach((b) => {
+    addTitle(b.title);
+    addTitle(b.display_title);
+    addTitle(b.original_title);
+    addTitle(b.title_fr);
+    addOl(b.ol_key);
+    addOl(b.book_id);
+    if (b.isSeriesCard) {
+      addSeries(b.name || b.title || b.series_name);
+    }
+    addSeries(b.saga || b.saga_name || b.series_name);
+  });
+
+  (userSeries || []).forEach((s) => {
+    addSeries(s.series_name || s.name || s.title);
+  });
+
+  return { titles, olKeys, series };
+}
+
+/**
+ * True si la reco (livre ou carte série) est déjà dans la bibliothèque.
+ */
+export function isRecoAlreadyOwned(item, userBooks = [], userSeries = []) {
+  if (!item) return false;
+  const { titles, olKeys, series } = collectOwnedIndex(userBooks, userSeries);
+
+  if (item.isSeriesCard) {
+    const name = normOwnedTitle(item.name || item.title || item.display_title || '');
+    if (name && series.has(name)) return true;
+    // Tous les tomes listés déjà possédés → carte inutile
+    const books = Array.isArray(item.books) ? item.books : [];
+    if (books.length > 0) {
+      const allOwned = books.every((b) => {
+        const t = normOwnedTitle(b.title || b.display_title || b.original_title || '');
+        const ol = b.ol_key || b.book_id;
+        if (ol && (olKeys.has(String(ol)) || olKeys.has(String(ol).replace(/^\/+/, '')))) {
+          return true;
+        }
+        return t && titles.has(t);
+      });
+      if (allOwned) return true;
+    }
+    return false;
+  }
+
+  const candidates = [
+    item.title,
+    item.display_title,
+    item.original_title,
+    item.title_fr,
+  ];
+  for (const c of candidates) {
+    const n = normOwnedTitle(c);
+    if (n && titles.has(n)) return true;
+  }
+  const ol = item.ol_key || item.book_id;
+  if (ol && (olKeys.has(String(ol)) || olKeys.has(String(ol).replace(/^\/+/, '')))) {
+    return true;
+  }
+  return false;
+}
