@@ -48,7 +48,7 @@ import SeriesDetailModal from '../SeriesDetailModal';
 
 // ── Cache (sessionStorage) ────────────────────────────────────────────────
 // Évite de recalculer les recommandations à chaque visite de la page.
-const CACHE_PREFIX = 'booktime_reco_cache_v10_';
+const CACHE_PREFIX = 'booktime_reco_cache_v11_';
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 function readCache(tab) {

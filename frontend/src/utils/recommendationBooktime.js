@@ -226,19 +226,24 @@ export function groupRecosAsBooktimeItems(recommendations, options = {}) {
   const seriesCards = [];
   const attributed = new Set();
 
+  // Toute attribution série → carte série (jamais de vignette tome isolée)
+  // Fusionner les clés distinctes pour le même nom (curated_x vs saga_y)
+  const mergedByName = new Map();
   seriesGroups.forEach(({ attr, books: groupBooks }) => {
-    const merged = mergeOpenLibraryBooksByVolume(groupBooks);
-    const promote =
-      isMultiSeriesAttr(attr) ||
-      merged.length >= 2 ||
-      groupBooks.length >= 2 ||
-      groupBooks.some((b) => looksLikeSeriesVolume(b)) ||
-      // Saga OL distincte du titre = tome d'une série même si 1 seul résultat
-      (attr.source === 'saga' && !!attr.seriesName) ||
-      attr.source === 'title_hint';
+    const nameKey = normSeed(attr.seriesName) || attr.seriesKey;
+    if (!mergedByName.has(nameKey)) {
+      mergedByName.set(nameKey, { attr, books: [...groupBooks] });
+    } else {
+      const slot = mergedByName.get(nameKey);
+      // Préférer les métadonnées curées (volumes, description)
+      if (isMultiSeriesAttr(attr) && !isMultiSeriesAttr(slot.attr)) {
+        slot.attr = attr;
+      }
+      slot.books.push(...groupBooks);
+    }
+  });
 
-    if (!promote) return;
-
+  mergedByName.forEach(({ attr, books: groupBooks }) => {
     const card = buildSeriesCard(attr, groupBooks);
     seriesCards.push(card);
     (card.books || groupBooks).forEach((b) => {
@@ -249,17 +254,11 @@ export function groupRecosAsBooktimeItems(recommendations, options = {}) {
 
   let standalone = list.filter((b) => !attributed.has(bookRecoKey(b)));
 
-  // 2e passe : livre isolé = nom / tome d'une série curée → carte série
+  // 2e passe : livre isolé encore rattachable → carte série
   const promoted = [];
   standalone = standalone.filter((book) => {
     const attr = resolveAttr(book);
     if (!attr) return true;
-    const promote =
-      isMultiSeriesAttr(attr) ||
-      looksLikeSeriesVolume(book) ||
-      attr.source === 'title_hint' ||
-      attr.source === 'saga';
-    if (!promote) return true;
     const already = seriesCards.some(
       (c) => normSeed(c.name) === normSeed(attr.seriesName)
     );

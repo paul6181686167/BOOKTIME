@@ -158,6 +158,39 @@ export class SeriesDetector {
           if (isExcluded) continue;
         }
         
+        // Nom / variation / traduction EN contenus dans le titre
+        // (ex. « Harry Potter and the Chamber of Secrets » → Harry Potter)
+        const nameCandidates = [
+          series.name,
+          ...(Array.isArray(series.variations) ? series.variations : []),
+          series.translations?.en,
+          series.translations?.fr,
+        ].filter(Boolean);
+        for (const candidate of nameCandidates) {
+          const n = FuzzyMatcher.normalizeString(candidate);
+          if (n.length < 5) continue;
+          if (!titleNormalized.includes(n)) continue;
+          const authorOk =
+            !authorNormalized ||
+            !series.authors?.length ||
+            series.authors.some((sa) => {
+              const san = FuzzyMatcher.normalizeString(sa);
+              return (
+                FuzzyMatcher.fuzzyMatch(authorNormalized, san) >= 50 ||
+                authorNormalized.includes(san) ||
+                san.includes(authorNormalized.split(' ').pop())
+              );
+            });
+          if (authorOk) {
+            return {
+              belongsToSeries: true,
+              seriesName: series.name,
+              confidence: 90,
+              method: 'series_database_name_in_title',
+            };
+          }
+        }
+
         // Test correspondance avec le nom de la série
         const seriesNameMatch = FuzzyMatcher.fuzzyMatch(titleNormalized, FuzzyMatcher.normalizeString(series.name));
         
@@ -202,49 +235,104 @@ export class SeriesDetector {
         
         // Test correspondance avec les titres de tomes individuels (méthode la plus précise)
         // Permet de détecter "La Communauté de l'Anneau" → "Le Seigneur des Anneaux"
-        if (series.volume_titles) {
-          for (const volTitle of Object.values(series.volume_titles)) {
-            if (!volTitle) continue;
-            const volTitleNorm = FuzzyMatcher.normalizeString(volTitle);
+        // + titres EN vs FR (The Last Olympian ≈ Le Dernier Olympien)
+        const volTitleBag = [
+          ...Object.values(series.volume_titles || {}),
+          ...Object.values(series.volume_titles_en || {}),
+        ];
+        const authorMatchesSeries =
+          !!authorNormalized &&
+          Array.isArray(series.authors) &&
+          series.authors.some(
+            (sa) =>
+              FuzzyMatcher.fuzzyMatch(
+                authorNormalized,
+                FuzzyMatcher.normalizeString(sa)
+              ) >= 50
+          );
+
+        for (const volTitle of volTitleBag) {
+          if (!volTitle) continue;
+          const aliases = Array.isArray(volTitle) ? volTitle : [volTitle];
+          for (const alias of aliases) {
+            const volTitleNorm = FuzzyMatcher.normalizeString(alias);
             if (!volTitleNorm || volTitleNorm.length < 6) continue;
 
             const isExactMatch = titleNormalized === volTitleNorm;
-            // Correspondance partielle : le titre contient le titre du tome (ex: "La Communauté de l'Anneau - Tome 1")
-            const isPartialMatch = volTitleNorm.length >= 12 && titleNormalized.includes(volTitleNorm);
+            const isPartialMatch =
+              volTitleNorm.length >= 12 && titleNormalized.includes(volTitleNorm);
+            // Chevauchement de mots (FR↔EN) : olympien / olympian
+            const wordScore = FuzzyMatcher.partialWordMatch(
+              titleNormalized,
+              volTitleNorm
+            );
+            const stemHit = (() => {
+              const wa = titleNormalized.split(' ').filter((w) => w.length >= 5);
+              const wb = volTitleNorm.split(' ').filter((w) => w.length >= 5);
+              if (!wa.length || !wb.length) return false;
+              return wa.some((x) =>
+                wb.some(
+                  (y) =>
+                    x === y ||
+                    (x.length >= 6 && y.length >= 6 && (x.startsWith(y.slice(0, 6)) || y.startsWith(x.slice(0, 6))))
+                )
+              );
+            })();
+            const isLooseMatch =
+              authorMatchesSeries && (wordScore >= 50 || stemHit);
 
-            if (isExactMatch || isPartialMatch) {
-              // Titre de tome long (>= 15 chars) : haute confiance sans vérification d'auteur
-              if (volTitleNorm.length >= 15) {
+            if (isExactMatch || isPartialMatch || isLooseMatch) {
+              if (volTitleNorm.length >= 15 || isExactMatch) {
                 return {
                   belongsToSeries: true,
                   seriesName: series.name,
-                  confidence: 98,
-                  method: 'series_database_volume_title'
+                  confidence: isExactMatch ? 98 : isPartialMatch ? 95 : 88,
+                  method: 'series_database_volume_title',
                 };
               }
-              // Titre de tome court : vérifier l'auteur pour éviter les faux positifs
-              if (author && series.authors && series.authors.length > 0) {
-                const authorMatch = series.authors.some(sa =>
-                  FuzzyMatcher.fuzzyMatch(authorNormalized, FuzzyMatcher.normalizeString(sa)) >= 50
-                );
-                if (authorMatch) {
-                  return {
-                    belongsToSeries: true,
-                    seriesName: series.name,
-                    confidence: 93,
-                    method: 'series_database_volume_title'
-                  };
-                }
-              } else if (!author) {
-                // Pas d'auteur disponible : confiance modérée pour titre court
+              if (authorMatchesSeries) {
+                return {
+                  belongsToSeries: true,
+                  seriesName: series.name,
+                  confidence: 93,
+                  method: 'series_database_volume_title',
+                };
+              }
+              if (!author) {
                 return {
                   belongsToSeries: true,
                   seriesName: series.name,
                   confidence: 80,
-                  method: 'series_database_volume_title_no_author'
+                  method: 'series_database_volume_title_no_author',
                 };
               }
             }
+          }
+        }
+
+        // Auteur connu + mot-clé distinctif du titre (ex. Riordan + « olympian »)
+        if (authorMatchesSeries && Array.isArray(series.keywords)) {
+          const hit = series.keywords.some((kw) => {
+            const k = FuzzyMatcher.normalizeString(kw);
+            if (!k || k.length < 5) return false;
+            if (titleNormalized.includes(k)) return true;
+            // stem FR/EN court
+            return (
+              k.length >= 6 &&
+              titleNormalized.split(' ').some(
+                (w) =>
+                  w.length >= 6 &&
+                  (w.startsWith(k.slice(0, 6)) || k.startsWith(w.slice(0, 6)))
+              )
+            );
+          });
+          if (hit) {
+            return {
+              belongsToSeries: true,
+              seriesName: series.name,
+              confidence: 82,
+              method: 'series_database_author_keyword',
+            };
           }
         }
 

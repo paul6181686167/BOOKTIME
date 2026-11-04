@@ -17,6 +17,15 @@ export const EXTENDED_SERIES_DATABASE = {
         6: "Harry Potter et le prince de sang-mêlé",
         7: "Harry Potter et les reliques de la mort"
       },
+      volume_titles_en: {
+        1: "Harry Potter and the Philosopher's Stone",
+        2: 'Harry Potter and the Chamber of Secrets',
+        3: 'Harry Potter and the Prisoner of Azkaban',
+        4: 'Harry Potter and the Goblet of Fire',
+        5: 'Harry Potter and the Order of the Phoenix',
+        6: 'Harry Potter and the Half-Blood Prince',
+        7: 'Harry Potter and the Deathly Hallows',
+      },
       volume_details: {
         1: {
           pages: 320,
@@ -281,11 +290,18 @@ export const EXTENDED_SERIES_DATABASE = {
         4: "La Bataille du Labyrinthe",
         5: "Le Dernier Olympien"
       },
+      volume_titles_en: {
+        1: 'The Lightning Thief',
+        2: 'The Sea of Monsters',
+        3: "The Titan's Curse",
+        4: 'The Battle of the Labyrinth',
+        5: 'The Last Olympian',
+      },
       description: 'Série fantasy moderne avec les dieux grecs dans le monde contemporain.',
       first_published: '2005',
       status: 'completed',
-      keywords: ['percy jackson', 'rick riordan', 'demi-dieu', 'olympe', 'camp', 'mythology'],
-      variations: ['percy jackson', 'percy jakson', 'percy', 'olympians'],
+      keywords: ['percy jackson', 'rick riordan', 'demi-dieu', 'olympe', 'olympian', 'olympians', 'camp', 'mythology', 'lightning thief'],
+      variations: ['percy jackson', 'percy jakson', 'percy', 'olympians', 'percy jackson and the olympians'],
       exclusions: ['heroes of olympus', 'kane chronicles', 'magnus chase'],
       wikipedia_url: 'https://fr.wikipedia.org/wiki/Percy_Jackson',
       translations: {

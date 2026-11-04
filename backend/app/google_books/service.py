@@ -86,6 +86,21 @@ def simplify_item(item: dict[str, Any]) -> dict[str, Any]:
     cats = vi.get("categories") or []
     if not isinstance(cats, list):
         cats = []
+    series_info = vi.get("seriesInfo") or {}
+    series_name = ""
+    if isinstance(series_info, dict):
+        series_name = str(
+            series_info.get("shortSeriesBookTitle")
+            or series_info.get("volumeSeries")
+            or ""
+        ).strip()
+        if not series_name:
+            vol_series = series_info.get("volumeSeries")
+            if isinstance(vol_series, list) and vol_series:
+                first = vol_series[0] if isinstance(vol_series[0], dict) else {}
+                series_name = str(
+                    first.get("seriesBookTitle") or first.get("seriesId") or ""
+                ).strip()
     return {
         "google_books_id": vid,
         "title": vi.get("title") or "",
@@ -102,6 +117,7 @@ def simplify_item(item: dict[str, Any]) -> dict[str, Any]:
         "preview_link": vi.get("previewLink") or "",
         "info_link": vi.get("infoLink") or "",
         "categories": cats,
+        "series_name": series_name,
     }
 
 
