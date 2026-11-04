@@ -160,7 +160,7 @@ class BookService:
             update_dict["status"] = update_dict["status"].lower()
             
             # Gérer les dates selon le statut
-            if book.get("status") == "completed" and update_dict["status"] == "reading":
+            if book.get("status") in ("completed", "to_reread") and update_dict["status"] == "reading":
                 update_dict["date_started"] = datetime.now()
                 update_dict["date_completed"] = None
                 if "current_page" not in update_dict:
@@ -178,7 +178,7 @@ class BookService:
             # Relire : archiver la lecture précédente
             if (
                 "status" in update_dict
-                and book.get("status") == "completed"
+                and book.get("status") in ("completed", "to_reread")
                 and update_dict["status"] == "reading"
                 and (book.get("date_completed") or book.get("date_started"))
             ):
