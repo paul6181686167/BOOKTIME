@@ -256,7 +256,39 @@ def search_similar_books(
         book["isFromGoogleBooks"] = True
         book["isFromOpenLibrary"] = False
         book["display_title"] = t
-        book["saga"] = ""
+        # Extraire un nom de série (API seriesInfo, sous-titre, ou « Book/Tome N »)
+        saga = (it.get("series_name") or "").strip()
+        if not saga:
+            sub = str(it.get("subtitle") or "").strip()
+            m = re.search(
+                r"^(.*?)(?:\s*[,:#\-–—]\s*)?(?:book|tome|vol\.?|volume)\s*\d+",
+                sub,
+                flags=re.I,
+            )
+            if m and m.group(1).strip():
+                saga = m.group(1).strip()
+            elif sub and len(sub) >= 4 and sub.lower() not in t_norm:
+                # Sous-titre souvent = nom de série
+                if re.search(r"\b(book|tome|vol\.?|volume|series)\b", sub, flags=re.I):
+                    saga = re.sub(
+                        r"\s*[,:#\-–—]?\s*(?:book|tome|vol\.?|volume)\s*\d+.*$",
+                        "",
+                        sub,
+                        flags=re.I,
+                    ).strip()
+        if not saga:
+            m2 = re.search(
+                r"^(.*?)(?:\s*[-–—:]\s*)(?:book|tome|vol\.?|volume|#)\s*\d+",
+                t,
+                flags=re.I,
+            )
+            if m2 and len(m2.group(1).strip()) >= 3:
+                saga = m2.group(1).strip()
+        if saga and saga.lower() != t_norm:
+            book["saga"] = saga
+            book["series_name"] = saga
+        else:
+            book["saga"] = ""
         out.append(book)
 
     try:
