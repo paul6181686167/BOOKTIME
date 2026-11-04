@@ -24,7 +24,7 @@ import {
   ClockIcon,
 } from '@heroicons/react/24/outline';
 import { recommendationService } from '../../services/recommendationService';
-import { addSeriesToLibrary } from '../../services/seriesLibraryService';
+import { handleAddSeriesToLibrary } from '../series/SeriesActions';
 import { API_BASE_URL } from '../../config/environment';
 import { displayBookTitleFrFirst } from '../../utils/openLibraryBookDisplay';
 import { resolveCoverForGridItem } from '../../utils/helpers';
@@ -961,13 +961,16 @@ const RecommendationPage = () => {
     const fromGb =
       book.isFromGoogleBooks ||
       String(book.ol_key || book.book_id || '').startsWith('gbooks_');
+    const owned = isRecoAlreadyOwned(book, userBooks, userSeries);
     setSelectedSeries(null);
     setShowSeriesModal(false);
     setSelectedBook({
       ...book,
       status: book.status || 'to_read',
-      isFromOpenLibrary: !fromGb,
+      // Toujours « catalogue externe » pour afficher Ajouter (OL + Google Books)
+      isFromOpenLibrary: !owned,
       isFromGoogleBooks: fromGb,
+      isOwned: owned,
       display_title: displayBookTitleFrFirst(book) || book.title,
       description: book.description || book.metadata?.description || '',
       subjects: Array.isArray(book.subjects)
@@ -975,34 +978,79 @@ const RecommendationPage = () => {
         : [],
     });
     setShowBookModal(true);
-  }, []);
+  }, [userBooks, userSeries]);
 
   const handleAdd = async (book) => {
     if (book?.isSeriesCard) {
-      const token = localStorage.getItem('token');
-      await addSeriesToLibrary(
-        {
-          series_name: book.name || book.title,
-          name: book.name || book.title,
-          author: book.author || '',
-          category: book.category || 'roman',
-          cover_url: book.cover_url,
-          books: book.books || [],
-          total_books: book.totalBooks || book.books?.length || 0,
-        },
-        token
-      );
-      setUserSeries((prev) => [...prev, book]);
+      const seriesPayload = {
+        ...book,
+        name: book.name || book.title || book.series_name || '',
+        author: book.author || '',
+        authors: book.authors || (book.author ? [book.author] : []),
+        category: ['roman', 'bd', 'manga'].includes(book.category)
+          ? book.category
+          : 'roman',
+        cover_url: book.cover_url || book.cover_image_url || null,
+        totalBooks: book.totalBooks || book.total_books || book.books?.length || 0,
+        books: book.books || [],
+        mergedLibraryVolumes: book.mergedLibraryVolumes || book.books || [],
+      };
+      await handleAddSeriesToLibrary(seriesPayload, {});
+      setUserSeries((prev) => [...prev, { ...seriesPayload, isSeriesCard: true }]);
       clearRecoCache();
       return;
     }
     const normalized = recoToBooktimeBook(book) || book;
-    await recommendationService.addRecommendedBook({
-      ...normalized,
-      book_id: normalized.ol_key || normalized.book_id,
-      title: normalized.display_title || normalized.title,
-    });
-    setUserBooks((prev) => [...prev, normalized]);
+    const title =
+      normalized.display_title || normalized.title_fr || normalized.title || '';
+    const author = normalized.author || 'Auteur inconnu';
+    const category = ['roman', 'bd', 'manga'].includes(normalized.category)
+      ? normalized.category
+      : 'roman';
+    const olKey = String(normalized.ol_key || normalized.book_id || '');
+    const isOlWork =
+      olKey.includes('works/') && !olKey.startsWith('gbooks_');
+
+    if (isOlWork) {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/openlibrary/import`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ol_key: olKey,
+          category,
+          title,
+          title_fr: normalized.title_fr || null,
+          author,
+          cover_url: normalized.cover_url || '',
+          original_title: normalized.original_title || normalized.title || null,
+          description: normalized.description || '',
+          first_publish_year: normalized.publication_year || null,
+          saga: normalized.saga || null,
+          volume_number: normalized.volume_number || null,
+        }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(
+          typeof err.detail === 'string'
+            ? err.detail
+            : "Erreur lors de l'ajout du livre"
+        );
+      }
+    } else {
+      await recommendationService.addRecommendedBook({
+        ...normalized,
+        book_id: olKey || normalized.book_id,
+        title,
+        author,
+        category,
+      });
+    }
+    setUserBooks((prev) => [...prev, { ...normalized, title, author, category }]);
     clearRecoCache();
   };
 
@@ -1347,7 +1395,6 @@ const RecommendationPage = () => {
                   await handleAdd({ ...series, isSeriesCard: true });
                   setShowSeriesModal(false);
                   setSelectedSeries(null);
-                  toast.success('Série ajoutée à ta bibliothèque');
                 }}
                 userSeriesLibrary={userSeries || []}
               />

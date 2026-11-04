@@ -221,11 +221,13 @@ export const recommendationService = {
       })();
 
       const formattedBookData = {
-        title: bookData.title,
-        author: bookData.author,
-        category: bookData.category,
-        cover_url: bookData.cover_url,
-        ol_key: bookData.book_id,
+        title: bookData.title || bookData.display_title || 'Sans titre',
+        author: bookData.author || 'Auteur inconnu',
+        category: ['roman', 'bd', 'manga'].includes(bookData.category)
+          ? bookData.category
+          : 'roman',
+        cover_url: bookData.cover_url || '',
+        ol_key: bookData.ol_key || bookData.book_id || null,
         status: isUpcoming ? 'upcoming' : 'to_read',
         publish_date: bookData.published_date || bookData.publish_date || null,
         source: 'recommendation',

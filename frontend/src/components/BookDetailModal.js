@@ -399,9 +399,14 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     }
   };
 
-  // Fonction pour ajouter un livre depuis Open Library
+  // Ajout depuis catalogue externe (Open Library / Google Books / recommandations)
+  const canAddFromCatalog =
+    !!onAddFromOpenLibrary &&
+    !book.isOwned &&
+    (book.isFromOpenLibrary || book.isFromGoogleBooks);
+
   const handleAddFromOpenLibrary = async () => {
-    if (!onAddFromOpenLibrary || !book.isFromOpenLibrary || isAdding) return;
+    if (!canAddFromCatalog || isAdding) return;
     setIsAdding(true);
     try {
       await onAddFromOpenLibrary(book);
@@ -700,7 +705,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
           
           <div className="flex w-full flex-col gap-2 shrink-0 md:w-auto md:items-end">
             {/* Bouton Ajouter pour les livres Open Library — pleine largeur sur mobile */}
-            {book.isFromOpenLibrary && !book.isOwned && onAddFromOpenLibrary && (
+            {canAddFromCatalog && (
               <button
                 onClick={handleAddFromOpenLibrary}
                 disabled={isAdding || addDone}
