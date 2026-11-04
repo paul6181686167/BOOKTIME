@@ -195,7 +195,7 @@ export function groupRecosAsBooktimeItems(recommendations, options = {}) {
     const curated = findCuratedSeriesByQuery(hint);
     if (curated?.seriesData) {
       return {
-        seriesKey: curated.key || `hint_${normSeed(curated.seriesName || hint)}`,
+        seriesKey: curated.seriesKey || `hint_${normSeed(curated.seriesName || hint)}`,
         seriesName: curated.seriesName || curated.seriesData.name || hint,
         seriesData: curated.seriesData,
         source: 'title_hint',
