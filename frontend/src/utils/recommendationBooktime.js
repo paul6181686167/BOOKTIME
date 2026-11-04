@@ -3,7 +3,10 @@
  * (titres FR, cartes série, shape compatible modales).
  */
 import { displayBookTitleFrFirst, mergeOpenLibraryBooksByVolume } from './openLibraryBookDisplay';
-import { attributeBookToSeries } from './seriesAttribution';
+import {
+  attributeBookToSeries,
+  findCuratedSeriesByQuery,
+} from './seriesAttribution';
 
 /**
  * @param {object} reco - Item API recommandations
@@ -62,8 +65,97 @@ function normSeed(s) {
     .trim();
 }
 
+function bookRecoKey(book) {
+  return book?.ol_key || book?.id || '';
+}
+
+function isMultiSeriesAttr(attr) {
+  if (!attr?.seriesData) return false;
+  const d = attr.seriesData;
+  return (
+    (Number(d.volumes) || 0) > 1 ||
+    Object.keys(d.volume_titles || {}).length > 1
+  );
+}
+
+/** Titre / métadonnées qui indiquent clairement un tome d'une série. */
+function looksLikeSeriesVolume(book) {
+  if (!book) return false;
+  const vol = Number(book.volume_number);
+  if (Number.isFinite(vol) && vol > 0) return true;
+  const t = `${book.title || ''} ${book.display_title || ''} ${book.original_title || ''}`;
+  return /(?:^|[\s\-–—:])(?:tome|volume|vol\.?|#)\s*\d+/i.test(t);
+}
+
+/** Extrait « Nom de série » depuis « Nom - Tome 2 » / « Nom Tome 3 ». */
+function extractSeriesHintFromTitle(title) {
+  const t = (title || '').trim();
+  if (!t) return null;
+  const m =
+    t.match(/^(.*?)\s*[-–—:]\s*(?:tome|volume|vol\.?|#)\s*\d+/i) ||
+    t.match(/^(.*?)\s+(?:tome|volume|vol\.?)\s*\d+\s*$/i);
+  if (!m) return null;
+  const hint = (m[1] || '').trim();
+  return hint.length >= 3 ? hint : null;
+}
+
+function shouldExcludeSeedSeries(seriesName, seedN, seedTokens) {
+  if (!seedN) return false;
+  const seriesN = normSeed(seriesName);
+  if (!seriesN) return false;
+  if (seriesN === seedN || seriesN.includes(seedN) || seedN.includes(seriesN)) {
+    return true;
+  }
+  if (seedTokens.length >= 2 && seedTokens.every((tok) => seriesN.includes(tok))) {
+    return true;
+  }
+  return false;
+}
+
+function buildSeriesCard(attr, groupBooks) {
+  const merged = mergeOpenLibraryBooksByVolume(groupBooks);
+  const cover = merged.find((b) => b.cover_url)?.cover_url || groupBooks[0]?.cover_url || null;
+  const author =
+    groupBooks.find((b) => b.author)?.author ||
+    attr.seriesData?.authors?.[0] ||
+    '';
+  const reason =
+    groupBooks.find((b) => b.reason)?.reason || 'Série proche de ta sélection';
+  const fromGb = groupBooks.some(
+    (b) => b.isFromGoogleBooks || String(b.source || '').endsWith('_gb')
+  );
+  const totalBooks =
+    attr.seriesData?.volumes ||
+    Object.keys(attr.seriesData?.volume_titles || {}).length ||
+    merged.length ||
+    groupBooks.length;
+  return {
+    isSeriesCard: true,
+    fromOpenLibrary: !fromGb,
+    isFromOpenLibrary: !fromGb,
+    isFromGoogleBooks: fromGb,
+    id: `series_reco_${attr.seriesKey}`,
+    name: attr.seriesName,
+    title: attr.seriesName,
+    display_title: attr.seriesName,
+    author,
+    category: attr.seriesData?.category || groupBooks[0]?.category || 'roman',
+    cover_url: cover,
+    totalBooks,
+    books: merged.length ? merged : groupBooks,
+    description:
+      attr.seriesData?.description ||
+      `Série · ${totalBooks || merged.length || groupBooks.length} tome(s)`,
+    reason,
+    score: Math.max(...groupBooks.map((b) => b.score || 0), 0),
+    source: groupBooks[0]?.source || 'seed_similarity',
+    book_id: merged[0]?.ol_key || merged[0]?.book_id || groupBooks[0]?.ol_key,
+  };
+}
+
 /**
  * Regroupe une liste de recos en cartes série + livres individuels (format recherche Booktime).
+ * Un tome rattaché à une série (curée / saga / « Tome N ») → carte série, jamais vignette tome.
  * @param {object[]} recommendations
  * @param {{ seedLabel?: string }} [options] — exclut la série seed (ex. Percy Jackson)
  * @returns {object[]}
@@ -86,117 +178,97 @@ export function groupRecosAsBooktimeItems(recommendations, options = {}) {
     });
   if (!list.length) return [];
 
+  const resolveAttr = (book) => {
+    let attr = attributeBookToSeries(book);
+    if (attr && shouldExcludeSeedSeries(attr.seriesName, seedN, seedTokens)) {
+      return null;
+    }
+    if (attr) return attr;
+
+    // Repli : « Foo - Tome 2 » → série Foo (curée si connue)
+    const hint =
+      extractSeriesHintFromTitle(book.display_title) ||
+      extractSeriesHintFromTitle(book.title) ||
+      extractSeriesHintFromTitle(book.original_title);
+    if (!hint) return null;
+    if (shouldExcludeSeedSeries(hint, seedN, seedTokens)) return null;
+    const curated = findCuratedSeriesByQuery(hint);
+    if (curated?.seriesData) {
+      return {
+        seriesKey: curated.key || `hint_${normSeed(curated.seriesName || hint)}`,
+        seriesName: curated.seriesName || curated.seriesData.name || hint,
+        seriesData: curated.seriesData,
+        source: 'title_hint',
+      };
+    }
+    if (looksLikeSeriesVolume(book) || (book.saga && normSeed(book.saga) === normSeed(hint))) {
+      return {
+        seriesKey: `hint_${normSeed(hint)}`,
+        seriesName: hint,
+        seriesData: null,
+        source: 'title_hint',
+      };
+    }
+    return null;
+  };
+
   const seriesGroups = new Map();
-  const attributed = new Set();
 
   list.forEach((book) => {
-    const attr = attributeBookToSeries(book);
+    const attr = resolveAttr(book);
     if (!attr) return;
-    const seriesN = normSeed(attr.seriesName);
-    // Ne jamais créer une carte pour la série seed elle-même
-    if (seedN && (seriesN === seedN || seriesN.includes(seedN) || seedN.includes(seriesN))) {
-      return;
-    }
-    if (seedTokens.length >= 2 && seedTokens.every((t) => seriesN.includes(t))) {
-      return;
-    }
     if (!seriesGroups.has(attr.seriesKey)) {
       seriesGroups.set(attr.seriesKey, { attr, books: [] });
     }
     seriesGroups.get(attr.seriesKey).books.push(book);
-    if (book.ol_key) attributed.add(book.ol_key);
-    else attributed.add(book.id);
   });
 
   const seriesCards = [];
+  const attributed = new Set();
+
   seriesGroups.forEach(({ attr, books: groupBooks }) => {
-    // Série Booktime : ≥2 tomes trouvés, OU série curée multi-tomes (ex. Dog Man)
     const merged = mergeOpenLibraryBooksByVolume(groupBooks);
-    const curatedMulti =
-      attr.seriesData &&
-      ((Number(attr.seriesData.volumes) || 0) > 1 ||
-        Object.keys(attr.seriesData.volume_titles || {}).length > 1);
-    if (merged.length < 2 && !curatedMulti) {
-      return;
-    }
-    merged.forEach((b) => {
-      if (b.ol_key) attributed.add(b.ol_key);
-      else if (b.id) attributed.add(b.id);
-    });
-    const cover = merged.find((b) => b.cover_url)?.cover_url || null;
-    const author = groupBooks.find((b) => b.author)?.author || '';
-    const reason =
-      groupBooks.find((b) => b.reason)?.reason ||
-      `Série proche de ta sélection`;
-    const fromGb = groupBooks.some(
-      (b) => b.isFromGoogleBooks || String(b.source || '').endsWith('_gb')
-    );
-    seriesCards.push({
-      isSeriesCard: true,
-      fromOpenLibrary: !fromGb,
-      isFromOpenLibrary: !fromGb,
-      isFromGoogleBooks: fromGb,
-      id: `series_reco_${attr.seriesKey}`,
-      name: attr.seriesName,
-      title: attr.seriesName,
-      display_title: attr.seriesName,
-      author,
-      category: attr.seriesData?.category || groupBooks[0]?.category || 'roman',
-      cover_url: cover,
-      totalBooks: attr.seriesData?.volumes || merged.length,
-      books: merged,
-      description: attr.seriesData?.description || `Série · ${merged.length} tome(s)`,
-      reason,
-      score: Math.max(...groupBooks.map((b) => b.score || 0), 0),
-      source: groupBooks[0]?.source || 'seed_similarity',
-      book_id: merged[0]?.ol_key || merged[0]?.book_id,
+    const promote =
+      isMultiSeriesAttr(attr) ||
+      merged.length >= 2 ||
+      groupBooks.length >= 2 ||
+      groupBooks.some((b) => looksLikeSeriesVolume(b)) ||
+      // Saga OL distincte du titre = tome d'une série même si 1 seul résultat
+      (attr.source === 'saga' && !!attr.seriesName) ||
+      attr.source === 'title_hint';
+
+    if (!promote) return;
+
+    const card = buildSeriesCard(attr, groupBooks);
+    seriesCards.push(card);
+    (card.books || groupBooks).forEach((b) => {
+      const key = bookRecoKey(b);
+      if (key) attributed.add(key);
     });
   });
 
-  const attributedKeys = attributed;
-  let standalone = list.filter((b) => {
-    const key = b.ol_key || b.id;
-    return !attributedKeys.has(key);
-  });
+  let standalone = list.filter((b) => !attributed.has(bookRecoKey(b)));
 
-  // 2e passe : livres isolés qui sont en fait le nom d'une série curée (ex. Dog Man)
+  // 2e passe : livre isolé = nom / tome d'une série curée → carte série
   const promoted = [];
   standalone = standalone.filter((book) => {
-    const attr = attributeBookToSeries(book);
-    const curatedMulti =
-      attr?.seriesData &&
-      ((Number(attr.seriesData.volumes) || 0) > 1 ||
-        Object.keys(attr.seriesData.volume_titles || {}).length > 1);
-    if (!curatedMulti) return true;
+    const attr = resolveAttr(book);
+    if (!attr) return true;
+    const promote =
+      isMultiSeriesAttr(attr) ||
+      looksLikeSeriesVolume(book) ||
+      attr.source === 'title_hint' ||
+      attr.source === 'saga';
+    if (!promote) return true;
     const already = seriesCards.some(
-      (c) => (c.name || '').toLowerCase() === (attr.seriesName || '').toLowerCase()
+      (c) => normSeed(c.name) === normSeed(attr.seriesName)
     );
     if (already) return false;
-    promoted.push({
-      isSeriesCard: true,
-      fromOpenLibrary: !book.isFromGoogleBooks,
-      isFromOpenLibrary: !book.isFromGoogleBooks,
-      isFromGoogleBooks: !!book.isFromGoogleBooks,
-      id: `series_reco_${attr.seriesKey}`,
-      name: attr.seriesName,
-      title: attr.seriesName,
-      display_title: attr.seriesName,
-      author: book.author || attr.seriesData.authors?.[0] || '',
-      category: attr.seriesData.category || book.category || 'roman',
-      cover_url: book.cover_url || null,
-      totalBooks: attr.seriesData.volumes || 0,
-      books: [book],
-      description: attr.seriesData.description || book.description || '',
-      reason: book.reason || `Série · ${attr.seriesData.volumes || ''} tomes`,
-      score: book.score || 0,
-      source: book.source || 'seed_similarity',
-      book_id: book.ol_key || book.book_id,
-    });
+    promoted.push(buildSeriesCard(attr, [book]));
     return false;
   });
   seriesCards.push(...promoted);
 
-  // Séries d'abord, puis livres — priorité aux items avec couverture
   const sortCover = (a, b) => Number(!!b.cover_url) - Number(!!a.cover_url);
   return [...seriesCards.sort(sortCover), ...standalone.sort(sortCover)];
 }
