@@ -48,7 +48,17 @@ const getBackendURL = () => {
   if (process.env.REACT_APP_BACKEND_URL) {
     return process.env.REACT_APP_BACKEND_URL;
   }
-  return process.env.REACT_APP_API_URL || 'http://localhost:8001';
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  // Prod Vercel sans env : ne jamais retomber sur localhost (sinon login impossible)
+  if (
+    typeof window !== 'undefined' &&
+    /\.vercel\.app$/i.test(window.location.hostname)
+  ) {
+    return 'https://booktime-uo15.onrender.com';
+  }
+  return 'http://localhost:8001';
 };
 
 /**

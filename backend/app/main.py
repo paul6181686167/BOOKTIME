@@ -127,22 +127,26 @@ def get_cors_origins() -> List[str]:
         # Vercel deployments
         "https://booktime-sg59.vercel.app",
         "https://booktime-sg59-git-main-paul6181686167s-projects.vercel.app",
+        "https://booktime-paul6181686167s-projects.vercel.app",
+        "https://booktime-git-main-paul6181686167s-projects.vercel.app",
         "https://booktime.vercel.app",
         "https://1571571761761571.vercel.app",
         "https://1571571761761571-git-main-paul6181686167s-projects.vercel.app",
         "https://changelog-reader-9.preview.emergentagent.com",
     ]
 
-    # Accepter tous les sous-domaines *.vercel.app de paul6181686167
+    # CORS_ORIGINS (Render) + origines Vercel du projet
     env_origins = os.environ.get("CORS_ORIGINS", "")
     if env_origins:
-        cors_origins.extend([origin.strip() for origin in env_origins.split(",")])
+        cors_origins.extend([origin.strip() for origin in env_origins.split(",") if origin.strip()])
 
-    return cors_origins
+    return list(dict.fromkeys(cors_origins))
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_cors_origins(),
+    # Preview / prod Vercel (booktime-*, *-paul6181686167s-projects)
+    allow_origin_regex=r"https://([a-z0-9-]+\.)*vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -151,8 +155,11 @@ app.add_middleware(
 
 def _cors_headers(origin: str = None) -> dict:
     """Headers CORS pour les reponses d'erreur - ne renvoie pas d'origine si non autorisée"""
+    import re
+
     origins = get_cors_origins()
-    if origin and origin in origins:
+    vercel_re = re.compile(r"^https://([a-z0-9-]+\.)*vercel\.app$", re.I)
+    if origin and (origin in origins or vercel_re.match(origin)):
         allow_origin = origin
     elif not origin:
         allow_origin = origins[0] if origins else "http://localhost:3000"
