@@ -221,12 +221,12 @@ class ChapterService:
             logger.error(f"Erreur mapping IDs {series_name}: {str(e)}")
             return False
     
-    async def get_upcoming_releases(self) -> Dict[str, List[Dict[str, Any]]]:
+    async def get_upcoming_releases(
+        self, series_names: Optional[List[str]] = None
+    ) -> Dict[str, List[Dict[str, Any]]]:
         """
-        Récupère le planning des sorties à venir
-        
-        Returns:
-            Dictionnaire avec sorties cette semaine, semaine prochaine, ce mois
+        Récupère le planning des sorties à venir.
+        Si ``series_names`` est fourni, ne lit que ces séries (perf À venir).
         """
         await self._ensure_db()
         
@@ -239,10 +239,11 @@ class ChapterService:
             end_of_next_week = end_of_week + timedelta(days=7)
             end_of_month = now.replace(day=28) + timedelta(days=4)  # Fin du mois
             
-            # Récupérer toutes les séries avec prédictions
-            cursor = collection.find(
-                {"next_chapter.estimated_date": {"$exists": True}}
-            )
+            query: Dict[str, Any] = {"next_chapter.estimated_date": {"$exists": True}}
+            names = [n for n in (series_names or []) if n]
+            if names:
+                query["series_name"] = {"$in": names}
+            cursor = collection.find(query)
             
             this_week = []
             next_week = []

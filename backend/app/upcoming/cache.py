@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 CACHE_TTL_HOURS = int(os.getenv("UPCOMING_CACHE_TTL_HOURS", "6"))
 # Incrémenter après tout changement de règles de filtrage pour invalider
 # les payloads obsolètes encore dans la TTL (sinon le panneau sert l'ancienne liste).
-CACHE_LOGIC_VERSION = int(os.getenv("UPCOMING_CACHE_LOGIC_VERSION", "2"))
+CACHE_LOGIC_VERSION = int(os.getenv("UPCOMING_CACHE_LOGIC_VERSION", "3"))
 
 
 def _coll():

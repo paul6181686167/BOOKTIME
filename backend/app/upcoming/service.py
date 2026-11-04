@@ -27,8 +27,8 @@ logger = logging.getLogger(__name__)
 # Bornes de fraîcheur pour les sources externes (Google Books).
 _TOME_PAST_HORIZON_DAYS = 180   # un tome "récent" non trouvé dans Wikidata
 _AUTHOR_PAST_HORIZON_DAYS = 120  # nouveauté récente d'un auteur suivi
-_MAX_TOME_ENRICH = 15            # limite d'appels Google Books par requête
-_MAX_FOLLOWED_AUTHORS = 20
+_MAX_TOME_ENRICH = 6             # limite d'appels Google Books (perf 1er chargement)
+_MAX_FOLLOWED_AUTHORS = 6
 _MAX_ITEMS_PER_AUTHOR = 5
 
 # Instance réutilisable (lit le cache partagé series_chapters, indépendant de l'état).
@@ -159,7 +159,16 @@ def _collect_user_series(user_id: str) -> tuple[dict[str, dict], set[str]]:
             entry["cover"] = cover
         return entry
 
-    for b in books_collection.find({"user_id": user_id}, {"_id": 0}):
+    book_proj = {
+        "_id": 0,
+        "title": 1,
+        "saga": 1,
+        "category": 1,
+        "author": 1,
+        "cover_url": 1,
+        "volume_number": 1,
+    }
+    for b in books_collection.find({"user_id": user_id}, book_proj):
         title_key = _norm(b.get("title"))
         if title_key:
             owned_titles.add(title_key)
@@ -176,7 +185,18 @@ def _collect_user_series(user_id: str) -> tuple[dict[str, dict], set[str]]:
         except (TypeError, ValueError):
             pass
 
-    for s in series_library_collection.find({"user_id": user_id}, {"_id": 0}):
+    series_proj = {
+        "_id": 0,
+        "series_name": 1,
+        "name": 1,
+        "authors": 1,
+        "category": 1,
+        "cover_image_url": 1,
+        "series_status": 1,
+        "volumes": 1,
+        "total_volumes": 1,
+    }
+    for s in series_library_collection.find({"user_id": user_id}, series_proj):
         name = s.get("series_name") or s.get("name")
         if not name:
             continue
@@ -208,6 +228,17 @@ def _collect_user_series(user_id: str) -> tuple[dict[str, dict], set[str]]:
                 pass
 
     return series_map, owned_titles
+
+
+async def _prefetch_wd_docs(series_map: dict[str, dict]) -> dict[str, Optional[dict]]:
+    """Wikidata en parallèle pour toutes les séries (évite N+1 séquentiel)."""
+    keys = list(series_map.keys())
+    if not keys:
+        return {}
+    docs = await asyncio.gather(
+        *(asyncio.to_thread(_find_series_doc, series_map[k]["name"]) for k in keys)
+    )
+    return dict(zip(keys, docs))
 
 
 def _curated_volume_titles(entry: dict) -> dict[int, str]:
@@ -305,6 +336,7 @@ def _build_next_tomes(
     series_map: dict[str, dict],
     today_iso: str,
     manga_info: dict[str, dict] | None = None,
+    wd_docs: dict[str, Optional[dict]] | None = None,
 ) -> list[dict]:
     """
     Prochains tomes **à paraître** uniquement :
@@ -313,6 +345,7 @@ def _build_next_tomes(
     - pas de séries terminées sans tome annoncé non sorti.
     """
     manga_info = manga_info or {}
+    wd_docs = wd_docs or {}
     items: list[dict] = []
     today_year = date.fromisoformat(today_iso).year
 
@@ -367,7 +400,7 @@ def _build_next_tomes(
         if curated_total and next_vol > curated_total and not curated_unreleased:
             continue
 
-        wd_doc = _find_series_doc(entry["name"])
+        wd_doc = wd_docs.get(key) if key in wd_docs else _find_series_doc(entry["name"])
         vol_works = _extract_volumes(wd_doc.get("works")) if wd_doc else {}
 
         work = vol_works.get(next_vol)
@@ -576,7 +609,12 @@ async def _fetch_manga_chapters_map(series_map: dict[str, dict]) -> dict[str, An
     return out
 
 
-def _manga_tome_info(series_name: str, series_chapters: Any, today_iso: str) -> dict:
+def _manga_tome_info(
+    series_name: str,
+    series_chapters: Any,
+    today_iso: str,
+    wd_doc: Optional[dict] = None,
+) -> dict:
     """
     Analyse les tomes d'un manga pour déterminer :
     - ``released_chapters`` : chapitres appartenant à un tome CONFIRMÉ déjà sorti
@@ -590,7 +628,8 @@ def _manga_tome_info(series_name: str, series_chapters: Any, today_iso: str) -> 
     for vol in volumes:
         tagged_vols.add(vol.volume_number)
 
-    wd_doc = _find_series_doc(series_name)
+    if wd_doc is None:
+        wd_doc = _find_series_doc(series_name)
     vol_works = _extract_volumes(wd_doc.get("works")) if wd_doc else {}
 
     released_chapters: set[float] = set()
@@ -621,8 +660,11 @@ async def _build_manga_chapters(
     n'apparaissent plus individuellement (ils « vivent » désormais dans le tome).
     """
     manga_info = manga_info or {}
+    user_series_names = [e.get("name") for e in series_map.values() if e.get("name")]
     try:
-        releases = await _chapter_service.get_upcoming_releases()
+        releases = await _chapter_service.get_upcoming_releases(
+            series_names=user_series_names or None
+        )
     except Exception as exc:  # pragma: no cover
         logger.debug("Chapters upcoming indisponible : %s", exc)
         return []
@@ -708,69 +750,82 @@ async def get_upcoming_for_user(current_user: dict) -> dict[str, Any]:
 
     series_map, owned_titles = await asyncio.to_thread(_collect_user_series, user_id)
 
-    # Données MangaUpdates des séries manga (chapitres + tomes étiquetés) puis
-    # analyse des tomes confirmés sortis (croisement Wikidata) — partagée entre
-    # le calcul des prochains tomes et le masquage des chapitres regroupés.
-    manga_chapters_map = await _fetch_manga_chapters_map(series_map)
+    # MangaUpdates + Wikidata en parallèle (évite N+1 Wikidata séquentiel)
+    manga_chapters_map, wd_docs = await asyncio.gather(
+        _fetch_manga_chapters_map(series_map),
+        _prefetch_wd_docs(series_map),
+    )
+
     manga_info: dict[str, dict] = {}
     if manga_chapters_map:
         keys = list(manga_chapters_map.keys())
         infos = await asyncio.gather(
             *(
                 asyncio.to_thread(
-                    _manga_tome_info, series_map[k]["name"], manga_chapters_map[k], today_iso
+                    _manga_tome_info,
+                    series_map[k]["name"],
+                    manga_chapters_map[k],
+                    today_iso,
+                    wd_docs.get(k),
                 )
                 for k in keys
             )
         )
         manga_info = dict(zip(keys, infos))
 
-    next_tomes = await asyncio.to_thread(_build_next_tomes, series_map, today_iso, manga_info)
+    next_tomes = await asyncio.to_thread(
+        _build_next_tomes, series_map, today_iso, manga_info, wd_docs
+    )
 
     gb_on = gb.is_enabled()
 
-    # Enrichissement des tomes sans date via Google Books (en parallèle, borné).
-    # On n'enrichit pas les tomes curatés « non sortis » (évite une fausse date GB).
-    if gb_on:
+    # Enrichissement GB borné + auteurs suivis + watchlist + chapitres — en parallèle
+    async def _enrich_tomes() -> list[dict]:
+        tomes = list(next_tomes)
+        if not gb_on:
+            return tomes
         to_enrich = [
             it
-            for it in next_tomes
+            for it in tomes
             if not it.get("date") and it.get("source") != "curated"
         ][:_MAX_TOME_ENRICH]
         if to_enrich:
             await asyncio.gather(
                 *(asyncio.to_thread(_enrich_next_tome_date, it, today_iso) for it in to_enrich)
             )
-            # Après enrichissement : ne garder que les vraies sorties futures
-            next_tomes = [
+            tomes = [
                 it
-                for it in next_tomes
+                for it in tomes
                 if it.get("source") == "curated"
-                or (
-                    it.get("date")
-                    and it["date"] > today_iso
-                )
+                or (it.get("date") and it["date"] > today_iso)
                 or (
                     (it.get("category") or "").lower() == "manga"
                     and not it.get("available")
                 )
             ]
+        return tomes
 
-    # Nouveautés des auteurs suivis (persistés en base).
-    author_items: list[dict] = []
-    followed = current_user.get("followed_authors") or []
-    if gb_on and isinstance(followed, list) and followed:
+    async def _author_releases() -> list[dict]:
+        followed = current_user.get("followed_authors") or []
+        if not (gb_on and isinstance(followed, list) and followed):
+            return []
         results = await asyncio.gather(
             *(
                 asyncio.to_thread(_build_author_releases, a, owned_titles, today_iso, today)
                 for a in followed[:_MAX_FOLLOWED_AUTHORS]
             )
         )
+        out: list[dict] = []
         for r in results:
-            author_items.extend(r)
+            out.extend(r)
+        return out
 
-    watchlist = await asyncio.to_thread(_build_watchlist, user_id, today_iso)
-    manga = await _build_manga_chapters(series_map, today_iso, manga_info)
+    next_tomes, author_items, watchlist, manga = await asyncio.gather(
+        _enrich_tomes(),
+        _author_releases(),
+        asyncio.to_thread(_build_watchlist, user_id, today_iso),
+        _build_manga_chapters(series_map, today_iso, manga_info),
+    )
 
     items = next_tomes + author_items + manga + watchlist
     groups = _group_items(items, today)

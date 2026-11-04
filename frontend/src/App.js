@@ -180,6 +180,7 @@ const useIdlePreload = () => {
       if (cancelled) return;
       import('./components/BookDetailModal');
       import('./components/SeriesDetailModal');
+      import('./components/UpcomingPanel');
     };
     const hasIdle = typeof window.requestIdleCallback === 'function';
     const handle = hasIdle
@@ -222,6 +223,11 @@ function MainApp() {
   const [showAdvancedRecommendationsModal, setShowAdvancedRecommendationsModal] = useState(false);
   const [showIntegrationsModal, setShowIntegrationsModal] = useState(false);
   const [showUpcomingPanel, setShowUpcomingPanel] = useState(false);
+  const [upcomingMounted, setUpcomingMounted] = useState(false);
+  const openUpcomingPanel = useCallback(() => {
+    setUpcomingMounted(true);
+    setShowUpcomingPanel(true);
+  }, []);
   const [showAuthorModal, setShowAuthorModal] = useState(false);
   const [selectedAuthor, setSelectedAuthor] = useState(null);
   // Mobile states
@@ -671,7 +677,7 @@ function MainApp() {
     if (tab === 'recommendations') {
       navigate('/recommendations');
     } else if (tab === 'upcoming') {
-      setShowUpcomingPanel(true);
+      openUpcomingPanel();
     } else if (tab === 'profile') {
       setShowProfileModal(true);
       // Revenir à home après fermeture
@@ -907,7 +913,7 @@ function MainApp() {
                 
                 {/* Bouton "À venir" — desktop uniquement (mobile = bottom nav) */}
                 <button
-                  onClick={() => setShowUpcomingPanel(true)}
+                  onClick={openUpcomingPanel}
                   className="hidden md:flex px-4 py-2 rounded-lg font-medium transition-colors duration-200 bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/20 dark:hover:bg-purple-800/30 dark:text-purple-300"
                 >
                   <span>À venir</span>
@@ -1275,8 +1281,8 @@ function MainApp() {
         containerStyle={{ bottom: 0 }}
       />
       
-      {/* Panneau "À venir" */}
-      {showUpcomingPanel && (
+      {/* Panneau "À venir" — monté une fois ouvert (évite reload complet à chaque clic) */}
+      {(showUpcomingPanel || upcomingMounted) && (
         <Suspense fallback={null}>
           <UpcomingPanel
             isOpen={showUpcomingPanel}

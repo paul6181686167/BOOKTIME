@@ -3,7 +3,7 @@
  * (prochains tomes de séries, chapitres manga, livres surveillés).
  * Alimenté par l'endpoint agrégé GET /api/upcoming.
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import {
   XMarkIcon,
@@ -216,38 +216,41 @@ const UpcomingPanel = ({ isOpen, onClose }) => {
   const [notifMode, setNotifMode] = useState('in_app');
   const [notifications, setNotifications] = useState([]);
 
+  const hasLoadedRef = useRef(false);
+
   const loadData = useCallback(
     async (refresh = false) => {
       if (!isOpen) return;
-      setIsLoading(true);
+      // Réouverture : garder les données déjà chargées (pas de spinner bloquant)
+      const silent = hasLoadedRef.current && !refresh && total > 0;
+      if (!silent) setIsLoading(true);
       try {
-        const [data, notifData] = await Promise.all([
+        const [data, notifData, settings] = await Promise.all([
           upcomingService.getUpcoming(refresh),
           upcomingService.getNotifications(),
+          upcomingService.getNotificationSettings().catch(() => null),
         ]);
         setGroups({ ...EMPTY_GROUPS, ...(data.groups || {}) });
         setTotal(data.counts?.total || 0);
         setNotifications((notifData.notifications || []).filter((n) => !n.read));
+        if (settings?.notif_upcoming) setNotifMode(settings.notif_upcoming);
+        hasLoadedRef.current = true;
       } finally {
         setIsLoading(false);
       }
     },
-    [isOpen]
+    [isOpen, total]
   );
 
   useEffect(() => {
-    // Après un changement de règles backend, forcer 1 refresh (évite l'ancien cache 6h).
-    const LOGIC_V = '2';
+    if (!isOpen) return;
+    // v3 = pipeline perf (Wikidata parallèle, GB réduit) — 1 seul refresh forcé
+    const LOGIC_V = '3';
     const key = 'booktime_upcoming_logic_v';
     const stale = localStorage.getItem(key) !== LOGIC_V;
     loadData(stale);
     if (stale) localStorage.setItem(key, LOGIC_V);
-  }, [loadData]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    upcomingService.getNotificationSettings().then((s) => setNotifMode(s.notif_upcoming || 'in_app'));
-  }, [isOpen]);
+  }, [isOpen, loadData]);
 
   const handleChangeNotifMode = async (mode) => {
     setNotifMode(mode);
