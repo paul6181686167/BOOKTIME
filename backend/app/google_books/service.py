@@ -337,10 +337,11 @@ def search_similar_books(
         if cat == "bd":
             queries.extend(
                 [
-                    'subject:"Comics & Graphic Novels"',
-                    'subject:"Comic books, strips, etc"',
                     "bande dessinee",
-                    "comics graphic novel adventure",
+                    'subject:"Comic books, strips, etc" bande',
+                    "Asterix OR Tintin OR \"Lucky Luke\" OR Spirou",
+                    "franco belgian comics",
+                    'subject:"Comics & Graphic Novels" european',
                 ]
             )
         elif cat == "manga":

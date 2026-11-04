@@ -519,11 +519,12 @@ class OpenLibraryService:
             # Amorcer les sujets selon la catégorie (Tintin → BD, pas fantasy YA)
             cat_subjects = {
                 "bd": [
-                    "comics",
-                    "graphic novels",
                     "bande dessinée",
-                    "comic books",
                     "bandes dessinées",
+                    "european comics",
+                    "belgian comics",
+                    "franco-belgian comics",
+                    "comic strips",
                 ],
                 "manga": ["manga", "japanese comics", "graphic novels"],
                 "roman": [],
@@ -694,12 +695,13 @@ class OpenLibraryService:
             if len(books) < max(6, limit // 2):
                 if cat == "bd":
                     fallbacks = (
-                        "comics",
-                        "graphic novels",
                         "bande dessinée",
-                        "comic strips",
-                        "adventure comics",
+                        "bandes dessinées",
                         "european comics",
+                        "belgian comics",
+                        "franco-belgian comics",
+                        "comic strips",
+                        "graphic novels",
                     )
                 elif cat == "manga":
                     fallbacks = (
@@ -744,7 +746,95 @@ class OpenLibraryService:
         except Exception as e:
             logger.error("Erreur recherche similaires pour %r: %s", title, e)
             return []
-    
+
+    async def search_similar_by_titles(
+        self,
+        titles: List[str],
+        *,
+        limit_per: int = 2,
+        category: str = "",
+        exclude_title: str = "",
+    ) -> List[Dict]:
+        """
+        Cherche des séries/livres voisins par titres ciblés (ex. Tintin → Astérix).
+        """
+        if not titles:
+            return []
+        out: List[Dict] = []
+        seen = set()
+        exclude_n = _strip_accents((exclude_title or "").lower().strip())
+        cat = (category or "").strip().lower()
+        try:
+            session = await self._get_session()
+            url = f"{self.base_url}/search.json"
+            fields = (
+                "title,author_name,cover_i,first_publish_year,key,subject,"
+                "ratings_average,series,language"
+            )
+            for raw_title in titles:
+                name = (raw_title or "").strip()
+                if not name or len(out) >= max(12, limit_per * len(titles)):
+                    break
+                params = {
+                    "title": name[:80],
+                    "limit": max(limit_per + 3, 5),
+                    "fields": fields,
+                    "language": "fre",
+                }
+                try:
+                    async with session.get(url, params=params) as response:
+                        if response.status != 200:
+                            # Repli sans filtre langue
+                            params.pop("language", None)
+                            async with session.get(url, params=params) as response2:
+                                if response2.status != 200:
+                                    continue
+                                data = await response2.json()
+                        else:
+                            data = await response.json()
+                except Exception as exc:
+                    logger.debug("peer search %r: %s", name, exc)
+                    continue
+                got = 0
+                for doc in data.get("docs") or []:
+                    if got >= limit_per:
+                        break
+                    book = self._normalize_ol_book_doc(doc)
+                    t = (book.get("display_title") or book.get("title") or "").strip()
+                    if not t:
+                        continue
+                    t_n = _strip_accents(t.lower())
+                    if exclude_n and (exclude_n in t_n or t_n in exclude_n):
+                        continue
+                    key = book.get("ol_key") or t_n
+                    if key in seen:
+                        continue
+                    # Ancrage catégorie souple
+                    book_cat = (book.get("category") or "roman").lower()
+                    subjects_b = " ".join(
+                        str(s) for s in (book.get("subjects") or [])[:10]
+                    ).lower()
+                    if cat == "bd" and book_cat != "bd":
+                        if not any(
+                            k in subjects_b
+                            for k in ("comic", "bande", "graphic", "strip")
+                        ):
+                            # Forcer BD pour les pairs curés BD (Astérix, etc.)
+                            book["category"] = "bd"
+                    elif cat == "manga" and book_cat != "manga" and "manga" not in subjects_b:
+                        book["category"] = "manga"
+                    elif cat == "roman" and book_cat in ("bd", "manga"):
+                        continue
+                    if not book.get("saga"):
+                        book["saga"] = name
+                        book["series_name"] = name
+                    seen.add(key)
+                    out.append(book)
+                    got += 1
+        except Exception as e:
+            logger.error("Erreur search_similar_by_titles: %s", e)
+        return out
+
     async def close(self):
         """Ferme la session HTTP"""
         if self.session:

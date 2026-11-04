@@ -163,6 +163,214 @@ class RecommendationService:
             logger.debug("infer seed category: %s", exc)
         return "roman"
 
+    # Voisins curés pour ancrer les similaires (évite le drift Marvel/fantasy)
+    _SIMILAR_PEERS = {
+        "bd": {
+            "tintin": [
+                "Astérix",
+                "Lucky Luke",
+                "Blake et Mortimer",
+                "Spirou et Fantasio",
+                "Gaston Lagaffe",
+                "Boule et Bill",
+                "Yoko Tsuno",
+                "XIII",
+                "Thorgal",
+                "Les Tuniques Bleues",
+            ],
+            "asterix": [
+                "Tintin",
+                "Lucky Luke",
+                "Iznogoud",
+                "Achille Talon",
+                "Gaston Lagaffe",
+                "Spirou et Fantasio",
+            ],
+            "lucky luke": [
+                "Tintin",
+                "Astérix",
+                "Les Tuniques Bleues",
+                "Blueberry",
+                "Spirou et Fantasio",
+            ],
+            "spirou": [
+                "Gaston Lagaffe",
+                "Tintin",
+                "Astérix",
+                "Lucky Luke",
+                "Boule et Bill",
+            ],
+            "dog man": [
+                "Captain Underpants",
+                "Cat Kid Comic Club",
+                "Journal d'un dégonflé",
+                "Narvalo",
+            ],
+            "_default": [
+                "Astérix",
+                "Tintin",
+                "Lucky Luke",
+                "Blake et Mortimer",
+                "Spirou et Fantasio",
+                "Thorgal",
+            ],
+        },
+        "manga": {
+            "_default": [
+                "One Piece",
+                "Naruto",
+                "Dragon Ball",
+                "Death Note",
+                "Attack on Titan",
+                "My Hero Academia",
+            ],
+        },
+        "roman": {
+            "harry potter": [
+                "Percy Jackson",
+                "His Dark Materials",
+                "Narnia",
+                "Artemis Fowl",
+                "Miss Peregrine",
+            ],
+            "percy jackson": [
+                "Harry Potter",
+                "Kane Chronicles",
+                "Magnus Chase",
+                "Narnia",
+                "Artemis Fowl",
+            ],
+            "seigneur des anneaux": [
+                "Le Hobbit",
+                "Le Silmarillion",
+                "Terremer",
+                "L'Assassin royal",
+                "Le Nom du vent",
+            ],
+            "lord of the rings": [
+                "The Hobbit",
+                "Earthsea",
+                "The Name of the Wind",
+                "Mistborn",
+            ],
+        },
+    }
+
+    def _similar_peer_queries(self, seed_title: str, category: str) -> List[str]:
+        """Requêtes ciblées (séries voisines) selon le seed."""
+        cat = (category or "roman").lower()
+        norm = self._normalize_title(seed_title)
+        peers_by_cat = self._SIMILAR_PEERS.get(cat) or {}
+        for key, peers in peers_by_cat.items():
+            if key == "_default":
+                continue
+            if key in norm or norm in key:
+                return list(peers)
+        return list(peers_by_cat.get("_default") or [])
+
+    def _score_similar_candidate(
+        self,
+        book: Dict,
+        *,
+        seed_category: str,
+        seed_subjects: List[str],
+        seed_title: str,
+        base: float,
+        peer_hit: bool = False,
+    ) -> float:
+        """Score de pertinence pour trier les similaires (plus haut = mieux)."""
+        score = float(base)
+        title_b = (book.get("display_title") or book.get("title") or "").lower()
+        saga_b = (book.get("saga") or book.get("series_name") or "").lower()
+        author_b = (book.get("author") or "").lower()
+        subjects_b = " ".join(str(s) for s in (book.get("subjects") or [])[:16]).lower()
+        blob = f"{title_b} {saga_b} {subjects_b} {author_b}"
+        blob_n = self._normalize_title(blob)
+
+        book_cat = (book.get("category") or "roman").lower()
+        if book_cat == seed_category:
+            score += 0.12
+
+        seed_subj_n = {
+            self._normalize_title(s)
+            for s in (seed_subjects or [])
+            if s and len(str(s)) >= 4
+        }
+        book_subj_n = {
+            self._normalize_title(str(s))
+            for s in (book.get("subjects") or [])[:16]
+            if s and len(str(s)) >= 4
+        }
+        overlap = len(seed_subj_n & book_subj_n)
+        score += 0.06 * min(overlap, 5)
+
+        if peer_hit:
+            score += 0.22
+
+        if book.get("cover_url"):
+            score += 0.04
+        if saga_b:
+            score += 0.05
+
+        # Préférence éditions / signal FR
+        langs = book.get("available_languages") or []
+        if any("fre" in str(l).lower() or str(l).lower() == "fr" for l in langs):
+            score += 0.04
+        if book.get("title_fr") or book.get("display_title"):
+            score += 0.02
+
+        if seed_category == "bd":
+            franco = (
+                "bande dessin",
+                "bande-dessin",
+                "belgian",
+                "franco",
+                "herge",
+                "herve",
+                "goscinny",
+                "uderzo",
+                "morris",
+                "franquin",
+                "peyo",
+                "spirou",
+                "asterix",
+                "tintin",
+                "european comic",
+                "comics franco",
+            )
+            us_super = (
+                "marvel",
+                "dc comics",
+                "superhero",
+                "super-hero",
+                "batman",
+                "spider-man",
+                "spiderman",
+                "x-men",
+                "avengers",
+                "superman",
+                "wonder woman",
+            )
+            if any(k in blob_n or k in blob for k in franco):
+                score += 0.18
+            if any(k in blob_n or k in blob for k in us_super):
+                score -= 0.35
+        elif seed_category == "manga":
+            if "manga" in blob or "japan" in blob:
+                score += 0.1
+            if any(k in blob for k in ("marvel", "dc comics", "superhero")):
+                score -= 0.2
+        elif seed_category == "roman":
+            # Pénaliser BD/manga quand le seed est un roman
+            if book_cat in ("bd", "manga"):
+                score -= 0.2
+
+        # Trop générique (pas de sujets, pas de saga) → léger malus
+        if not book_subj_n and not saga_b:
+            score -= 0.06
+
+        return score
+
     async def get_similar_to_seed(
         self,
         user_id: str,
@@ -209,9 +417,10 @@ class RecommendationService:
                 subjects=seed_subjects,
             )
 
-            # Sur-fetch OL + Google Books (les deux sources, toujours)
-            ol_n = max(limit * 2, 24)
-            gb_n = max(limit, 16)
+            # Sur-fetch OL + Google Books + voisins curés
+            ol_n = max(limit * 2, 28)
+            gb_n = max(limit, 18)
+            peer_names = self._similar_peer_queries(seed_title, seed_category)
 
             ol_task = self.openlibrary_service.search_similar_books(
                 seed_title,
@@ -228,8 +437,21 @@ class RecommendationService:
                 subjects=seed_subjects if seed_subjects else None,
                 category=seed_category,
             )
-            ol_books, gb_books = await asyncio.gather(
-                ol_task, gb_task, return_exceptions=True
+            async def _no_peers():
+                return []
+
+            peer_task = (
+                self.openlibrary_service.search_similar_by_titles(
+                    peer_names[:8],
+                    limit_per=2,
+                    category=seed_category,
+                    exclude_title=seed_title,
+                )
+                if peer_names
+                else _no_peers()
+            )
+            ol_books, gb_books, peer_books = await asyncio.gather(
+                ol_task, gb_task, peer_task, return_exceptions=True
             )
             if isinstance(ol_books, Exception):
                 logger.warning("similar OL: %s", ol_books)
@@ -237,26 +459,21 @@ class RecommendationService:
             if isinstance(gb_books, Exception):
                 logger.warning("similar Google Books: %s", gb_books)
                 gb_books = []
+            if isinstance(peer_books, Exception):
+                logger.warning("similar peers: %s", peer_books)
+                peer_books = []
             ol_books = list(ol_books or [])
             gb_books = list(gb_books or [])
-
-            # Filet dans la MÊME catégorie (Tintin → BD, pas romans fantasy)
-            if len(ol_books) < max(6, limit // 2):
-                try:
-                    popular = await self.openlibrary_service.search_popular_books(
-                        seed_category or "roman", limit=max(16, limit)
-                    )
-                    ol_books.extend(popular or [])
-                except Exception as exc:
-                    logger.debug("similar popular fallback: %s", exc)
+            peer_books = list(peer_books or [])
 
             short = seed_title if len(seed_title) <= 42 else seed_title[:39] + "…"
             kind = "série" if (series_name or "").strip() else "livre"
             reason_ol = f"Proche de {kind} « {short} »"
             reason_gb = f"Proche de {kind} « {short} »"
-            reason_pop = f"Dans le même esprit que « {short} »"
+            reason_peer = f"Dans le même esprit que « {short} »"
+            reason_pop = f"Même catégorie que « {short} »"
 
-            out: List[RecommendationItem] = []
+            candidates: List[Tuple[float, RecommendationItem]] = []
             seen = set()
             seed_norm = self._normalize_title(seed_title)
             series_norm = self._normalize_title(series_name or seed_title)
@@ -266,6 +483,7 @@ class RecommendationService:
                 for w in seed_norm.split()
                 if len(w) >= 4 and w not in {"tome", "book", "volume", "part", "serie", "series"}
             ]
+            peer_norms = {self._normalize_title(p) for p in peer_names if p}
 
             def _is_seed_universe(book: Dict) -> bool:
                 """True si le livre appartient à la même série / même auteur seed."""
@@ -284,19 +502,27 @@ class RecommendationService:
                     return True
                 if seed_tokens and all(t in blob for t in seed_tokens[:3]):
                     return True
-                # Même auteur = souvent la même saga (Riordan / Percy Jackson)
                 if author_norm and author_norm == author_b:
                     return True
                 if author_norm and author_norm in author_b:
                     return True
                 return False
 
-            async def _push(
+            def _is_peer_hit(book: Dict) -> bool:
+                if not peer_norms:
+                    return False
+                blob = self._normalize_title(
+                    f"{book.get('title') or ''} {book.get('display_title') or ''} "
+                    f"{book.get('saga') or ''} {book.get('series_name') or ''}"
+                )
+                return any(p and (p in blob or blob in p) for p in peer_norms)
+
+            async def _collect(
                 book: Dict,
                 *,
                 source: str,
                 reason: str,
-                confidence: float,
+                base_confidence: float,
                 skip_owned: bool = True,
             ):
                 title_b = (
@@ -309,7 +535,6 @@ class RecommendationService:
                     return
                 if _is_seed_universe(book):
                     return
-                # Ancrage catégorie : Tintin (BD) ≠ Harry Potter (roman)
                 book_cat = (book.get("category") or "roman").lower()
                 subjects_b = " ".join(
                     str(s) for s in (book.get("subjects") or [])[:12]
@@ -320,10 +545,26 @@ class RecommendationService:
                         for k in ("comic", "bande dessin", "graphic novel", "strip")
                     ):
                         return
+                    # Filtrer le bulk Marvel/DC hors voisins curés
+                    us_super = (
+                        "marvel",
+                        "dc comics",
+                        "batman",
+                        "spider-man",
+                        "spiderman",
+                        "superman",
+                        "x-men",
+                        "avengers",
+                    )
+                    blob_us = f"{title_b} {subjects_b}".lower()
+                    if any(k in blob_us for k in us_super) and not _is_peer_hit(book):
+                        return
                 elif seed_category == "manga":
                     if book_cat != "manga" and "manga" not in subjects_b:
                         return
-                # Série déjà possédée → pas dans les « similaires »
+                elif seed_category == "roman":
+                    if book_cat in ("bd", "manga"):
+                        return
                 saga_b = (
                     book.get("saga")
                     or book.get("series_name")
@@ -352,86 +593,83 @@ class RecommendationService:
                     ],
                 ):
                     return
-                out.append(
-                    RecommendationItem(
-                        book_id=str(bid),
-                        title=title_b,
-                        author=author_b,
-                        category=book.get("category") or seed_category or "roman",
-                        cover_url=book.get("cover_url"),
-                        confidence_score=confidence,
-                        reasons=[reason],
-                        source=source,
-                        metadata={
-                            **book,
-                            "seed_title": seed_title,
-                            "seed_author": seed_author,
-                            "seed_kind": kind,
-                            "seed_category": seed_category,
-                            "provider": "google_books"
-                            if source.endswith("_gb") or book.get("isFromGoogleBooks")
-                            else "openlibrary",
-                        },
-                    )
+                peer_hit = _is_peer_hit(book)
+                conf = self._score_similar_candidate(
+                    book,
+                    seed_category=seed_category,
+                    seed_subjects=seed_subjects,
+                    seed_title=seed_title,
+                    base=base_confidence + (0.1 if peer_hit else 0),
+                    peer_hit=peer_hit,
+                )
+                # Seuil minimum de pertinence (sauf voisins curés)
+                if conf < 0.55 and not peer_hit and source != "seed_peer":
+                    return
+                item = RecommendationItem(
+                    book_id=str(bid),
+                    title=title_b,
+                    author=author_b,
+                    category=book.get("category") or seed_category or "roman",
+                    cover_url=book.get("cover_url"),
+                    confidence_score=round(min(conf, 0.99), 3),
+                    reasons=[reason_peer if peer_hit else reason],
+                    source=source,
+                    metadata={
+                        **book,
+                        "seed_title": seed_title,
+                        "seed_author": seed_author,
+                        "seed_kind": kind,
+                        "seed_category": seed_category,
+                        "similarity_score": conf,
+                        "provider": "google_books"
+                        if source.endswith("_gb") or book.get("isFromGoogleBooks")
+                        else "openlibrary",
+                    },
+                )
+                candidates.append((conf, item))
+
+            # 1) Voisins curés (forte pertinence)
+            for book in peer_books:
+                await _collect(
+                    {**book, "category": book.get("category") or seed_category},
+                    source="seed_peer",
+                    reason=reason_peer,
+                    base_confidence=0.88,
+                )
+            # 2) OL / GB
+            for book in ol_books:
+                await _collect(
+                    book,
+                    source="seed_similarity",
+                    reason=reason_ol,
+                    base_confidence=0.78,
+                )
+            for book in gb_books:
+                await _collect(
+                    book,
+                    source="seed_similarity_gb",
+                    reason=reason_gb,
+                    base_confidence=0.74,
                 )
 
-            # Alterner OL / GB pour diversifier la grille
-            ol_i = gb_i = 0
-            while len(out) < limit and (ol_i < len(ol_books) or gb_i < len(gb_books)):
-                if ol_i < len(ol_books):
-                    await _push(
-                        ol_books[ol_i],
-                        source="seed_similarity",
-                        reason=reason_ol,
-                        confidence=0.82,
-                    )
-                    ol_i += 1
-                if len(out) >= limit:
-                    break
-                if gb_i < len(gb_books):
-                    await _push(
-                        gb_books[gb_i],
-                        source="seed_similarity_gb",
-                        reason=reason_gb,
-                        confidence=0.78,
-                    )
-                    gb_i += 1
-
-            # 2e passe : toujours hors univers seed ET hors bibliothèque
-            if len(out) < 6:
-                for book in ol_books + gb_books:
-                    if len(out) >= limit:
-                        break
-                    src = (
-                        "seed_similarity_gb"
-                        if book.get("google_books_id") or book.get("isFromGoogleBooks")
-                        else "seed_similarity"
-                    )
-                    await _push(
-                        book,
-                        source=src,
-                        reason=reason_pop,
-                        confidence=0.65,
-                        skip_owned=True,
-                    )
-
-            if len(out) < 4:
+            # 3) Dernier recours : populaires même catégorie (score bas)
+            if len(candidates) < max(4, limit // 2):
                 try:
-                    # Dernier recours : populaires de la même catégorie uniquement
                     popular = await self.openlibrary_service.search_popular_books(
-                        seed_category or "roman", limit=max(20, limit)
+                        seed_category or "roman", limit=max(12, limit)
                     )
                     for book in popular or []:
-                        if len(out) >= limit:
-                            break
-                        await _push(
+                        await _collect(
                             book,
                             source="seed_similarity",
                             reason=reason_pop,
-                            confidence=0.55,
+                            base_confidence=0.5,
                         )
                 except Exception as exc:
                     logger.debug("similar last-resort popular: %s", exc)
+
+            candidates.sort(key=lambda x: (-x[0], x[1].title or ""))
+            out = [item for _, item in candidates[:limit]]
 
             # Mémoire tampon catalogue : créer les entrées absentes (vignettes Booktime)
             try:
@@ -446,10 +684,12 @@ class RecommendationService:
                     "author": seed_author,
                     "series_name": (series_name or "").strip() or None,
                     "kind": kind,
+                    "category": seed_category,
                 },
                 "sources": {
                     "openlibrary": len(ol_books or []),
                     "google_books": len(gb_books or []),
+                    "peers": len(peer_books or []),
                 },
                 "count": len(out),
                 "generated_at": datetime.utcnow().isoformat(),
