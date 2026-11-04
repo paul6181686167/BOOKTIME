@@ -15,6 +15,7 @@ export const BOOK_CATEGORIES = {
 export const BOOK_STATUSES = {
   TO_READ: 'to_read',
   READING: 'reading',
+  TO_REREAD: 'to_reread',
   COMPLETED: 'completed'
 };
 
@@ -50,6 +51,11 @@ export const STATUS_CONFIG = {
   [BOOK_STATUSES.READING]: {
     label: 'En cours',
     color: 'yellow',
+    emoji: ''
+  },
+  [BOOK_STATUSES.TO_REREAD]: {
+    label: 'À relire',
+    color: 'purple',
     emoji: ''
   },
   [BOOK_STATUSES.COMPLETED]: {

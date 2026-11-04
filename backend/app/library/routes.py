@@ -147,7 +147,7 @@ async def update_series_status(
     has_rating = "rating" in series_data
     has_review = "review" in series_data
     has_cover = "cover_image_url" in series_data or "cover_url" in series_data
-    if new_status is not None and new_status not in ["to_read", "reading", "completed"]:
+    if new_status is not None and new_status not in ["to_read", "reading", "to_reread", "completed"]:
         raise HTTPException(status_code=400, detail="Statut invalide")
     if (
         new_status is None

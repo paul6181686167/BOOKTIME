@@ -562,7 +562,7 @@ class ExportImportService:
     
     def _validate_status(self, status: str) -> str:
         """Valide un statut"""
-        valid_statuses = ['to_read', 'reading', 'completed']
+        valid_statuses = ['to_read', 'reading', 'to_reread', 'completed']
         status = status.lower().strip().replace(' ', '_')
         return status if status in valid_statuses else 'to_read'
     

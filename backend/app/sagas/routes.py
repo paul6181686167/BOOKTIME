@@ -188,7 +188,7 @@ async def bulk_update_saga_status(
     Mettre à jour le statut de tous les livres d'une saga
     """
     new_status = status_data.get("status")
-    if not new_status or new_status not in ["to_read", "reading", "completed"]:
+    if not new_status or new_status not in ["to_read", "reading", "to_reread", "completed"]:
         raise HTTPException(status_code=400, detail="Statut invalide")
     
     # Mettre à jour tous les livres de la saga

@@ -663,8 +663,11 @@ async def update_book(
         current_status = book.get("status")
         new_status = update_data["status"]
         
-        # Relire : archiver la lecture terminée, puis repartir à zéro
-        if current_status == "completed" and new_status == "reading":
+        # Terminé → à relire : garder les dates de la lecture terminée
+        if current_status == "completed" and new_status == "to_reread":
+            pass
+        # Relecture active : archiver la lecture terminée, puis repartir à zéro
+        elif current_status in ("completed", "to_reread") and new_status == "reading":
             if book.get("date_completed") or book.get("date_started"):
                 history_entry = {
                     "date_started": book.get("date_started"),

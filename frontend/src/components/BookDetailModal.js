@@ -278,6 +278,15 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     { value: 'reading',   label: 'En cours', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300',    emoji: '📖' },
     { value: 'completed', label: 'Terminé',  color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300', emoji: '✅' },
   ];
+  const statusMeta = [
+    ...statusOptions,
+    {
+      value: 'to_reread',
+      label: 'À relire',
+      color: 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300',
+      emoji: '🔁',
+    },
+  ];
 
   const formatReadDate = (value) => {
     if (!value) return null;
@@ -314,15 +323,28 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     }
   };
 
-  // Relancer une lecture (conserve l'historique côté serveur)
-  const handleReread = async () => {
+  // Marquer « À relire » depuis Terminé (section bibliothèque dédiée)
+  const handleMarkToReread = async () => {
     if (!book?.id || displayStatus !== 'completed') return;
+    triggerBounce('to-reread');
+    const previousStatus = book.status;
+    setEditData((prev) => ({ ...prev, status: 'to_reread' }));
+    try {
+      await onUpdate(book.id, { status: 'to_reread' });
+      toast.success('Ajouté à « À relire »', { icon: '🔁' });
+    } catch (error) {
+      setEditData((prev) => ({ ...prev, status: previousStatus }));
+      toast.error('Impossible de marquer à relire');
+    }
+  };
+
+  // Démarrer la relecture depuis « À relire » (historique conservé côté serveur)
+  const handleStartReread = async () => {
+    if (!book?.id || displayStatus !== 'to_reread') return;
     triggerBounce('reread');
     const previous = {
       status: book.status,
       current_page: book.current_page,
-      date_completed: book.date_completed,
-      date_started: book.date_started,
     };
     setEditData((prev) => ({ ...prev, status: 'reading', current_page: 0 }));
     setPageInput(0);
@@ -424,7 +446,11 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   const handleRatingClick = async (rating) => {
     setEditData((prev) => ({ ...prev, rating }));
     // Note saisissable dès que le livre est terminé (sans mode édition complet)
-    if ((editData.status || book.status) === 'completed' && book?.id && !book.isFromOpenLibrary) {
+    if (
+      ['completed', 'to_reread'].includes(editData.status || book.status) &&
+      book?.id &&
+      !book.isFromOpenLibrary
+    ) {
       try {
         await onUpdate(book.id, { rating });
         setCommunityRefreshKey((k) => k + 1);
@@ -435,7 +461,12 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   };
 
   const handleReviewPublish = async () => {
-    if ((editData.status || book.status) !== 'completed' || !book?.id || book.isFromOpenLibrary) return;
+    if (
+      !['completed', 'to_reread'].includes(editData.status || book.status) ||
+      !book?.id ||
+      book.isFromOpenLibrary
+    )
+      return;
     const review = (editData.review || '').trim();
     if (!review) {
       toast.error('Écris un avis avant de publier');
@@ -465,7 +496,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   };
 
   const getCurrentStatus = () => {
-    return statusOptions.find(s => s.value === displayStatus) || statusOptions[0];
+    return statusMeta.find((s) => s.value === displayStatus) || statusOptions[0];
   };
 
   return (
@@ -619,19 +650,33 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                   {displayStatus === 'completed' && (
                     <button
                       type="button"
-                      onClick={handleReread}
+                      onClick={handleMarkToReread}
+                      className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors ${
+                        bouncing === 'to-reread' ? 'btn-bounce' : ''
+                      }`}
+                      title="Mettre dans la section À relire"
+                    >
+                      <ArrowPathIcon className="h-4 w-4" />
+                      À relire
+                    </button>
+                  )}
+                  {displayStatus === 'to_reread' && (
+                    <button
+                      type="button"
+                      onClick={handleStartReread}
                       className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors ${
                         bouncing === 'reread' ? 'btn-bounce' : ''
                       }`}
-                      title="Relancer une lecture depuis le début"
+                      title="Commencer la relecture depuis le début"
                     >
                       <ArrowPathIcon className="h-4 w-4" />
-                      Relire
+                      Commencer
                     </button>
                   )}
                 </div>
 
-                {displayStatus === 'completed' && formatReadDate(book.date_completed) && (
+                {(displayStatus === 'completed' || displayStatus === 'to_reread') &&
+                  formatReadDate(book.date_completed) && (
                   <p className="mt-2 text-sm text-green-700 dark:text-green-400">
                     Lu le {formatReadDate(book.date_completed)}
                     {formatReadDate(book.date_started) &&
@@ -923,8 +968,8 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               </div>
             )}
 
-            {/* Note & avis — visibles uniquement une fois le livre terminé */}
-            {displayStatus === 'completed' && (
+            {/* Note & avis — terminé ou à relire */}
+            {(displayStatus === 'completed' || displayStatus === 'to_reread') && (
               <>
                 <div>
                   <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Note</h3>

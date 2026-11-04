@@ -118,14 +118,21 @@ const BookCardBody = ({ item, coverSrc, onCoverFound, priority }) => {
         </div>
       )}
 
-      {/* Badge statut superposé — uniquement "terminé" (✓) */}
+      {/* Badge statut — terminé (✓) ou à relire */}
       {item.status === 'completed' && (
         <div className="absolute top-1 right-1 sm:top-2 sm:right-2">
           <span className={`hidden sm:inline-flex px-1.5 py-0.5 rounded-md text-mini font-semibold bg-booktime-600/90 text-white ${PILL}`}>
             ✓
           </span>
-          {/* Version mobile: point coloré, sans anneau */}
           <span className="sm:hidden w-2.5 h-2.5 rounded-full block bg-booktime-500" />
+        </div>
+      )}
+      {item.status === 'to_reread' && (
+        <div className="absolute top-1 right-1 sm:top-2 sm:right-2">
+          <span className={`hidden sm:inline-flex px-1.5 py-0.5 rounded-md text-mini font-semibold bg-purple-600/90 text-white ${PILL}`}>
+            🔁
+          </span>
+          <span className="sm:hidden w-2.5 h-2.5 rounded-full block bg-purple-500" />
         </div>
       )}
 

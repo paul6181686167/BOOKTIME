@@ -759,7 +759,7 @@ function MainApp() {
     if (searchHook.isSearchMode) {
       return { all: displayedBooks };
     }
-    const groups = { reading: [], to_read: [], completed: [] };
+    const groups = { reading: [], to_read: [], to_reread: [], completed: [] };
     displayedBooks.forEach(book => {
       const status = book.status || 'to_read';
       (groups[status] || groups.to_read).push(book);
@@ -775,9 +775,10 @@ function MainApp() {
   const { sortConfig, setSortConfig, sortBooks } = useSectionSort();
 
   // Tris mémoïsés : appelés directement dans le JSX, ils renvoyaient un nouveau
-  // tableau à chaque rendu et forçaient les trois grilles à se recalculer.
+  // tableau à chaque rendu et forçaient les grilles à se recalculer.
   const sortedReading = useMemo(() => sortBooks(groupedBooks.reading || []), [sortBooks, groupedBooks.reading]);
   const sortedToRead = useMemo(() => sortBooks(groupedBooks.to_read || []), [sortBooks, groupedBooks.to_read]);
+  const sortedToReread = useMemo(() => sortBooks(groupedBooks.to_reread || []), [sortBooks, groupedBooks.to_reread]);
   const sortedCompleted = useMemo(() => sortBooks(groupedBooks.completed || []), [sortBooks, groupedBooks.completed]);
 
   return (
@@ -918,7 +919,8 @@ function MainApp() {
                 const completed = (groupedBooks.completed || []).length;
                 const reading   = (groupedBooks.reading   || []).length;
                 const toRead    = (groupedBooks.to_read   || []).length;
-                const total     = completed + reading + toRead;
+                const toReread  = (groupedBooks.to_reread || []).length;
+                const total     = completed + reading + toRead + toReread;
                 return (
                   <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
                     {[
@@ -926,6 +928,9 @@ function MainApp() {
                       { value: completed, label: 'Terminés', color: 'text-green-600 dark:text-green-400',   bg: 'bg-green-50 dark:bg-green-900/20',    border: 'border-green-200 dark:border-green-800' },
                       { value: reading,   label: 'En cours', color: 'text-blue-600 dark:text-blue-400',     bg: 'bg-blue-50 dark:bg-blue-900/20',      border: 'border-blue-200 dark:border-blue-800'   },
                       { value: toRead,    label: 'À lire',   color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/20',  border: 'border-orange-200 dark:border-orange-800'},
+                      ...(toReread > 0
+                        ? [{ value: toReread, label: 'À relire', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-200 dark:border-purple-800' }]
+                        : []),
                     ].map((s, i) => (
                       <div key={s.label} className={`flex items-center gap-2 px-4 py-2 rounded-full border-0 sm:border ${s.bg} ${s.border} sm:shadow-sm section-appear`} style={{ animationDelay: `${i * 80}ms` }}>
                         <AnimatedCounter value={s.value} className={`text-xl font-bold ${s.color}`} />
@@ -1003,6 +1008,26 @@ function MainApp() {
                 </div>
               )}
 
+              {/* Section À RELIRE — visible seulement s'il y a au moins un livre */}
+              {!unifiedContent.loading && groupedBooks.to_reread && groupedBooks.to_reread.length > 0 && (
+                <div className="section-appear" style={{ animationDelay: '120ms' }}>
+                  <div className="flex items-center mb-4 flex-wrap gap-2">
+                    <h2 className="text-xl font-semibold text-purple-600 dark:text-purple-400">
+                      🔁 À relire ({groupedBooks.to_reread.length})
+                    </h2>
+                    <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} />
+                  </div>
+                  <BookGrid
+                    books={sortedToReread}
+                    loading={false}
+                    onItemClick={stableItemClick}
+                    onAuthorClick={stableAuthorClick}
+                    onCoverFound={stableCoverFound}
+                    showEmptyState={false}
+                  />
+                </div>
+              )}
+
               {/* Section TERMINÉ */}
               {!unifiedContent.loading && groupedBooks.completed && groupedBooks.completed.length > 0 && (
                 <div className="section-appear" style={{ animationDelay: '160ms' }}>
@@ -1024,7 +1049,7 @@ function MainApp() {
               )}
 
               {/* Section Découvrir — toujours visible en bas pour découvrir plus */}
-              {!unifiedContent.loading && ((groupedBooks.reading?.length || 0) + (groupedBooks.to_read?.length || 0) + (groupedBooks.completed?.length || 0)) < 10 && (
+              {!unifiedContent.loading && ((groupedBooks.reading?.length || 0) + (groupedBooks.to_read?.length || 0) + (groupedBooks.to_reread?.length || 0) + (groupedBooks.completed?.length || 0)) < 10 && (
                 <div className="section-appear mt-4 pt-6 border-t border-gray-100 dark:border-gray-800" style={{ animationDelay: '240ms' }}>
                   <DiscoverSection
                     activeCategory={activeTab}
@@ -1038,6 +1063,7 @@ function MainApp() {
               {!unifiedContent.loading &&
                (!groupedBooks.reading || groupedBooks.reading.length === 0) &&
                (!groupedBooks.to_read || groupedBooks.to_read.length === 0) &&
+               (!groupedBooks.to_reread || groupedBooks.to_reread.length === 0) &&
                (!groupedBooks.completed || groupedBooks.completed.length === 0) && (
                 <div className="section-appear">
                   <div className="text-center py-8 mb-6">

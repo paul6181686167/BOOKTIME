@@ -72,7 +72,7 @@ WIKIDATA_STANDALONE_CACHE_PATH = Path(
 
 # Configuration des catégories
 VALID_CATEGORIES = ["roman", "bd", "manga"]
-VALID_STATUSES = ["to_read", "reading", "completed"]
+VALID_STATUSES = ["to_read", "reading", "to_reread", "completed"]
 
 # Configuration des langues
 SUPPORTED_LANGUAGES = ["fr", "en", "es", "de", "it", "pt", "ru", "ja", "zh", "ko"]
