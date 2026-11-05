@@ -61,7 +61,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   const [communityRefreshKey, setCommunityRefreshKey] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showCollectionMenu, setShowCollectionMenu] = useState(false);
-  const [synopsisExpanded, setSynopsisExpanded] = useState(false);
   const [coverProxy, setCoverProxy] = useState(false);
   const pageInputRef = useRef(null);
   const pagesFetchDoneRef = useRef(null);
@@ -96,7 +95,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
         ? { description: sanitizeSynopsis(book.description) }
         : null
     );
-    setSynopsisExpanded(false);
     setCoverProxy(false);
     pagesFetchDoneRef.current = null;
     metaReqIdRef.current += 1;
@@ -293,9 +291,9 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   }, []);
 
   const statusOptions = [
-    { value: 'to_read',   label: 'À lire',   color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300',    emoji: '📌' },
-    { value: 'reading',   label: 'En cours', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300',    emoji: '📖' },
-    { value: 'completed', label: 'Terminé',  color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300', emoji: '✅' },
+    { value: 'to_read',   label: 'À lire',   color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300' },
+    { value: 'reading',   label: 'En cours', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300' },
+    { value: 'completed', label: 'Terminé',  color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300' },
   ];
   const statusMeta = [
     ...statusOptions,
@@ -303,7 +301,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
       value: 'to_reread',
       label: 'À relire',
       color: 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300',
-      emoji: '🔁',
     },
   ];
 
@@ -603,22 +600,9 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                 <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Résumé
                 </h3>
-                <p
-                  className={`text-gray-600 dark:text-gray-400 text-xs sm:text-sm leading-relaxed whitespace-pre-line ${
-                    synopsisExpanded ? '' : 'line-clamp-4'
-                  }`}
-                >
+                <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm leading-relaxed whitespace-pre-line">
                   {displaySynopsis}
                 </p>
-                {displaySynopsis.length > 220 && (
-                  <button
-                    type="button"
-                    onClick={() => setSynopsisExpanded((v) => !v)}
-                    className="mt-1 text-xs font-medium text-green-700 dark:text-green-400 hover:underline"
-                  >
-                    {synopsisExpanded ? 'Réduire' : 'Voir plus'}
-                  </button>
-                )}
               </div>
             ) : olLoading ? (
               <div className="mb-3 flex items-center gap-2 text-xs text-gray-400 py-1">
@@ -686,7 +670,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                         key={option.value}
                         type="button"
                         onClick={() => handleQuickStatusChange(option.value)}
-                        className={`btn-ripple flex flex-1 items-center justify-center gap-0.5 whitespace-nowrap px-2 py-1.5 text-[11px] sm:text-xs font-medium transition-all sm:px-3 sm:py-2 ${
+                        className={`btn-ripple flex flex-1 items-center justify-center whitespace-nowrap px-2 py-1.5 text-[11px] sm:text-xs font-medium transition-all sm:px-3 sm:py-2 ${
                           bouncing === `status-${option.value}` ? 'btn-bounce' : ''
                         } ${
                           displayStatus === option.value
@@ -695,8 +679,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                         }`}
                         title={`Marquer comme ${option.label}`}
                       >
-                        <span className="text-xs sm:text-sm leading-none">{option.emoji}</span>
-                        <span>{option.label}</span>
+                        {option.label}
                       </button>
                     ))}
                   </div>

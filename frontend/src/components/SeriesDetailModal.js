@@ -129,7 +129,6 @@ const SeriesDetailModal = ({
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showCollectionMenu, setShowCollectionMenu] = useState(false);
-  const [synopsisExpanded, setSynopsisExpanded] = useState(false);
   const [coverProxy, setCoverProxy] = useState(false);
   // États du bouton "Ajouter à ma bibliothèque" (alignés sur ceux des livres individuels)
   const [isAdding, setIsAdding] = useState(false);
@@ -697,9 +696,9 @@ const SeriesDetailModal = ({
 
   // Options de statut pour les boutons rapides
   const statusOptions = [
-    { value: 'to_read', label: 'À lire', color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300', emoji: '📌' },
-    { value: 'reading', label: 'En cours', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300', emoji: '📖' },
-    { value: 'completed', label: 'Terminé', color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300', emoji: '✅' },
+    { value: 'to_read', label: 'À lire', color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300' },
+    { value: 'reading', label: 'En cours', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300' },
+    { value: 'completed', label: 'Terminé', color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300' },
   ];
 
   // Fonction pour changer rapidement le statut de la série
@@ -831,7 +830,6 @@ const SeriesDetailModal = ({
     setMissingPreviousWarning(null);
     setShowWdRaw(false);
     setVerification(null);
-    setSynopsisExpanded(false);
     setCoverProxy(false);
     // Statut lecture depuis la carte / series_library (pas toujours 'to_read')
     setSeriesStatus(series.status || series.series_status || 'to_read');
@@ -1307,22 +1305,9 @@ const SeriesDetailModal = ({
               <BookOpenIcon className="w-3.5 h-3.5 mr-1 text-purple-600 dark:text-purple-400" />
               Résumé
             </h3>
-            <p
-              className={`text-gray-600 dark:text-gray-400 text-xs sm:text-sm leading-relaxed whitespace-pre-line ${
-                synopsisExpanded ? '' : 'line-clamp-4'
-              }`}
-            >
+            <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm leading-relaxed whitespace-pre-line">
               {seriesSynopsis}
             </p>
-            {(seriesSynopsis.length > 220 || looksEnglish(enrichedSeries?.description || '')) && (
-              <button
-                type="button"
-                onClick={() => setSynopsisExpanded((v) => !v)}
-                className="mt-1 text-xs font-medium text-green-700 dark:text-green-400 hover:underline"
-              >
-                {synopsisExpanded ? 'Réduire' : 'Voir plus'}
-              </button>
-            )}
           </div>
         ) : null}
 
@@ -1342,7 +1327,7 @@ const SeriesDetailModal = ({
                 onClick={() => {
                   handleQuickStatusChange(option.value);
                 }}
-                className={`flex flex-1 items-center justify-center gap-0.5 whitespace-nowrap px-2 py-1.5 text-[11px] sm:text-xs font-medium transition-all sm:px-3 sm:py-2 ${
+                className={`flex flex-1 items-center justify-center whitespace-nowrap px-2 py-1.5 text-[11px] sm:text-xs font-medium transition-all sm:px-3 sm:py-2 ${
                   seriesStatus === option.value
                     ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
                     : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
@@ -1350,8 +1335,7 @@ const SeriesDetailModal = ({
                 title={`Marquer comme ${option.label}`}
                 disabled={!isSeriesOwned}
               >
-                <span className="text-xs leading-none">{option.emoji}</span>
-                <span>{option.label}</span>
+                {option.label}
               </button>
             ))}
           </div>
