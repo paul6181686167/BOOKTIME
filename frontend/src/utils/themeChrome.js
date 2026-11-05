@@ -1,4 +1,4 @@
-/** Couleurs des barres système (status / navigation Android) selon le thème. */
+/** Couleurs de fond / barres système selon le thème (= fond honeycomb / cinéma). */
 
 export function getThemeChrome(theme) {
   if (theme === 'void') {
@@ -19,11 +19,12 @@ export function getThemeChrome(theme) {
       statusBarStyle: 'DARK',
     };
   }
+  // Clair : même vert mist que .bg-honeycomb (pas le vert accent #16a34a)
   return {
     page: '#bce8cb',
-    statusBar: '#16a34a',
+    statusBar: '#bce8cb',
     navigationBar: '#bce8cb',
     darkNavigationButtons: true,
-    statusBarStyle: 'DARK',
+    statusBarStyle: 'LIGHT',
   };
 }

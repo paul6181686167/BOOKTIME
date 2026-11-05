@@ -37,8 +37,17 @@ function applyThemeToDocument(theme) {
   root.classList.toggle('cinema', theme === 'void');
 
   const chrome = getThemeChrome(theme);
+  // Fond document = thème (visible derrière la barre système Android transparente)
+  root.style.backgroundColor = chrome.page;
+  if (document.body) {
+    document.body.style.backgroundColor = chrome.page;
+  }
+  const appRoot = document.getElementById('root');
+  if (appRoot) {
+    appRoot.style.backgroundColor = chrome.page;
+  }
   document.querySelectorAll('meta[name="theme-color"]').forEach((el) => {
-    el.setAttribute('content', chrome.navigationBar);
+    el.setAttribute('content', chrome.page);
   });
 }
 
