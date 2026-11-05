@@ -81,38 +81,37 @@ publication.
 **Description courte** (80 caractères maximum) :
 
 ```
-Suis tes lectures, gère ta bibliothèque et ne rate plus aucune sortie.
+Suis tes lectures, gère ta bibliothèque et découvre quoi lire ensuite.
 ```
+(76 caractères)
 
-**Description complète** (4000 caractères maximum) :
+**Description complète** (4000 caractères maximum) — à coller dans la Play Console :
 
 ```
-Booktime est ton carnet de lecture personnel. Ajoute tes livres, romans, mangas et bandes
-dessinées, suis ta progression page par page et retrouve d'un coup d'œil tout ce que tu as lu.
+Booktime est ton carnet de lecture personnel. Ajoute tes livres, romans, mangas et bandes dessinées, suis ta progression et retrouve d’un coup d’œil tout ce que tu as lu.
 
 CE QUE TU PEUX FAIRE
 
-• Constituer ta bibliothèque en quelques secondes : recherche par titre, par auteur, ou scanne
-  directement le code-barres ISBN d'un livre que tu as en main.
-• Suivre ta progression : à lire, en cours, terminé, avec le numéro de page et les dates.
-• Gérer tes séries : Booktime reconnaît les sagas et les séries de mangas, et te dit quels tomes
-  il te manque.
-• Noter et commenter tes lectures pour te souvenir de ce que tu en as pensé.
-• Fixer un objectif annuel et visualiser ton rythme de lecture au fil des mois.
-• Découvrir les prochaines sorties des auteurs et des séries que tu suis.
-• Exporter toute ta bibliothèque en JSON, CSV ou Excel, et importer tes données depuis Goodreads.
+• Constituer ta bibliothèque en quelques secondes : recherche par titre ou auteur, ou scanne le code-barres ISBN.
+• Suivre ta progression : à lire, en cours, terminé, à relire — avec la page en cours et les dates.
+• Gérer tes séries : Booktime reconnaît les sagas (BD, manga, romans) et regroupe les tomes.
+• Recevoir des recommandations et trouver des livres similaires à ceux que tu aimes.
+• Voir les prochaines sorties des séries et auteurs que tu suis.
+• Noter et commenter tes lectures.
+• Fixer un objectif annuel et visualiser ton rythme.
+• Exporter ta bibliothèque (JSON, CSV, Excel) et importer depuis Goodreads.
 
 CONÇU POUR LES LECTEURS
 
-Les fiches de livres sont enrichies automatiquement à partir de catalogues publics comme Open
-Library, Wikidata et Google Books : couverture, résumé, nombre de pages et informations sur
-l'auteur arrivent tout seuls.
+Les fiches sont enrichies automatiquement (couverture, résumé, pages) via des catalogues publics : Open Library, Wikidata, Google Books.
 
 RESPECTUEUX DE TA VIE PRIVÉE
 
-Pas de publicité, pas de pistage, pas de revente de données. Tes lectures t'appartiennent, et tu
-peux les exporter ou supprimer ton compte à tout moment depuis l'application.
+Pas de publicité, pas de pistage, pas de revente de données. Tu peux exporter ou supprimer ton compte à tout moment.
 ```
+
+**Catégorie Play Store suggérée :** Livres et ouvrages de référence  
+**Tags / mots-clés (fiche) :** lecture, bibliothèque, livres, manga, BD, ISBN
 
 **Éléments graphiques à fournir :**
 
