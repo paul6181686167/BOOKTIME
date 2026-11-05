@@ -1,6 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, Query
 from ..database.connection import books_collection, users_collection
 from ..security.jwt import get_current_user
+from .service import (
+    author_fiche_ready,
+    enrich_author_fiche,
+    ensure_authors_from_library,
+    get_cached_author,
+)
 
 router = APIRouter(prefix="/api/authors", tags=["authors"])
 
@@ -91,6 +97,87 @@ async def get_authors(current_user: dict = Depends(get_current_user)):
             })
     
     return authors
+
+
+@router.post("/ensure-from-library")
+async def ensure_library_author_fiches(
+    limit: int = Query(12, ge=1, le=40),
+    force: bool = Query(False),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Pré-crée les fiches auteurs des livres de la bibliothèque (arrière-plan).
+    """
+    return await ensure_authors_from_library(
+        current_user["id"], limit=limit, force=force
+    )
+
+
+@router.get("/{author_name}/profile")
+async def get_author_profile(
+    author_name: str,
+    refresh: bool = Query(False, description="Forcer un nouvel enrichissement"),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Fiche auteur persistée. Sert le cache Mongo si prêt, sinon enrichit puis stocke.
+    """
+    cached = get_cached_author(author_name)
+    if cached and author_fiche_ready(cached) and not refresh:
+        return {
+            "found": True,
+            "from_cache": True,
+            "author": {
+                "name": cached.get("name") or author_name,
+                "bio": cached.get("bio"),
+                "photo_url": cached.get("photo_url") or cached.get("image_url"),
+                "image_url": cached.get("image_url") or cached.get("photo_url"),
+                "birth_date": cached.get("birth_date"),
+                "death_date": cached.get("death_date"),
+                "nationality": cached.get("nationality"),
+                "occupation": cached.get("occupation") or [],
+                "genres": cached.get("genres") or [],
+                "awards": cached.get("awards") or [],
+                "wikipedia_url": cached.get("wikipedia_url"),
+                "wikidata_qid": cached.get("wikidata_qid"),
+                "source": "cache",
+            },
+            "series": cached.get("series") or [],
+            "individual_books": cached.get("individual_books") or [],
+            "total_series": cached.get("total_series") or len(cached.get("series") or []),
+            "total_individual_books": cached.get("total_individual_books")
+            or len(cached.get("individual_books") or []),
+            "enriched_at": cached.get("enriched_at"),
+        }
+
+    doc = await enrich_author_fiche(author_name, force=refresh)
+    ready = author_fiche_ready(doc)
+    return {
+        "found": ready,
+        "from_cache": bool(doc.get("from_cache")),
+        "author": {
+            "name": doc.get("name") or author_name,
+            "bio": doc.get("bio"),
+            "photo_url": doc.get("photo_url") or doc.get("image_url"),
+            "image_url": doc.get("image_url") or doc.get("photo_url"),
+            "birth_date": doc.get("birth_date"),
+            "death_date": doc.get("death_date"),
+            "nationality": doc.get("nationality"),
+            "occupation": doc.get("occupation") or [],
+            "genres": doc.get("genres") or [],
+            "awards": doc.get("awards") or [],
+            "wikipedia_url": doc.get("wikipedia_url"),
+            "wikidata_qid": doc.get("wikidata_qid"),
+            "source": "enriched",
+        },
+        "series": doc.get("series") or [],
+        "individual_books": doc.get("individual_books") or [],
+        "total_series": doc.get("total_series") or 0,
+        "total_individual_books": doc.get("total_individual_books") or 0,
+        "enriched_at": doc.get("enriched_at"),
+        "message": None if ready else f"Fiche incomplète pour « {author_name} »",
+    }
+
 
 @router.get("/{author_name}/books")
 async def get_author_books(author_name: str, current_user: dict = Depends(get_current_user)):

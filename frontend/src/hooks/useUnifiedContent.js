@@ -3,6 +3,7 @@ import BookActions from '../components/books/BookActions';
 import SeriesActions from '../components/series/SeriesActions';
 import { API_BASE_URL } from '../config/environment';
 import { scheduleLibraryMetaEnrichment } from '../services/libraryMetaEnrichment';
+import { scheduleLibraryAuthorEnrichment } from '../services/libraryAuthorEnrichment';
 import {
   loadLibraryCache,
   loadSeriesCache,
@@ -149,6 +150,13 @@ export const useUnifiedContent = () => {
       setBooks,
       setUserSeriesLibrary,
     });
+  }, [loading, books, userSeriesLibrary]);
+
+  // Fiches auteurs de la biblio pré-créées en arrière-plan
+  useEffect(() => {
+    if (loading) return;
+    if (!books.length && !userSeriesLibrary.length) return;
+    return scheduleLibraryAuthorEnrichment({ books, userSeriesLibrary });
   }, [loading, books, userSeriesLibrary]);
 
   return {

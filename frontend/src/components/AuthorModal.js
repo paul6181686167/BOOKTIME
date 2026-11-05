@@ -90,6 +90,10 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
       Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
 
     try {
+      // 0) Cache fiche pré-créée (comme les livres déjà en biblio)
+      const cachedOk = await loadAuthorFromCache(backendUrl, token);
+      if (cachedOk) return;
+
       // Lancer profil et livres en parallèle avec timeout
       await Promise.allSettled([
         withTimeout(loadAuthorProfile(backendUrl)),
@@ -99,6 +103,44 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
       console.warn('Chargement auteur partiel:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  /** Fiche Mongo déjà enrichie pour les auteurs de la bibliothèque. */
+  const loadAuthorFromCache = async (backendUrl, token) => {
+    try {
+      const res = await fetch(
+        `${backendUrl}/api/authors/${encodeURIComponent(author)}/profile`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      if (!res.ok) return false;
+      const data = await res.json();
+      if (!data?.found || !data.author) return false;
+
+      setAuthorInfo({
+        ...data.author,
+        photo_url: data.author.photo_url || data.author.image_url || null,
+        source: data.from_cache ? 'cache' : data.author.source || 'enriched',
+      });
+
+      const series = data.series || [];
+      const individual = data.individual_books || [];
+      if (series.length || individual.length) {
+        setAuthorBooks({
+          series,
+          individual_books: individual,
+          total_books:
+            (data.total_series || series.length) +
+            (data.total_individual_books || individual.length),
+          total_series: data.total_series || series.length,
+          total_individual_books: data.total_individual_books || individual.length,
+          sources: { cache: true },
+        });
+      }
+      return true;
+    } catch (err) {
+      console.warn('Cache fiche auteur indisponible:', err);
+      return false;
     }
   };
 
