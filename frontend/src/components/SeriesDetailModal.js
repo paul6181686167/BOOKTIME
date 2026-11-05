@@ -29,7 +29,6 @@ import AddToCollectionMenu from './common/AddToCollectionMenu';
 import { coverImgSrc } from '../utils/helpers';
 import {
   displaySynopsis as formatSynopsis,
-  looksEnglish,
   preferFrenchSynopsis,
 } from '../utils/synopsisQuality';
 
