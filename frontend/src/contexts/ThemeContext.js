@@ -46,9 +46,15 @@ function applyThemeToDocument(theme) {
   if (appRoot) {
     appRoot.style.backgroundColor = chrome.page;
   }
-  document.querySelectorAll('meta[name="theme-color"]').forEach((el) => {
-    el.setAttribute('content', chrome.page);
-  });
+  // Chrome Android : theme-color = couleur de la barre système (pas le vert accent)
+  let themeMeta = document.querySelector('meta[name="theme-color"]:not([media])');
+  if (!themeMeta) {
+    document.querySelectorAll('meta[name="theme-color"]').forEach((el) => el.remove());
+    themeMeta = document.createElement('meta');
+    themeMeta.setAttribute('name', 'theme-color');
+    document.head.appendChild(themeMeta);
+  }
+  themeMeta.setAttribute('content', chrome.page);
 }
 
 export const useTheme = () => {
