@@ -1,14 +1,53 @@
 import { useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { isNativeApp } from '../../utils/platform';
+import { useTheme } from '../../contexts/ThemeContext';
+import { getThemeChrome } from '../../utils/themeChrome';
 
 const EXIT_CONFIRM_DELAY = 2000;
 
+const SystemBars = registerPlugin('SystemBars');
+
+async function applyNativeChrome(theme) {
+  if (!isNativeApp()) return;
+  const chrome = getThemeChrome(theme);
+
+  try {
+    const { StatusBar, Style } = await import('@capacitor/status-bar');
+    await StatusBar.setBackgroundColor({ color: chrome.statusBar }).catch(() => {});
+    await StatusBar.setStyle({
+      style: chrome.statusBarStyle === 'LIGHT' ? Style.Light : Style.Dark,
+    }).catch(() => {});
+  } catch (_) {
+    /* plugin absent */
+  }
+
+  if (Capacitor.getPlatform() === 'android') {
+    try {
+      await SystemBars.setNavigationBarColor({
+        color: chrome.navigationBar,
+        darkButtons: chrome.darkNavigationButtons,
+      });
+    } catch (_) {
+      /* plugin natif pas encore sync / web */
+    }
+  }
+}
+
 /**
- * Réglages propres à l'application Android : barre de statut aux couleurs de
- * l'app et bouton retour matériel. Ne rend rien et reste inerte sur le web.
+ * Réglages Android : barre système (retour/accueil) = couleur du fond,
+ * barre d’onglets Booktime reste une pastille oblongue séparée.
  */
 const NativeAppShell = () => {
+  const { theme } = useTheme();
+
+  useEffect(() => {
+    if (!isNativeApp()) return undefined;
+    applyNativeChrome(theme);
+    return undefined;
+  }, [theme]);
+
   useEffect(() => {
     if (!isNativeApp()) return undefined;
 
@@ -16,20 +55,15 @@ const NativeAppShell = () => {
     let exitArmedUntil = 0;
 
     const setup = async () => {
-      const [{ App }, { StatusBar, Style }] = await Promise.all([
-        import('@capacitor/app'),
-        import('@capacitor/status-bar'),
-      ]);
+      await applyNativeChrome(theme);
 
-      StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
-      StatusBar.setBackgroundColor({ color: '#16a34a' }).catch(() => {});
+      const { App } = await import('@capacitor/app');
 
       const listener = await App.addListener('backButton', ({ canGoBack }) => {
         if (canGoBack) {
           window.history.back();
           return;
         }
-        // Racine de l'app : une seconde pression rapide confirme la sortie.
         if (Date.now() < exitArmedUntil) {
           App.exitApp();
           return;
@@ -44,6 +78,8 @@ const NativeAppShell = () => {
     return () => {
       if (removeBackButton) removeBackButton();
     };
+    // theme volontairement hors deps : sync chrome géré par l’effet dédié
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return null;

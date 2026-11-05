@@ -5,4 +5,5 @@
     <color name="colorAccent">#22C55E</color>
     <color name="booktime_mist">#BCE8CB</color>
     <color name="booktime_page_dark">#234F37</color>
+    <color name="booktime_void">#050505</color>
 </resources>

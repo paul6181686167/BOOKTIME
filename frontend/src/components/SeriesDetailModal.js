@@ -9,7 +9,9 @@ import {
   XMarkIcon,
   TrashIcon,
   SparklesIcon,
+  StarIcon,
 } from '@heroicons/react/24/outline';
+import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { bookService } from '../services/bookService';
 import { deleteSeriesFromLibrary } from '../services/seriesLibraryService';
 import { EXTENDED_SERIES_DATABASE } from '../utils/seriesDatabaseExtended';
@@ -26,8 +28,18 @@ import {
 import { DEFAULT_SERIES_MODAL_GOOGLE_BOOKS } from '../utils/searchSourcePipeline';
 import { isVolumeUnreleased, countReleasedVolumes } from '../utils/volumeRelease';
 import AddToCollectionMenu from './common/AddToCollectionMenu';
+import CommunityReviews from './common/CommunityReviews';
 import { coverImgSrc } from '../utils/helpers';
 import { preferFrenchSynopsis } from '../utils/synopsisQuality';
+
+const isPersistedLibraryId = (id) =>
+  id &&
+  typeof id === 'string' &&
+  !id.startsWith('ol_') &&
+  !id.startsWith('series_') &&
+  !id.startsWith('jikan_') &&
+  !id.startsWith('gbooks_');
+
 
 function parseVolumeFromWork(vol) {
   if (vol == null || vol === '') return null;
@@ -112,6 +124,11 @@ const SeriesDetailModal = ({
   const [selectedTomes, setSelectedTomes] = useState(new Set());
   const [isSeriesOwned, setIsSeriesOwned] = useState(false);
   const [seriesStatus, setSeriesStatus] = useState('to_read');
+  const [seriesRating, setSeriesRating] = useState(0);
+  const [seriesReview, setSeriesReview] = useState('');
+  const [savedSeriesReview, setSavedSeriesReview] = useState('');
+  const [publishingSeriesReview, setPublishingSeriesReview] = useState(false);
+  const [communityRefreshKey, setCommunityRefreshKey] = useState(0);
   // tomeStatuses : { "1": { status: "non_lu"|"en_cours"|"lu", currentPage: null|number }, ... }
   const [tomeStatuses, setTomeStatuses] = useState({});
   // Rétrocompatibilité : readTomes dérivé de tomeStatuses
@@ -699,6 +716,86 @@ const SeriesDetailModal = ({
     { value: 'completed', label: 'Terminé', color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300' },
   ];
 
+  const resolveSeriesLibraryId = () => {
+    const name = (series?.name || series?.title || series?.series_name || '').toLowerCase().trim();
+    const libEntry = (userSeriesLibrary || []).find(
+      (s) => (s.series_name || s.name || '').toLowerCase().trim() === name
+    );
+    const candidate =
+      libEntry?.id ||
+      ((series?.isOwnedSeries || series?.isLibrarySeries) ? series?.id : null);
+    return isPersistedLibraryId(candidate) ? candidate : null;
+  };
+
+  const persistSeriesFeedback = async (payload) => {
+    const seriesId = resolveSeriesLibraryId();
+    if (!seriesId) {
+      toast.error('Ajoutez d’abord la série à votre bibliothèque');
+      return false;
+    }
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API_BASE_URL}/api/series/library/${seriesId}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      console.error('PUT series feedback failed', res.status, await res.text());
+      return false;
+    }
+    return true;
+  };
+
+  const handleSeriesRatingClick = async (rating) => {
+    setSeriesRating(rating);
+    if (!isSeriesOwned) return;
+    const ok = await persistSeriesFeedback({ rating });
+    if (ok) {
+      setCommunityRefreshKey((k) => k + 1);
+      if (onUpdate) {
+        if (onUpdateDebounceRef.current) clearTimeout(onUpdateDebounceRef.current);
+        onUpdateDebounceRef.current = setTimeout(() => onUpdate(), 400);
+      }
+    } else {
+      toast.error('Impossible d’enregistrer la note');
+    }
+  };
+
+  const handleSeriesReviewPublish = async () => {
+    const review = (seriesReview || '').trim();
+    if (!review) {
+      toast.error('Écrivez un avis avant de publier');
+      return;
+    }
+    if (review === (savedSeriesReview || '').trim()) {
+      toast.success('Avis déjà publié');
+      return;
+    }
+    setPublishingSeriesReview(true);
+    try {
+      const ok = await persistSeriesFeedback({
+        review,
+        rating: seriesRating || undefined,
+      });
+      if (!ok) {
+        toast.error('Impossible de publier l’avis');
+        return;
+      }
+      setSavedSeriesReview(review);
+      setCommunityRefreshKey((k) => k + 1);
+      toast.success('Avis publié');
+      if (onUpdate) {
+        if (onUpdateDebounceRef.current) clearTimeout(onUpdateDebounceRef.current);
+        onUpdateDebounceRef.current = setTimeout(() => onUpdate(), 400);
+      }
+    } finally {
+      setPublishingSeriesReview(false);
+    }
+  };
+
   // Fonction pour changer rapidement le statut de la série
   const handleQuickStatusChange = async (newStatus) => {
     const hasDetectedBooks = (series?.books || []).length > 0;
@@ -715,13 +812,6 @@ const SeriesDetailModal = ({
 
     // Mise à jour optimiste de l'UI
     setSeriesStatus(newStatus);
-
-    const isRealBookId = (id) =>
-      id && typeof id === 'string' &&
-      !id.startsWith('ol_') &&
-      !id.startsWith('series_') &&
-      !id.startsWith('jikan_') &&
-      !id.startsWith('gbooks_');
 
     // Propager Terminé / À lire sur les tomes déjà parus (sinon l'UI reste « non lu »)
     const catalogTotal = resolveVolumesCount(
@@ -755,13 +845,8 @@ const SeriesDetailModal = ({
       const jobs = [];
 
       // 1. series_library (carte série)
-      const libEntry = (userSeriesLibrary || []).find(
-        (s) =>
-          (s.series_name || s.name || '').toLowerCase().trim() ===
-          seriesName.toLowerCase().trim()
-      );
-      const seriesId = libEntry?.id || (series.isOwnedSeries || series.isLibrarySeries ? series.id : null);
-      if (seriesId && isRealBookId(seriesId)) {
+      const seriesId = resolveSeriesLibraryId();
+      if (seriesId) {
         jobs.push(
           fetch(`${backendUrl}/api/series/library/${seriesId}`, {
             method: 'PUT',
@@ -801,7 +886,7 @@ const SeriesDetailModal = ({
                 return;
               }
               // Fallback : PUT livre par livre si bulk indisponible
-              const candidateBooks = (series.books || []).filter((b) => isRealBookId(b.id));
+              const candidateBooks = (series.books || []).filter((b) => isPersistedLibraryId(b.id));
               if (candidateBooks.length === 0) return;
               const results = await Promise.all(
                 candidateBooks.map((book) =>
@@ -887,6 +972,16 @@ const SeriesDetailModal = ({
     setCoverProxy(false);
     // Statut lecture depuis la carte / series_library (pas toujours 'to_read')
     setSeriesStatus(series.status || series.series_status || 'to_read');
+    const nameKey = (series.name || series.title || series.series_name || '').toLowerCase().trim();
+    const libEntry = (userSeriesLibrary || []).find(
+      (s) => (s.series_name || s.name || '').toLowerCase().trim() === nameKey
+    );
+    const initialRating = Number(series.rating ?? libEntry?.rating ?? 0) || 0;
+    const initialReview = series.review || libEntry?.review || '';
+    setSeriesRating(initialRating);
+    setSeriesReview(initialReview);
+    setSavedSeriesReview(initialReview);
+    setPublishingSeriesReview(false);
     // Réinitialiser : on ne considère une série comme possédée qu'après vérification réelle.
     setIsSeriesOwned(false);
 
@@ -1384,6 +1479,72 @@ const SeriesDetailModal = ({
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Note & avis de la série (comme les fiches livre) */}
+        <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6 space-y-3">
+          {seriesStatus === 'completed' && isSeriesOwned ? (
+            <>
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Note</h3>
+                <div className="flex space-x-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => handleSeriesRatingClick(star)}
+                      className="h-6 w-6 cursor-pointer"
+                      aria-label={`Noter ${star} sur 5`}
+                    >
+                      {star <= (seriesRating || 0) ? (
+                        <StarSolidIcon className="h-6 w-6 text-yellow-400" />
+                      ) : (
+                        <StarIcon className="h-6 w-6 text-gray-300 dark:text-gray-600" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Avis</h3>
+                <textarea
+                  value={seriesReview}
+                  onChange={(e) => setSeriesReview(e.target.value)}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-booktime-500 transition-colors"
+                  placeholder="Qu’avez-vous pensé de cette série ?"
+                />
+                <button
+                  type="button"
+                  onClick={handleSeriesReviewPublish}
+                  disabled={
+                    publishingSeriesReview ||
+                    !(seriesReview || '').trim() ||
+                    (seriesReview || '').trim() === (savedSeriesReview || '').trim()
+                  }
+                  className="mt-2 px-4 py-2 text-sm font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  {publishingSeriesReview ? 'Publication…' : 'Publier'}
+                </button>
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {isSeriesOwned
+                ? 'Passez la série en Terminé pour noter et publier un avis.'
+                : 'Ajoutez la série pour noter et publier un avis.'}
+            </p>
+          )}
+
+          <CommunityReviews
+            book={{
+              title: seriesDisplayName,
+              name: seriesDisplayName,
+              author: series?.author || series?.authors?.[0] || '',
+            }}
+            refreshKey={communityRefreshKey}
+          />
         </div>
 
         {/* Actions Bar — affichée uniquement lorsqu'il y a une sélection de tomes */}

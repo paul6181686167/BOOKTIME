@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { getThemeChrome } from '../utils/themeChrome';
 
 const ThemeContext = createContext();
 
@@ -35,10 +36,9 @@ function applyThemeToDocument(theme) {
   root.classList.toggle('dark', theme === 'dark' || theme === 'void');
   root.classList.toggle('cinema', theme === 'void');
 
-  const color =
-    theme === 'void' ? '#050505' : theme === 'dark' ? '#234f37' : '#16a34a';
+  const chrome = getThemeChrome(theme);
   document.querySelectorAll('meta[name="theme-color"]').forEach((el) => {
-    el.setAttribute('content', color);
+    el.setAttribute('content', chrome.navigationBar);
   });
 }
 
