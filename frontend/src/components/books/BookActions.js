@@ -63,7 +63,7 @@ const BookActions = {
       } else if (booksData && Array.isArray(booksData.items)) {
         next = booksData.items;
       } else {
-        console.warn('⚠️ Format de données inattendu pour les livres:', booksData);
+        console.warn(' Format de données inattendu pour les livres:', booksData);
       }
 
       if (Array.isArray(next)) {
@@ -213,7 +213,7 @@ const BookActions = {
     });
 
 
-    // 🔍 Attribution unifiée recherche + bibliothèque : ordre curé → saga.
+    //  Attribution unifiée recherche + bibliothèque : ordre curé → saga.
     // (Wikidata réservé à la recherche : pas d'appel réseau par livre côté bibliothèque.)
     const booksWithSeriesMarked = booksList.map(book => {
       const attr = attributeBookToSeries(book);
@@ -241,7 +241,7 @@ const BookActions = {
 
     booksWithSeriesMarked.forEach(book => {
       if (book.belongsToSeries) {
-        // 📚 LIVRE APPARTENANT À UNE SÉRIE - REGROUPEMENT DANS VIGNETTE SÉRIE
+        //  LIVRE APPARTENANT À UNE SÉRIE - REGROUPEMENT DANS VIGNETTE SÉRIE
         const seriesKey = book.detectedSeriesKey || book.detectedSeriesName.toLowerCase().trim();
         if (!seriesGroups[seriesKey]) {
           seriesGroups[seriesKey] = {
@@ -251,7 +251,7 @@ const BookActions = {
             name: book.detectedSeriesName,
             title: book.detectedSeriesName,
             author: book.author,
-            authors: [book.author], // 🔍 NOUVEAU: Stockage de tous les auteurs de la série
+            authors: [book.author], //  NOUVEAU: Stockage de tous les auteurs de la série
             category: book.category,
             books: [],
             totalBooks: 0,
@@ -274,7 +274,7 @@ const BookActions = {
           seriesGroups[seriesKey].cover_url = book.cover_url;
         }
         
-        // 🔍 NOUVEAU: Ajouter l'auteur à la liste si pas déjà présent
+        //  NOUVEAU: Ajouter l'auteur à la liste si pas déjà présent
         if (book.author && !seriesGroups[seriesKey].authors.includes(book.author)) {
           seriesGroups[seriesKey].authors.push(book.author);
         }

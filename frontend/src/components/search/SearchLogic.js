@@ -134,9 +134,9 @@ export const searchOpenLibrary = async (query, {
   generateSeriesCardsForSearch,
   getCategoryBadgeFromBook
 }) => {
-  console.log('🚀 searchOpenLibrary GLOBALE appelée avec:', query);
+  console.log(' searchOpenLibrary GLOBALE appelée avec:', query);
   if (!query.trim()) {
-    console.log('❌ Recherche annulée: query vide');
+    console.log(' Recherche annulée: query vide');
     return;
   }
 
@@ -608,13 +608,13 @@ export const verifyAndDisplaySeries = async (seriesName, targetCategory, userSer
   const maxAttempts = 3;
   const baseDelayMs = 500;
   
-  console.log(`🔍 [PHASE C.1] Vérification série: "${seriesName}" en catégorie "${targetCategory}"`);
+  console.log(` [PHASE C.1] Vérification série: "${seriesName}" en catégorie "${targetCategory}"`);
   
   const startTime = Date.now();
   
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      console.log(`📚 [PHASE C.1] Tentative ${attempt}/${maxAttempts} - Chargement séries...`);
+      console.log(` [PHASE C.1] Tentative ${attempt}/${maxAttempts} - Chargement séries...`);
       
       // Charger séries fraîches depuis le serveur
       await loadUserSeriesLibrary();
@@ -627,7 +627,7 @@ export const verifyAndDisplaySeries = async (seriesName, targetCategory, userSer
       
       if (seriesFound) {
         const totalTime = Date.now() - startTime;
-        console.log(`✅ [PHASE C.1] Série trouvée après ${attempt} tentative(s) en ${totalTime}ms`);
+        console.log(` [PHASE C.1] Série trouvée après ${attempt} tentative(s) en ${totalTime}ms`);
         
         // Déclencher retour bibliothèque avec succès
         const backToLibraryEvent = new CustomEvent('backToLibrary', {
@@ -647,12 +647,12 @@ export const verifyAndDisplaySeries = async (seriesName, targetCategory, userSer
       // Délai progressif avant retry
       if (attempt < maxAttempts) {
         const delayMs = baseDelayMs * attempt;
-        console.log(`⏳ [PHASE C.1] Série non trouvée, retry dans ${delayMs}ms...`);
+        console.log(` [PHASE C.1] Série non trouvée, retry dans ${delayMs}ms...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
       }
       
     } catch (error) {
-      console.error(`❌ [PHASE C.1] Tentative ${attempt} échouée:`, error);
+      console.error(` [PHASE C.1] Tentative ${attempt} échouée:`, error);
       if (attempt < maxAttempts) {
         await new Promise(resolve => setTimeout(resolve, 300));
       }
@@ -661,7 +661,7 @@ export const verifyAndDisplaySeries = async (seriesName, targetCategory, userSer
   
   // Échec après toutes les tentatives
   const totalTime = Date.now() - startTime;
-  console.error(`❌ [PHASE C.1] Série non trouvée après ${maxAttempts} tentatives en ${totalTime}ms`);
+  console.error(` [PHASE C.1] Série non trouvée après ${maxAttempts} tentatives en ${totalTime}ms`);
   
   // Fallback : Déclencher retour bibliothèque avec échec
   const backToLibraryEvent = new CustomEvent('backToLibrary', {
@@ -687,13 +687,13 @@ export const verifyAndDisplayBook = async (bookTitle, targetCategory, books, loa
   const baseDelayMs = 500;
   const timeoutMs = 5000; // Timeout global 5s
   
-  console.log(`🔍 [PHASE C.1] Vérification livre: "${bookTitle}" en catégorie "${targetCategory}"`);
+  console.log(` [PHASE C.1] Vérification livre: "${bookTitle}" en catégorie "${targetCategory}"`);
   
   const startTime = Date.now();
   
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      console.log(`📚 [PHASE C.1] Tentative ${attempt}/${maxAttempts} - Chargement données...`);
+      console.log(` [PHASE C.1] Tentative ${attempt}/${maxAttempts} - Chargement données...`);
       
       // Charger données fraîches (loadStats optionnel pour compatibilité)
       if (loadStats) {
@@ -714,7 +714,7 @@ export const verifyAndDisplayBook = async (bookTitle, targetCategory, books, loa
       
       if (bookFound) {
         const totalTime = Date.now() - startTime;
-        console.log(`✅ [PHASE C.1] Livre trouvé après ${attempt} tentative(s) en ${totalTime}ms`);
+        console.log(` [PHASE C.1] Livre trouvé après ${attempt} tentative(s) en ${totalTime}ms`);
         
         // Déclencher retour bibliothèque avec succès
         const backToLibraryEvent = new CustomEvent('backToLibrary', {
@@ -734,18 +734,18 @@ export const verifyAndDisplayBook = async (bookTitle, targetCategory, books, loa
       // Délai progressif avant retry (500ms, 1000ms, 1500ms)
       if (attempt < maxAttempts) {
         const delayMs = baseDelayMs * attempt;
-        console.log(`⏳ [PHASE C.1] Livre non trouvé, retry dans ${delayMs}ms...`);
+        console.log(` [PHASE C.1] Livre non trouvé, retry dans ${delayMs}ms...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
       }
       
       // Vérification timeout global
       if (Date.now() - startTime > timeoutMs) {
-        console.warn('⚠️ [PHASE C.1] Timeout global atteint, abandon verification');
+        console.warn(' [PHASE C.1] Timeout global atteint, abandon verification');
         break;
       }
       
     } catch (error) {
-      console.error(`❌ [PHASE C.1] Tentative ${attempt} échouée:`, error);
+      console.error(` [PHASE C.1] Tentative ${attempt} échouée:`, error);
       
       // En cas d'erreur, délai plus court avant retry
       if (attempt < maxAttempts) {
@@ -756,7 +756,7 @@ export const verifyAndDisplayBook = async (bookTitle, targetCategory, books, loa
   
   // Échec après toutes les tentatives
   const totalTime = Date.now() - startTime;
-  console.error(`❌ [PHASE C.1] Livre non trouvé après ${maxAttempts} tentatives en ${totalTime}ms`);
+  console.error(` [PHASE C.1] Livre non trouvé après ${maxAttempts} tentatives en ${totalTime}ms`);
   
   // Fallback UX : notification avec action manuelle
   toast.error(

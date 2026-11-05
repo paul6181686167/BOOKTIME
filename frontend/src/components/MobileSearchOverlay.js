@@ -21,11 +21,7 @@ const MobileSearchOverlay = ({ isOpen, onClose, searchTerm, onSearchChange, onSe
   };
 
   return (
-    <div
-      className={`md:hidden fixed inset-0 z-50 flex flex-col ${
-        isVoid ? 'bg-cinema-void' : 'bg-honeycomb'
-      }`}
-    >
+    <div className="md:hidden fixed inset-0 z-50 flex flex-col bg-honeycomb">
       <form
         onSubmit={handleSubmit}
         className={`flex items-center gap-3 px-4 py-3 backdrop-blur-xl border-b safe-area-top ${

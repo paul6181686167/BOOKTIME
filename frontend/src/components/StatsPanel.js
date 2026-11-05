@@ -41,9 +41,9 @@ const StatsPanel = ({ stats }) => {
   const total = stats.total_books || 0;
 
   const views = [
-    { key: 'overview',   label: '📊 Vue générale' },
-    { key: 'categories', label: '📚 Catégories'   },
-    { key: 'details',    label: '🔍 Détails'       },
+    { key: 'overview',   label: 'Vue générale' },
+    { key: 'categories', label: 'Catégories'   },
+    { key: 'details',    label: 'Détails'       },
   ];
 
   return (
@@ -68,17 +68,16 @@ const StatsPanel = ({ stats }) => {
         <div className="animate-fadeIn">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {[
-              { title: 'Total',    value: stats.total_books || 0,     icon: '📚', bg: 'bg-blue-50 dark:bg-blue-900/20',    text: 'text-blue-600 dark:text-blue-400'    },
-              { title: 'Terminés', value: stats.completed_books || 0, icon: '✅', bg: 'bg-green-50 dark:bg-green-900/20',  text: 'text-green-600 dark:text-green-400'  },
-              { title: 'En cours', value: stats.reading_books || 0,   icon: '📖', bg: 'bg-yellow-50 dark:bg-yellow-900/20',text: 'text-yellow-600 dark:text-yellow-400'},
-              { title: 'À lire',   value: stats.to_read_books || 0,   icon: '📌', bg: 'bg-gray-50 dark:bg-gray-700',       text: 'text-gray-700 dark:text-gray-200'    },
+              { title: 'Total',    value: stats.total_books || 0, bg: 'bg-blue-50 dark:bg-blue-900/20',    text: 'text-blue-600 dark:text-blue-400'    },
+              { title: 'Terminés', value: stats.completed_books || 0, bg: 'bg-green-50 dark:bg-green-900/20',  text: 'text-green-600 dark:text-green-400'  },
+              { title: 'En cours', value: stats.reading_books || 0, bg: 'bg-yellow-50 dark:bg-yellow-900/20',text: 'text-yellow-600 dark:text-yellow-400'},
+              { title: 'À lire',   value: stats.to_read_books || 0, bg: 'bg-gray-50 dark:bg-gray-700',       text: 'text-gray-700 dark:text-gray-200'    },
             ].map((s, i) => (
               <div
                 key={s.title}
                 className={`${s.bg} rounded-xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm section-appear`}
                 style={{ animationDelay: `${i * 60}ms` }}
               >
-                <div className="text-2xl mb-1">{s.icon}</div>
                 <Counter value={s.value} className={`text-3xl font-bold ${s.text} block`} />
                 <p className={`text-sm ${s.text} opacity-80`}>{s.title}</p>
               </div>
@@ -101,16 +100,15 @@ const StatsPanel = ({ stats }) => {
       {activeView === 'categories' && (
         <div className="animate-fadeIn space-y-4">
           {[
-            { label: 'Romans',            value: categoryStats.roman || 0, emoji: '📚', color: 'bg-blue-500',   bgCard: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-300' },
-            { label: 'Romans Graphiques', value: categoryStats.bd || 0,    emoji: '🎨', color: 'bg-green-500',  bgCard: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-300' },
-            { label: 'Mangas',            value: categoryStats.manga || 0, emoji: '🇯🇵', color: 'bg-purple-500', bgCard: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-700 dark:text-purple-300' },
+            { label: 'Romans',            value: categoryStats.roman || 0, color: 'bg-blue-500',   bgCard: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-300' },
+            { label: 'Romans Graphiques', value: categoryStats.bd || 0, color: 'bg-green-500',  bgCard: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-300' },
+            { label: 'Mangas',            value: categoryStats.manga || 0, color: 'bg-purple-500', bgCard: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-700 dark:text-purple-300' },
           ].map((cat, i) => {
             const pct = total > 0 ? Math.round((cat.value / total) * 100) : 0;
             return (
               <div key={cat.label} className={`${cat.bgCard} rounded-xl p-4 border border-gray-100 dark:border-gray-700 section-appear`} style={{ animationDelay: `${i * 80}ms` }}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">{cat.emoji}</span>
                     <span className={`font-semibold ${cat.text}`}>{cat.label}</span>
                   </div>
                   <div className="text-right">
@@ -135,13 +133,12 @@ const StatsPanel = ({ stats }) => {
         <div className="animate-fadeIn space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              { label: 'Auteurs différents',  value: stats.authors_count || 0,   icon: '✍️' },
-              { label: 'Séries / Sagas',      value: stats.sagas_count || 0,     icon: '📖' },
-              { label: 'Pages lues',          value: stats.total_pages_read || 0,icon: '📄' },
-              { label: 'Terminés cette année',value: stats.completed_this_year || 0, icon: '🗓️' },
+              { label: 'Auteurs différents',  value: stats.authors_count || 0 },
+              { label: 'Séries / Sagas',      value: stats.sagas_count || 0 },
+              { label: 'Pages lues',          value: stats.total_pages_read || 0 },
+              { label: 'Terminés cette année',value: stats.completed_this_year || 0 },
             ].map((d, i) => (
               <div key={d.label} className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-4 section-appear" style={{ animationDelay: `${i * 60}ms` }}>
-                <span className="text-3xl">{d.icon}</span>
                 <div>
                   <Counter value={d.value} className="text-2xl font-bold text-gray-800 dark:text-gray-200 block" />
                   <p className="text-sm text-gray-500 dark:text-gray-400">{d.label}</p>
@@ -153,7 +150,6 @@ const StatsPanel = ({ stats }) => {
           {/* Temps de lecture estimé */}
           {stats.reading_hours_estimated > 0 && (
             <div className="bg-amber-50 dark:bg-amber-900/10 rounded-xl p-4 border border-amber-100 dark:border-amber-800 flex items-center gap-4 section-appear">
-              <span className="text-3xl">⏱️</span>
               <div>
                 <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
                   {stats.reading_hours_estimated.toLocaleString('fr-FR')}h
@@ -166,7 +162,6 @@ const StatsPanel = ({ stats }) => {
           {/* Note moyenne */}
           {stats.avg_rating > 0 && (
             <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-4 section-appear">
-              <span className="text-3xl">⭐</span>
               <div className="flex-1">
                 <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">{stats.avg_rating} / 5</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Note moyenne de tes livres</p>

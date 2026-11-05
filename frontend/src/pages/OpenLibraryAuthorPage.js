@@ -118,13 +118,7 @@ const OpenLibraryAuthorPage = () => {
     }
   };
 
-  const getCategoryIcon = (category) => {
-    switch (category) {
-      case 'bd': return '🎨';
-      case 'manga': return '🇯🇵';
-      default: return '📚';
-    }
-  };
+  const getCategoryIcon = () => '';
 
   const groupBooksByDecade = (books) => {
     const grouped = {};
@@ -162,7 +156,6 @@ const OpenLibraryAuthorPage = () => {
     return (
       <div className="min-h-screen bg-honeycomb flex items-center justify-center">
         <div className="text-center">
-          <span className="text-6xl mb-4 block">👤</span>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Auteur non trouvé</h1>
           <button
             onClick={() => navigate('/')}
@@ -200,7 +193,7 @@ const OpenLibraryAuthorPage = () => {
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 sticky top-8">
               <div className="mb-4">
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                  🌐 OpenLibrary
+                   OpenLibrary
                 </span>
               </div>
 
@@ -307,7 +300,7 @@ const OpenLibraryAuthorPage = () => {
                         : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                     }`}
                   >
-                    📖 Biographie
+                     Biographie
                   </button>
                   <button
                     onClick={() => setActiveTab('bibliography')}
@@ -317,7 +310,7 @@ const OpenLibraryAuthorPage = () => {
                         : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                     }`}
                   >
-                    📚 Bibliographie ({author.bibliography?.length || 0})
+                     Bibliographie ({author.bibliography?.length || 0})
                   </button>
                   <button
                     onClick={() => setActiveTab('timeline')}
@@ -327,7 +320,7 @@ const OpenLibraryAuthorPage = () => {
                         : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                     }`}
                   >
-                    ⏰ Chronologie
+                     Chronologie
                   </button>
                 </nav>
               </div>
@@ -341,7 +334,6 @@ const OpenLibraryAuthorPage = () => {
                       </div>
                     ) : (
                       <div className="text-center py-8">
-                        <span className="text-4xl mb-4 block">📝</span>
                         <p className="text-gray-500 dark:text-gray-400">
                           Aucune biographie disponible pour cet auteur.
                         </p>
@@ -430,7 +422,6 @@ const OpenLibraryAuthorPage = () => {
                       </div>
                     ) : (
                       <div className="text-center py-8">
-                        <span className="text-4xl mb-4 block">📚</span>
                         <p className="text-gray-500 dark:text-gray-400">
                           Aucun livre trouvé pour cet auteur.
                         </p>
@@ -505,7 +496,6 @@ const OpenLibraryAuthorPage = () => {
                         ))
                     ) : (
                       <div className="text-center py-8">
-                        <span className="text-4xl mb-4 block">⏰</span>
                         <p className="text-gray-500 dark:text-gray-400">
                           Aucune chronologie disponible.
                         </p>

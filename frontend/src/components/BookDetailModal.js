@@ -423,7 +423,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
       await onUpdate(book.id, { status: newStatus });
       if (newStatus === 'completed') {
         setTimeout(launchConfetti, 200);
-        toast.success('🎉 Bravo, livre terminé !', { duration: 3000, icon: '🏆' });
+        toast.success('Bravo, livre terminé !', { duration: 3000 });
       }
     } catch (error) {
       setEditData((prev) => ({ ...prev, status: previousStatus }));
@@ -439,7 +439,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     setEditData((prev) => ({ ...prev, status: 'to_reread' }));
     try {
       await onUpdate(book.id, { status: 'to_reread' });
-      toast.success('Ajouté à « À relire »', { icon: '🔁' });
+      toast.success('Ajouté à « À relire »');
     } catch (error) {
       setEditData((prev) => ({ ...prev, status: previousStatus }));
       toast.error('Impossible de marquer à relire');
@@ -458,7 +458,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     setPageInput(0);
     try {
       await onUpdate(book.id, { status: 'reading', current_page: 0 });
-      toast.success('Bonne relecture !', { icon: '📖' });
+      toast.success('Bonne relecture !');
     } catch (error) {
       setEditData((prev) => ({
         ...prev,
@@ -635,7 +635,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
-                    {book.category === 'bd' ? '🎨' : book.category === 'manga' ? '🇯🇵' : '📚'}
                   </div>
                 )}
               </div>
@@ -656,9 +655,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                 </p>
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-booktime-100 dark:bg-booktime-900/30 text-booktime-800 dark:text-booktime-300">
-                    {book.category === 'roman' && '📚'}
-                    {book.category === 'bd' && '🎨'}
-                    {book.category === 'manga' && '🇯🇵'}
                     {(book.category || 'roman').charAt(0).toUpperCase() + (book.category || 'roman').slice(1)}
                   </span>
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getCurrentStatus().color}`}>
@@ -897,11 +893,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
                   <div className="text-center p-4">
-                    <div className="text-6xl mb-2">
-                      {book.category === 'roman' && '📚'}
-                      {book.category === 'bd' && '🎨'}
-                      {book.category === 'manga' && '🇯🇵'}
-                    </div>
                     <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Pas de couverture</p>
                   </div>
                 </div>
@@ -914,7 +905,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             {/* Édition des langues */}
             {isEditing && (
               <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">🌍 Modifier les langues</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Modifier les langues</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Langue originale */}
@@ -986,7 +977,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               <div>
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Série</h3>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 rounded-full text-sm font-medium">
-                  📚 {book.saga}{book.volume_number ? ` — Tome ${book.volume_number}` : ''}
+                   {book.saga}{book.volume_number ? ` — Tome ${book.volume_number}` : ''}
                 </span>
               </div>
             ) : null}

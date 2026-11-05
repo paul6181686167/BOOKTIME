@@ -4,7 +4,7 @@ import { API_BASE_URL } from '../config/environment';
 class AuthService {
   constructor() {
     this.backendUrl = API_BASE_URL;
-    console.log('🔗 AuthService initialized with:', this.backendUrl);
+    console.log(' AuthService initialized with:', this.backendUrl);
   }
 
   async login(email, password, rememberMe = true) {
@@ -51,7 +51,7 @@ class AuthService {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Inscription réussie');
+        console.log(' Inscription réussie');
         localStorage.setItem('token', data.access_token);
         localStorage.setItem('user', JSON.stringify(data.user));
         return { success: true, user: data.user };

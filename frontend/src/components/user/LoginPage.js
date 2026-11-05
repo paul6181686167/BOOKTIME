@@ -74,17 +74,17 @@ function LoginPage() {
         result = await register(formData.email, formData.password);
       }
 
-      console.log('📡 Résultat reçu:', result);
+      console.log(' Résultat reçu:', result);
 
       if (result.success) {
         toast.success(isLogin ? 'Connexion réussie !' : 'Inscription réussie !');
-        console.log('✅ Succès - rechargement dans 1s');
+        console.log(' Succès - rechargement dans 1s');
         // Force immediate navigation after successful auth
         setTimeout(() => {
           window.location.reload();
         }, 1000);
       } else {
-        console.log('❌ Erreur:', result.error);
+        console.log(' Erreur:', result.error);
         toast.error(result.error || 'Une erreur est survenue');
       }
     } catch (error) {
@@ -152,7 +152,7 @@ function LoginPage() {
         <div className="text-center">
           <div className="flex justify-center mb-6">
             <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-              🐝
+              B
             </div>
           </div>
           <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
@@ -221,7 +221,7 @@ function LoginPage() {
             {!isLogin && (
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                  💡 Mot de passe minimum 6 caractères.
+                   Mot de passe minimum 6 caractères.
                 </p>
               </div>
             )}

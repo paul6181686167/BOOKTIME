@@ -1,43 +1,43 @@
 // Constantes pour les langues supportées
 export const LANGUAGES = [
-  { code: 'français', name: 'Français', flag: '🇫🇷' },
-  { code: 'anglais', name: 'Anglais', flag: '🇬🇧' },
-  { code: 'espagnol', name: 'Espagnol', flag: '🇪🇸' },
-  { code: 'italien', name: 'Italien', flag: '🇮🇹' },
-  { code: 'allemand', name: 'Allemand', flag: '🇩🇪' },
-  { code: 'portugais', name: 'Portugais', flag: '🇵🇹' },
-  { code: 'russe', name: 'Russe', flag: '🇷🇺' },
-  { code: 'japonais', name: 'Japonais', flag: '🇯🇵' },
-  { code: 'chinois', name: 'Chinois', flag: '🇨🇳' },
-  { code: 'coréen', name: 'Coréen', flag: '🇰🇷' },
-  { code: 'arabe', name: 'Arabe', flag: '🇸🇦' },
-  { code: 'hindi', name: 'Hindi', flag: '🇮🇳' },
-  { code: 'néerlandais', name: 'Néerlandais', flag: '🇳🇱' },
-  { code: 'suédois', name: 'Suédois', flag: '🇸🇪' },
-  { code: 'norvégien', name: 'Norvégien', flag: '🇳🇴' },
-  { code: 'danois', name: 'Danois', flag: '🇩🇰' },
-  { code: 'finnois', name: 'Finnois', flag: '🇫🇮' },
-  { code: 'polonais', name: 'Polonais', flag: '🇵🇱' },
-  { code: 'tchèque', name: 'Tchèque', flag: '🇨🇿' },
-  { code: 'hongrois', name: 'Hongrois', flag: '🇭🇺' },
-  { code: 'grec', name: 'Grec', flag: '🇬🇷' },
-  { code: 'turc', name: 'Turc', flag: '🇹🇷' },
-  { code: 'hébreu', name: 'Hébreu', flag: '🇮🇱' },
-  { code: 'thaï', name: 'Thaï', flag: '🇹🇭' },
-  { code: 'vietnamien', name: 'Vietnamien', flag: '🇻🇳' },
-  { code: 'latin', name: 'Latin', flag: '🏛️' },
-  { code: 'ancien_grec', name: 'Grec ancien', flag: '🏛️' },
-  { code: 'sanskrit', name: 'Sanskrit', flag: '🕉️' }
+  { code: 'français', name: 'Français', flag: '' },
+  { code: 'anglais', name: 'Anglais', flag: '' },
+  { code: 'espagnol', name: 'Espagnol', flag: '' },
+  { code: 'italien', name: 'Italien', flag: '' },
+  { code: 'allemand', name: 'Allemand', flag: '' },
+  { code: 'portugais', name: 'Portugais', flag: '' },
+  { code: 'russe', name: 'Russe', flag: '' },
+  { code: 'japonais', name: 'Japonais', flag: '' },
+  { code: 'chinois', name: 'Chinois', flag: '' },
+  { code: 'coréen', name: 'Coréen', flag: '' },
+  { code: 'arabe', name: 'Arabe', flag: '' },
+  { code: 'hindi', name: 'Hindi', flag: '' },
+  { code: 'néerlandais', name: 'Néerlandais', flag: '' },
+  { code: 'suédois', name: 'Suédois', flag: '' },
+  { code: 'norvégien', name: 'Norvégien', flag: '' },
+  { code: 'danois', name: 'Danois', flag: '' },
+  { code: 'finnois', name: 'Finnois', flag: '' },
+  { code: 'polonais', name: 'Polonais', flag: '' },
+  { code: 'tchèque', name: 'Tchèque', flag: '' },
+  { code: 'hongrois', name: 'Hongrois', flag: '' },
+  { code: 'grec', name: 'Grec', flag: '' },
+  { code: 'turc', name: 'Turc', flag: '' },
+  { code: 'hébreu', name: 'Hébreu', flag: '' },
+  { code: 'thaï', name: 'Thaï', flag: '' },
+  { code: 'vietnamien', name: 'Vietnamien', flag: '' },
+  { code: 'latin', name: 'Latin', flag: '' },
+  { code: 'ancien_grec', name: 'Grec ancien', flag: '' },
+  { code: 'sanskrit', name: 'Sanskrit', flag: '' }
 ];
 
 export const getLanguageByCode = (code) => {
   if (code == null || code === '') {
-    return { code: '', name: 'Non renseigné', flag: '🌍' };
+    return { code: '', name: 'Non renseigné', flag: '' };
   }
   const found = LANGUAGES.find(lang => lang.code === code);
   if (found) return found;
   const s = String(code);
-  return { code: s, name: s, flag: '🌍' };
+  return { code: s, name: s, flag: '' };
 };
 
 export const getLanguageName = (code) => {

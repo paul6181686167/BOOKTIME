@@ -16,15 +16,19 @@ import {
 import { resolveCoverForVisibleItem } from '../../services/libraryMetaEnrichment';
 
 export const CARD_SHELL =
-  'h-full bg-transparent rounded-xl overflow-hidden relative transition-transform duration-200';
+  'h-full bg-transparent rounded-xl relative transition-transform duration-200';
 
 export const COVER_FRAME =
-  'aspect-[2/3] rounded-xl bg-[#141414] relative overflow-hidden ring-1 ring-white/[0.06] shadow-[0_8px_24px_rgba(0,0,0,0.55)]';
+  'aspect-[2/3] rounded-xl bg-[#141414] relative overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.55)]';
 
 export const COVER_IMAGE =
   'h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.05]';
 
 export const PILL = 'backdrop-blur-sm ring-1 ring-white/10';
+
+/** Fine bande claire sur le contour — par-dessus l’image pour la faire ressortir. */
+export const COVER_RIM =
+  'pointer-events-none absolute inset-0 z-[1] rounded-xl shadow-[inset_0_0_0_1px_rgba(255,255,255,0.28)]';
 
 const PLACEHOLDER_TINTS = [
   'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
@@ -71,8 +75,13 @@ export const CoverPlaceholder = ({ text, hidden = false }) => (
   </div>
 );
 
+export const CoverRim = () => <div aria-hidden className={COVER_RIM} />;
+
 export const CoverScrim = () => (
-  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+  <>
+    <CoverRim />
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-2/5 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+  </>
 );
 
 /**

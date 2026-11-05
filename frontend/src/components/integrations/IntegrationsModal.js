@@ -129,7 +129,7 @@ const IntegrationsModal = ({ isOpen, onClose, onAddBooks }) => {
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              🔗 Intégrations Externes
+               Intégrations Externes
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
               Importez et recherchez depuis des services externes
@@ -148,10 +148,10 @@ const IntegrationsModal = ({ isOpen, onClose, onAddBooks }) => {
         {/* Navigation onglets */}
         <div className="flex border-b border-gray-200 dark:border-gray-700">
           {[
-            { id: 'goodreads', label: '📚 Goodreads', description: 'Import CSV' },
-            { id: 'google', label: '📖 Google Books', description: 'Recherche' },
-            { id: 'combined', label: '🔍 Recherche combinée', description: 'Multi-sources' },
-            { id: 'stats', label: '📊 Statistiques', description: 'État intégrations' }
+            { id: 'goodreads', label: 'Goodreads', description: 'Import CSV' },
+            { id: 'google', label: 'Google Books', description: 'Recherche' },
+            { id: 'combined', label: 'Recherche combinée', description: 'Multi-sources' },
+            { id: 'stats', label: 'Statistiques', description: 'État intégrations' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -333,7 +333,7 @@ const IntegrationsModal = ({ isOpen, onClose, onAddBooks }) => {
                 
                 <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg mb-4">
                   <p className="text-yellow-800 dark:text-yellow-200 text-sm">
-                    🔍 Cette recherche combine plusieurs sources externes pour vous offrir un maximum de résultats.
+                     Cette recherche combine plusieurs sources externes pour vous offrir un maximum de résultats.
                     Les doublons sont automatiquement supprimés.
                   </p>
                 </div>

@@ -2,7 +2,7 @@ import { API_BASE_URL } from '../config/environment';
 // Constantes globales pour l'application BOOKTIME
 
 // Image par défaut pour les séries (SVG inline pour éviter 404)
-export const DEFAULT_SERIES_COVER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='300' viewBox='0 0 200 300'%3E%3Crect fill='%23e5e7eb' width='200' height='300'/%3E%3Ctext fill='%239ca3af' x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='48'%3E📚%3C/text%3E%3C/svg%3E";
+export const DEFAULT_SERIES_COVER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='300' viewBox='0 0 200 300'%3E%3Crect fill='%23e5e7eb' width='200' height='300'/%3E%3Ctext fill='%239ca3af' x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-family='sans-serif' font-size='48'%3EB%3C/text%3E%3C/svg%3E";
 
 // Catégories de livres
 export const BOOK_CATEGORIES = {
@@ -24,20 +24,17 @@ export const CATEGORY_BADGES = {
   [BOOK_CATEGORIES.ROMAN]: {
     key: 'roman',
     text: 'Roman',
-    class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300',
-    emoji: '📚'
+    class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300'
   },
   [BOOK_CATEGORIES.BD]: {
     key: 'bd',
     text: 'BD',
-    class: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300',
-    emoji: '🎨'
+    class: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
   },
   [BOOK_CATEGORIES.MANGA]: {
     key: 'manga',
     text: 'Manga',
-    class: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300',
-    emoji: '🇯🇵'
+    class: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300'
   }
 };
 
@@ -45,23 +42,19 @@ export const CATEGORY_BADGES = {
 export const STATUS_CONFIG = {
   [BOOK_STATUSES.TO_READ]: {
     label: 'À lire',
-    color: 'gray',
-    emoji: ''
+    color: 'gray'
   },
   [BOOK_STATUSES.READING]: {
     label: 'En cours',
-    color: 'yellow',
-    emoji: ''
+    color: 'yellow'
   },
   [BOOK_STATUSES.TO_REREAD]: {
     label: 'À relire',
-    color: 'purple',
-    emoji: ''
+    color: 'purple'
   },
   [BOOK_STATUSES.COMPLETED]: {
     label: 'Terminé',
-    color: 'green',
-    emoji: ''
+    color: 'green'
   }
 };
 
@@ -69,19 +62,16 @@ export const STATUS_CONFIG = {
 export const TAB_CONFIG = [
   {
     key: BOOK_CATEGORIES.ROMAN,
-    label: 'Romans',
-    emoji: ''
+    label: 'Romans'
   },
   {
     key: 'graphic_novels', // Nouvelle clé pour regrouper BD + Manga
     label: 'Romans graphiques',
-    emoji: '',
     categories: [BOOK_CATEGORIES.BD, BOOK_CATEGORIES.MANGA] // Inclut les deux catégories
   },
   {
     key: 'upcoming',
-    label: 'À venir',
-    emoji: ''
+    label: 'À venir'
   }
 ];
 

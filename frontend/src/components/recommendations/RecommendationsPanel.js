@@ -132,7 +132,7 @@ const RecommendationsPanel = ({
       <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 ${className}`}>
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            🤖 Recommandations IA
+             Recommandations IA
           </h3>
           <button
             onClick={onClose}
@@ -157,7 +157,7 @@ const RecommendationsPanel = ({
       <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 ${className}`}>
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            🤖 Recommandations IA
+             Recommandations IA
           </h3>
           <button
             onClick={onClose}
@@ -184,7 +184,7 @@ const RecommendationsPanel = ({
     <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 ${className}`}>
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          🤖 Recommandations IA
+           Recommandations IA
         </h3>
         <button
           onClick={onClose}
@@ -227,7 +227,7 @@ const RecommendationsPanel = ({
                     />
                   ) : (
                     <div className="w-12 h-16 bg-gray-300 dark:bg-gray-600 rounded flex items-center justify-center">
-                      <span className="text-xs text-gray-500">📚</span>
+                      <span className="text-xs text-gray-500"></span>
                     </div>
                   )}
                 </div>
@@ -294,7 +294,7 @@ const RecommendationsPanel = ({
           onClick={fetchRecommendations}
           className="w-full text-sm text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
         >
-          🔄 Actualiser les recommandations
+           Actualiser les recommandations
         </button>
       </div>
     </div>

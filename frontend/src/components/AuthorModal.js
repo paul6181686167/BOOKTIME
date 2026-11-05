@@ -168,7 +168,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
       if (wikidataResponse.ok) {
         const wikidataData = await wikidataResponse.json();
         if (wikidataData.found) {
-          console.log('✅ Informations auteur récupérées depuis Wikidata:', wikidataData.author);
+          console.log(' Informations auteur récupérées depuis Wikidata:', wikidataData.author);
           setAuthorInfo({
             ...wikidataData.author,
             photo_url: wikidataData.author.image_url || wikidataData.author.photo_url || null,
@@ -178,7 +178,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
         }
       }
     } catch (error) {
-      console.warn('⚠️ Erreur Wikidata, passage au fallback Wikipedia:', error);
+      console.warn(' Erreur Wikidata, passage au fallback Wikipedia:', error);
     }
     
     // 2. FALLBACK : Wikipedia (biographies + parsing)
@@ -188,7 +188,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
       if (wikipediaResponse.ok) {
         const wikipediaData = await wikipediaResponse.json();
         if (wikipediaData.found) {
-          console.log('✅ Informations auteur récupérées depuis Wikipedia:', wikipediaData.author);
+          console.log(' Informations auteur récupérées depuis Wikipedia:', wikipediaData.author);
           setAuthorInfo({
             ...wikipediaData.author,
             source: 'wikipedia'
@@ -197,7 +197,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
         }
       }
     } catch (error) {
-      console.warn('⚠️ Erreur Wikipedia, passage au fallback OpenLibrary:', error);
+      console.warn(' Erreur Wikipedia, passage au fallback OpenLibrary:', error);
     }
     
     // 3. FALLBACK : OpenLibrary (données basiques)
@@ -212,7 +212,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
       if (openlibResponse.ok) {
         const openlibData = await openlibResponse.json();
         if (openlibData.found) {
-          console.log('✅ Informations auteur récupérées depuis OpenLibrary:', openlibData.author);
+          console.log(' Informations auteur récupérées depuis OpenLibrary:', openlibData.author);
           setAuthorInfo({
             ...openlibData.author,
             source: 'openlibrary'
@@ -221,11 +221,11 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
         }
       }
     } catch (error) {
-      console.warn('⚠️ Erreur OpenLibrary:', error);
+      console.warn(' Erreur OpenLibrary:', error);
     }
     
     // Aucune source n'a fonctionné pour le profil
-    console.log('⚠️ Aucune information de profil trouvée pour l\'auteur');
+    console.log(' Aucune information de profil trouvée pour l\'auteur');
   };
 
   // Charger les œuvres de l'auteur (Wikidata → Wikipedia → Bibliothèque)
@@ -241,7 +241,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
       if (wikidataSeriesResponse.ok) {
         const wikidataSeriesData = await wikidataSeriesResponse.json();
         if (wikidataSeriesData.found && (wikidataSeriesData.series.length > 0 || wikidataSeriesData.individual_books.length > 0)) {
-          console.log('✅ Séries et livres récupérés depuis Wikidata:', wikidataSeriesData);
+          console.log(' Séries et livres récupérés depuis Wikidata:', wikidataSeriesData);
           setAuthorBooks({
             series: wikidataSeriesData.series,
             individual_books: wikidataSeriesData.individual_books || [],
@@ -266,7 +266,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
       if (wikipediaWorksResponse.ok) {
         const wikipediaWorksData = await wikipediaWorksResponse.json();
         if (wikipediaWorksData.found) {
-          console.log('✅ Œuvres récupérées depuis Wikipedia (optimisé):', wikipediaWorksData);
+          console.log(' Œuvres récupérées depuis Wikipedia (optimisé):', wikipediaWorksData);
           setAuthorBooks({
             series: wikipediaWorksData.series,
             individual_books: wikipediaWorksData.individual_books,
@@ -288,7 +288,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
       
       if (response.ok) {
         const booksData = await response.json();
-        console.log('✅ Œuvres de l\'auteur récupérées depuis la bibliothèque:', booksData);
+        console.log(' Œuvres de l\'auteur récupérées depuis la bibliothèque:', booksData);
         
         // Utiliser le format retourné par l'endpoint /api/authors/{author}/books
         setAuthorBooks({
@@ -301,7 +301,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
           fallback: true
         });
       } else {
-        console.log('⚠️ Aucune œuvre trouvée pour cet auteur');
+        console.log(' Aucune œuvre trouvée pour cet auteur');
         // Définir des valeurs par défaut
         setAuthorBooks({
           series: [],
@@ -435,7 +435,6 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
 
         {error && (
           <div className="text-center py-8">
-            <div className="text-6xl mb-4">👤</div>
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               {author}
             </h3>
@@ -569,7 +568,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
                             key={index}
                             className="inline-flex items-center px-2 py-1 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300 text-xs rounded border border-yellow-200 dark:border-yellow-800"
                           >
-                            🏆 {typeof award === 'string' ? award : award?.label || award?.name || 'Prix'}
+                             {typeof award === 'string' ? award : award?.label || award?.name || 'Prix'}
                           </span>
                         ))}
                       </div>
@@ -730,7 +729,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
                             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                               {volumes && (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-xs rounded-full font-medium">
-                                  📚 {volumes} tome{volumes > 1 ? 's' : ''}
+                                   {volumes} tome{volumes > 1 ? 's' : ''}
                                 </span>
                               )}
                               {status && (
@@ -739,7 +738,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
                                     ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
                                     : 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300'
                                 }`}>
-                                  {status === 'completed' ? '✓ Terminée' : '⏳ En cours'}
+                                  {status === 'completed' ? '✓ Terminée' : ' En cours'}
                                 </span>
                               )}
                               {firstYear && (
@@ -876,7 +875,6 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
 
         {!authorInfo && !authorBooks && !loading && !error && (
           <div className="text-center py-8">
-            <div className="text-6xl mb-4">👤</div>
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               {author}
             </h3>

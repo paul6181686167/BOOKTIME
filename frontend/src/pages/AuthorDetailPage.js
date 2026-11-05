@@ -167,7 +167,6 @@ const AuthorDetailPage = () => {
     return (
       <div className="min-h-screen bg-honeycomb flex items-center justify-center">
         <div className="text-center">
-          <span className="text-6xl mb-4 block">👤</span>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Auteur non trouvé</h1>
           <button
             onClick={() => navigate('/')}
@@ -308,7 +307,7 @@ const AuthorDetailPage = () => {
                         : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                     }`}
                   >
-                    📖 Biographie
+                     Biographie
                   </button>
                   <button
                     onClick={() => setActiveTab('bibliography')}
@@ -318,7 +317,7 @@ const AuthorDetailPage = () => {
                         : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                     }`}
                   >
-                    📚 Bibliographie ({authorBooks?.total_books || 0})
+                     Bibliographie ({authorBooks?.total_books || 0})
                   </button>
                   <button
                     onClick={() => setActiveTab('timeline')}
@@ -328,7 +327,7 @@ const AuthorDetailPage = () => {
                         : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                     }`}
                   >
-                    ⏰ Chronologie
+                     Chronologie
                   </button>
                 </nav>
               </div>
@@ -343,7 +342,6 @@ const AuthorDetailPage = () => {
                       </div>
                     ) : (
                       <div className="text-center py-8">
-                        <span className="text-4xl mb-4 block">📝</span>
                         <p className="text-gray-500 dark:text-gray-400">
                           Aucune biographie disponible pour cet auteur.
                         </p>
@@ -427,7 +425,6 @@ const AuthorDetailPage = () => {
                       </div>
                     ) : (
                       <div className="text-center py-8">
-                        <span className="text-4xl mb-4 block">📚</span>
                         <p className="text-gray-500 dark:text-gray-400">
                           Aucun livre trouvé pour cet auteur.
                         </p>
@@ -498,7 +495,6 @@ const AuthorDetailPage = () => {
                         ))
                     ) : (
                       <div className="text-center py-8">
-                        <span className="text-4xl mb-4 block">⏰</span>
                         <p className="text-gray-500 dark:text-gray-400">
                           Aucune chronologie disponible.
                         </p>

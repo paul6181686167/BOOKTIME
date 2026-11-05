@@ -94,10 +94,10 @@ const SagasPanel = ({ onSagaSelect }) => {
 
   const getCategoryIcon = (category) => {
     switch (category) {
-      case 'roman': return '📚';
-      case 'bd': return '🎨';
-      case 'manga': return '🇯🇵';
-      default: return '📖';
+      case 'roman': return '';
+      case 'bd': return '';
+      case 'manga': return '';
+      default: return '';
     }
   };
 

@@ -30,7 +30,7 @@ const LanguageIndicator = ({ book, size = 'sm' }) => {
         color: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
         text: 'Non disponible',
         tooltip: `Pas disponible en ${preferredLang.name}`,
-        flag: '⚪'
+        flag: ''
       };
     }
 
@@ -65,7 +65,7 @@ const LanguageIndicator = ({ book, size = 'sm' }) => {
           color: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
           text: 'Inconnu',
           tooltip: 'Statut linguistique inconnu',
-          flag: '❓'
+          flag: ''
         };
     }
   };

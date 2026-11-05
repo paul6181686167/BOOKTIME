@@ -54,19 +54,6 @@ const GroupedSearchResults = ({
     }
   };
 
-  const getCategoryEmoji = (category) => {
-    switch (category) {
-      case 'bd':
-        return '🎨';
-      case 'manga':
-        return '🇯🇵';
-      case 'roman':
-        return '📚';
-      default:
-        return '📖';
-    }
-  };
-
   if (!results || results.length === 0) {
     return (
       <div className="text-center py-12">
@@ -83,14 +70,14 @@ const GroupedSearchResults = ({
       {/* Statistiques de recherche */}
       <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
         <h3 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">
-          📊 Résultats pour "{searchStats.search_term}"
+          Résultats pour &laquo;&nbsp;{searchStats.search_term}&nbsp;&raquo;
         </h3>
         <div className="flex flex-wrap gap-4 text-sm text-blue-700 dark:text-blue-300">
-          <span>📚 {searchStats.total_books} livre(s)</span>
+          <span>{searchStats.total_books} livre(s)</span>
           {searchStats.total_sagas > 0 && (
-            <span>📖 {searchStats.total_sagas} saga(s)</span>
+            <span>{searchStats.total_sagas} saga(s)</span>
           )}
-          <span>📋 {results.length} résultat(s) groupé(s)</span>
+          <span>{results.length} résultat(s) groupé(s)</span>
         </div>
       </div>
 
@@ -108,7 +95,7 @@ const GroupedSearchResults = ({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3 flex-1">
                       <div className="w-12 h-16 bg-gradient-to-br from-purple-500 to-blue-600 rounded flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                        {getCategoryEmoji(result.category)}
+                        {(result.name || 'S').charAt(0).toUpperCase()}
                       </div>
                       
                       <div className="flex-1 min-w-0">
@@ -128,29 +115,29 @@ const GroupedSearchResults = ({
                         
                         <div className="flex flex-wrap gap-2">
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300">
-                            📚 {result.total_books} tome(s)
+                            {result.total_books} tome(s)
                           </span>
                           
                           {result.completed_books > 0 && (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300">
-                              ✅ {result.completed_books} terminé(s)
+                               {result.completed_books} terminé(s)
                             </span>
                           )}
                           
                           {result.reading_books > 0 && (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
-                              📖 {result.reading_books} en cours
+                               {result.reading_books} en cours
                             </span>
                           )}
                           
                           {result.to_read_books > 0 && (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300">
-                              📚 {result.to_read_books} à lire
+                               {result.to_read_books} à lire
                             </span>
                           )}
                           
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                            🏆 {result.completion_percentage}% complété
+                             {result.completion_percentage}% complété
                           </span>
                         </div>
                       </div>
@@ -223,7 +210,7 @@ const GroupedSearchResults = ({
                                           key={i} 
                                           className={`text-xs ${i < book.rating ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`}
                                         >
-                                          ⭐
+                                          
                                         </span>
                                       ))}
                                     </div>
@@ -286,7 +273,7 @@ const GroupedSearchResults = ({
                       
                       {result.saga && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300">
-                          📖 {result.saga}
+                           {result.saga}
                           {result.volume_number && ` - T.${result.volume_number}`}
                         </span>
                       )}
@@ -298,7 +285,7 @@ const GroupedSearchResults = ({
                               key={i} 
                               className={`text-xs ${i < result.rating ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`}
                             >
-                              ⭐
+                              
                             </span>
                           ))}
                         </div>

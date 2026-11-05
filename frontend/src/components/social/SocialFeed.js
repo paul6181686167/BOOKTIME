@@ -215,7 +215,7 @@ const SocialFeed = () => {
       <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
         <div className="flex">
           <div className="flex-shrink-0">
-            <span className="text-red-400">⚠️</span>
+            <span className="text-red-400"></span>
           </div>
           <div className="ml-3">
             <h3 className="text-sm font-medium text-red-800 dark:text-red-300">Erreur</h3>
@@ -236,7 +236,6 @@ const SocialFeed = () => {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center border border-gray-100 dark:border-gray-700">
         <div className="text-gray-400 mb-4">
-          <span className="text-4xl">📚</span>
         </div>
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Votre feed est vide</h3>
         <p className="text-gray-500 dark:text-gray-400">
@@ -254,13 +253,11 @@ const SocialFeed = () => {
           
           <div className="mt-4 flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <button className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400">
-                <span className={activity.is_liked ? 'text-red-500' : ''}>❤️</span>
-                <span>{activity.likes_count || 0}</span>
+              <button className={`flex items-center space-x-1 text-sm hover:text-red-500 dark:hover:text-red-400 ${activity.is_liked ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>
+                <span>J&apos;aime ({activity.likes_count || 0})</span>
               </button>
               <button className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400">
-                <span>💬</span>
-                <span>{activity.comments_count || 0}</span>
+                <span>Commenter ({activity.comments_count || 0})</span>
               </button>
             </div>
             <span className="text-sm text-gray-400 dark:text-gray-500">

@@ -35,11 +35,11 @@ class SeriesImageService {
             }
 
             const data = await response.json();
-            console.log('✅ Échantillon enrichi:', data);
+            console.log(' Échantillon enrichi:', data);
             return data;
 
         } catch (error) {
-            console.error('❌ Erreur enrichissement échantillon:', error);
+            console.error(' Erreur enrichissement échantillon:', error);
             throw error;
         }
     }
@@ -60,11 +60,11 @@ class SeriesImageService {
             }
 
             const data = await response.json();
-            console.log('✅ Série enrichie:', data);
+            console.log(' Série enrichie:', data);
             return data;
 
         } catch (error) {
-            console.error('❌ Erreur enrichissement série:', error);
+            console.error(' Erreur enrichissement série:', error);
             throw error;
         }
     }
@@ -85,11 +85,11 @@ class SeriesImageService {
             }
 
             const data = await response.json();
-            console.log('✅ Liste enrichie:', data);
+            console.log(' Liste enrichie:', data);
             return data;
 
         } catch (error) {
-            console.error('❌ Erreur enrichissement liste:', error);
+            console.error(' Erreur enrichissement liste:', error);
             throw error;
         }
     }
@@ -115,11 +115,11 @@ class SeriesImageService {
             }
 
             const data = await response.json();
-            console.log('✅ Enrichissement base démarré:', data);
+            console.log(' Enrichissement base démarré:', data);
             return data;
 
         } catch (error) {
-            console.error('❌ Erreur enrichissement base:', error);
+            console.error(' Erreur enrichissement base:', error);
             throw error;
         }
     }
@@ -139,11 +139,11 @@ class SeriesImageService {
             }
 
             const data = await response.json();
-            console.log('📊 Statut enrichissement:', data);
+            console.log(' Statut enrichissement:', data);
             return data;
 
         } catch (error) {
-            console.error('❌ Erreur statut enrichissement:', error);
+            console.error(' Erreur statut enrichissement:', error);
             throw error;
         }
     }
@@ -192,7 +192,7 @@ class SeriesImageService {
     async getVisionExpertImages(seriesName, category, count = 1) {
         try {
             // Note: Cette méthode sera implémentée quand vision_expert_agent sera disponible
-            console.log(`🎨 Vision expert requis pour "${seriesName}" (${category})`);
+            console.log(` Vision expert requis pour "${seriesName}" (${category})`);
             
             // Pour l'instant, on simule l'appel
             const placeholder = {
@@ -205,7 +205,7 @@ class SeriesImageService {
             return placeholder;
 
         } catch (error) {
-            console.error('❌ Erreur vision expert:', error);
+            console.error(' Erreur vision expert:', error);
             throw error;
         }
     }
@@ -216,27 +216,27 @@ class SeriesImageService {
      */
     async autoEnrichPopularSeries() {
         try {
-            console.log('🚀 Auto-enrichissement des séries populaires...');
+            console.log(' Auto-enrichissement des séries populaires...');
             
             // Essayer directement l'enrichissement d'un échantillon
             // Ne plus dépendre du statut qui nécessite une authentification
             const result = await this.enrichSampleSeries(10);
             
             if (result && result.enriched_count > 0) {
-                console.log(`✅ Auto-enrichissement réussi: ${result.enriched_count}/${result.total_count} séries enrichies`);
-                console.log('🖼️ Images disponibles pour:', result.series
+                console.log(` Auto-enrichissement réussi: ${result.enriched_count}/${result.total_count} séries enrichies`);
+                console.log(' Images disponibles pour:', result.series
                     .filter(s => s.cover_url)
                     .map(s => s.name)
                     .join(', ')
                 );
                 return result;
             } else {
-                console.log('📷 Auto-enrichissement: aucune nouvelle image trouvée');
+                console.log(' Auto-enrichissement: aucune nouvelle image trouvée');
                 return result;
             }
 
         } catch (error) {
-            console.warn('⚠️ Auto-enrichissement échoué (mode graceful):', error.message);
+            console.warn(' Auto-enrichissement échoué (mode graceful):', error.message);
             // Mode dégradé: ne pas faire échouer l'app
             // Les séries utiliseront les dégradés par défaut
             return null;

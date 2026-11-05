@@ -1,4 +1,4 @@
-// 🔄 DÉTECTION AUTOMATIQUE À L'AJOUT DE LIVRES
+//  DÉTECTION AUTOMATIQUE À L'AJOUT DE LIVRES
 // Intégration dans le processus d'ajout pour détecter automatiquement les séries
 
 import { API_BASE_URL } from '../config/environment';
@@ -10,18 +10,18 @@ export class AutoSeriesDetector {
     this.minConfidence = 70;
   }
 
-  // 🎯 Détection automatique lors de l'ajout d'un livre
+  //  Détection automatique lors de l'ajout d'un livre
   async detectAndEnhanceBook(bookData) {
     if (!this.enabled) {
       return bookData;
     }
 
-    console.log('🔍 Détection automatique série pour:', bookData.title);
+    console.log(' Détection automatique série pour:', bookData.title);
 
     try {
       // 1. Vérifier si le livre a déjà une saga
       if (bookData.saga && bookData.saga.trim()) {
-        console.log('📚 Saga déjà définie:', bookData.saga);
+        console.log(' Saga déjà définie:', bookData.saga);
         return bookData;
       }
 
@@ -29,7 +29,7 @@ export class AutoSeriesDetector {
       const detection = await this.detectSeries(bookData);
       
       if (detection.found && detection.confidence >= this.minConfidence) {
-        console.log(`✅ Série détectée: "${detection.series_name}" (confiance: ${detection.confidence})`);
+        console.log(` Série détectée: "${detection.series_name}" (confiance: ${detection.confidence})`);
         
         // 3. Enrichir les données du livre
         const enhancedBook = {
@@ -46,17 +46,17 @@ export class AutoSeriesDetector {
         
         return enhancedBook;
       } else {
-        console.log(`📖 Livre standalone (confiance: ${detection.confidence})`);
+        console.log(` Livre standalone (confiance: ${detection.confidence})`);
         return bookData;
       }
 
     } catch (error) {
-      console.error('❌ Erreur détection automatique:', error);
+      console.error(' Erreur détection automatique:', error);
       return bookData; // Retour aux données originales en cas d'erreur
     }
   }
 
-  // 🔍 Détection de série
+  //  Détection de série
   async detectSeries(bookData) {
     const token = localStorage.getItem('token');
     const params = new URLSearchParams({ title: bookData.title || '' });
@@ -88,12 +88,12 @@ export class AutoSeriesDetector {
     return { found: false, confidence: 0, series_name: null, match_reasons: [] };
   }
 
-  // 📢 Notification utilisateur
+  //  Notification utilisateur
   notifySeriesDetected(book, detection) {
     // Toast notification
     if (window.toast) {
       window.toast.success(
-        `📚 Série détectée: "${detection.series_name}" (confiance: ${detection.confidence})`,
+        ` Série détectée: "${detection.series_name}" (confiance: ${detection.confidence})`,
         {
           duration: 4000,
           position: 'top-right'
@@ -102,17 +102,17 @@ export class AutoSeriesDetector {
     }
 
     // Console détaillée
-    console.log('🎯 DÉTECTION AUTOMATIQUE RÉUSSIE:');
-    console.log(`📚 Livre: "${book.title}"`);
-    console.log(`🎯 Série: "${detection.series_name}"`);
-    console.log(`📊 Confiance: ${detection.confidence}`);
-    console.log(`🔍 Raisons: ${detection.match_reasons.join(', ')}`);
+    console.log(' DÉTECTION AUTOMATIQUE RÉUSSIE:');
+    console.log(` Livre: "${book.title}"`);
+    console.log(` Série: "${detection.series_name}"`);
+    console.log(` Confiance: ${detection.confidence}`);
+    console.log(` Raisons: ${detection.match_reasons.join(', ')}`);
     if (book.volume_number) {
-      console.log(`📖 Volume: ${book.volume_number}`);
+      console.log(` Volume: ${book.volume_number}`);
     }
   }
 
-  // ⚙️ Configuration
+  // Configuration
   configure(options = {}) {
     const {
       enabled = true,
@@ -124,7 +124,7 @@ export class AutoSeriesDetector {
     this.minConfidence = minConfidence;
     this.notifyUser = notifyUser;
 
-    console.log('⚙️ Configuration détection automatique:', {
+    console.log('Configuration détection automatique:', {
       enabled: this.enabled,
       minConfidence: this.minConfidence,
       notifyUser: this.notifyUser
@@ -132,7 +132,7 @@ export class AutoSeriesDetector {
   }
 }
 
-// 🔄 Hook pour l'intégration dans les composants React
+//  Hook pour l'intégration dans les composants React
 export const useAutoSeriesDetection = () => {
   const detector = new AutoSeriesDetector();
 
@@ -151,7 +151,7 @@ export const useAutoSeriesDetection = () => {
   };
 };
 
-// 🌍 Export global
+//  Export global
 window.AutoSeriesDetector = AutoSeriesDetector;
 
 export default AutoSeriesDetector;

@@ -192,7 +192,7 @@ const SeriesDiscovery = ({ isOpen, onClose, initialSeries = '', initialAuthor = 
                   className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 dark:bg-blue-900 dark:text-blue-200 disabled:opacity-50"
                 >
                   {importingBooks.has(book.ol_key) ? (
-                    '⏳'
+                    ''
                   ) : (
                     <>
                       <PlusIcon className="w-3 h-3 mr-1" />
@@ -233,7 +233,7 @@ const SeriesDiscovery = ({ isOpen, onClose, initialSeries = '', initialAuthor = 
       <div className="bg-white dark:bg-gray-800 rounded-lg max-w-6xl w-full mx-4 max-h-[90vh] overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            🔍 Découverte Complète de Série
+             Découverte Complète de Série
           </h2>
           <button
             onClick={onClose}
@@ -300,7 +300,7 @@ const SeriesDiscovery = ({ isOpen, onClose, initialSeries = '', initialAuthor = 
               {/* Statistiques */}
               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
                 <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-3">
-                  📊 Statistiques de "{discoveryResult.series_name}"
+                   Statistiques de "{discoveryResult.series_name}"
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div className="text-center">
@@ -335,7 +335,7 @@ const SeriesDiscovery = ({ isOpen, onClose, initialSeries = '', initialAuthor = 
                       onClick={handleImportMissingBooks}
                       className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
                     >
-                      📥 Importer les 5 prochains livres recommandés
+                       Importer les 5 prochains livres recommandés
                     </button>
                   </div>
                 )}
@@ -345,7 +345,7 @@ const SeriesDiscovery = ({ isOpen, onClose, initialSeries = '', initialAuthor = 
               {discoveryResult.books.main_series.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                    📚 Série Principale ({discoveryResult.books.main_series.length} livres)
+                     Série Principale ({discoveryResult.books.main_series.length} livres)
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {discoveryResult.books.main_series.map((book, index) => (
@@ -359,7 +359,7 @@ const SeriesDiscovery = ({ isOpen, onClose, initialSeries = '', initialAuthor = 
               {discoveryResult.books.spin_offs.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                    🌟 Spin-offs ({discoveryResult.books.spin_offs.length} livres)
+                     Spin-offs ({discoveryResult.books.spin_offs.length} livres)
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {discoveryResult.books.spin_offs.map((book, index) => (
@@ -373,7 +373,7 @@ const SeriesDiscovery = ({ isOpen, onClose, initialSeries = '', initialAuthor = 
               {discoveryResult.books.companions.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                    📖 Guides & Compagnons ({discoveryResult.books.companions.length} livres)
+                     Guides & Compagnons ({discoveryResult.books.companions.length} livres)
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {discoveryResult.books.companions.map((book, index) => (
@@ -387,7 +387,7 @@ const SeriesDiscovery = ({ isOpen, onClose, initialSeries = '', initialAuthor = 
               {discoveryResult.books.related.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                    🔗 Œuvres Connexes ({discoveryResult.books.related.length} livres)
+                     Œuvres Connexes ({discoveryResult.books.related.length} livres)
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {discoveryResult.books.related.map((book, index) => (

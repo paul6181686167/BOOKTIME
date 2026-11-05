@@ -49,7 +49,7 @@ const useUserAnalytics = () => {
     setIsTracking(true);
     sessionRef.current = sessionId;
     
-    console.log(`📈 User analytics tracking started - Session: ${sessionId}`);
+    console.log(` User analytics tracking started - Session: ${sessionId}`);
     
     // Tracking de la page initiale
     trackPageView(window.location.pathname);
@@ -70,7 +70,7 @@ const useUserAnalytics = () => {
       // Sauvegarde des données de session
       saveSessionData();
       
-      console.log(`📈 User analytics tracking stopped - Duration: ${Math.round(sessionDuration / 1000)}s`);
+      console.log(` User analytics tracking stopped - Duration: ${Math.round(sessionDuration / 1000)}s`);
     }
   }, [isTracking]);
 
@@ -90,7 +90,7 @@ const useUserAnalytics = () => {
       pageViews: [...prev.pageViews, pageView]
     }));
 
-    console.log(`📄 Page view tracked: ${page}`);
+    console.log(` Page view tracked: ${page}`);
   }, [isTracking]);
 
   // Tracking des interactions générales
@@ -111,7 +111,7 @@ const useUserAnalytics = () => {
       mostUsedFeatures: new Map(prev.mostUsedFeatures).set(action, (prev.mostUsedFeatures.get(action) || 0) + 1)
     }));
 
-    console.log(`👆 Interaction tracked: ${action} on ${element}`);
+    console.log(` Interaction tracked: ${action} on ${element}`);
   }, [isTracking]);
 
   // Tracking des requêtes de recherche
@@ -132,7 +132,7 @@ const useUserAnalytics = () => {
       searchQueries: [...prev.searchQueries, searchQuery]
     }));
 
-    console.log(`🔍 Search tracked: "${query}" → ${resultCount} results (${source})`);
+    console.log(` Search tracked: "${query}" → ${resultCount} results (${source})`);
   }, [isTracking]);
 
   // Tracking des interactions avec les livres
@@ -158,7 +158,7 @@ const useUserAnalytics = () => {
       }
     }));
 
-    console.log(`📚 Book interaction tracked: ${action} - ${bookData.title}`);
+    console.log(` Book interaction tracked: ${action} - ${bookData.title}`);
   }, [isTracking]);
 
   // Tracking des interactions avec les séries
@@ -183,7 +183,7 @@ const useUserAnalytics = () => {
       }
     }));
 
-    console.log(`📖 Series interaction tracked: ${action} - ${seriesData.name || seriesData.series_name}`);
+    console.log(` Series interaction tracked: ${action} - ${seriesData.name || seriesData.series_name}`);
   }, [isTracking]);
 
   // Tracking des préférences de catégories
@@ -200,7 +200,7 @@ const useUserAnalytics = () => {
       }
     }));
 
-    console.log(`🏷️ Category switch tracked: ${category}`);
+    console.log(` Category switch tracked: ${category}`);
   }, [isTracking, trackInteraction]);
 
   // Génération d'un rapport d'analytics
@@ -246,7 +246,7 @@ const useUserAnalytics = () => {
       timestamp: new Date().toISOString()
     };
 
-    console.log('📊 Analytics Report:', report);
+    console.log(' Analytics Report:', report);
     return report;
   }, [isTracking]);
 
@@ -291,7 +291,7 @@ const useUserAnalytics = () => {
       }
     }
 
-    console.log('💾 Analytics data saved');
+    console.log(' Analytics data saved');
   }, [getAnalyticsReport]);
 
   // Export des données analytics
@@ -313,7 +313,7 @@ const useUserAnalytics = () => {
     linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
 
-    console.log('📥 Analytics data exported');
+    console.log(' Analytics data exported');
     return exportData;
   }, [getAnalyticsReport]);
 

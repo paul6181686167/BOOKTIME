@@ -48,7 +48,7 @@ html.cinema #root {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath fill='none' stroke='%23dcfce7' stroke-opacity='0.16' stroke-width='1.2' d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 34L0 84V50l28 16 28-16v34L28 100z'/%3E%3C/svg%3E") !important;
 }
 
-/* Accueil cinéma — noir profond + grain très discret */
+/* Accueil / surfaces cinéma — noir profond + grain très discret */
 .bg-cinema-void {
   background-color: #050505 !important;
   background-image:
@@ -58,6 +58,68 @@ html.cinema #root {
   background-size: auto, auto, 180px 180px !important;
   background-repeat: no-repeat, no-repeat, repeat !important;
   color: #f3f4f6;
+}
+
+/*
+ * Mode « Très foncé » (html.cinema) : toute l’app, pas seulement l’accueil.
+ * Remappe honeycomb + verts sombres Tailwind vers le noir cinéma.
+ */
+html.cinema {
+  color-scheme: dark;
+}
+
+html.cinema .bg-honeycomb,
+html.cinema.dark .bg-honeycomb {
+  background-color: #050505 !important;
+  background-image:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(34, 80, 50, 0.14), transparent 55%),
+    radial-gradient(ellipse 80% 50% at 100% 100%, rgba(20, 20, 20, 0.9), transparent 50%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E") !important;
+  background-size: auto, auto, 180px 180px !important;
+  background-repeat: no-repeat, no-repeat, repeat !important;
+  color: #f3f4f6;
+}
+
+html.cinema .bg-booktime-mist,
+html.cinema .bg-booktime-mistSoft,
+html.cinema .bg-booktime-mistSoft\/75 {
+  background-color: #050505 !important;
+  background-image: none !important;
+}
+
+html.cinema .bg-gray-900,
+html.cinema .dark\:bg-gray-900 {
+  background-color: #050505 !important;
+}
+html.cinema .dark\:bg-gray-900\/70,
+html.cinema .dark\:bg-gray-900\/80,
+html.cinema .bg-gray-900\/70 {
+  background-color: rgba(5, 5, 5, 0.85) !important;
+}
+html.cinema .bg-gray-800,
+html.cinema .dark\:bg-gray-800 {
+  background-color: #121212 !important;
+}
+html.cinema .dark\:bg-gray-800\/50,
+html.cinema .bg-gray-800\/50 {
+  background-color: rgba(18, 18, 18, 0.5) !important;
+}
+html.cinema .bg-gray-700,
+html.cinema .dark\:bg-gray-700 {
+  background-color: #1a1a1a !important;
+}
+html.cinema .dark\:bg-gray-700\/50,
+html.cinema .bg-gray-700\/50 {
+  background-color: rgba(26, 26, 26, 0.5) !important;
+}
+html.cinema .bg-white {
+  background-color: #141414 !important;
+  color: #f3f4f6;
+}
+html.cinema .border-booktime-mist\/55,
+html.cinema .border-booktime-800\/50,
+html.cinema .dark\:border-booktime-800\/50 {
+  border-color: rgba(255, 255, 255, 0.06) !important;
 }
 
 .cinema-progress-track {

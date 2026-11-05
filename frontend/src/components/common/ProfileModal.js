@@ -280,11 +280,11 @@ function ProfileModal({
   if (!isOpen) return null;
 
   const tabs = [
-    { key: 'stats',       label: '📊 Stats'        },
-    { key: 'goal',        label: '🎯 Objectif'      },
-    { key: 'heatmap',     label: '📅 Calendrier'    },
-    { key: 'authors',     label: '✍️ Auteurs suivis' },
-    { key: 'collections', label: '📁 Collections'   },
+    { key: 'stats',       label: 'Stats' },
+    { key: 'goal',        label: 'Objectif' },
+    { key: 'heatmap',     label: 'Calendrier' },
+    { key: 'authors',     label: 'Auteurs suivis' },
+    { key: 'collections', label: 'Collections' },
   ];
 
   return (
@@ -337,7 +337,7 @@ function ProfileModal({
                 onClick={() => setShowIsbnScanner(true)}
                 className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-medium text-sm shadow-sm"
               >
-                <span aria-hidden>📷</span>
+                <span aria-hidden></span>
                 Scanner un ISBN
               </button>
 
@@ -377,7 +377,6 @@ function ProfileModal({
           {activeTab === 'goal' && (
             <div className="animate-fadeIn space-y-4">
               <div className="text-center">
-                <div className="text-4xl mb-2">🎯</div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Objectif {currentYear}</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Combien de livres voulez-vous lire cette année ?</p>
               </div>
@@ -398,7 +397,7 @@ function ProfileModal({
                     <span className={`text-2xl font-bold ${goalPercent >= 100 ? 'text-green-600' : 'text-gray-700 dark:text-gray-300'}`}>
                       {goalPercent}%
                     </span>
-                    {goalPercent >= 100 && <p className="text-sm text-green-600 mt-1">🎉 Objectif atteint !</p>}
+                    {goalPercent >= 100 && <p className="text-sm text-green-600 mt-1">Objectif atteint !</p>}
                     {goalPercent < 100 && currentGoal > 0 && (
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         encore {currentGoal - booksThisYear} livre{currentGoal - booksThisYear > 1 ? 's' : ''} pour atteindre votre objectif
@@ -432,7 +431,7 @@ function ProfileModal({
                   onClick={() => { setGoalInput(currentGoal || ''); setEditingGoal(true); }}
                   className="w-full py-2 border-2 border-dashed border-green-300 dark:border-green-700 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/10 transition-colors text-sm font-medium"
                 >
-                  {currentGoal ? '✏️ Modifier l\'objectif' : '+ Définir un objectif'}
+                  {currentGoal ? 'Modifier l\'objectif' : '+ Définir un objectif'}
                 </button>
               )}
             </div>
@@ -470,7 +469,6 @@ function ProfileModal({
                 </div>
               ) : followedAuthors.length === 0 ? (
                 <div className="text-center py-8 text-gray-400">
-                  <div className="text-3xl mb-2">✍️</div>
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Aucun auteur suivi</p>
                   <p className="text-xs mt-1">Ouvre la fiche d&apos;un auteur et clique sur « Suivre ».</p>
                 </div>
@@ -535,7 +533,6 @@ function ProfileModal({
 
               {collections.length === 0 ? (
                 <div className="text-center py-6 text-gray-400">
-                  <div className="text-3xl mb-2">📁</div>
                   <p className="text-sm">Aucune collection créée</p>
                 </div>
               ) : (
@@ -722,7 +719,7 @@ function ProfileModal({
           {/* Paramètres (toujours visibles en bas) */}
           {activeTab === 'stats' && (
             <div className="mt-4 space-y-2">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mt-2 mb-3">⚙️ Paramètres</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mt-2 mb-3">Paramètres</h3>
               <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg space-y-2">
                 <span className="text-sm font-medium text-gray-900 dark:text-white">Apparence</span>
                 <div className="grid grid-cols-3 gap-1.5">
@@ -750,10 +747,10 @@ function ProfileModal({
               </div>
 
               {[
-                { event: 'openSocial',                  label: '🌐 Social',            color: 'purple' },
-                { event: 'openExportImport',            label: '📤 Export/Import',      color: 'green'  },
-                { event: 'openAdvancedRecommendations', label: '🤖 Recommandations IA', color: 'purple' },
-                { event: 'openIntegrations',            label: '🔗 Intégrations',       color: 'orange' },
+                { event: 'openSocial',                  label: 'Social',            color: 'purple' },
+                { event: 'openExportImport',            label: 'Export/Import',      color: 'green'  },
+                { event: 'openAdvancedRecommendations', label: 'Recommandations IA', color: 'purple' },
+                { event: 'openIntegrations',            label: 'Intégrations',       color: 'orange' },
               ].map(({ event, label, color }) => (
                 <button
                   key={event}

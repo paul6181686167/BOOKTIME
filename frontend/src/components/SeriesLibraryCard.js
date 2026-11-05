@@ -41,15 +41,6 @@ const SeriesLibraryCard = ({ series, onUpdateVolume, onUpdateStatus, onDelete })
     }
   };
 
-  const getCategoryEmoji = (category) => {
-    switch (category) {
-      case 'roman': return '📚';
-      case 'bd': return '🗨️';
-      case 'manga': return '🎎';
-      default: return '📖';
-    }
-  };
-
   const readVolumes = series.volumes.filter(v => v.is_read).length;
   const totalVolumes = series.volumes.length;
 
@@ -75,11 +66,11 @@ const SeriesLibraryCard = ({ series, onUpdateVolume, onUpdateStatus, onDelete })
         {/* Informations principales */}
         <div className="flex-1 min-w-0">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate mb-1">
-            {getCategoryEmoji(series.category)} {series.series_name}
+            {series.series_name}
           </h3>
           
           <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            ✨ Série • {totalVolumes} tome{totalVolumes > 1 ? 's' : ''} • {series.authors.join(', ')}
+            Série • {totalVolumes} tome{totalVolumes > 1 ? 's' : ''} • {series.authors.join(', ')}
           </p>
 
           {/* Progression */}
@@ -91,13 +82,13 @@ const SeriesLibraryCard = ({ series, onUpdateVolume, onUpdateStatus, onDelete })
               />
             </div>
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              📊 {readVolumes}/{totalVolumes} ({series.completion_percentage}%)
+               {readVolumes}/{totalVolumes} ({series.completion_percentage}%)
             </span>
           </div>
 
           {/* Statut avec dropdown */}
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600 dark:text-gray-400">📖 Statut:</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">Statut:</span>
             <select
               value={series.series_status}
               onChange={(e) => handleStatusChange(e.target.value)}

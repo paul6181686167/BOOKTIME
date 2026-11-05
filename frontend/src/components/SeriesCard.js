@@ -22,13 +22,13 @@ const SeriesCard = ({
   const getCategoryBadge = (category) => {
     switch (category) {
       case 'roman':
-        return { text: 'Roman', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300', emoji: '📚' };
+        return { text: 'Roman', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300' };
       case 'bd':
-        return { text: 'BD', class: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300', emoji: '🎨' };
+        return { text: 'BD', class: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' };
       case 'manga':
-        return { text: 'Manga', class: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300', emoji: '🇯🇵' };
+        return { text: 'Manga', class: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300' };
       default:
-        return { text: 'Livre', class: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300', emoji: '📖' };
+        return { text: 'Livre', class: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' };
     }
   };
 
@@ -42,7 +42,7 @@ const SeriesCard = ({
       {/* Badge de série */}
       <div className="absolute top-3 left-3 z-10">
         <div className="bg-indigo-600 text-white text-xs px-2 py-1 rounded-full flex items-center font-medium">
-          <span className="mr-1">📚</span>
+          <span className="mr-1"></span>
           SÉRIE
         </div>
       </div>
@@ -200,7 +200,7 @@ const SeriesCard = ({
               }}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm flex items-center justify-center space-x-2"
             >
-              <span>➕</span>
+              <span></span>
               <span>Ajouter toute la série à ma bibliothèque</span>
             </button>
           </div>

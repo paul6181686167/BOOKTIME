@@ -98,9 +98,9 @@ const AuthorsPanel = ({ onAuthorSelect }) => {
                         'bg-yellow-100 text-yellow-600'
                       }`}
                     >
-                      {category === 'roman' && '📚'} 
-                      {category === 'bd' && '🎨'} 
-                      {category === 'manga' && '🇯🇵'} 
+                      {category === 'roman' && ''} 
+                      {category === 'bd' && ''} 
+                      {category === 'manga' && ''} 
                       {category === 'bd' ? 'bande dessinée' : category}
                     </span>
                   ))}

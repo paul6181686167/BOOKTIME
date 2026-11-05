@@ -243,16 +243,16 @@ const AdvancedSearchBar = React.memo(({
 
   const statusOptions = [
     { value: '', label: 'Tous les statuts' },
-    { value: 'to_read', label: 'À lire', icon: '' },
-    { value: 'reading', label: 'En cours', icon: '' },
-    { value: 'completed', label: 'Terminés', icon: '' }
+    { value: 'to_read', label: 'À lire' },
+    { value: 'reading', label: 'En cours' },
+    { value: 'completed', label: 'Terminés' }
   ];
 
   const categoryOptions = [
     { value: '', label: 'Toutes les catégories' },
-    { value: 'roman', label: 'Romans', icon: '📚' },
-    { value: 'bd', label: 'Bande dessinée', icon: '🎨' },
-    { value: 'manga', label: 'Mangas', icon: '🇯🇵' }
+    { value: 'roman', label: 'Romans' },
+    { value: 'bd', label: 'Bande dessinée' },
+    { value: 'manga', label: 'Mangas' }
   ];
 
   const ratingOptions = [
@@ -367,7 +367,7 @@ const AdvancedSearchBar = React.memo(({
           {suggestions.length > 0 && (
             <div className="p-2 border-b border-gray-100 dark:border-gray-700">
               <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-1">
-                📚 Dans ma bibliothèque
+                 Dans ma bibliothèque
               </h4>
               {suggestions.map((suggestion, index) => {
                 const Icon = suggestion.icon;
@@ -435,7 +435,7 @@ const AdvancedSearchBar = React.memo(({
                           <span>• {book.first_publish_year}</span>
                         )}
                         {book.category && (
-                          <span>• {book.category === 'bd' ? '🎨' : book.category === 'manga' ? '🇯🇵' : '📚'}</span>
+                          <span>• {book.category === 'bd' ? '' : book.category === 'manga' ? '' : ''}</span>
                         )}
                       </div>
                     </div>

@@ -319,7 +319,6 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
               
               {notifications.length === 0 ? (
                 <div className="text-center py-8">
-                  <div className="text-gray-400 text-4xl mb-4">🔔</div>
                   <p className="text-gray-500">Aucune notification</p>
                 </div>
               ) : (
@@ -360,7 +359,6 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
             <div>
               <h3 className="text-lg font-medium text-gray-900 mb-4">Découvrir des utilisateurs</h3>
               <div className="text-center py-8">
-                <div className="text-gray-400 text-4xl mb-4">🔍</div>
                 <p className="text-gray-500">Fonctionnalité à venir</p>
                 <p className="text-sm text-gray-400 mt-2">
                   Bientôt, vous pourrez découvrir d'autres lecteurs avec des goûts similaires !

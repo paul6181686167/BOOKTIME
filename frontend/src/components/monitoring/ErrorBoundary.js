@@ -27,7 +27,7 @@ class ErrorBoundary extends React.Component {
     // Génère un ID unique pour l'erreur
     const errorId = `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    console.group('🚨 ERROR BOUNDARY - Erreur capturée');
+    console.group(' ERROR BOUNDARY - Erreur capturée');
     console.error('Error ID:', errorId);
     console.error('Error:', error);
     console.error('Error Info:', errorInfo);

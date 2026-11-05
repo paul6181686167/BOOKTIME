@@ -47,7 +47,7 @@ const usePerformanceMonitoring = () => {
     const endTime = Date.now();
     const renderTime = endTime - startTime;
     
-    console.log(`📊 Render time for ${componentName}: ${renderTime}ms`);
+    console.log(` Render time for ${componentName}: ${renderTime}ms`);
     
     setMetrics(prev => ({
       ...prev,
@@ -72,7 +72,7 @@ const usePerformanceMonitoring = () => {
 
       // Alerte si utilisation mémoire > 80%
       if (usagePercentage > 80) {
-        console.warn('⚠️ High memory usage detected:', usagePercentage.toFixed(1) + '%');
+        console.warn(' High memory usage detected:', usagePercentage.toFixed(1) + '%');
       }
 
       return usagePercentage;
@@ -85,7 +85,7 @@ const usePerformanceMonitoring = () => {
     const endTime = Date.now();
     const responseTime = endTime - startTime;
     
-    console.log(`🌐 API ${apiName} response time: ${responseTime}ms (${success ? 'success' : 'error'})`);
+    console.log(` API ${apiName} response time: ${responseTime}ms (${success ? 'success' : 'error'})`);
     
     setMetrics(prev => ({
       ...prev,
@@ -96,7 +96,7 @@ const usePerformanceMonitoring = () => {
 
     // Alerte si temps de réponse > 3 secondes
     if (responseTime > 3000) {
-      console.warn(`⚠️ Slow API response: ${apiName} took ${responseTime}ms`);
+      console.warn(` Slow API response: ${apiName} took ${responseTime}ms`);
     }
 
     return responseTime;
@@ -116,7 +116,7 @@ const usePerformanceMonitoring = () => {
       searchPerformance: [...prev.searchPerformance.slice(-9), searchMetric] // Garde les 10 dernières recherches
     }));
 
-    console.log(`🔍 Search performance: "${searchTerm}" → ${resultCount} results in ${searchTime}ms`);
+    console.log(` Search performance: "${searchTerm}" → ${resultCount} results in ${searchTime}ms`);
 
     return searchMetric;
   }, []);
@@ -128,7 +128,7 @@ const usePerformanceMonitoring = () => {
       interactionCount: prev.interactionCount + 1
     }));
 
-    console.log(`👆 User interaction: ${interactionType} (total: ${metricsRef.current.interactionCount + 1})`);
+    console.log(` User interaction: ${interactionType} (total: ${metricsRef.current.interactionCount + 1})`);
   }, []);
 
   // Démarrage du monitoring
@@ -147,7 +147,7 @@ const usePerformanceMonitoring = () => {
       }
     }, 30000); // Toutes les 30 secondes
 
-    console.log('📊 Performance monitoring started');
+    console.log(' Performance monitoring started');
 
     return () => {
       clearInterval(memoryInterval);
@@ -157,7 +157,7 @@ const usePerformanceMonitoring = () => {
   // Arrêt du monitoring
   const stopMonitoring = useCallback(() => {
     setIsMonitoring(false);
-    console.log('📊 Performance monitoring stopped');
+    console.log(' Performance monitoring stopped');
   }, []);
 
   // Génération d'un rapport de performance
@@ -175,7 +175,7 @@ const usePerformanceMonitoring = () => {
       interactionsPerMinute: Math.round((metricsRef.current.interactionCount / sessionDuration) * 60000)
     };
 
-    console.log('📈 Performance Report:', report);
+    console.log(' Performance Report:', report);
     return report;
   }, []);
 
@@ -188,7 +188,7 @@ const usePerformanceMonitoring = () => {
     };
 
     localStorage.setItem(`performance_${Date.now()}`, JSON.stringify(exportData));
-    console.log('💾 Performance metrics exported to localStorage');
+    console.log(' Performance metrics exported to localStorage');
     
     return exportData;
   }, [getPerformanceReport]);

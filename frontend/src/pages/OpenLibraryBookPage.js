@@ -105,13 +105,7 @@ const OpenLibraryBookPage = () => {
     navigate(`/auteur/ol/${encodeURIComponent(authorName)}`);
   };
 
-  const getCategoryIcon = (category) => {
-    switch (category) {
-      case 'bd': return '🎨';
-      case 'manga': return '🇯🇵';
-      default: return '📚';
-    }
-  };
+  const getCategoryIcon = () => '';
 
   const getCategoryLabel = (category) => {
     switch (category) {
@@ -137,7 +131,6 @@ const OpenLibraryBookPage = () => {
     return (
       <div className="min-h-screen bg-honeycomb flex items-center justify-center">
         <div className="text-center">
-          <span className="text-6xl mb-4 block">📚</span>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Livre non trouvé</h1>
           <button
             onClick={() => navigate('/')}
@@ -193,7 +186,7 @@ const OpenLibraryBookPage = () => {
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 sticky top-8">
               <div className="mb-4">
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                  🌐 OpenLibrary
+                   OpenLibrary
                 </span>
               </div>
 

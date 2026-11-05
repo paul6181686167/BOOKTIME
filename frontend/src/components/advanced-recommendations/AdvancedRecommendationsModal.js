@@ -155,7 +155,7 @@ const AdvancedRecommendationsModal = ({ isOpen, onClose, onAddBook }) => {
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              🤖 Recommandations IA
+               Recommandations IA
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
               Recommandations intelligentes avec Machine Learning
@@ -176,16 +176,16 @@ const AdvancedRecommendationsModal = ({ isOpen, onClose, onAddBook }) => {
           <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border-b border-gray-200 dark:border-gray-700">
             <div className="flex flex-wrap gap-4 text-sm">
               <span className="flex items-center gap-2">
-                🕒 <strong>Moment:</strong> {context.time_of_day}
+                 <strong>Moment:</strong> {context.time_of_day}
               </span>
               <span className="flex items-center gap-2">
-                😊 <strong>Humeur:</strong> {context.mood}
+                 <strong>Humeur:</strong> {context.mood}
               </span>
               <span className="flex items-center gap-2">
-                ⏱️ <strong>Temps:</strong> {context.available_time}min
+                 <strong>Temps:</strong> {context.available_time}min
               </span>
               <span className="flex items-center gap-2">
-                🎯 <strong>Objectif:</strong> {context.purpose}
+                 <strong>Objectif:</strong> {context.purpose}
               </span>
             </div>
           </div>
@@ -194,10 +194,10 @@ const AdvancedRecommendationsModal = ({ isOpen, onClose, onAddBook }) => {
         {/* Navigation onglets */}
         <div className="flex border-b border-gray-200 dark:border-gray-700">
           {[
-            { id: 'contextual', label: '🎯 Contextuelles', count: contextualRecs.length },
-            { id: 'social', label: '👥 Sociales', count: socialRecs.length },
-            { id: 'profile', label: '📊 Profil IA', count: null },
-            { id: 'ml', label: '🔬 Modèles ML', count: null }
+            { id: 'contextual', label: 'Contextuelles', count: contextualRecs.length },
+            { id: 'social', label: 'Sociales', count: socialRecs.length },
+            { id: 'profile', label: 'Profil IA', count: null },
+            { id: 'ml', label: 'Modèles ML', count: null }
           ].map(tab => (
             <button
               key={tab.id}
@@ -280,13 +280,13 @@ const AdvancedRecommendationsModal = ({ isOpen, onClose, onAddBook }) => {
                                 onClick={() => handleFeedback(rec, 'like')}
                                 className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
                               >
-                                👍
+                                
                               </button>
                               <button
                                 onClick={() => handleFeedback(rec, 'not_interested')}
                                 className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
                               >
-                                ❌
+                                
                               </button>
                             </div>
                           </div>
@@ -330,7 +330,7 @@ const AdvancedRecommendationsModal = ({ isOpen, onClose, onAddBook }) => {
                                     {rec.social_proof.recommendation_count} recommandations
                                   </span>
                                   <span className="text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded ml-2">
-                                    ⭐ {rec.social_proof.average_rating?.toFixed(1)}
+                                     {rec.social_proof.average_rating?.toFixed(1)}
                                   </span>
                                 </div>
                               )}
@@ -347,7 +347,7 @@ const AdvancedRecommendationsModal = ({ isOpen, onClose, onAddBook }) => {
                               onClick={() => handleFeedback(rec, 'like')}
                               className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
                             >
-                              👍
+                              
                             </button>
                           </div>
                         </div>

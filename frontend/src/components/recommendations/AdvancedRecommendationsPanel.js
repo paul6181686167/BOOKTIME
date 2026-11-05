@@ -164,7 +164,7 @@ const AdvancedRecommendationsPanel = ({ onRecommendationSelect, currentUser }) =
           onClick={detectContext}
           className="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
         >
-          🤖 Auto-detect
+           Auto-detect
         </button>
       </div>
       
@@ -176,12 +176,12 @@ const AdvancedRecommendationsPanel = ({ onRecommendationSelect, currentUser }) =
             onChange={(e) => handleContextChange('mood', e.target.value)}
             className="w-full text-sm border border-blue-200 rounded px-2 py-1"
           >
-            <option value="neutral">😐 Neutre</option>
-            <option value="happy">😊 Joyeux</option>
-            <option value="stressed">😰 Stressé</option>
-            <option value="curious">🤔 Curieux</option>
-            <option value="relaxed">😌 Détendu</option>
-            <option value="sad">😢 Triste</option>
+            <option value="neutral"> Neutre</option>
+            <option value="happy"> Joyeux</option>
+            <option value="stressed"> Stressé</option>
+            <option value="curious"> Curieux</option>
+            <option value="relaxed"> Détendu</option>
+            <option value="sad"> Triste</option>
           </select>
         </div>
         
@@ -192,11 +192,11 @@ const AdvancedRecommendationsPanel = ({ onRecommendationSelect, currentUser }) =
             onChange={(e) => handleContextChange('location', e.target.value)}
             className="w-full text-sm border border-blue-200 rounded px-2 py-1"
           >
-            <option value="home">🏠 Maison</option>
-            <option value="commute">🚊 Transport</option>
-            <option value="work">💼 Travail</option>
-            <option value="travel">✈️ Voyage</option>
-            <option value="cafe">☕ Café</option>
+            <option value="home"> Maison</option>
+            <option value="commute"> Transport</option>
+            <option value="work"> Travail</option>
+            <option value="travel"> Voyage</option>
+            <option value="cafe"> Café</option>
           </select>
         </div>
         
@@ -222,10 +222,10 @@ const AdvancedRecommendationsPanel = ({ onRecommendationSelect, currentUser }) =
             onChange={(e) => handleContextChange('reading_goal', e.target.value)}
             className="w-full text-sm border border-blue-200 rounded px-2 py-1"
           >
-            <option value="entertainment">🎯 Divertissement</option>
-            <option value="learning">📚 Apprentissage</option>
-            <option value="relaxation">🧘 Relaxation</option>
-            <option value="exploration">🔍 Exploration</option>
+            <option value="entertainment"> Divertissement</option>
+            <option value="learning"> Apprentissage</option>
+            <option value="relaxation"> Relaxation</option>
+            <option value="exploration"> Exploration</option>
           </select>
         </div>
       </div>
@@ -234,7 +234,7 @@ const AdvancedRecommendationsPanel = ({ onRecommendationSelect, currentUser }) =
         onClick={loadRecommendations}
         className="w-full mt-3 bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition-colors"
       >
-        🎯 Recommandations Contextuelles
+         Recommandations Contextuelles
       </button>
     </div>
   );
@@ -244,7 +244,7 @@ const AdvancedRecommendationsPanel = ({ onRecommendationSelect, currentUser }) =
 
     return (
       <div className="bg-purple-50 rounded-lg p-4 mb-4">
-        <h4 className="font-medium text-purple-900 mb-3">🧠 Insights IA</h4>
+        <h4 className="font-medium text-purple-900 mb-3"> Insights IA</h4>
         
         <div className="grid grid-cols-3 gap-3 text-center">
           <div className="bg-white rounded p-2">
@@ -310,13 +310,13 @@ const AdvancedRecommendationsPanel = ({ onRecommendationSelect, currentUser }) =
             
             {rec.scoring.novelty_score > 0.7 && (
               <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                ✨ Nouveau
+                 Nouveau
               </span>
             )}
             
             {rec.scoring.learning_potential > 0.7 && (
               <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                📚 Éducatif
+                 Éducatif
               </span>
             )}
           </div>
@@ -325,14 +325,14 @@ const AdvancedRecommendationsPanel = ({ onRecommendationSelect, currentUser }) =
           <div className="text-xs text-gray-600 mb-3">
             {rec.reasoning.context_reasons.length > 0 ? (
               <div className="mb-1">
-                <span className="font-medium">🎯 Contexte : </span>
+                <span className="font-medium"> Contexte : </span>
                 {rec.reasoning.context_reasons[0]}
               </div>
             ) : null}
             
             {rec.reasoning.base_reasons.length > 0 && (
               <div>
-                <span className="font-medium">💡 Pourquoi : </span>
+                <span className="font-medium"> Pourquoi : </span>
                 {rec.reasoning.base_reasons[0]}
               </div>
             )}
@@ -344,21 +344,21 @@ const AdvancedRecommendationsPanel = ({ onRecommendationSelect, currentUser }) =
               onClick={() => handleRecommendationClick(rec)}
               className="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
             >
-              📖 Voir détails
+               Voir détails
             </button>
             
             <button
               onClick={() => predictRating(rec.book.book_id)}
               className="text-sm bg-purple-500 text-white px-3 py-1 rounded hover:bg-purple-600"
             >
-              🤖 Prédire note
+               Prédire note
             </button>
             
             <button
               onClick={() => submitFeedback(rec.recommendation_id, 'not_interested')}
               className="text-sm bg-gray-300 text-gray-700 px-3 py-1 rounded hover:bg-gray-400"
             >
-              ❌
+              
             </button>
           </div>
         </div>
@@ -371,7 +371,7 @@ const AdvancedRecommendationsPanel = ({ onRecommendationSelect, currentUser }) =
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          🤖 Recommandations IA Avancées
+           Recommandations IA Avancées
         </h2>
         <p className="text-gray-600">
           Recommandations personnalisées par intelligence artificielle
@@ -388,7 +388,7 @@ const AdvancedRecommendationsPanel = ({ onRecommendationSelect, currentUser }) =
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
-          🎯 Contextuel
+           Contextuel
         </button>
         
         <button
@@ -399,7 +399,7 @@ const AdvancedRecommendationsPanel = ({ onRecommendationSelect, currentUser }) =
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
-          👥 Social
+           Social
         </button>
       </div>
 
@@ -417,7 +417,7 @@ const AdvancedRecommendationsPanel = ({ onRecommendationSelect, currentUser }) =
         </div>
       ) : error ? (
         <div className="text-center py-12">
-          <div className="text-red-500 mb-4">⚠️ {error}</div>
+          <div className="text-red-500 mb-4"> {error}</div>
           <button
             onClick={loadRecommendations}
             className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
@@ -429,8 +429,8 @@ const AdvancedRecommendationsPanel = ({ onRecommendationSelect, currentUser }) =
         <div className="text-center py-12">
           <div className="text-gray-500 mb-4">
             {activeMode === 'social' 
-              ? '👥 Suivez d\'autres utilisateurs pour voir leurs recommandations'
-              : '🤖 Aucune recommandation contextuelle trouvée'
+              ? ' Suivez d\'autres utilisateurs pour voir leurs recommandations'
+              : ' Aucune recommandation contextuelle trouvée'
             }
           </div>
         </div>

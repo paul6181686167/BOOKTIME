@@ -164,7 +164,7 @@ export const handleAddSeriesToLibrary = async (seriesData, {
     }
     return result;
   } catch (error) {
-    console.error('❌ Erreur ajout série:', error);
+    console.error(' Erreur ajout série:', error);
     const msg = error?.message || '';
     if (msg.includes('409')) {
       toast.error('Cette série est déjà dans votre bibliothèque');

@@ -52,7 +52,7 @@ const AlertSystem = ({
     setAlertHistory(prev => [...prev, alert]);
 
     // Pas de toast utilisateur (trop intrusif sur mobile / prod) — log dev uniquement
-    console.warn(`🚨 ALERT [${severity.toUpperCase()}] ${type}: ${message}`, details);
+    console.warn(` ALERT [${severity.toUpperCase()}] ${type}: ${message}`, details);
 
     return alert;
   }, []);
@@ -234,7 +234,7 @@ const AlertSystem = ({
     };
 
     localStorage.setItem(`alerts_${Date.now()}`, JSON.stringify(exportData));
-    console.log('💾 Alert history exported to localStorage');
+    console.log(' Alert history exported to localStorage');
     
     return exportData;
   }, [alertHistory, thresholds]);
@@ -272,7 +272,7 @@ const AlertSystem = ({
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       window.BookTimeAlerts = alertAPI;
-      console.log('🚨 Alert System API available at window.BookTimeAlerts');
+      console.log(' Alert System API available at window.BookTimeAlerts');
     }
   }, [alertAPI]);
 

@@ -134,7 +134,6 @@ const ExtendedStatsPanel = ({ stats }) => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg transition-colors">
             <div className="flex items-center space-x-3">
-              <span className="text-3xl">📚</span>
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">Romans</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Littérature & Fiction</p>
@@ -160,7 +159,6 @@ const ExtendedStatsPanel = ({ stats }) => {
 
           <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/30 rounded-lg transition-colors">
             <div className="flex items-center space-x-3">
-              <span className="text-3xl">🎨</span>
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">Bande dessinée</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Bandes dessinées</p>
@@ -186,7 +184,6 @@ const ExtendedStatsPanel = ({ stats }) => {
 
           <div className="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg transition-colors">
             <div className="flex items-center space-x-3">
-              <span className="text-3xl">🇯🇵</span>
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">Mangas</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Comics japonais</p>

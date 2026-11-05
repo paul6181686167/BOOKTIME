@@ -166,7 +166,7 @@ export class SearchOptimizer {
 
   // Génération des cartes séries avec scoring prioritaire optimisé
   static generateSeriesCardsForSearch(query, userBooks = []) {
-    console.log('🔍 Génération cartes séries pour:', query);
+    console.log(' Génération cartes séries pour:', query);
     
     // 1. DÉTECTION SÉRIES OFFICIELLES (Score 100000+)
     const officialSeries = this.detectSeriesWithAdvancedScoring(query);
@@ -193,7 +193,7 @@ export class SearchOptimizer {
       }
     });
     
-    console.log(`✅ ${seriesCards.length} carte(s) série générée(s) avec scores prioritaires`);
+    console.log(` ${seriesCards.length} carte(s) série générée(s) avec scores prioritaires`);
     return seriesCards.slice(0, 5); // Limiter à 5 séries maximum
   }
 
@@ -316,7 +316,7 @@ export class SearchOptimizer {
       
       // Données de base
       name: series.name,
-      title: `📚 ${isOfficial ? 'SÉRIE' : 'MA SÉRIE'} : ${series.name}`,
+      title: ` ${isOfficial ? 'SÉRIE' : 'MA SÉRIE'} : ${series.name}`,
       author: series.authors.join(', '),
       category: series.category,
       description: this.formatSeriesDescription(series, detected, validationResults),
@@ -344,7 +344,6 @@ export class SearchOptimizer {
         level: 'prioritaire',
         label: this.getRelevanceLabel(detected),
         color: isOfficial ? 'bg-purple-600' : 'bg-blue-600',
-        icon: '📚',
         qualityBadge: this.getQualityBadge(detected),
         validationBadge: validationResults ? this.getValidationBadge(validationResults) : null
       },
@@ -361,18 +360,18 @@ export class SearchOptimizer {
     const baseDescription = series.description || '';
     const volumeInfo = `${series.volumes} tome(s)`;
     const matchInfo = detected.matchDetails || '';
-    const statusInfo = series.status === 'completed' ? '✅ Complète' : '🔄 En cours';
+    const statusInfo = series.status === 'completed' ? ' Complète' : ' En cours';
     
     let validationInfo = '';
     if (validationResults) {
       const { validCount, rejectedCount, validationRate } = validationResults;
-      validationInfo = ` | 📊 ${validCount} tome(s) validé(s) (${validationRate}%)`;
+      validationInfo = ` |  ${validCount} tome(s) validé(s) (${validationRate}%)`;
       if (rejectedCount > 0) {
         validationInfo += ` - ${rejectedCount} exclu(s)`;
       }
     }
     
-    return `${baseDescription} | ${volumeInfo} | ${statusInfo} | 🎯 ${matchInfo}${validationInfo}`;
+    return `${baseDescription} | ${volumeInfo} | ${statusInfo} |  ${matchInfo}${validationInfo}`;
   }
 
   // Badge de qualité selon la correspondance
@@ -397,13 +396,13 @@ export class SearchOptimizer {
     const { validationRate, rejectedCount } = validationResults;
     
     if (validationRate >= 90) {
-      return { text: 'Série certifiée', color: 'bg-green-600', icon: '✅' };
+      return { text: 'Série certifiée', color: 'bg-green-600' };
     } else if (validationRate >= 70) {
-      return { text: 'Majorité validée', color: 'bg-yellow-600', icon: '⚠️' };
+      return { text: 'Majorité validée', color: 'bg-yellow-600' };
     } else if (rejectedCount > validationResults.validCount) {
-      return { text: 'Filtrage strict appliqué', color: 'bg-red-600', icon: '🔍' };
+      return { text: 'Filtrage strict appliqué', color: 'bg-red-600' };
     } else {
-      return { text: 'Validation partielle', color: 'bg-blue-600', icon: 'ℹ️' };
+      return { text: 'Validation partielle', color: 'bg-blue-600', icon: 'ℹ' };
     }
   }
 

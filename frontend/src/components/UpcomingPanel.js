@@ -482,7 +482,6 @@ const UpcomingPanel = ({ isOpen, onClose }) => {
             })
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <span className="text-5xl mb-4">📅</span>
               <h3 className="text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Aucune sortie à venir
               </h3>

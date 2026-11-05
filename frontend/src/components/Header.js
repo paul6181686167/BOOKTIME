@@ -52,7 +52,7 @@ const Header = ({
           <div className="flex items-center space-x-4">
             <div className="flex items-center">
               <h1 className="text-2xl font-bold text-booktime-600 dark:text-booktime-400">
-                📚 BOOKTIME
+                BOOKTIME
               </h1>
             </div>
             

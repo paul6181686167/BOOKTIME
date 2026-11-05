@@ -213,7 +213,7 @@ const SeriesDetailModal = ({
     return out;
   };
 
-  // ✅ NOUVELLE FONCTION : Charger les préférences de lecture depuis la base de données
+  //  NOUVELLE FONCTION : Charger les préférences de lecture depuis la base de données
   const loadReadingPreferences = async (seriesName) => {
     try {
       const token = localStorage.getItem('token');
@@ -239,12 +239,12 @@ const SeriesDetailModal = ({
         return {};
       }
     } catch (error) {
-      console.error('❌ Erreur lors du chargement des préférences:', error);
+      console.error(' Erreur lors du chargement des préférences:', error);
       return {};
     }
   };
 
-  // ✅ NOUVELLE FONCTION : Sauvegarder les préférences de lecture en base de données
+  //  NOUVELLE FONCTION : Sauvegarder les préférences de lecture en base de données
   const saveReadingPreferences = async (seriesName, currentTomeStatuses) => {
     try {
       const token = localStorage.getItem('token');
@@ -267,19 +267,19 @@ const SeriesDetailModal = ({
       
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Préférences sauvegardées:', data);
+        console.log(' Préférences sauvegardées:', data);
         return true;
       } else {
-        console.error('❌ Erreur lors de la sauvegarde:', response.status);
+        console.error(' Erreur lors de la sauvegarde:', response.status);
         return false;
       }
     } catch (error) {
-      console.error('❌ Erreur lors de la sauvegarde des préférences:', error);
+      console.error(' Erreur lors de la sauvegarde des préférences:', error);
       return false;
     }
   };
 
-  // ✅ NOUVELLE FONCTION : Charger les préférences pour la série courante
+  //  NOUVELLE FONCTION : Charger les préférences pour la série courante
   const loadReadingPreferencesForSeries = async () => {
     if (!enrichedSeries?.name) return;
     try {
@@ -312,7 +312,7 @@ const SeriesDetailModal = ({
         setSeriesStatus(explicit);
       }
     } catch (error) {
-      console.error('❌ Erreur chargement préférences:', error);
+      console.error(' Erreur chargement préférences:', error);
       setTomeStatuses({});
     }
   };
@@ -395,14 +395,14 @@ const SeriesDetailModal = ({
     return normalizeSeriesVolumesField(series);
   };
 
-  // ✅ NOUVELLE FONCTION : Calculer et mettre à jour automatiquement le statut de la série
+  //  NOUVELLE FONCTION : Calculer et mettre à jour automatiquement le statut de la série
   const calculateAndUpdateSeriesStatus = async (newReadTomes) => {
     if (!enrichedSeries?.name || !enrichedSeries?.volumes) {
-      console.log('🔄 Calcul statut ignoré - série non valide ou données manquantes');
+      console.log(' Calcul statut ignoré - série non valide ou données manquantes');
       return;
     }
 
-    // ✅ CORRECTION : Permettre le calcul même si la série n'est pas encore "officiellement" possédée
+    //  CORRECTION : Permettre le calcul même si la série n'est pas encore "officiellement" possédée
     // L'utilisateur peut marquer des tomes comme lus avant d'ajouter la série à sa bibliothèque
     const totalTomes = resolveVolumesCount(enrichedSeries.volumes);
     const readTomesCount = newReadTomes.size;
@@ -433,12 +433,12 @@ const SeriesDetailModal = ({
         };
         
         toast.success(`Statut de la série mis à jour automatiquement : ${statusLabels[newStatus]}`, {
-          icon: '🎯',
+          icon: '',
           duration: 3000
         });
         
       } catch (error) {
-        console.error('❌ Erreur lors de la mise à jour automatique du statut:', error);
+        console.error(' Erreur lors de la mise à jour automatique du statut:', error);
       }
     } else if (!isSeriesOwned && newStatus !== seriesStatus) {
       
@@ -453,7 +453,7 @@ const SeriesDetailModal = ({
       };
       
       toast.success(`Progression mise à jour : ${statusLabels[newStatus]}`, {
-        icon: '📈',
+        icon: '',
         duration: 2000
       });
     }
@@ -783,7 +783,7 @@ const SeriesDetailModal = ({
         setSeriesStatus(newStatus);
       }
     } catch (error) {
-      console.error('❌ Erreur changement statut:', error);
+      console.error(' Erreur changement statut:', error);
       setSeriesStatus(previousStatus);
       toast.error('Erreur lors du changement de statut');
     }
@@ -1104,15 +1104,6 @@ const SeriesDetailModal = ({
     }
   };
 
-  const getCategoryEmoji = (category) => {
-    switch (category) {
-      case 'bd': return '🎨';
-      case 'manga': return '🇯🇵';
-      case 'roman': return '📚';
-      default: return '📖';
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -1150,9 +1141,9 @@ const SeriesDetailModal = ({
                   />
                 ) : null}
                 <div
-                  className={`w-full h-full bg-gradient-to-br from-purple-500 to-blue-600 rounded-md flex items-center justify-center text-white text-xl ${seriesCoverUrl ? 'hidden' : 'flex'}`}
+                  className={`w-full h-full bg-gradient-to-br from-purple-500 to-blue-600 rounded-md flex items-center justify-center text-white text-xl font-semibold ${seriesCoverUrl ? 'hidden' : 'flex'}`}
                 >
-                  {getCategoryEmoji(series?.category)}
+                  {(series?.name || 'S').charAt(0).toUpperCase()}
                 </div>
               </div>
               
@@ -1184,7 +1175,7 @@ const SeriesDetailModal = ({
                     {getStatusLabel(seriesStatus)}
                   </span>
                   <span className="text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                    📚 {resolveVolumesCount(
+                     {resolveVolumesCount(
                       enrichedSeries?.volumes,
                       olBooks.length || books.length || (series?.books?.length) || 0
                     )} tome(s)
@@ -1484,7 +1475,7 @@ const SeriesDetailModal = ({
 
         {/* Books List (Section détaillée existante) - SUPPRIMÉE SUR DEMANDE UTILISATEUR */}
 
-        {/* ✅ NOUVEAU : Section Chapitres Individuels et Prédictions - UNIQUEMENT POUR LES MANGAS */}
+        {/*  NOUVEAU : Section Chapitres Individuels et Prédictions - UNIQUEMENT POUR LES MANGAS */}
         {series && series.name && series.category === 'manga' && (
           <ChapterSection 
             seriesName={series.name} 

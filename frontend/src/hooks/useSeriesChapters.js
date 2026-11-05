@@ -76,7 +76,7 @@ export const useSeriesChapters = (seriesName) => {
       const token = localStorage.getItem('token');
       const user = localStorage.getItem('user');
       
-      console.log('🔍 DEBUG useSeriesChapters:', {
+      console.log(' DEBUG useSeriesChapters:', {
         seriesName,
         hasToken: !!token,
         hasUser: !!user,
@@ -91,7 +91,7 @@ export const useSeriesChapters = (seriesName) => {
       const url = `${API_BASE_URL}/api/chapters/series/${encodeURIComponent(seriesName)}`;
       const queryParams = forceFresh ? '?force_refresh=true' : '';
 
-      console.log('🌐 Requête API Chapters:', `${url}${queryParams}`);
+      console.log(' Requête API Chapters:', `${url}${queryParams}`);
 
       const response = await fetch(`${url}${queryParams}`, {
         method: 'GET',
@@ -101,7 +101,7 @@ export const useSeriesChapters = (seriesName) => {
         },
       });
 
-      console.log('📡 Réponse API:', {
+      console.log(' Réponse API:', {
         status: response.status,
         statusText: response.statusText,
         ok: response.ok,
@@ -110,23 +110,23 @@ export const useSeriesChapters = (seriesName) => {
 
       if (!response.ok) {
         if (response.status === 401) {
-          console.error('❌ Token expiré ou invalide - Nettoyage localStorage');
+          console.error(' Token expiré ou invalide - Nettoyage localStorage');
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           throw new Error('Session expirée, veuillez vous reconnecter');
         } else if (response.status === 404) {
           const errorText = await response.text();
-          console.error('❌ 404 Error Details:', errorText);
+          console.error(' 404 Error Details:', errorText);
           throw new Error('Aucune donnée chapitre disponible pour cette série');
         } else {
           const errorData = await response.text();
-          console.error('❌ Erreur serveur:', errorData);
+          console.error(' Erreur serveur:', errorData);
           throw new Error(`Erreur serveur (${response.status}): ${errorData}`);
         }
       }
 
       const data = await response.json();
-      console.log('✅ Données reçues:', {
+      console.log(' Données reçues:', {
         success: data.success,
         hasData: !!data.data,
         totalChapters: data.data?.total_chapters_released,
@@ -151,7 +151,7 @@ export const useSeriesChapters = (seriesName) => {
       }
 
     } catch (err) {
-      console.error('❌ Erreur récupération chapitres:', err);
+      console.error(' Erreur récupération chapitres:', err);
       setError(err.message);
       setChaptersData(null);
     } finally {

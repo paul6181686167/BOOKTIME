@@ -401,19 +401,19 @@ export class SeriesDetector {
         });
         
         if (logMasking) {
-          console.log(`🔒 [MASQUAGE INTELLIGENT] Livre "${book.title}" détecté série "${detection.seriesName}" (${detection.confidence}% confiance, méthode: ${detection.method}) - MASQUÉ`);
+          console.log(` [MASQUAGE INTELLIGENT] Livre "${book.title}" détecté série "${detection.seriesName}" (${detection.confidence}% confiance, méthode: ${detection.method}) - MASQUÉ`);
         }
       } else {
         maskedBooks.push(book);
         
         if (logMasking) {
-          console.log(`📖 [MASQUAGE INTELLIGENT] Livre "${book.title}" standalone - AFFICHÉ`);
+          console.log(` [MASQUAGE INTELLIGENT] Livre "${book.title}" standalone - AFFICHÉ`);
         }
       }
     });
     
     if (logMasking) {
-      console.log(`🔒 [MASQUAGE INTELLIGENT] Résumé: ${seriesBooks.length} livre(s) masqué(s), ${maskedBooks.length} livre(s) affichés`);
+      console.log(` [MASQUAGE INTELLIGENT] Résumé: ${seriesBooks.length} livre(s) masqué(s), ${maskedBooks.length} livre(s) affichés`);
     }
     
     return {

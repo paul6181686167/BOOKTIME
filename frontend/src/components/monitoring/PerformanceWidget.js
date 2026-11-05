@@ -180,7 +180,7 @@ const PerformanceWidget = ({ position = 'bottom-right', isVisible = true }) => {
             {showAlert && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-2">
                 <div className="text-red-800 dark:text-red-200 text-xs font-medium">
-                  ⚠️ Problème de performance détecté
+                   Problème de performance détecté
                 </div>
                 <div className="text-red-600 dark:text-red-400 text-xs mt-1">
                   {metrics.memoryUsage > 80 && 'Utilisation mémoire élevée. '}

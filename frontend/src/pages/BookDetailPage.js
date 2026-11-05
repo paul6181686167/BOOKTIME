@@ -171,13 +171,13 @@ const BookDetailPage = () => {
   const getStatusInfo = (status) => {
     switch (status) {
       case 'to_read':
-        return { label: 'À lire', color: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300', icon: '📚' };
+        return { label: 'À lire', color: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' };
       case 'reading':
-        return { label: 'En cours', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300', icon: '📖' };
+        return { label: 'En cours', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' };
       case 'completed':
-        return { label: 'Terminé', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300', icon: '✅' };
+        return { label: 'Terminé', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' };
       default:
-        return { label: 'Inconnu', color: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300', icon: '❓' };
+        return { label: 'Inconnu', color: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' };
     }
   };
 
@@ -196,7 +196,6 @@ const BookDetailPage = () => {
     return (
       <div className="min-h-screen bg-honeycomb flex items-center justify-center">
         <div className="text-center">
-          <span className="text-6xl mb-4 block">📚</span>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Livre non trouvé</h1>
           <button
             onClick={() => navigate('/')}
@@ -284,7 +283,7 @@ const BookDetailPage = () => {
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
                     }`}
                   >
-                    📚 À lire
+                     À lire
                   </button>
                   <button
                     onClick={() => handleStatusChange('reading')}
@@ -295,7 +294,7 @@ const BookDetailPage = () => {
                         : 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800'
                     }`}
                   >
-                    📖 En cours
+                     En cours
                   </button>
                   <button
                     onClick={() => handleStatusChange('completed')}
@@ -306,7 +305,7 @@ const BookDetailPage = () => {
                         : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800'
                     }`}
                   >
-                    ✅ Terminé
+                     Terminé
                   </button>
                 </div>
 
@@ -533,10 +532,10 @@ const BookDetailPage = () => {
                   {(book.reading_start_date || book.reading_end_date) && (
                     <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
                       {book.reading_start_date && (
-                        <span>📅 Commencé le {new Date(book.reading_start_date).toLocaleDateString('fr-FR')}</span>
+                        <span> Commencé le {new Date(book.reading_start_date).toLocaleDateString('fr-FR')}</span>
                       )}
                       {book.reading_end_date && (
-                        <span>🏁 Terminé le {new Date(book.reading_end_date).toLocaleDateString('fr-FR')}</span>
+                        <span> Terminé le {new Date(book.reading_end_date).toLocaleDateString('fr-FR')}</span>
                       )}
                     </div>
                   )}
@@ -553,12 +552,12 @@ const BookDetailPage = () => {
                     <div key={index} className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                       <h3 className="font-medium text-gray-900 dark:text-white">{edition.title}</h3>
                       <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                        {edition.publish_date && <span>📅 {edition.publish_date}</span>}
+                        {edition.publish_date && <span> {edition.publish_date}</span>}
                         {edition.publishers?.length > 0 && (
-                          <span className="ml-4">🏢 {edition.publishers.slice(0, 2).join(', ')}</span>
+                          <span className="ml-4"> {edition.publishers.slice(0, 2).join(', ')}</span>
                         )}
                         {edition.number_of_pages && (
-                          <span className="ml-4">📄 {edition.number_of_pages} pages</span>
+                          <span className="ml-4"> {edition.number_of_pages} pages</span>
                         )}
                       </div>
                     </div>

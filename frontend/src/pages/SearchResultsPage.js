@@ -287,7 +287,6 @@ function SearchResultsPage() {
                 className="w-full h-full object-cover rounded-lg group-hover:scale-110 transition-transform duration-300"
               />
             ) : (
-              <span className="text-4xl">📖</span>
             )}
           </div>
           <div className="mt-2 text-center">
@@ -332,7 +331,7 @@ function SearchResultsPage() {
                   className="w-full h-full object-cover rounded"
                 />
               ) : (
-                <span className="text-xl">📖</span>
+                <span className="text-xl"></span>
               )}
             </div>
             <div className="flex-1 min-w-0">
@@ -349,23 +348,18 @@ function SearchResultsPage() {
                 {book.author}
               </button>
               <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
+                <span className="flex items-center capitalize">{book.category}</span>
                 <span className="flex items-center">
-                  {book.category === 'roman' && '📚'}
-                  {book.category === 'bd' && '🎨'}
-                  {book.category === 'manga' && '🇯🇵'}
-                  <span className="ml-1 capitalize">{book.category}</span>
-                </span>
-                <span className="flex items-center">
-                  {book.status === 'reading' && '📖 En cours'}
-                  {book.status === 'completed' && '✅ Terminé'}
-                  {book.status === 'to_read' && '📚 À lire'}
+                  {book.status === 'reading' && 'En cours'}
+                  {book.status === 'completed' && 'Terminé'}
+                  {book.status === 'to_read' && 'À lire'}
                 </span>
                 {book.publication_year && (
                   <span>{book.publication_year}</span>
                 )}
                 {book.rating && (
                   <span className="flex items-center">
-                    ⭐ {book.rating}/5
+                     {book.rating}/5
                   </span>
                 )}
               </div>
@@ -528,7 +522,6 @@ function SearchResultsPage() {
         {filteredBooks.length === 0 && !searchTerm ? (
           <div className="text-center py-12">
             <div className="max-w-md mx-auto">
-              <span className="text-6xl mb-4 block">🔍</span>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                 Aucun résultat trouvé
               </h2>

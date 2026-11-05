@@ -48,9 +48,9 @@ const BookCard = ({ book, onBookClick }) => {
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
             <div className="text-center p-4">
               <div className="text-4xl mb-2">
-                {book.category === 'roman' && '📚'}
-                {book.category === 'bd' && '🎨'}
-                {book.category === 'manga' && '🇯🇵'}
+                {book.category === 'roman' && ''}
+                {book.category === 'bd' && ''}
+                {book.category === 'manga' && ''}
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Pas de couverture</p>
             </div>
@@ -113,7 +113,7 @@ const BookCard = ({ book, onBookClick }) => {
         <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
             {book.saga && (
-              <span className="truncate">📖 {book.saga}</span>
+              <span className="truncate"> {book.saga}</span>
             )}
             {book.total_pages && (
               <span>{book.total_pages} pages</span>

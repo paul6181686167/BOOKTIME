@@ -79,9 +79,9 @@ const ChapterSection = ({ seriesName, onClose }) => {
   const formatConfidence = (confidence) => {
     if (!confidence || confidence === 0) return '';
     const percent = Math.round(confidence * 100);
-    if (percent >= 80) return '🟢';
-    if (percent >= 60) return '🟡';
-    return '🔴';
+    if (percent >= 80) return '';
+    if (percent >= 60) return '';
+    return '';
   };
 
   // Rendu des chapitres NON regroupés (chapitre par chapitre).
@@ -266,7 +266,7 @@ const ChapterSection = ({ seriesName, onClose }) => {
     <div className="mt-6 border-t pt-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          📚 Chapitres et Prédictions
+           Chapitres et Prédictions
         </h3>
         
         <div className="flex items-center space-x-2">

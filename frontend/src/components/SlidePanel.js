@@ -5,14 +5,14 @@ const SlidePanel = ({ isOpen, onClose, children }) => {
   
   // Debug: log quand le panneau change d'état
   useEffect(() => {
-    console.log('🔮 SlidePanel state changed:', isOpen);
+    console.log(' SlidePanel state changed:', isOpen);
   }, [isOpen]);
 
   // Gestion de la fermeture par clic extérieur
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (panelRef.current && !panelRef.current.contains(event.target)) {
-        console.log('🔮 Closing panel - click outside');
+        console.log(' Closing panel - click outside');
         onClose();
       }
     };
@@ -30,7 +30,7 @@ const SlidePanel = ({ isOpen, onClose, children }) => {
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === 'Escape' && isOpen) {
-        console.log('🔮 Closing panel - escape key');
+        console.log(' Closing panel - escape key');
         onClose();
       }
     };

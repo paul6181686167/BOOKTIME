@@ -163,7 +163,7 @@ export const generateVolumesList = (seriesData, extendedSeriesDatabase) => {
     const categoryKey = categoryMappings[seriesData.category] || seriesData.category;
     const seriesInfo = extendedSeriesDatabase[categoryKey]?.[seriesKey];
     
-    console.log('🔍 [DEBUG] Recherche série:', { 
+    console.log(' [DEBUG] Recherche série:', { 
       originalName: seriesData.name, 
       normalizedKey: seriesKey, 
       originalCategory: seriesData.category,
@@ -176,7 +176,7 @@ export const generateVolumesList = (seriesData, extendedSeriesDatabase) => {
       const volumes = seriesInfo.volume_titles || seriesInfo.tomes_officiels;
       
       if (volumes) {
-        console.log('✅ [DEBUG] Volumes trouvés:', volumes);
+        console.log(' [DEBUG] Volumes trouvés:', volumes);
         
         // Si c'est un objet (volume_titles), convertir en array
         const volumeArray = Array.isArray(volumes) ? volumes : Object.values(volumes);
@@ -209,7 +209,7 @@ export const generateVolumesList = (seriesData, extendedSeriesDatabase) => {
         },
       ];
     }
-    console.log('⚠️ [DEBUG] Fallback génération:', volumeCount, 'volumes');
+    console.log(' [DEBUG] Fallback génération:', volumeCount, 'volumes');
 
     return Array.from({ length: volumeCount }, (_, i) => ({
       volume_number: i + 1,
@@ -277,7 +277,7 @@ export const enrichSeriesMetadata = async (seriesData) => {
 };
 
 // Image par défaut série (SVG inline pour éviter 404)
-export const DEFAULT_SERIES_COVER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='300' viewBox='0 0 200 300'%3E%3Crect fill='%23e5e7eb' width='200' height='300'/%3E%3Ctext fill='%239ca3af' x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-family='sans-serif' font-size='48'%3E📚%3C/text%3E%3C/svg%3E";
+export const DEFAULT_SERIES_COVER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='300' viewBox='0 0 200 300'%3E%3Crect fill='%23e5e7eb' width='200' height='300'/%3E%3Ctext fill='%239ca3af' x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-family='sans-serif' font-size='48'%3EB%3C/text%3E%3C/svg%3E";
 
 const getSeriesImage = async (seriesName) => {
   return DEFAULT_SERIES_COVER;

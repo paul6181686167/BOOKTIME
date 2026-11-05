@@ -388,7 +388,7 @@ export const mockBookService = {
     try {
       return await realBookService.getSagas(...args);
     } catch (error) {
-      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      console.log(' Backend indisponible, utilisation du mode offline');
       return await mockBookService.getSagas(...args);
     }
   },
@@ -397,7 +397,7 @@ export const mockBookService = {
     try {
       return await realBookService.getSeries(...args);
     } catch (error) {
-      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      console.log(' Backend indisponible, utilisation du mode offline');
       return await mockBookService.getSeries(...args);
     }
   },
@@ -406,7 +406,7 @@ export const mockBookService = {
     try {
       return await realBookService.getSeriesDetails(...args);
     } catch (error) {
-      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      console.log(' Backend indisponible, utilisation du mode offline');
       return await mockBookService.getSeriesDetails(...args);
     }
   },
@@ -415,7 +415,7 @@ export const mockBookService = {
     try {
       return await realBookService.getSeriesBooks(...args);
     } catch (error) {
-      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      console.log(' Backend indisponible, utilisation du mode offline');
       return await mockBookService.getSeriesBooks(...args);
     }
   },
@@ -424,7 +424,7 @@ export const mockBookService = {
     try {
       return await realBookService.searchSeries(...args);
     } catch (error) {
-      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      console.log(' Backend indisponible, utilisation du mode offline');
       return await mockBookService.searchSeries(...args);
     }
   }
@@ -438,7 +438,7 @@ export const adaptiveBookService = {
     try {
       return await realBookService.getBooks(...args);
     } catch (error) {
-      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      console.log(' Backend indisponible, utilisation du mode offline');
       return await mockBookService.getBooks(...args);
     }
   },
@@ -447,7 +447,7 @@ export const adaptiveBookService = {
     try {
       return await realBookService.createBook(...args);
     } catch (error) {
-      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      console.log(' Backend indisponible, utilisation du mode offline');
       return await mockBookService.createBook(...args);
     }
   },
@@ -456,7 +456,7 @@ export const adaptiveBookService = {
     try {
       return await realBookService.getBook(...args);
     } catch (error) {
-      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      console.log(' Backend indisponible, utilisation du mode offline');
       return await mockBookService.getBook(...args);
     }
   },
@@ -465,7 +465,7 @@ export const adaptiveBookService = {
     try {
       return await realBookService.updateBook(...args);
     } catch (error) {
-      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      console.log(' Backend indisponible, utilisation du mode offline');
       return await mockBookService.updateBook(...args);
     }
   },
@@ -474,7 +474,7 @@ export const adaptiveBookService = {
     try {
       return await realBookService.deleteBook(...args);
     } catch (error) {
-      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      console.log(' Backend indisponible, utilisation du mode offline');
       return await mockBookService.deleteBook(...args);
     }
   },
@@ -483,7 +483,7 @@ export const adaptiveBookService = {
     try {
       return await realBookService.getStats(...args);
     } catch (error) {
-      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      console.log(' Backend indisponible, utilisation du mode offline');
       return await mockBookService.getStats(...args);
     }
   },
@@ -492,7 +492,7 @@ export const adaptiveBookService = {
     try {
       return await realBookService.getBooksByAuthor(...args);
     } catch (error) {
-      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      console.log(' Backend indisponible, utilisation du mode offline');
       return await mockBookService.getBooksByAuthor(...args);
     }
   },
@@ -501,7 +501,7 @@ export const adaptiveBookService = {
     try {
       return await realBookService.getBooksBySaga(...args);
     } catch (error) {
-      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      console.log(' Backend indisponible, utilisation du mode offline');
       return await mockBookService.getBooksBySaga(...args);
     }
   },
@@ -510,7 +510,7 @@ export const adaptiveBookService = {
     try {
       return await realBookService.getAuthors(...args);
     } catch (error) {
-      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      console.log(' Backend indisponible, utilisation du mode offline');
       return await mockBookService.getAuthors(...args);
     }
   },
@@ -519,7 +519,7 @@ export const adaptiveBookService = {
     try {
       return await realBookService.getSagas(...args);
     } catch (error) {
-      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      console.log(' Backend indisponible, utilisation du mode offline');
       return await mockBookService.getSagas(...args);
     }
   },
@@ -528,7 +528,7 @@ export const adaptiveBookService = {
     try {
       return await realBookService.getSeries(...args);
     } catch (error) {
-      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      console.log(' Backend indisponible, utilisation du mode offline');
       return await mockBookService.getSeries(...args);
     }
   },
@@ -537,7 +537,7 @@ export const adaptiveBookService = {
     try {
       return await realBookService.getSeriesDetails(...args);
     } catch (error) {
-      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      console.log(' Backend indisponible, utilisation du mode offline');
       return await mockBookService.getSeriesDetails(...args);
     }
   },
@@ -546,7 +546,7 @@ export const adaptiveBookService = {
     try {
       return await realBookService.getSeriesBooks(...args);
     } catch (error) {
-      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      console.log(' Backend indisponible, utilisation du mode offline');
       return await mockBookService.getSeriesBooks(...args);
     }
   },
@@ -555,7 +555,7 @@ export const adaptiveBookService = {
     try {
       return await realBookService.searchSeries(...args);
     } catch (error) {
-      console.log('🔄 Backend indisponible, utilisation du mode offline');
+      console.log(' Backend indisponible, utilisation du mode offline');
       return await mockBookService.searchSeries(...args);
     }
   }

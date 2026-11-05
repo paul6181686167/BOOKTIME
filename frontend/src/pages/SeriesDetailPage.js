@@ -295,13 +295,13 @@ const SeriesDetailPage = () => {
   const getCategoryBadge = (category) => {
     switch (category) {
       case 'roman':
-        return { text: 'Roman', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300', emoji: '📚' };
+        return { text: 'Roman', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300' };
       case 'bd':
-        return { text: 'BD', class: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300', emoji: '🎨' };
+        return { text: 'BD', class: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' };
       case 'manga':
-        return { text: 'Manga', class: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300', emoji: '🇯🇵' };
+        return { text: 'Manga', class: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300' };
       default:
-        return { text: 'Livre', class: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300', emoji: '📖' };
+        return { text: 'Livre', class: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' };
     }
   };
 
@@ -361,7 +361,7 @@ const SeriesDetailPage = () => {
           <div className="flex items-start space-x-6">
             {/* Icône de série */}
             <div className="w-24 h-30 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white text-4xl flex-shrink-0 shadow-lg">
-              {categoryBadge.emoji}
+              {(series.name || 'S').charAt(0).toUpperCase()}
             </div>
 
             {/* Informations principales */}

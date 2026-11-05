@@ -561,11 +561,11 @@ export const calculateRelevanceScore = (book, searchTerm) => {
 
 // Fonction pour obtenir le niveau de pertinence d'un livre
 export const getRelevanceLevel = (score) => {
-  if (score >= 800) return { level: 'excellent', label: 'Très pertinent', color: 'bg-green-500', icon: '🎯' };
-  if (score >= 400) return { level: 'good', label: 'Pertinent', color: 'bg-blue-500', icon: '✨' };
-  if (score >= 100) return { level: 'moderate', label: 'Moyennement pertinent', color: 'bg-yellow-500', icon: '👁️' };
-  if (score >= 50) return { level: 'low', label: 'Peu pertinent', color: 'bg-orange-500', icon: '🔍' };
-  return { level: 'minimal', label: 'Faiblement pertinent', color: 'bg-gray-500', icon: '📄' };
+  if (score >= 800) return { level: 'excellent', label: 'Très pertinent', color: 'bg-green-500', icon: '' };
+  if (score >= 400) return { level: 'good', label: 'Pertinent', color: 'bg-blue-500', icon: '' };
+  if (score >= 100) return { level: 'moderate', label: 'Moyennement pertinent', color: 'bg-yellow-500', icon: '' };
+  if (score >= 50) return { level: 'low', label: 'Peu pertinent', color: 'bg-orange-500', icon: '' };
+  return { level: 'minimal', label: 'Faiblement pertinent', color: 'bg-gray-500', icon: '' };
 };
 
 export default {

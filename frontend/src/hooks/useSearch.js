@@ -30,30 +30,29 @@ export const useSearch = () => {
         level: 'prioritaire', 
         label: detected.matchType === 'exact_match' ? 'Série (correspondance exacte)' : 
                detected.matchType === 'fuzzy_match' ? 'Série (correspondance approximative)' : 'Série détectée',
-        color: 'bg-purple-600', 
-        icon: '📚' 
+        color: 'bg-purple-600' 
       }
     }));
   };
 
   // Fonction pour générer les cartes séries avec algorithme avancé
   const generateSeriesCardsForSearch = (query, books) => {
-    console.log('🚀 OPTIMISATION RECHERCHE - Génération cartes séries avec algorithme avancé');
+    console.log(' OPTIMISATION RECHERCHE - Génération cartes séries avec algorithme avancé');
     
     const startTime = performance.now();
     const seriesCards = SearchOptimizer.generateSeriesCardsForSearch(query, books);
     const detectionTime = performance.now() - startTime;
     
     const metrics = SearchOptimizer.getSearchMetrics(query, seriesCards, detectionTime);
-    console.log('📊 Métriques de recherche:', metrics);
+    console.log(' Métriques de recherche:', metrics);
     
     if (seriesCards.length > 0) {
-      console.log(`✅ ${seriesCards.length} série(s) détectée(s) avec scores prioritaires 100000+`);
+      console.log(` ${seriesCards.length} série(s) détectée(s) avec scores prioritaires 100000+`);
       seriesCards.forEach(card => {
-        console.log(`📚 ${card.name} - Score: ${card.confidence} - Type: ${card.matchType}`);
+        console.log(` ${card.name} - Score: ${card.confidence} - Type: ${card.matchType}`);
       });
     } else {
-      console.log('ℹ️ Aucune série officielle détectée pour cette recherche');
+      console.log('ℹ Aucune série officielle détectée pour cette recherche');
     }
     
     return seriesCards;

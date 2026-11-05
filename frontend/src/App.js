@@ -32,6 +32,7 @@ const AdvancedRecommendationsModal = lazy(() =>
   import('./components/advanced-recommendations/AdvancedRecommendationsModal')
 );
 const IntegrationsModal = lazy(() => import('./components/integrations/IntegrationsModal'));
+const IsbnScannerModal = lazy(() => import('./components/common/IsbnScannerModal'));
 
 // PHASE 2.4 - Monitoring et Analytics
 import ErrorBoundary from './components/monitoring/ErrorBoundary';
@@ -223,6 +224,7 @@ function MainApp() {
   // États locaux pour l'UI
   const [activeTab, setActiveTab] = useState('roman');
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showIsbnScanner, setShowIsbnScanner] = useState(false);
   const [showExportImportModal, setShowExportImportModal] = useState(false);
   const [showSocialModal, setShowSocialModal] = useState(false);
   const [showAdvancedRecommendationsModal, setShowAdvancedRecommendationsModal] = useState(false);
@@ -387,7 +389,7 @@ function MainApp() {
   // FONCTION AFFICHAGE UNIFIÉ : Mélange séries et livres individuels par date d'ajout
   // PHASE C.1 : Utiliser données unifiées pour créer l'affichage
   const createUnifiedDisplay = (booksList) => {
-    // ✅ CORRECTION RCA - Filtrer les séries selon l'onglet actif
+    //  CORRECTION RCA - Filtrer les séries selon l'onglet actif
     const filteredSeries = (unifiedContent.userSeriesLibrary || []).filter(series => {
       const seriesCategory = series.category || 'roman';
       
@@ -575,7 +577,7 @@ function MainApp() {
         category: series.category,
       });
     } catch (error) {
-      console.error('❌ Erreur ajout série:', error);
+      console.error(' Erreur ajout série:', error);
       if (!String(error?.message || '').includes('409')) {
         // toast déjà émis dans SeriesActions pour les cas connus
       }
@@ -727,7 +729,7 @@ function MainApp() {
   useEffect(() => {
     if (unifiedContent.error && !unifiedContent.loading) {
       toast('Le serveur se réveille, patiente quelques secondes puis réessaie.', {
-        icon: '⏳',
+        icon: '',
         duration: 6000,
         id: 'backend-wakeup' // éviter les doublons
       });
@@ -807,7 +809,7 @@ function MainApp() {
   const sortedCompleted = useMemo(() => sortBooks(groupedBooks.completed || []), [sortBooks, groupedBooks.completed]);
 
   return (
-    <div className={`min-h-screen transition-colors duration-200 ${isVoid ? 'bg-cinema-void' : 'bg-honeycomb'}`}>
+    <div className="min-h-screen bg-honeycomb transition-colors duration-200">
       {/* Mobile: overlay de recherche */}
       <MobileSearchOverlay
         isOpen={showMobileSearch}
@@ -831,8 +833,7 @@ function MainApp() {
           {/* Desktop header */}
           <div className="hidden md:flex justify-between items-center h-16">
             <div className="flex-shrink-0 flex items-center">
-              <span className="text-2xl opacity-90">🐝</span>
-              <h1 className={`ml-2 text-xl font-bold tracking-tight ${isVoid ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+              <h1 className={`text-xl font-bold tracking-tight ${isVoid ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                 BOOKTIME
               </h1>
             </div>
@@ -877,19 +878,33 @@ function MainApp() {
           {/* Mobile header */}
           <div className="flex md:hidden justify-between items-center h-12">
             <div className="flex items-center gap-2">
-              <span className="text-xl opacity-90">🐝</span>
               <h1 className={`text-base font-bold tracking-tight ${isVoid ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                 BOOKTIME
               </h1>
             </div>
-            <button
-              onClick={() => setShowMobileSearch(true)}
-              className={`p-2 ${isVoid ? 'text-white/45 hover:text-white/80' : 'text-gray-500 dark:text-gray-400'}`}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
+            <div className="flex items-center">
+              <button
+                type="button"
+                onClick={() => setShowIsbnScanner(true)}
+                aria-label="Scanner un ISBN"
+                className={`p-2 ${isVoid ? 'text-white/45 hover:text-white/80' : 'text-gray-500 dark:text-gray-400'}`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7V5a1 1 0 011-1h2M4 17v2a1 1 0 001 1h2m10-16h2a1 1 0 011 1v2m0 10v2a1 1 0 01-1 1h-2" />
+                  <path strokeLinecap="round" strokeWidth={2} d="M8 8v8M10.5 8v8M13 8v8M15.5 8v8M18 8v8" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowMobileSearch(true)}
+                aria-label="Rechercher"
+                className={`p-2 ${isVoid ? 'text-white/45 hover:text-white/80' : 'text-gray-500 dark:text-gray-400'}`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -1018,7 +1033,7 @@ function MainApp() {
                     ? 'border border-red-500/30 bg-red-950/40 text-red-300'
                     : 'border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
                 }`}>
-                  <span>⚠️</span>
+                  <span></span>
                   <span>Impossible de charger ta bibliothèque. Vérifie ta connexion et <button className="underline font-medium" onClick={() => unifiedContent.loadUnifiedContent({ forceRefresh: true })}>réessaie</button>.</span>
                 </div>
               )}
@@ -1028,7 +1043,7 @@ function MainApp() {
                 <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-x-2.5 gap-y-4 sm:gap-5 p-1 sm:p-6">
                   {Array.from({ length: 12 }).map((_, i) => (
                     <div key={i} className="animate-pulse">
-                      <div className={`rounded-xl aspect-[2/3] mb-2 ${isVoid ? 'bg-white/[0.06] ring-1 ring-white/[0.04]' : 'bg-gray-200 dark:bg-gray-700'}`} />
+                      <div className={`rounded-xl aspect-[2/3] mb-2 ${isVoid ? 'bg-white/[0.06] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.28)]' : 'bg-gray-200 dark:bg-gray-700'}`} />
                       <div className={`h-3 rounded mb-1 ${isVoid ? 'bg-white/[0.06]' : 'bg-gray-200 dark:bg-gray-700'}`} />
                       <div className={`h-2 rounded w-2/3 ${isVoid ? 'bg-white/[0.04]' : 'bg-gray-200 dark:bg-gray-700'}`} />
                     </div>
@@ -1135,7 +1150,6 @@ function MainApp() {
                (!groupedBooks.completed || groupedBooks.completed.length === 0) && (
                 <div className="section-appear">
                   <div className="text-center py-8 mb-6">
-                    <div className="text-5xl mb-3">📚</div>
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
                       Ta bibliothèque est vide
                     </h3>
@@ -1239,6 +1253,17 @@ function MainApp() {
         />
       )}
       
+      {showIsbnScanner && (
+        <IsbnScannerModal
+          isOpen={showIsbnScanner}
+          onClose={() => setShowIsbnScanner(false)}
+          onAddBook={async (book) => {
+            await handleAddFromOpenLibrary(book);
+            setShowIsbnScanner(false);
+          }}
+        />
+      )}
+
       {showProfileModal && (
         <ProfileModal
           isOpen={showProfileModal}

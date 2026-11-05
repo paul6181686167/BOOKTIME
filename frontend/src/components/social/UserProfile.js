@@ -88,7 +88,6 @@ const UserProfile = ({ userId, onClose }) => {
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-8 max-w-md w-full">
           <div className="text-center">
-            <div className="text-red-500 text-4xl mb-4">⚠️</div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">Erreur</h3>
             <p className="text-gray-500 mb-4">{error}</p>
             <div className="flex space-x-3">
@@ -140,7 +139,7 @@ const UserProfile = ({ userId, onClose }) => {
               </h2>
               {profile.location && (
                 <p className="text-gray-500 flex items-center">
-                  <span className="mr-1">📍</span>
+                  <span className="mr-1"></span>
                   {profile.location}
                 </p>
               )}

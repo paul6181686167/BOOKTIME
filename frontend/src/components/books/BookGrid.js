@@ -276,7 +276,7 @@ const BookGrid = ({
       <div className={GRID_CLASSES}>
         {Array.from({ length: 12 }).map((_, index) => (
           <div key={index} className="animate-pulse">
-            <div className="bg-white/[0.06] rounded-xl aspect-[2/3] mb-3 ring-1 ring-white/[0.04]"></div>
+            <div className="bg-white/[0.06] rounded-xl aspect-[2/3] mb-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.28)]"></div>
             <div className="h-3 bg-white/[0.06] rounded mb-2"></div>
             <div className="h-2 bg-white/[0.04] rounded w-3/4"></div>
           </div>
@@ -288,7 +288,6 @@ const BookGrid = ({
   if (showEmptyState && displayedBooks.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="text-5xl mb-4 opacity-40">📚</div>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
           {emptyTitle}
         </h3>
