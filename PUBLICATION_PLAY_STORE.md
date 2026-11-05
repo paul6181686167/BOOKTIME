@@ -117,13 +117,25 @@ Pas de publicité, pas de pistage, pas de revente de données. Tu peux exporter 
 
 | Élément | Format requis | Où le trouver |
 |---------|---------------|---------------|
-| Icône | PNG 512 × 512 | `frontend/public/icon-512.png` |
-| Image de présentation | PNG ou JPEG 1024 × 500 | à créer |
-| Captures de téléphone | 2 minimum, 8 maximum, entre 320 et 3840 px de côté | à réaliser |
+| Icône | PNG 512 × 512 | `frontend/public/play-store/icon-512.png` |
+| Image de présentation | PNG 1024 × 500 | `frontend/public/play-store/feature-graphic.png` |
+| Captures de téléphone | 2 minimum, 8 maximum, entre 320 et 3840 px de côté | à prendre sur le téléphone (voir ci-dessous) |
 
-Pour les captures, installez l'APK sur votre téléphone et photographiez l'écran d'accueil de la
-bibliothèque, une fiche de livre, une série avec ses tomes, les statistiques de lecture et le
-scanner ISBN.
+Régénérer l'image de présentation si besoin :
+
+```powershell
+python scripts/make_feature_graphic.py
+```
+
+**Captures téléphone (à faire sur l'APK installé)** — viser 5 écrans sans barre de notification si possible :
+
+1. Bibliothèque (grille avec couvertures)
+2. Fiche d'un livre (progression / statut)
+3. Série avec tomes regroupés
+4. Recommandations ou similaires
+5. Statistiques / objectif annuel
+
+Ne pas utiliser l'écran de connexion (l'URL API de debug y apparaît encore).
 
 ---
 
