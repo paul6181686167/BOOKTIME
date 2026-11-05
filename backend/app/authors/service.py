@@ -156,12 +156,37 @@ async def enrich_author_fiche(author_name: str, *, force: bool = False) -> dict:
     if not profile.get("bio"):
         try:
             import httpx
+            from urllib.parse import quote
 
             async with httpx.AsyncClient(timeout=8.0) as client:
                 for lang in ("fr", "en"):
+                    title = quote(display_name.replace(" ", "_"), safe="_()")
                     r = await client.get(
-                        f"https://{lang}.wikipedia.org/api/rest_v1/page/summary/{display_name.replace(' ', '_')}"
+                        f"https://{lang}.wikipedia.org/api/rest_v1/page/summary/{title}"
                     )
+                    if r.status_code == 404:
+                        # Recherche approximative
+                        search = await client.get(
+                            f"https://{lang}.wikipedia.org/w/api.php",
+                            params={
+                                "action": "query",
+                                "list": "search",
+                                "srsearch": display_name,
+                                "format": "json",
+                                "srlimit": 1,
+                            },
+                        )
+                        hits = (
+                            (search.json() or {})
+                            .get("query", {})
+                            .get("search", [])
+                        )
+                        if not hits:
+                            continue
+                        title = quote(str(hits[0].get("title") or "").replace(" ", "_"), safe="_()")
+                        r = await client.get(
+                            f"https://{lang}.wikipedia.org/api/rest_v1/page/summary/{title}"
+                        )
                     if not r.is_success:
                         continue
                     data = r.json()

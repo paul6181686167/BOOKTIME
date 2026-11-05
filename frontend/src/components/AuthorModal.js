@@ -90,15 +90,20 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
       Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
 
     try {
-      // 0) Cache fiche pré-créée (comme les livres déjà en biblio)
-      const cachedOk = await loadAuthorFromCache(backendUrl, token);
-      if (cachedOk) return;
+      // 0) Cache fiche pré-créée (rapide, non bloquant)
+      const cached = await withTimeout(loadAuthorFromCache(backendUrl, token), 4000).catch(
+        () => ({ ok: false, hasWorks: false })
+      );
 
-      // Lancer profil et livres en parallèle avec timeout
-      await Promise.allSettled([
-        withTimeout(loadAuthorProfile(backendUrl)),
-        withTimeout(loadAuthorBooks(backendUrl, token))
-      ]);
+      const needProfile = !cached?.ok;
+      const needWorks = !cached?.hasWorks;
+
+      if (needProfile || needWorks) {
+        await Promise.allSettled([
+          needProfile ? withTimeout(loadAuthorProfile(backendUrl)) : Promise.resolve(),
+          needWorks ? withTimeout(loadAuthorBooks(backendUrl, token)) : Promise.resolve(),
+        ]);
+      }
     } catch (err) {
       console.warn('Chargement auteur partiel:', err);
     } finally {
@@ -113,9 +118,21 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
         `${backendUrl}/api/authors/${encodeURIComponent(author)}/profile`,
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
-      if (!res.ok) return false;
+      if (!res.ok) return { ok: false, hasWorks: false };
       const data = await res.json();
-      if (!data?.found || !data.author) return false;
+      if (!data?.found || !data.author) return { ok: false, hasWorks: false };
+
+      const series = Array.isArray(data.series) ? data.series : [];
+      const individual = Array.isArray(data.individual_books) ? data.individual_books : [];
+      const hasWorks = series.length > 0 || individual.length > 0;
+      const hasProfile = !!(
+        data.author.bio ||
+        data.author.photo_url ||
+        data.author.image_url ||
+        data.author.birth_date ||
+        data.author.wikipedia_url
+      );
+      if (!hasProfile && !hasWorks) return { ok: false, hasWorks: false };
 
       setAuthorInfo({
         ...data.author,
@@ -123,9 +140,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
         source: data.from_cache ? 'cache' : data.author.source || 'enriched',
       });
 
-      const series = data.series || [];
-      const individual = data.individual_books || [];
-      if (series.length || individual.length) {
+      if (hasWorks) {
         setAuthorBooks({
           series,
           individual_books: individual,
@@ -137,10 +152,10 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
           sources: { cache: true },
         });
       }
-      return true;
+      return { ok: hasProfile || hasWorks, hasWorks };
     } catch (err) {
       console.warn('Cache fiche auteur indisponible:', err);
-      return false;
+      return { ok: false, hasWorks: false };
     }
   };
 
@@ -554,7 +569,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
                             key={index}
                             className="inline-flex items-center px-2 py-1 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300 text-xs rounded border border-yellow-200 dark:border-yellow-800"
                           >
-                            🏆 {award}
+                            🏆 {typeof award === 'string' ? award : award?.label || award?.name || 'Prix'}
                           </span>
                         ))}
                       </div>
@@ -565,17 +580,17 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       Informations fournies par{' '}
-                      {authorInfo.source === 'wikidata' ? (
-                        <a 
-                          href={`https://www.wikidata.org/wiki/${authorInfo.id}`}
+                      {authorInfo.wikidata_qid || (authorInfo.source === 'wikidata' && authorInfo.id) ? (
+                        <a
+                          href={`https://www.wikidata.org/wiki/${authorInfo.wikidata_qid || authorInfo.id}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:text-blue-700 underline"
                         >
                           Wikidata
                         </a>
-                      ) : authorInfo.source === 'wikipedia' ? (
-                        <a 
+                      ) : authorInfo.wikipedia_url ? (
+                        <a
                           href={authorInfo.wikipedia_url}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -583,8 +598,8 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
                         >
                           Wikipedia
                         </a>
-                      ) : (
-                        <a 
+                      ) : authorInfo.ol_key ? (
+                        <a
                           href={`https://openlibrary.org${authorInfo.ol_key}`}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -592,6 +607,8 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
                         >
                           Open Library
                         </a>
+                      ) : (
+                        <span>Booktime</span>
                       )}
                     </p>
                   </div>
@@ -626,7 +643,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
                         .replace(/\b(trilogy|tetralogy|series|saga|cycle|duology|quartet)\b/g, '')
                         .replace(/\s+/g, ' ').trim();
                     const seen = new Map();
-                    authorBooks.series.forEach((s) => {
+                    (authorBooks.series || []).forEach((s) => {
                       const key = normalize(s.name);
                       const existing = seen.get(key);
                       if (!existing || (s.books?.length || 0) > (existing.books?.length || 0)) {

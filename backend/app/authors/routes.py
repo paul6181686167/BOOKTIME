@@ -113,50 +113,17 @@ async def ensure_library_author_fiches(
     )
 
 
-@router.get("/{author_name}/profile")
-async def get_author_profile(
-    author_name: str,
-    refresh: bool = Query(False, description="Forcer un nouvel enrichissement"),
-    current_user: dict = Depends(get_current_user),
-):
-    """
-    Fiche auteur persistée. Sert le cache Mongo si prêt, sinon enrichit puis stocke.
-    """
-    cached = get_cached_author(author_name)
-    if cached and author_fiche_ready(cached) and not refresh:
-        return {
-            "found": True,
-            "from_cache": True,
-            "author": {
-                "name": cached.get("name") or author_name,
-                "bio": cached.get("bio"),
-                "photo_url": cached.get("photo_url") or cached.get("image_url"),
-                "image_url": cached.get("image_url") or cached.get("photo_url"),
-                "birth_date": cached.get("birth_date"),
-                "death_date": cached.get("death_date"),
-                "nationality": cached.get("nationality"),
-                "occupation": cached.get("occupation") or [],
-                "genres": cached.get("genres") or [],
-                "awards": cached.get("awards") or [],
-                "wikipedia_url": cached.get("wikipedia_url"),
-                "wikidata_qid": cached.get("wikidata_qid"),
-                "source": "cache",
-            },
-            "series": cached.get("series") or [],
-            "individual_books": cached.get("individual_books") or [],
-            "total_series": cached.get("total_series") or len(cached.get("series") or []),
-            "total_individual_books": cached.get("total_individual_books")
-            or len(cached.get("individual_books") or []),
-            "enriched_at": cached.get("enriched_at"),
-        }
-
-    doc = await enrich_author_fiche(author_name, force=refresh)
-    ready = author_fiche_ready(doc)
+def _profile_payload(doc: dict, *, from_cache: bool, source: str) -> dict:
+    series = doc.get("series") or []
+    individual = doc.get("individual_books") or []
+    enriched_at = doc.get("enriched_at")
+    if hasattr(enriched_at, "isoformat"):
+        enriched_at = enriched_at.isoformat()
     return {
-        "found": ready,
-        "from_cache": bool(doc.get("from_cache")),
+        "found": True,
+        "from_cache": from_cache,
         "author": {
-            "name": doc.get("name") or author_name,
+            "name": doc.get("name"),
             "bio": doc.get("bio"),
             "photo_url": doc.get("photo_url") or doc.get("image_url"),
             "image_url": doc.get("image_url") or doc.get("photo_url"),
@@ -168,15 +135,58 @@ async def get_author_profile(
             "awards": doc.get("awards") or [],
             "wikipedia_url": doc.get("wikipedia_url"),
             "wikidata_qid": doc.get("wikidata_qid"),
-            "source": "enriched",
+            "id": doc.get("wikidata_qid"),
+            "source": source,
         },
-        "series": doc.get("series") or [],
-        "individual_books": doc.get("individual_books") or [],
-        "total_series": doc.get("total_series") or 0,
-        "total_individual_books": doc.get("total_individual_books") or 0,
-        "enriched_at": doc.get("enriched_at"),
-        "message": None if ready else f"Fiche incomplète pour « {author_name} »",
+        "series": series if isinstance(series, list) else [],
+        "individual_books": individual if isinstance(individual, list) else [],
+        "total_series": doc.get("total_series") or (len(series) if isinstance(series, list) else 0),
+        "total_individual_books": doc.get("total_individual_books")
+        or (len(individual) if isinstance(individual, list) else 0),
+        "enriched_at": enriched_at,
     }
+
+
+@router.get("/{author_name}/profile")
+async def get_author_profile(
+    author_name: str,
+    refresh: bool = Query(False, description="Forcer un nouvel enrichissement (lent)"),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Fiche auteur persistée.
+    Par défaut : lecture cache uniquement (rapide). L'enrichissement lourd
+    se fait via POST /ensure-from-library ou ?refresh=true.
+    """
+    cached = get_cached_author(author_name)
+    if cached and author_fiche_ready(cached) and not refresh:
+        payload = _profile_payload(cached, from_cache=True, source="cache")
+        payload["author"]["name"] = cached.get("name") or author_name
+        return payload
+
+    if not refresh:
+        return {
+            "found": False,
+            "from_cache": False,
+            "message": "not_ready",
+            "author": None,
+            "series": [],
+            "individual_books": [],
+        }
+
+    doc = await enrich_author_fiche(author_name, force=True)
+    if not author_fiche_ready(doc):
+        return {
+            "found": False,
+            "from_cache": False,
+            "message": f"Fiche incomplète pour « {author_name} »",
+            "author": None,
+            "series": [],
+            "individual_books": [],
+        }
+    payload = _profile_payload(doc, from_cache=False, source="enriched")
+    payload["author"]["name"] = doc.get("name") or author_name
+    return payload
 
 
 @router.get("/{author_name}/books")
