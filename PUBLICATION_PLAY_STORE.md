@@ -149,9 +149,8 @@ Pages en ligne (domaine Vercel actuel) :
 À coller dans la Play Console : la première dans *Règles de confidentialité*, la seconde dans
 *Suppression du compte* (section « Sécurité des données »).
 
-> **À faire** : remplacer `ADRESSE-EMAIL-A-COMPLETER` dans `frontend/public/privacy.html` et
-> `frontend/public/delete-account.html` par une adresse e-mail réellement relevée, puis
-> redéployer. Sans ça, Google peut refuser la fiche.
+Contact privacy / suppression de compte : `berruyerpaul222@gmail.com`
+(déjà renseigné dans `privacy.html` et `delete-account.html`).
 
 ---
 
