@@ -62,7 +62,7 @@ const FR_STOP = new Set([
 const EN_STOP = new Set([
   'the', 'a', 'an', 'and', 'of', 'to', 'in', 'on', 'for', 'with', 'is', 'are',
   'this', 'that', 'from', 'by', 'as', 'at', 'his', 'her', 'their', 'was', 'were',
-  'be', 'or', 'which', 'who', 'into', 'has', 'have', 'its', 'it's', 'about',
+  'be', 'or', 'which', 'who', 'into', 'has', 'have', 'its', 'about',
   'after', 'before', 'when', 'where', 'while', 'through', 'over', 'under',
 ]);
 const EN_MARKERS = new Set([
