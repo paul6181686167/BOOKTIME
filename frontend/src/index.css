@@ -122,6 +122,57 @@ html.cinema .dark\:border-booktime-800\/50 {
   border-color: rgba(255, 255, 255, 0.06) !important;
 }
 
+/* ─── Glissement pages onglets mobile (Biblio ↔ À venir ↔ Pour toi ↔ Profil) ─ */
+.mobile-page-stage {
+  width: 100%;
+}
+
+.mobile-page-layer {
+  width: 100%;
+  min-height: 100%;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+@keyframes mobilePageEnterRight {
+  from { transform: translate3d(100%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+@keyframes mobilePageEnterLeft {
+  from { transform: translate3d(-100%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+@keyframes mobilePageExitLeft {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-100%, 0, 0); }
+}
+@keyframes mobilePageExitRight {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(100%, 0, 0); }
+}
+
+.mobile-page-enter-right {
+  animation: mobilePageEnterRight 0.32s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+.mobile-page-enter-left {
+  animation: mobilePageEnterLeft 0.32s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+.mobile-page-exit-left {
+  animation: mobilePageExitLeft 0.32s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+.mobile-page-exit-right {
+  animation: mobilePageExitRight 0.32s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-page-enter-right,
+  .mobile-page-enter-left,
+  .mobile-page-exit-left,
+  .mobile-page-exit-right {
+    animation: none !important;
+  }
+}
+
 .cinema-progress-track {
   height: 3px;
   border-radius: 999px;

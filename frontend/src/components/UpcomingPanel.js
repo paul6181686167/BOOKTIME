@@ -206,7 +206,8 @@ const NOTIF_MODES = [
   { value: 'push', label: 'Notifications navigateur' },
 ];
 
-const UpcomingPanel = ({ isOpen, onClose }) => {
+const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
+  const isPage = variant === 'page';
   const [groups, setGroups] = useState(EMPTY_GROUPS);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -220,7 +221,7 @@ const UpcomingPanel = ({ isOpen, onClose }) => {
 
   const loadData = useCallback(
     async (refresh = false) => {
-      if (!isOpen) return;
+      if (!isOpen && !isPage) return;
       // Réouverture : garder les données déjà chargées (pas de spinner bloquant)
       const silent = hasLoadedRef.current && !refresh && total > 0;
       if (!silent) setIsLoading(true);
@@ -239,18 +240,18 @@ const UpcomingPanel = ({ isOpen, onClose }) => {
         setIsLoading(false);
       }
     },
-    [isOpen, total]
+    [isOpen, isPage, total]
   );
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen && !isPage) return;
     // v3 = pipeline perf (Wikidata parallèle, GB réduit) — 1 seul refresh forcé
     const LOGIC_V = '3';
     const key = 'booktime_upcoming_logic_v';
     const stale = localStorage.getItem(key) !== LOGIC_V;
     loadData(stale);
     if (stale) localStorage.setItem(key, LOGIC_V);
-  }, [isOpen, loadData]);
+  }, [isOpen, isPage, loadData]);
 
   const handleChangeNotifMode = async (mode) => {
     setNotifMode(mode);
@@ -311,17 +312,23 @@ const UpcomingPanel = ({ isOpen, onClose }) => {
     toast.success(`"${book.title}" ajouté à ta surveillance !`);
   };
 
-  if (!isOpen) return null;
+  if (!isOpen && !isPage) return null;
 
   const hasAny = GROUP_META.some((g) => (groups[g.key] || []).length > 0);
 
+  const shellClass = isPage
+    ? 'min-h-screen bg-honeycomb flex flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))]'
+    : 'fixed top-0 left-0 h-full w-80 sm:w-96 bg-honeycomb shadow-2xl z-50 flex flex-col transition-transform duration-300';
+
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" onClick={onClose} />
+      {!isPage && (
+        <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" onClick={onClose} />
+      )}
 
-      <div className="fixed top-0 left-0 h-full w-80 sm:w-96 bg-honeycomb shadow-2xl z-50 flex flex-col transition-transform duration-300">
+      <div className={shellClass}>
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl border-b border-booktime-mist/55 dark:border-booktime-800/50 flex-shrink-0 safe-area-top">
+        <div className="flex items-center justify-between px-4 py-3 bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl border-b border-booktime-mist/55 dark:border-booktime-800/50 flex-shrink-0 safe-area-top sticky top-0 z-10">
           <div className="flex items-center gap-2">
             <ClockIcon className="h-5 w-5 text-amber-500" />
             <h2 className="text-base font-semibold text-gray-900 dark:text-white">
@@ -342,12 +349,14 @@ const UpcomingPanel = ({ isOpen, onClose }) => {
             >
               <ArrowPathIcon className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            >
-              <XMarkIcon className="h-5 w-5" />
-            </button>
+            {!isPage && (
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            )}
           </div>
         </div>
 

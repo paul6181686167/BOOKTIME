@@ -78,7 +78,9 @@ function ProfileModal({
   onOpenBook,
   onOpenSeries,
   onAddFromOpenLibrary,
+  variant = 'modal',
 }) {
+  const isPage = variant === 'page';
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const [stats, setStats] = useState({});
@@ -127,12 +129,12 @@ function ProfileModal({
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen || isPage) {
       loadStats();
       setProfileData(loadProfileData());
       setCollections(getCollections());
     }
-  }, [isOpen]);
+  }, [isOpen, isPage]);
 
   const libraryChoices = useMemo(() => {
     const books = (libraryBooks || [])
@@ -155,10 +157,10 @@ function ProfileModal({
   }, [libraryBooks, librarySeries]);
 
   useEffect(() => {
-    if (isOpen && activeTab === 'authors') {
+    if ((isOpen || isPage) && activeTab === 'authors') {
       loadFollowedAuthors();
     }
-  }, [isOpen, activeTab, loadFollowedAuthors]);
+  }, [isOpen, isPage, activeTab, loadFollowedAuthors]);
 
   const loadStats = async () => {
     try {
@@ -277,7 +279,7 @@ function ProfileModal({
   const booksThisYear = stats.completed_this_year || stats.completed_books || 0;
   const goalPercent = currentGoal > 0 ? Math.min(100, Math.round((booksThisYear / currentGoal) * 100)) : 0;
 
-  if (!isOpen) return null;
+  if (!isOpen && !isPage) return null;
 
   const tabs = [
     { key: 'stats',       label: 'Stats' },
@@ -287,27 +289,34 @@ function ProfileModal({
     { key: 'collections', label: 'Collections' },
   ];
 
-  return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 md:p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="bg-[#f3faf6] dark:bg-gray-800 md:rounded-2xl shadow-2xl w-full md:max-w-lg max-h-[92dvh] md:max-h-[90vh] flex flex-col modal-animate safe-area-bottom" style={{ borderRadius: '20px 20px 0 0' }}>
-        {/* Poignée mobile */}
-        <div className="md:hidden flex justify-center pt-2.5 pb-1 flex-shrink-0">
-          <div className="w-9 h-1 bg-booktime-mist dark:bg-booktime-700 rounded-full" />
-        </div>
+  const sheet = (
+      <div
+        className={
+          isPage
+            ? 'bg-honeycomb min-h-screen w-full flex flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))]'
+            : 'bg-[#f3faf6] dark:bg-gray-800 md:rounded-2xl shadow-2xl w-full md:max-w-lg max-h-[92dvh] md:max-h-[90vh] flex flex-col modal-animate safe-area-bottom'
+        }
+        style={isPage ? undefined : { borderRadius: '20px 20px 0 0' }}
+      >
+        {/* Poignée mobile (feuille modale uniquement) */}
+        {!isPage && (
+          <div className="md:hidden flex justify-center pt-2.5 pb-1 flex-shrink-0">
+            <div className="w-9 h-1 bg-booktime-mist dark:bg-booktime-700 rounded-full" />
+          </div>
+        )}
         {/* Header */}
-        <div className="flex-shrink-0 p-4 border-b border-booktime-mist/55 dark:border-booktime-800/50 bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl">
+        <div className="flex-shrink-0 p-4 border-b border-booktime-mist/55 dark:border-booktime-800/50 bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl safe-area-top sticky top-0 z-10">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Profil</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">{user?.email}</p>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >✕</button>
+            {!isPage && (
+              <button
+                onClick={onClose}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >✕</button>
+            )}
           </div>
 
           {/* Onglets */}
@@ -754,7 +763,15 @@ function ProfileModal({
               ].map(({ event, label, color }) => (
                 <button
                   key={event}
-                  onClick={() => { onClose(); window.dispatchEvent(new CustomEvent(event)); }}
+                  onClick={() => {
+                    if (isPage) {
+                      onClose();
+                      window.setTimeout(() => window.dispatchEvent(new CustomEvent(event)), 80);
+                    } else {
+                      onClose();
+                      window.dispatchEvent(new CustomEvent(event));
+                    }
+                  }}
                   className={`w-full p-2.5 bg-${color}-50 dark:bg-${color}-900/20 hover:bg-${color}-100 dark:hover:bg-${color}-900/30 rounded-lg transition-colors text-sm font-medium text-${color}-700 dark:text-${color}-300`}
                 >
                   {label}
@@ -780,25 +797,48 @@ function ProfileModal({
           </button>
         </div>
       </div>
+  );
 
+  const dialogs = (
+    <>
       <DeleteAccountDialog
         isOpen={showDeleteAccount}
         onClose={() => setShowDeleteAccount(false)}
         onDeleted={onClose}
       />
-
       <IsbnScannerModal
         isOpen={showIsbnScanner}
         onClose={() => setShowIsbnScanner(false)}
         onAddBook={async (book) => {
           if (!onAddFromOpenLibrary) {
-            throw new Error("Ajout non disponible");
+            throw new Error('Ajout non disponible');
           }
           await onAddFromOpenLibrary(book);
           setShowIsbnScanner(false);
-          onClose();
+          if (!isPage) onClose();
         }}
       />
+    </>
+  );
+
+  if (isPage) {
+    return (
+      <>
+        {sheet}
+        {dialogs}
+      </>
+    );
+  }
+
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 md:p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      {sheet}
+      {dialogs}
     </div>
   );
 }

@@ -24,9 +24,12 @@ const RecommendationPage = lazy(() => import('./components/recommendations/Recom
 const OpenLibraryBookPage = lazy(() => import('./pages/OpenLibraryBookPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const ExportImportPage = lazy(() => import('./components/exportimport/ExportImportPage'));
+const UpcomingPage = lazy(() => import('./pages/UpcomingPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ProfileModal = lazy(() => import('./components/common/ProfileModal'));
 const ExportImportModal = lazy(() => import('./components/export-import/ExportImportModal'));
 const UpcomingPanel = lazy(() => import('./components/UpcomingPanel'));
+const PrimaryTabsLayout = lazy(() => import('./components/navigation/PrimaryTabsLayout'));
 const SocialModal = lazy(() => import('./components/social/SocialModal'));
 const AdvancedRecommendationsModal = lazy(() =>
   import('./components/advanced-recommendations/AdvancedRecommendationsModal')
@@ -72,7 +75,6 @@ import SeriesActions from './components/series/SeriesActions';
 // Books components imports (Phase 1.1 - Step 5 & 6)
 import BookActions from './components/books/BookActions';
 import BookGrid from './components/books/BookGrid';
-import MobileBottomNav from './components/MobileBottomNav';
 import MobileSearchOverlay from './components/MobileSearchOverlay';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
 import OfflineBanner from './components/OfflineBanner';
@@ -204,9 +206,13 @@ function AppContent() {
   return (
     <Suspense fallback={<RouteFallback />}>
       <Routes>
-        <Route path="/" element={<MainApp />} />
+        <Route element={<PrimaryTabsLayout />}>
+          <Route path="/" element={<MainApp />} />
+          <Route path="/upcoming" element={<UpcomingPage />} />
+          <Route path="/recommendations" element={<RecommendationPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+        </Route>
         <Route path="/series/:seriesName" element={<SeriesDetailPage />} />
-        <Route path="/recommendations" element={<RecommendationPage />} />
         <Route path="/export-import" element={<ExportImportPage />} />
         <Route path="/catalogue/*" element={<OpenLibraryBookPage />} />
       </Routes>
@@ -238,7 +244,6 @@ function MainApp() {
   const [showAuthorModal, setShowAuthorModal] = useState(false);
   const [selectedAuthor, setSelectedAuthor] = useState(null);
   // Mobile states
-  const [mobileTab, setMobileTab] = useState('home');
   const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   // PHASE 2.4 - Monitoring et Analytics
@@ -693,21 +698,6 @@ function MainApp() {
     localStorage.setItem('booktime_active_tab', newTab);
   };
 
-  const handleMobileTabChange = (tab) => {
-    setMobileTab(tab);
-    if (tab === 'recommendations') {
-      navigate('/recommendations');
-    } else if (tab === 'upcoming') {
-      openUpcomingPanel();
-    } else if (tab === 'profile') {
-      setShowProfileModal(true);
-      // Revenir à home après fermeture
-      setTimeout(() => setMobileTab('home'), 100);
-    } else if (tab === 'home') {
-      if (searchHook.isSearchMode) searchHook.clearSearch?.();
-    }
-  };
-
   // CORRECTION RCA - Synchronisation activeTab avec filters.category - MISE À JOUR SESSION 75
   useEffect(() => {
     // Nouvelle logique pour gérer le regroupement BD + Manga = Romans graphiques
@@ -813,7 +803,7 @@ function MainApp() {
       {/* Mobile: overlay de recherche */}
       <MobileSearchOverlay
         isOpen={showMobileSearch}
-        onClose={() => { setShowMobileSearch(false); setMobileTab('home'); }}
+        onClose={() => setShowMobileSearch(false)}
         searchTerm={searchHook.lastSearchTerm || ''}
         onSearchChange={searchHook.handleSearchTermChange}
         onSearch={(term) => {
@@ -1359,16 +1349,9 @@ function MainApp() {
       
       </Suspense>
 
-      {/* Toast notifications */}
-      <Toaster
-        position="bottom-right"
-        toastOptions={{
-          style: { marginBottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }
-        }}
-        containerStyle={{ bottom: 0 }}
-      />
-      
-      {/* Panneau "À venir" — monté une fois ouvert (évite reload complet à chaque clic) */}
+      {/* Toasts : PrimaryTabsLayout (partagés entre les 4 onglets mobiles) */}
+
+      {/* Panneau "À venir" — desktop (mobile = page /upcoming) */}
       {(showUpcomingPanel || upcomingMounted) && (
         <Suspense fallback={null}>
           <UpcomingPanel
@@ -1381,12 +1364,6 @@ function MainApp() {
       
       {/* PHASE 2.4 - Performance Widget */}
       <PerformanceWidget position="bottom-right" isVisible={false} />
-
-      {/* Navigation mobile bas d'écran */}
-      <MobileBottomNav
-        activeTab={mobileTab}
-        onTabChange={handleMobileTabChange}
-      />
 
       <PwaInstallPrompt />
       <OfflineBanner />
