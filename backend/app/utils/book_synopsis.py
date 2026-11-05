@@ -317,6 +317,129 @@ def prefer_french_synopsis(*candidates: tuple[str, str]) -> tuple[str, str]:
     return "", "none"
 
 
+def _split_for_translation(text: str, max_len: int = 4500) -> list[str]:
+    """Découpe un long résumé en blocs < max_len (limites Google Translate)."""
+    t = (text or "").strip()
+    if len(t) <= max_len:
+        return [t] if t else []
+    chunks: list[str] = []
+    paragraphs = re.split(r"\n{2,}", t)
+    buf = ""
+    for para in paragraphs:
+        para = para.strip()
+        if not para:
+            continue
+        if len(para) > max_len:
+            if buf:
+                chunks.append(buf.strip())
+                buf = ""
+            # Couper aux phrases
+            parts = re.split(r"(?<=[.!?…])\s+", para)
+            cur = ""
+            for part in parts:
+                if len(cur) + len(part) + 1 <= max_len:
+                    cur = f"{cur} {part}".strip()
+                else:
+                    if cur:
+                        chunks.append(cur)
+                    cur = part[:max_len]
+            if cur:
+                chunks.append(cur)
+            continue
+        if len(buf) + len(para) + 2 <= max_len:
+            buf = f"{buf}\n\n{para}".strip() if buf else para
+        else:
+            if buf:
+                chunks.append(buf)
+            buf = para
+    if buf:
+        chunks.append(buf)
+    return chunks
+
+
+def _translate_chunk_engines(chunk: str, *, prefer_en: bool) -> str:
+    """Essaie plusieurs moteurs (Google → MyMemory) pour un bloc de texte."""
+    try:
+        from deep_translator import GoogleTranslator, MyMemoryTranslator
+    except ImportError:
+        logger.warning("deep-translator indisponible — pas de traduction résumé")
+        return ""
+
+    engines = []
+    if prefer_en:
+        engines.append(("google", lambda: GoogleTranslator(source="en", target="fr")))
+        engines.append(
+            ("mymemory", lambda: MyMemoryTranslator(source="en-GB", target="fr-FR"))
+        )
+    else:
+        engines.append(("google", lambda: GoogleTranslator(source="auto", target="fr")))
+        engines.append(
+            ("mymemory", lambda: MyMemoryTranslator(source="english", target="french"))
+        )
+
+    import time as _time
+
+    for name, factory in engines:
+        for attempt in range(2):
+            try:
+                translator = factory()
+                out = translator.translate(chunk)
+                if out and str(out).strip():
+                    return str(out).strip()
+            except Exception as exc:
+                logger.debug("translate %s attempt %s fail: %s", name, attempt, exc)
+                _time.sleep(0.35 * (attempt + 1))
+    return ""
+
+
+def translate_synopsis_to_french(text: str) -> str:
+    """
+    Traduit un résumé (souvent EN) vers un français naturel.
+    Google Translate puis MyMemory (deep-translator, déjà en dépendance).
+    """
+    raw = _sanitize_synopsis(text)
+    if not is_usable_synopsis(raw):
+        return ""
+    if looks_french(raw) and not looks_english(raw):
+        return raw
+
+    prefer_en = looks_english(raw)
+    parts: list[str] = []
+    for chunk in _split_for_translation(raw, max_len=450):
+        # MyMemory est plus fiable en petits blocs (~500)
+        translated = _translate_chunk_engines(chunk, prefer_en=prefer_en)
+        if not translated:
+            return ""
+        parts.append(translated)
+
+    if not parts:
+        return ""
+    out = _sanitize_synopsis("\n\n".join(parts))
+    if not is_usable_synopsis(out):
+        return ""
+    if looks_english(out) and not looks_french(out):
+        return ""
+    return out
+
+
+def ensure_french_synopsis(text: str, *, source: str = "") -> tuple[str, str]:
+    """
+    Garantit un résumé FR : garde le texte s'il est FR, sinon traduit.
+    Retourne (texte, source).
+    """
+    cleaned = _sanitize_synopsis(text)
+    if not is_usable_synopsis(cleaned):
+        return "", source or "none"
+    if looks_french(cleaned) and not looks_english(cleaned):
+        return cleaned, source or "french"
+    if looks_english(cleaned) or not looks_french(cleaned):
+        translated = translate_synopsis_to_french(cleaned)
+        if translated:
+            tag = f"{source}+translate_fr" if source else "translate_fr"
+            return translated, tag
+    return cleaned, source or "unknown"
+
+
 def _title_match_score(query: str, candidate: str) -> int:
     """
     Score de proximité titre (0–100).
@@ -1323,6 +1446,9 @@ def fetch_book_synopsis(
 
     if is_usable_synopsis(description):
         description = _sanitize_synopsis(description)
+        # Pas de FR natif → traduction soignée EN→FR
+        if looks_english(description) or not looks_french(description):
+            description, source = ensure_french_synopsis(description, source=source or "fetch")
     else:
         description = ""
         if source not in (

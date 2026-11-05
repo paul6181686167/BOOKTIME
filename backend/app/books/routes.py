@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, Body
 from datetime import datetime
 from typing import Optional
 import uuid
@@ -491,6 +491,26 @@ async def resolve_cover_by_title(
     }
 
 
+@router.post("/translate-synopsis")
+async def translate_synopsis_endpoint(
+    payload: dict = Body(default={}),
+    current_user: dict = Depends(get_current_user),
+):
+    """Traduit un résumé (EN) vers le français si besoin."""
+    from ..utils.book_synopsis import ensure_french_synopsis, is_usable_synopsis
+
+    text = (payload.get("text") or payload.get("description") or "").strip()
+    if not is_usable_synopsis(text):
+        raise HTTPException(status_code=400, detail="Résumé trop court ou invalide")
+    translated, source = ensure_french_synopsis(text, source="client")
+    return {
+        "description": translated or "",
+        "source": source,
+        "found": bool(translated),
+        "translated": bool(translated and translated != text),
+    }
+
+
 @router.get("/resolve-synopsis")
 async def resolve_book_synopsis(
     title: str = Query(..., min_length=1),
@@ -507,6 +527,7 @@ async def resolve_book_synopsis(
     Résout résumé (+ pages optionnelles) sans id livre (séries rétrogradées).
     """
     from ..utils.book_synopsis import (
+        ensure_french_synopsis,
         fetch_book_synopsis,
         is_usable_synopsis,
         looks_english,
@@ -568,12 +589,16 @@ async def resolve_book_synopsis(
     fetched_desc = (result.get("description") or "").strip()
     if not is_usable_synopsis(fetched_desc):
         fetched_desc = ""
-    description, _src = prefer_french_synopsis(
+    description, src = prefer_french_synopsis(
         (cached_desc, "catalog") if cached_desc else ("", ""),
         (fetched_desc, result.get("source") or "fetch") if fetched_desc else ("", ""),
     )
     if not description:
-        description = fetched_desc or ("" if cached_is_en else cached_desc) or ""
+        description = fetched_desc or cached_desc or ""
+        src = result.get("source") or ("catalog" if cached_desc else "none")
+    # Si encore anglais → traduction FR
+    if description and looks_english(description) and not looks_french(description):
+        description, src = ensure_french_synopsis(description, source=src or "fetch")
     pages = result.get("pages") if include_pages else cached_pages
     try:
         pages = int(pages) if pages is not None else None
@@ -607,7 +632,7 @@ async def resolve_book_synopsis(
     return {
         "description": description,
         "pages": pages,
-        "source": result.get("source") or ("catalog" if description == cached_desc else "none"),
+        "source": src or result.get("source") or ("catalog" if description == cached_desc else "none"),
         "ol_key": result.get("ol_key") or ol_key or None,
         "found": bool(description or pages),
     }
@@ -730,6 +755,7 @@ async def get_book_synopsis(
     Persiste la description sur le livre si elle était vide.
     """
     from ..utils.book_synopsis import (
+        ensure_french_synopsis,
         fetch_book_synopsis,
         is_usable_synopsis,
         looks_english,
@@ -745,7 +771,7 @@ async def get_book_synopsis(
     existing_desc = (book.get("description") or "").strip()
     if not is_usable_synopsis(existing_desc):
         existing_desc = ""
-    # Résumé stocké en anglais → on retente une source FR
+    # Résumé stocké en anglais → on retente une source FR / traduction
     existing_is_en = bool(existing_desc and looks_english(existing_desc) and not looks_french(existing_desc))
     existing_pages = book.get("total_pages")
     has_pages = isinstance(existing_pages, (int, float)) and int(existing_pages) > 0
@@ -770,12 +796,18 @@ async def get_book_synopsis(
     if not is_usable_synopsis(fetched_desc):
         fetched_desc = ""
 
+    source = result.get("source") or "none"
     if existing_is_en and fetched_desc and looks_french(fetched_desc):
         description = fetched_desc
     elif existing_desc and not existing_is_en:
         description = existing_desc
+        source = "stored"
     else:
         description = fetched_desc or existing_desc
+
+    # Dernier recours : traduire un résumé encore anglais
+    if description and looks_english(description) and not looks_french(description):
+        description, source = ensure_french_synopsis(description, source=source)
 
     pages = int(existing_pages) if has_pages else result.get("pages")
     if pages is not None:
@@ -789,7 +821,12 @@ async def get_book_synopsis(
     persisted = False
     patch = {}
     if persist:
-        if description and (not existing_desc or (existing_is_en and looks_french(description))):
+        should_persist_desc = bool(description) and (
+            not existing_desc
+            or (existing_is_en and looks_french(description))
+            or (existing_desc != description and looks_french(description))
+        )
+        if should_persist_desc:
             patch["description"] = description
         if pages and not has_pages:
             patch["total_pages"] = pages
@@ -806,7 +843,7 @@ async def get_book_synopsis(
     return {
         "description": description,
         "pages": pages,
-        "source": result.get("source") or ("stored" if existing_desc and not existing_is_en else "none"),
+        "source": source or ("stored" if existing_desc and not existing_is_en else "none"),
         "persisted": persisted,
         "book_id": book_id,
         "ol_key": result.get("ol_key") or book.get("ol_key"),

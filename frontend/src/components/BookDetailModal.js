@@ -203,10 +203,33 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               description: data?.description,
               pages: data?.pages,
             });
-            const syn = data?.description || '';
+            let syn = data?.description || '';
             gotDesc =
               !needsDesc ||
               (isUsableSynopsis(syn) && !looksEnglish(syn));
+            // Backend ancien / résumé encore EN → traduction dédiée
+            if (!gotDesc && isUsableSynopsis(syn) && looksEnglish(syn)) {
+              try {
+                const tr = await fetchWithTimeout(
+                  `${API_BASE_URL}/api/books/translate-synopsis`,
+                  {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: syn }),
+                  }
+                );
+                if (tr.ok) {
+                  const td = await tr.json();
+                  if (isUsableSynopsis(td?.description) && !looksEnglish(td.description)) {
+                    syn = sanitizeSynopsis(td.description);
+                    await applyMeta({ description: syn });
+                    gotDesc = true;
+                  }
+                }
+              } catch (_) {
+                /* ignore */
+              }
+            }
             gotPages = !needsPages || !!data?.pages;
             if (gotDesc) markDescDone();
           }
@@ -259,7 +282,35 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
           const candidates = results
             .filter((res) => res.status === 'fulfilled' && res.value)
             .map((res) => res.value);
-          const best = preferFrenchSynopsis(...candidates, { rejectEnglish: true });
+          let best = preferFrenchSynopsis(...candidates, { rejectEnglish: true });
+          // Aucun FR natif → traduire le meilleur résumé anglais
+          if (!best) {
+            const enSource =
+              preferFrenchSynopsis(...candidates) ||
+              candidates.find((c) => looksEnglish(c)) ||
+              candidates[0] ||
+              (looksEnglish(storedDesc) ? storedDesc : '');
+            if (enSource) {
+              try {
+                const tr = await fetchWithTimeout(
+                  `${API_BASE_URL}/api/books/translate-synopsis`,
+                  {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: enSource }),
+                  }
+                );
+                if (tr.ok) {
+                  const data = await tr.json();
+                  if (isUsableSynopsis(data?.description) && !looksEnglish(data.description)) {
+                    best = sanitizeSynopsis(data.description);
+                  }
+                }
+              } catch (_) {
+                /* ignore */
+              }
+            }
+          }
           if (best) {
             await applyMeta({ description: best });
             gotDesc = true;
