@@ -230,11 +230,18 @@ const BookGrid = ({
   // produisait sinon des milliers de nœuds DOM dès l'affichage.
   const [visibleCount, setVisibleCount] = React.useState(INITIAL_VISIBLE);
   const sentinelRef = React.useRef(null);
+  const loadLockRef = React.useRef(false);
 
-  // Nouvelle liste (onglet, tri, recherche) : on repart du premier lot
+  // Clé stable : reset seulement si les IDs changent (pas à chaque cover_url)
+  const listIdentity = React.useMemo(
+    () => displayedBooks.map((b) => b?.id).join('|'),
+    [displayedBooks]
+  );
+
   React.useEffect(() => {
     setVisibleCount(INITIAL_VISIBLE);
-  }, [displayedBooks]);
+    loadLockRef.current = false;
+  }, [listIdentity]);
 
   const hasMore = displayedBooks.length > visibleCount;
 
@@ -242,20 +249,21 @@ const BookGrid = ({
     if (!hasMore) return undefined;
     const node = sentinelRef.current;
     if (!node || typeof IntersectionObserver === 'undefined') {
-      // Sans IntersectionObserver, on renonce au découpage plutôt qu'à l'affichage
       setVisibleCount(displayedBooks.length);
       return undefined;
     }
-    // L'observateur est recréé à chaque palier : une sentinelle restée visible
-    // ne déclencherait pas de nouvelle notification.
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          setVisibleCount((count) => count + VISIBLE_STEP);
-        }
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        if (loadLockRef.current) return;
+        loadLockRef.current = true;
+        setVisibleCount((count) => count + VISIBLE_STEP);
+        // Laisse le DOM se stabiliser avant un nouveau palier (évite le tressautement)
+        window.setTimeout(() => {
+          loadLockRef.current = false;
+        }, 180);
       },
-      // Marge d'anticipation : le lot suivant arrive avant d'atteindre le bas
-      { rootMargin: '600px 0px' }
+      { rootMargin: '240px 0px' }
     );
     observer.observe(node);
     return () => observer.disconnect();

@@ -633,33 +633,47 @@ function MainApp() {
   const stableAuthorClick = useStableCallback(handleAuthorClick);
 
   // Couverture trouvée pour une vignette → mémoriser dans l'état local
+  // (no-op si l'URL est déjà la même : évite de resetter BookGrid en bas de page)
   const handleCoverFound = useCallback((item, coverUrl) => {
     if (!item || !coverUrl) return;
     if (item.isSeriesCard || item.isOwnedSeries) {
       const sid = item.librarySeriesId || item.seriesLibraryId || item.id;
-      unifiedContent.setUserSeriesLibrary((prev) =>
-        (prev || []).map((s) =>
+      unifiedContent.setUserSeriesLibrary((prev) => {
+        const list = prev || [];
+        const cur = list.find((s) => s.id === sid);
+        if (
+          cur &&
+          (cur.cover_url === coverUrl || cur.cover_image_url === coverUrl)
+        ) {
+          return list;
+        }
+        return list.map((s) =>
           s.id === sid
             ? { ...s, cover_image_url: coverUrl, cover_url: coverUrl }
             : s
-        )
-      );
-      // Propager aussi sur le 1er tome si carte regroupée
+        );
+      });
       const firstBook = (item.books || []).find((b) => b?.id);
       if (firstBook?.id) {
-        unifiedContent.setBooks((prev) =>
-          (prev || []).map((b) =>
-            b.id === firstBook.id && !b.cover_url ? { ...b, cover_url: coverUrl } : b
-          )
-        );
+        unifiedContent.setBooks((prev) => {
+          const list = prev || [];
+          const cur = list.find((b) => b.id === firstBook.id);
+          if (cur?.cover_url) return list;
+          return list.map((b) =>
+            b.id === firstBook.id ? { ...b, cover_url: coverUrl } : b
+          );
+        });
       }
       return;
     }
-    unifiedContent.setBooks((prev) =>
-      (prev || []).map((b) =>
+    unifiedContent.setBooks((prev) => {
+      const list = prev || [];
+      const cur = list.find((b) => b.id === item.id);
+      if (cur?.cover_url === coverUrl) return list;
+      return list.map((b) =>
         b.id === item.id ? { ...b, cover_url: coverUrl } : b
-      )
-    );
+      );
+    });
   }, [unifiedContent]);
   const stableCoverFound = useStableCallback(handleCoverFound);
 

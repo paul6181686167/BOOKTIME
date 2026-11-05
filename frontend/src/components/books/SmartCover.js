@@ -208,9 +208,13 @@ const SmartCover = ({ item, alt, primarySrc, onCoverFound, priority = false }) =
           failCurrent();
           return;
         }
-        // Notifier aussi les covers déjà présentes (pas seulement la recherche)
-        if (typeof onCoverFound === 'function' && (fetched || src)) {
-          onCoverFound(item, fetched || src);
+        // Persister une cover manquante / différente — pas de rappel si déjà connue
+        if (typeof onCoverFound === 'function') {
+          const resolved = fetched || src;
+          const existing = item?.cover_url || item?.cover_image_url;
+          if (resolved && existing !== resolved) {
+            onCoverFound(item, resolved);
+          }
         }
       }}
       onError={failCurrent}
