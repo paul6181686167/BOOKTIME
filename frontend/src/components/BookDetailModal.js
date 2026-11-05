@@ -96,6 +96,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
         ? { description: sanitizeSynopsis(book.description) }
         : null
     );
+    setOlLoading(false);
     setCoverProxy(false);
     pagesFetchDoneRef.current = null;
     metaReqIdRef.current += 1;
@@ -118,9 +119,34 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     const token = localStorage.getItem('token');
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     const fetchKey = `${book.id}|${book.title}|p=${needsPages}|d=${needsDesc}`;
-    if (pagesFetchDoneRef.current === fetchKey) return;
+    if (pagesFetchDoneRef.current === fetchKey) {
+      setOlLoading(false);
+      return;
+    }
 
     const isLive = () => metaReqIdRef.current === reqId;
+    const abort = new AbortController();
+    const fetchTimeoutMs = 12000;
+
+    const fetchWithTimeout = async (url, opts = {}) => {
+      if (abort.signal.aborted) {
+        throw new DOMException('Aborted', 'AbortError');
+      }
+      const ctrl = new AbortController();
+      const onParentAbort = () => ctrl.abort();
+      abort.signal.addEventListener('abort', onParentAbort);
+      const timer = setTimeout(() => ctrl.abort(), fetchTimeoutMs);
+      try {
+        return await fetch(url, {
+          ...opts,
+          signal: ctrl.signal,
+          headers: { ...headers, ...(opts.headers || {}) },
+        });
+      } finally {
+        clearTimeout(timer);
+        abort.signal.removeEventListener('abort', onParentAbort);
+      }
+    };
 
     const applyMeta = async ({ description, pages } = {}) => {
       const patch = {};
@@ -161,15 +187,15 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
       if (needsDesc) setOlLoading(true);
       let gotDesc = !needsDesc;
       let gotPages = !needsPages;
+      // Toujours couper le spinner à la fin de la phase résumé (même sans FR trouvé)
       const markDescDone = () => {
-        if (isLive() && gotDesc) setOlLoading(false);
+        if (isLive()) setOlLoading(false);
       };
       try {
         // 1) Livre réel en bibliothèque
         if (book.id && !book.isFromOpenLibrary && !book.isDemotedSeries) {
-          const r = await fetch(
-            `${API_BASE_URL}/api/books/${book.id}/synopsis?persist=true`,
-            { headers }
+          const r = await fetchWithTimeout(
+            `${API_BASE_URL}/api/books/${book.id}/synopsis?persist=true`
           );
           if (r.ok && isLive()) {
             const data = await r.json();
@@ -182,7 +208,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               !needsDesc ||
               (isUsableSynopsis(syn) && !looksEnglish(syn));
             gotPages = !needsPages || !!data?.pages;
-            markDescDone();
+            if (gotDesc) markDescDone();
           }
         }
 
@@ -204,9 +230,9 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             });
             if (book.isbn) params.set('isbn', book.isbn);
             if (olKey) params.set('ol_key', olKey);
-            const r = await fetch(
+            const r = await fetchWithTimeout(
               `${API_BASE_URL}/api/books/resolve-synopsis?${params}`,
-              { headers, cache: 'no-store' }
+              { cache: 'no-store' }
             );
             if (!r.ok) return null;
             const data = await r.json();
@@ -216,10 +242,10 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
           const fetchOlDirect = async () => {
             if (!isOlWork) return null;
             const stripped = olKey.startsWith('/') ? olKey.slice(1) : olKey;
-            const r = await fetch(`${API_BASE_URL}/api/openlibrary/book/${stripped}`, {
-              headers,
-              cache: 'no-store',
-            });
+            const r = await fetchWithTimeout(
+              `${API_BASE_URL}/api/openlibrary/book/${stripped}`,
+              { cache: 'no-store' }
+            );
             if (!r.ok) return null;
             const data = await r.json();
             const desc = data?.description;
@@ -238,8 +264,9 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             await applyMeta({ description: best });
             gotDesc = true;
           }
-          markDescDone();
         }
+        // Fin de recherche résumé (FR trouvé ou non)
+        markDescDone();
 
         // 3) Pages poche FR en arrière-plan (ne bloque plus l'UI du résumé)
         if (!gotPages && isLive() && (book.title || '').trim()) {
@@ -249,9 +276,9 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
           });
           if (book.isbn) params.set('isbn', book.isbn);
           if (book.ol_key) params.set('ol_key', book.ol_key);
-          const r = await fetch(
+          const r = await fetchWithTimeout(
             `${API_BASE_URL}/api/books/resolve-pages?${params}`,
-            { headers, cache: 'no-store' }
+            { cache: 'no-store' }
           );
           if (r.ok && isLive()) {
             const data = await r.json();
@@ -263,14 +290,14 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
         }
 
         if (isLive()) {
-          if ((!needsDesc || gotDesc) && (!needsPages || gotPages)) {
-            pagesFetchDoneRef.current = fetchKey;
-          } else {
-            pagesFetchDoneRef.current = null;
-          }
+          // Marquer terminé même sans FR : évite de re-spinnner à chaque ouverture
+          pagesFetchDoneRef.current = fetchKey;
         }
-      } catch (_) {
-        if (isLive()) pagesFetchDoneRef.current = null;
+      } catch (err) {
+        // Ne pas verrouiller après un abort (fermeture de fiche)
+        if (isLive() && err?.name !== 'AbortError') {
+          pagesFetchDoneRef.current = fetchKey;
+        }
       } finally {
         if (isLive()) setOlLoading(false);
       }
@@ -278,6 +305,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
 
     loadMeta();
     return () => {
+      abort.abort();
       // Invalide seulement si un nouveau cycle n'a pas déjà pris le relais
       if (metaReqIdRef.current === reqId) {
         metaReqIdRef.current += 1;
@@ -626,7 +654,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                   Résumé
                 </h3>
                 <p className="text-gray-400 dark:text-gray-500 text-xs italic mb-1">
-                  Aucun résumé disponible pour ce livre.
+                  Aucun résumé en français disponible pour ce livre.
                 </p>
                 <button
                   type="button"
