@@ -29,7 +29,6 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ProfileModal = lazy(() => import('./components/common/ProfileModal'));
 const ExportImportModal = lazy(() => import('./components/export-import/ExportImportModal'));
 const UpcomingPanel = lazy(() => import('./components/UpcomingPanel'));
-const PrimaryTabsLayout = lazy(() => import('./components/navigation/PrimaryTabsLayout'));
 const SocialModal = lazy(() => import('./components/social/SocialModal'));
 const AdvancedRecommendationsModal = lazy(() =>
   import('./components/advanced-recommendations/AdvancedRecommendationsModal')
@@ -78,6 +77,7 @@ import BookGrid from './components/books/BookGrid';
 import MobileSearchOverlay from './components/MobileSearchOverlay';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
 import OfflineBanner from './components/OfflineBanner';
+import PrimaryTabsLayout from './components/navigation/PrimaryTabsLayout';
 
 import './App.css';
 import './styles/optimized.css';
@@ -201,20 +201,40 @@ const useIdlePreload = () => {
   }, []);
 };
 
-// Main App Content
+// Main App Content — onglets primaires = carrousel de diapositives (mobile)
 function AppContent() {
+  const primarySlides = useMemo(
+    () => ({
+      home: <MainApp />,
+      upcoming: (
+        <Suspense fallback={<RouteFallback />}>
+          <UpcomingPage />
+        </Suspense>
+      ),
+      recommendations: (
+        <Suspense fallback={<RouteFallback />}>
+          <RecommendationPage />
+        </Suspense>
+      ),
+      profile: (
+        <Suspense fallback={<RouteFallback />}>
+          <ProfilePage />
+        </Suspense>
+      ),
+    }),
+    []
+  );
+
   return (
     <Suspense fallback={<RouteFallback />}>
       <Routes>
-        <Route element={<PrimaryTabsLayout />}>
-          <Route path="/" element={<MainApp />} />
-          <Route path="/upcoming" element={<UpcomingPage />} />
-          <Route path="/recommendations" element={<RecommendationPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-        </Route>
         <Route path="/series/:seriesName" element={<SeriesDetailPage />} />
         <Route path="/export-import" element={<ExportImportPage />} />
         <Route path="/catalogue/*" element={<OpenLibraryBookPage />} />
+        <Route
+          path="/*"
+          element={<PrimaryTabsLayout slides={primarySlides} />}
+        />
       </Routes>
     </Suspense>
   );
