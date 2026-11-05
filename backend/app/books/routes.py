@@ -506,7 +506,13 @@ async def resolve_book_synopsis(
     """
     Résout résumé (+ pages optionnelles) sans id livre (séries rétrogradées).
     """
-    from ..utils.book_synopsis import fetch_book_synopsis, is_usable_synopsis
+    from ..utils.book_synopsis import (
+        fetch_book_synopsis,
+        is_usable_synopsis,
+        looks_english,
+        looks_french,
+        prefer_french_synopsis,
+    )
     from ..database.connection import db
 
     # Cache catalogue (mémoire tampon Booktime) — réponse quasi immédiate
@@ -537,7 +543,13 @@ async def resolve_book_synopsis(
     except Exception:
         pass
 
-    if cached_desc and (not include_pages or cached_pages):
+    cached_is_fr = bool(cached_desc and looks_french(cached_desc))
+    cached_is_en = bool(
+        cached_desc and looks_english(cached_desc) and not looks_french(cached_desc)
+    )
+
+    # Cache FR utilisable → réponse immédiate. Cache EN → on cherche mieux.
+    if cached_is_fr and (not include_pages or cached_pages):
         return {
             "description": cached_desc,
             "pages": cached_pages,
@@ -553,9 +565,15 @@ async def resolve_book_synopsis(
         ol_key=ol_key,
         want_pages=include_pages,
     )
-    description = (result.get("description") or "").strip()
-    if not is_usable_synopsis(description):
-        description = cached_desc or ""
+    fetched_desc = (result.get("description") or "").strip()
+    if not is_usable_synopsis(fetched_desc):
+        fetched_desc = ""
+    description, _src = prefer_french_synopsis(
+        (cached_desc, "catalog") if cached_desc else ("", ""),
+        (fetched_desc, result.get("source") or "fetch") if fetched_desc else ("", ""),
+    )
+    if not description:
+        description = fetched_desc or ("" if cached_is_en else cached_desc) or ""
     pages = result.get("pages") if include_pages else cached_pages
     try:
         pages = int(pages) if pages is not None else None

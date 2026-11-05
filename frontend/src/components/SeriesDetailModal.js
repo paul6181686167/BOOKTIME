@@ -27,10 +27,7 @@ import { DEFAULT_SERIES_MODAL_GOOGLE_BOOKS } from '../utils/searchSourcePipeline
 import { isVolumeUnreleased, countReleasedVolumes } from '../utils/volumeRelease';
 import AddToCollectionMenu from './common/AddToCollectionMenu';
 import { coverImgSrc } from '../utils/helpers';
-import {
-  displaySynopsis as formatSynopsis,
-  preferFrenchSynopsis,
-} from '../utils/synopsisQuality';
+import { preferFrenchSynopsis } from '../utils/synopsisQuality';
 
 function parseVolumeFromWork(vol) {
   if (vol == null || vol === '') return null;
@@ -684,13 +681,15 @@ const SeriesDetailModal = ({
   }, [series, enrichedSeries, books]);
 
   const seriesSynopsis = useMemo(() => {
-    const raw = preferFrenchSynopsis(
-      enrichedSeries?.description_fr,
-      enrichedSeries?.description,
-      series?.description_fr,
-      series?.description
+    return (
+      preferFrenchSynopsis(
+        enrichedSeries?.description_fr,
+        enrichedSeries?.description,
+        series?.description_fr,
+        series?.description,
+        { rejectEnglish: true }
+      ) || ''
     );
-    return formatSynopsis(raw) || '';
   }, [enrichedSeries, series]);
 
   // Options de statut pour les boutons rapides

@@ -7,7 +7,6 @@ import LanguageSelector from './LanguageSelector';
 import { API_BASE_URL } from '../config/environment';
 import { displayBookTitleFrFirst } from '../utils/openLibraryBookDisplay';
 import {
-  displaySynopsis as formatSynopsis,
   isUsableSynopsis,
   looksEnglish,
   preferFrenchSynopsis,
@@ -69,11 +68,13 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   onUpdateRef.current = onUpdate;
 
   const totalPages = resolvedTotalPages || book.total_pages || 0;
+  // Afficher uniquement un résumé FR (jamais l'anglais en UI)
   const displaySynopsis =
-    preferFrenchSynopsis(olDetails?.description, book.description) ||
-    formatSynopsis(olDetails?.description) ||
-    formatSynopsis(book.description) ||
-    '';
+    preferFrenchSynopsis(
+      olDetails?.description,
+      book.description,
+      { rejectEnglish: true }
+    ) || '';
 
   useEffect(() => {
     setEditData({
@@ -91,7 +92,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     setResolvedTotalPages(book.total_pages > 0 ? book.total_pages : null);
     // Nouveau livre → reset résumé enrichi (sauf si déjà une vraie 4ᵉ en base)
     setOlDetails(
-      isUsableSynopsis(book.description)
+      isUsableSynopsis(book.description) && !looksEnglish(book.description)
         ? { description: sanitizeSynopsis(book.description) }
         : null
     );
@@ -124,7 +125,11 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     const applyMeta = async ({ description, pages } = {}) => {
       const patch = {};
       if (needsDesc && isUsableSynopsis(description)) {
-        const best = preferFrenchSynopsis(storedDesc, description);
+        const best = preferFrenchSynopsis(
+          storedDesc,
+          description,
+          { rejectEnglish: true }
+        );
         if (best) {
           setOlDetails({ description: best });
           if (best !== sanitizeSynopsis(storedDesc)) {
@@ -172,13 +177,16 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               description: data?.description,
               pages: data?.pages,
             });
-            gotDesc = !needsDesc || isUsableSynopsis(data?.description);
+            const syn = data?.description || '';
+            gotDesc =
+              !needsDesc ||
+              (isUsableSynopsis(syn) && !looksEnglish(syn));
             gotPages = !needsPages || !!data?.pages;
             markDescDone();
           }
         }
 
-        // 2) Résumé : OL direct + resolve-synopsis en parallèle (premier résultat gagne)
+        // 2) resolve-synopsis (FR) prioritaire ; OL direct seulement s'il est FR
         if (!gotDesc && isLive() && (book.title || book.ol_key)) {
           const olKey = book.ol_key || '';
           const isOlWork =
@@ -214,15 +222,18 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             });
             if (!r.ok) return null;
             const data = await r.json();
-            return isUsableSynopsis(data?.description) ? data.description : null;
+            const desc = data?.description;
+            // Ignorer les 4ᵉ OL clairement anglaises
+            if (!isUsableSynopsis(desc) || looksEnglish(desc)) return null;
+            return desc;
           };
 
-          const results = await Promise.allSettled([fetchOlDirect(), fetchResolve()]);
+          const results = await Promise.allSettled([fetchResolve(), fetchOlDirect()]);
           if (!isLive()) return;
           const candidates = results
             .filter((res) => res.status === 'fulfilled' && res.value)
             .map((res) => res.value);
-          const best = preferFrenchSynopsis(...candidates);
+          const best = preferFrenchSynopsis(...candidates, { rejectEnglish: true });
           if (best) {
             await applyMeta({ description: best });
             gotDesc = true;

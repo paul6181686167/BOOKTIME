@@ -50,4 +50,10 @@ describe('preferFrenchSynopsis', () => {
     expect(looksEnglish(en)).toBe(true);
     expect(preferFrenchSynopsis(en, fr)).toBe(sanitizeSynopsis(fr));
   });
+
+  test('rejectEnglish hides English-only blurbs', () => {
+    const en =
+      'The War of the Worlds is a science fiction novel by H. G. Wells that was first published in 1898.';
+    expect(preferFrenchSynopsis(en, { rejectEnglish: true })).toBe('');
+  });
 });

@@ -265,6 +265,13 @@ def looks_french(text: str | None) -> bool:
     return False
 
 
+_EN_MARKERS = {
+    "novel", "novella", "story", "stories", "book", "books", "published",
+    "author", "series", "character", "characters", "fiction", "science",
+    "fantasy", "thriller", "edition", "volume", "volumes", "chapter",
+}
+
+
 def looks_english(text: str | None) -> bool:
     """Heuristique inverse : texte clairement anglais (à éviter pour l'UI FR)."""
     t = (text or "").strip()
@@ -277,8 +284,13 @@ def looks_english(text: str | None) -> bool:
         return False
     en_hits = sum(1 for w in tokens if w in _EN_STOPWORDS)
     fr_hits = sum(1 for w in tokens if w in _FR_STOPWORDS)
+    en_mark = sum(1 for w in tokens if w in _EN_MARKERS)
     accent_n = len(re.findall(r"[àâäéèêëïîôùûüçœæ]", t, flags=re.I))
-    return en_hits >= 3 and en_hits > fr_hits and accent_n == 0
+    if accent_n > 0:
+        return False
+    if en_mark >= 2 and en_hits >= fr_hits:
+        return True
+    return en_hits >= 3 and en_hits > fr_hits
 
 
 def prefer_french_synopsis(*candidates: tuple[str, str]) -> tuple[str, str]:
@@ -1035,12 +1047,14 @@ def _fast_book_description(
         and not found_key.lower().startswith("gbooks_")
     )
 
-    # 0) Chemin rapide : work OL connue → 1 GET puis retour immédiat
-    # (priorité latence : mieux un résumé tout de suite qu'un FR après 10–20s)
+    # 0) Work OL connue — retour immédiat UNIQUEMENT si le texte est FR.
+    # Sinon on continue (GB/Wiki FR) pour éviter d'afficher un résumé anglais.
     if has_ol_work:
         desc = _ol_work_description_only(found_key)
         if is_usable_synopsis(desc):
-            return desc, "openlibrary", found_key
+            if looks_french(desc):
+                return desc, "openlibrary", found_key
+            candidates.append((desc, "openlibrary"))
 
     # 1) Google Books en français (meilleure 4ᵉ) — limité aux 2 premiers titres
     for t_try in title_tries[:2]:
