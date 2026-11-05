@@ -15,9 +15,8 @@ async function applyNativeChrome(theme) {
 
   try {
     const { StatusBar, Style } = await import('@capacitor/status-bar');
-    // Laisse le fond CSS se voir ; évite le vert accent forcé par capacitor.config
-    await StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
-    await StatusBar.setBackgroundColor({ color: chrome.statusBar }).catch(() => {});
+    await StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
+    await StatusBar.setBackgroundColor({ color: chrome.page }).catch(() => {});
     await StatusBar.setStyle({
       style: chrome.statusBarStyle === 'LIGHT' ? Style.Light : Style.Dark,
     }).catch(() => {});
@@ -30,7 +29,6 @@ async function applyNativeChrome(theme) {
       await SystemBars.setNavigationBarColor({
         color: chrome.page,
         darkButtons: chrome.darkNavigationButtons,
-        edgeToEdge: true,
       });
     } catch (_) {
       /* plugin natif pas encore sync */
@@ -39,8 +37,7 @@ async function applyNativeChrome(theme) {
 }
 
 /**
- * Barre système Android (retour/accueil) = fond de l’app.
- * Barre d’onglets Booktime = pastille oblongue séparée.
+ * Barre système Android opaque = couleur du fond du thème.
  */
 const NativeAppShell = () => {
   const { theme } = useTheme();
@@ -48,8 +45,8 @@ const NativeAppShell = () => {
   useEffect(() => {
     if (!isNativeApp()) return undefined;
     applyNativeChrome(theme);
-    const t1 = window.setTimeout(() => applyNativeChrome(theme), 300);
-    const t2 = window.setTimeout(() => applyNativeChrome(theme), 1200);
+    const t1 = window.setTimeout(() => applyNativeChrome(theme), 200);
+    const t2 = window.setTimeout(() => applyNativeChrome(theme), 800);
     return () => {
       window.clearTimeout(t1);
       window.clearTimeout(t2);

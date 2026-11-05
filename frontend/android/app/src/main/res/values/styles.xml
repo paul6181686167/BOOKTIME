@@ -13,10 +13,10 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
-        <item name="android:windowBackground">@color/booktime_mist</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <!-- Transparent : le fond de l’app (CSS) se voit derrière retour/accueil -->
-        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/booktime_void</item>
+        <item name="android:statusBarColor">@color/booktime_void</item>
+        <!-- Opaque : sync runtime via SystemBarsPlugin selon le thème -->
+        <item name="android:navigationBarColor">@color/booktime_void</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
     </style>
 

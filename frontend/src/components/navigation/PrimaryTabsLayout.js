@@ -12,11 +12,10 @@ import {
 
 const SLIDE_EASE = 'cubic-bezier(0.32, 0.72, 0, 1)';
 const SLIDE_MS = 380;
-const SWIPE_MIN_DX = 56;
+const SWIPE_MIN_DX = 72;
 
 /**
- * Coquille des 4 destinations : sur mobile, vrai carrousel horizontal
- * (Biblio → À venir → Pour toi → Profil), comme des diapositives.
+ * Coquille des 4 destinations : carrousel horizontal sur mobile.
  */
 export default function PrimaryTabsLayout({ slides }) {
   const location = useLocation();
@@ -42,31 +41,23 @@ export default function PrimaryTabsLayout({ slides }) {
 
   const order = useMemo(() => PRIMARY_TABS.map((t) => t.id), []);
 
+  // Swipe horizontal uniquement si le geste est clairement latéral (ne bloque pas le scroll)
   const onTouchStart = (e) => {
     if (!isMobile || e.touches.length !== 1) return;
     touchRef.current = {
       x: e.touches[0].clientX,
       y: e.touches[0].clientY,
-      locked: null,
     };
-  };
-
-  const onTouchMove = (e) => {
-    const start = touchRef.current;
-    if (!start || start.locked === 'v') return;
-    const dx = e.touches[0].clientX - start.x;
-    const dy = e.touches[0].clientY - start.y;
-    if (start.locked == null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
-      start.locked = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
-    }
   };
 
   const onTouchEnd = (e) => {
     const start = touchRef.current;
     touchRef.current = null;
-    if (!start || start.locked === 'v') return;
+    if (!start) return;
     const dx = e.changedTouches[0].clientX - start.x;
+    const dy = e.changedTouches[0].clientY - start.y;
     if (Math.abs(dx) < SWIPE_MIN_DX) return;
+    if (Math.abs(dx) < Math.abs(dy) * 1.4) return; // prioriser le scroll vertical
     if (dx < 0 && activeIndex < PRIMARY_TABS.length - 1) {
       navigate(PRIMARY_TABS[activeIndex + 1].path);
     } else if (dx > 0 && activeIndex > 0) {
@@ -84,7 +75,6 @@ export default function PrimaryTabsLayout({ slides }) {
     />
   );
 
-  // Desktop : une seule page active (pas de carrousel)
   if (!isMobile) {
     const id = order[activeIndex] || 'home';
     return (
@@ -100,7 +90,6 @@ export default function PrimaryTabsLayout({ slides }) {
       <div
         className="mobile-slideshow"
         onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
         <div

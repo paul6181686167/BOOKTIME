@@ -132,14 +132,16 @@ html.cinema .dark\:border-booktime-800\/50 {
 /* ─── Carrousel diapositives mobile (Biblio ↔ À venir ↔ Pour toi ↔ Profil) ─ */
 .mobile-slideshow {
   width: 100%;
-  min-height: 100dvh;
+  height: 100dvh;
+  max-height: 100dvh;
   overflow: hidden;
-  touch-action: pan-y;
+  position: relative;
 }
 
 .mobile-slideshow-track {
   display: flex;
   width: 100%;
+  height: 100%;
   will-change: transform;
   backface-visibility: hidden;
 }
@@ -147,11 +149,13 @@ html.cinema .dark\:border-booktime-800\/50 {
 .mobile-slideshow-slide {
   flex: 0 0 100%;
   width: 100%;
-  min-height: 100dvh;
+  height: 100%;
+  max-height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
+  touch-action: pan-y;
 }
 
 .cinema-progress-track {
