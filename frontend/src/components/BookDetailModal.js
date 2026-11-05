@@ -6,7 +6,14 @@ import toast from 'react-hot-toast';
 import LanguageSelector from './LanguageSelector';
 import { API_BASE_URL } from '../config/environment';
 import { displayBookTitleFrFirst } from '../utils/openLibraryBookDisplay';
-import { displaySynopsis as formatSynopsis, isUsableSynopsis, sanitizeSynopsis } from '../utils/synopsisQuality';
+import {
+  displaySynopsis as formatSynopsis,
+  isUsableSynopsis,
+  looksEnglish,
+  preferFrenchSynopsis,
+  sanitizeSynopsis,
+} from '../utils/synopsisQuality';
+import { coverImgSrc } from '../utils/helpers';
 import AddToCollectionMenu from './common/AddToCollectionMenu';
 import CommunityReviews from './common/CommunityReviews';
 import confetti from 'canvas-confetti';
@@ -54,6 +61,8 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   const [communityRefreshKey, setCommunityRefreshKey] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showCollectionMenu, setShowCollectionMenu] = useState(false);
+  const [synopsisExpanded, setSynopsisExpanded] = useState(false);
+  const [coverProxy, setCoverProxy] = useState(false);
   const pageInputRef = useRef(null);
   const pagesFetchDoneRef = useRef(null);
   const metaReqIdRef = useRef(0);
@@ -62,7 +71,10 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
 
   const totalPages = resolvedTotalPages || book.total_pages || 0;
   const displaySynopsis =
-    formatSynopsis(olDetails?.description) || formatSynopsis(book.description) || '';
+    preferFrenchSynopsis(olDetails?.description, book.description) ||
+    formatSynopsis(olDetails?.description) ||
+    formatSynopsis(book.description) ||
+    '';
 
   useEffect(() => {
     setEditData({
@@ -84,6 +96,8 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
         ? { description: sanitizeSynopsis(book.description) }
         : null
     );
+    setSynopsisExpanded(false);
+    setCoverProxy(false);
     pagesFetchDoneRef.current = null;
     metaReqIdRef.current += 1;
   }, [book]);
@@ -94,7 +108,8 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   // fiches series_library rétrogradées (ex-vignettes 0/0 tomes).
   useEffect(() => {
     const storedDesc = (book.description || '').trim();
-    const needsDesc = !isUsableSynopsis(storedDesc);
+    // Relancer la résolution si résumé anglais (préférer une version FR)
+    const needsDesc = !isUsableSynopsis(storedDesc) || looksEnglish(storedDesc);
     const needsPages = !(book.total_pages > 0);
     if (!needsDesc && !needsPages) {
       return;
@@ -111,10 +126,13 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     const applyMeta = async ({ description, pages } = {}) => {
       const patch = {};
       if (needsDesc && isUsableSynopsis(description)) {
-        const text = sanitizeSynopsis(description);
-        // Afficher tout de suite même si une persistance concurrente tourne
-        setOlDetails({ description: text });
-        patch.description = text;
+        const best = preferFrenchSynopsis(storedDesc, description);
+        if (best) {
+          setOlDetails({ description: best });
+          if (best !== sanitizeSynopsis(storedDesc)) {
+            patch.description = best;
+          }
+        }
       }
       const n = parseInt(pages, 10);
       if (needsPages && n > 0) {
@@ -203,12 +221,13 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
 
           const results = await Promise.allSettled([fetchOlDirect(), fetchResolve()]);
           if (!isLive()) return;
-          for (const res of results) {
-            if (res.status === 'fulfilled' && res.value) {
-              await applyMeta({ description: res.value });
-              gotDesc = true;
-              break;
-            }
+          const candidates = results
+            .filter((res) => res.status === 'fulfilled' && res.value)
+            .map((res) => res.value);
+          const best = preferFrenchSynopsis(...candidates);
+          if (best) {
+            await applyMeta({ description: best });
+            gotDesc = true;
           }
           markDescDone();
         }
@@ -510,74 +529,108 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
           </button>
         </div>
         <div className="px-4 md:px-0 pt-2 md:pt-0">
-        <div className="flex flex-col gap-4 mb-4 md:flex-row md:items-start md:justify-between md:gap-6">
+        <div className="flex flex-col gap-3 mb-3 md:flex-row md:items-start md:justify-between md:gap-6">
           <div className="min-w-0 flex-1">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2 break-words">{titleMain}</h2>
-            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 mb-4">
-              par{' '}
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onAuthorClick) onAuthorClick(book.author);
-                }}
-                className="text-lg text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors underline"
-              >
-                {book.author}
-              </button>
-            </p>
-            
-            {/* Catégorie */}
-            <div className="flex flex-wrap items-center gap-2 mb-4">
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-booktime-100 dark:bg-booktime-900/30 text-booktime-800 dark:text-booktime-300">
-                {book.category === 'roman' && '📚'} 
-                {book.category === 'bd' && '🎨'} 
-                {book.category === 'manga' && '🇯🇵'} 
-                {(book.category || 'roman').charAt(0).toUpperCase() + (book.category || 'roman').slice(1)}
-              </span>
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getCurrentStatus().color}`}>
-                {getCurrentStatus().label}
-              </span>
-              {titleMain ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const params = new URLSearchParams({
-                      tab: 'similaires',
-                      title: titleMain,
-                    });
-                    if (book.author) params.set('author', book.author);
-                    onClose?.();
-                    navigate(`/recommendations?${params}`);
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-900/60 transition-colors"
-                >
-                  <SparklesIcon className="h-4 w-4" />
-                  Similaires
-                </button>
-              ) : null}
+            {/* En-tête : petite vignette + titre (surtout mobile) */}
+            <div className="flex items-start gap-3 mb-3">
+              <div className="h-[4.5rem] w-12 shrink-0 overflow-hidden rounded-md shadow-md bg-gray-100 dark:bg-gray-700 md:h-24 md:w-16">
+                {book.cover_url ? (
+                  <img
+                    src={coverImgSrc(book.cover_url, { forceProxy: coverProxy })}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    referrerPolicy={coverProxy ? undefined : 'no-referrer'}
+                    onError={() => {
+                      if (!coverProxy) setCoverProxy(true);
+                    }}
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
+                    {book.category === 'bd' ? '🎨' : book.category === 'manga' ? '🇯🇵' : '📚'}
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white mb-1 break-words leading-snug">{titleMain}</h2>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-2">
+                  par{' '}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onAuthorClick) onAuthorClick(book.author);
+                    }}
+                    className="text-sm sm:text-base text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors underline"
+                  >
+                    {book.author}
+                  </button>
+                </p>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-booktime-100 dark:bg-booktime-900/30 text-booktime-800 dark:text-booktime-300">
+                    {book.category === 'roman' && '📚'}
+                    {book.category === 'bd' && '🎨'}
+                    {book.category === 'manga' && '🇯🇵'}
+                    {(book.category || 'roman').charAt(0).toUpperCase() + (book.category || 'roman').slice(1)}
+                  </span>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getCurrentStatus().color}`}>
+                    {getCurrentStatus().label}
+                  </span>
+                  {titleMain ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const params = new URLSearchParams({
+                          tab: 'similaires',
+                          title: titleMain,
+                        });
+                        if (book.author) params.set('author', book.author);
+                        onClose?.();
+                        navigate(`/recommendations?${params}`);
+                      }}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-900/60 transition-colors"
+                    >
+                      <SparklesIcon className="h-3.5 w-3.5" />
+                      Similaires
+                    </button>
+                  ) : null}
+                </div>
+              </div>
             </div>
 
-            {/* Résumé / 4ᵉ de couverture — au-dessus du statut (comme les fiches séries) */}
+            {/* Résumé / 4ᵉ de couverture — compact sur mobile */}
             {displaySynopsis ? (
-              <div className="mb-4">
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <div className="mb-3">
+                <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Résumé
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed whitespace-pre-line">
+                <p
+                  className={`text-gray-600 dark:text-gray-400 text-xs sm:text-sm leading-relaxed whitespace-pre-line ${
+                    synopsisExpanded ? '' : 'line-clamp-4'
+                  }`}
+                >
                   {displaySynopsis}
                 </p>
+                {displaySynopsis.length > 220 && (
+                  <button
+                    type="button"
+                    onClick={() => setSynopsisExpanded((v) => !v)}
+                    className="mt-1 text-xs font-medium text-green-700 dark:text-green-400 hover:underline"
+                  >
+                    {synopsisExpanded ? 'Réduire' : 'Voir plus'}
+                  </button>
+                )}
               </div>
             ) : olLoading ? (
-              <div className="mb-4 flex items-center gap-2 text-sm text-gray-400 py-2">
-                <div className="h-4 w-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+              <div className="mb-3 flex items-center gap-2 text-xs text-gray-400 py-1">
+                <div className="h-3.5 w-3.5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
                 Chargement du résumé…
               </div>
             ) : (
-              <div className="mb-4">
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <div className="mb-3">
+                <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Résumé
                 </h3>
-                <p className="text-gray-400 dark:text-gray-500 text-sm italic mb-2">
+                <p className="text-gray-400 dark:text-gray-500 text-xs italic mb-1">
                   Aucun résumé disponible pour ce livre.
                 </p>
                 <button
@@ -585,7 +638,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                   onClick={() => {
                     pagesFetchDoneRef.current = null;
                     setOlLoading(true);
-                    // Relancer l'effet en touchant une dépendance locale via re-fetch manuel
                     const token = localStorage.getItem('token');
                     const headers = token ? { Authorization: `Bearer ${token}` } : {};
                     const params = new URLSearchParams({
@@ -621,19 +673,20 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               </div>
             )}
 
-            {/* Boutons rapides de changement de statut */}
+            {/* Boutons rapides de changement de statut — une seule ligne compacte */}
             {(!book.isFromOpenLibrary || book.isOwned) && !isEditing && (
-              <div className="mb-4">
-                <div className="flex items-center mb-2">
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Statut :</h3>
+              <div className="mb-3">
+                <div className="flex items-center mb-1.5">
+                  <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300">Statut</h3>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 w-fit">
+                <div className="flex flex-nowrap items-center gap-2 overflow-x-auto">
+                  <div className="flex min-w-0 flex-1 sm:flex-initial rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600">
                     {statusOptions.map((option) => (
                       <button
                         key={option.value}
+                        type="button"
                         onClick={() => handleQuickStatusChange(option.value)}
-                        className={`btn-ripple px-4 py-2 text-sm font-medium transition-all flex items-center space-x-2 ${
+                        className={`btn-ripple flex flex-1 items-center justify-center gap-0.5 whitespace-nowrap px-2 py-1.5 text-[11px] sm:text-xs font-medium transition-all sm:px-3 sm:py-2 ${
                           bouncing === `status-${option.value}` ? 'btn-bounce' : ''
                         } ${
                           displayStatus === option.value
@@ -642,7 +695,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                         }`}
                         title={`Marquer comme ${option.label}`}
                       >
-                        <span className="text-base">{option.emoji}</span>
+                        <span className="text-xs sm:text-sm leading-none">{option.emoji}</span>
                         <span>{option.label}</span>
                       </button>
                     ))}
@@ -651,12 +704,12 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                     <button
                       type="button"
                       onClick={handleMarkToReread}
-                      className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors ${
+                      className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap px-2 py-1.5 text-[11px] sm:text-xs font-medium rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors ${
                         bouncing === 'to-reread' ? 'btn-bounce' : ''
                       }`}
                       title="Mettre dans la section À relire"
                     >
-                      <ArrowPathIcon className="h-4 w-4" />
+                      <ArrowPathIcon className="h-3.5 w-3.5" />
                       À relire
                     </button>
                   )}
@@ -664,12 +717,12 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                     <button
                       type="button"
                       onClick={handleStartReread}
-                      className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors ${
+                      className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap px-2 py-1.5 text-[11px] sm:text-xs font-medium rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors ${
                         bouncing === 'reread' ? 'btn-bounce' : ''
                       }`}
                       title="Commencer la relecture depuis le début"
                     >
-                      <ArrowPathIcon className="h-4 w-4" />
+                      <ArrowPathIcon className="h-3.5 w-3.5" />
                       Commencer
                     </button>
                   )}
@@ -799,14 +852,18 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Image de couverture */}
-          <div className="md:col-span-1">
+          {/* Grande couverture : desktop uniquement (mobile = vignette en haut) */}
+          <div className="hidden md:block md:col-span-1">
             <div className="aspect-[2/3] bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
               {book.cover_url ? (
-                <img 
-                  src={book.cover_url} 
+                <img
+                  src={coverImgSrc(book.cover_url, { forceProxy: coverProxy })}
                   alt={titleMain}
                   className="w-full h-full object-cover"
+                  referrerPolicy={coverProxy ? undefined : 'no-referrer'}
+                  onError={() => {
+                    if (!coverProxy) setCoverProxy(true);
+                  }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">

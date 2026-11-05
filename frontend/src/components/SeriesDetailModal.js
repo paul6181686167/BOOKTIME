@@ -26,6 +26,12 @@ import {
 import { DEFAULT_SERIES_MODAL_GOOGLE_BOOKS } from '../utils/searchSourcePipeline';
 import { isVolumeUnreleased, countReleasedVolumes } from '../utils/volumeRelease';
 import AddToCollectionMenu from './common/AddToCollectionMenu';
+import { coverImgSrc } from '../utils/helpers';
+import {
+  displaySynopsis as formatSynopsis,
+  looksEnglish,
+  preferFrenchSynopsis,
+} from '../utils/synopsisQuality';
 
 function parseVolumeFromWork(vol) {
   if (vol == null || vol === '') return null;
@@ -123,6 +129,8 @@ const SeriesDetailModal = ({
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showCollectionMenu, setShowCollectionMenu] = useState(false);
+  const [synopsisExpanded, setSynopsisExpanded] = useState(false);
+  const [coverProxy, setCoverProxy] = useState(false);
   // États du bouton "Ajouter à ma bibliothèque" (alignés sur ceux des livres individuels)
   const [isAdding, setIsAdding] = useState(false);
   const [addDone, setAddDone] = useState(false);
@@ -664,11 +672,34 @@ const SeriesDetailModal = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const enrichedSeries = useMemo(() => enrichSeriesData(series), [series]);
 
+  const seriesCoverUrl = useMemo(() => {
+    const candidates = [
+      series?.cover_url,
+      series?.cover_image_url,
+      enrichedSeries?.cover_url,
+      enrichedSeries?.cover_image_url,
+      series?.books?.[0]?.cover_url,
+      books?.[0]?.cover_url,
+      Array.isArray(enrichedSeries?.volumes) ? enrichedSeries.volumes[0]?.cover_url : null,
+    ];
+    return candidates.map((u) => String(u || '').trim()).find(Boolean) || '';
+  }, [series, enrichedSeries, books]);
+
+  const seriesSynopsis = useMemo(() => {
+    const raw = preferFrenchSynopsis(
+      enrichedSeries?.description_fr,
+      enrichedSeries?.description,
+      series?.description_fr,
+      series?.description
+    );
+    return formatSynopsis(raw) || '';
+  }, [enrichedSeries, series]);
+
   // Options de statut pour les boutons rapides
   const statusOptions = [
-    { value: 'to_read', label: 'À lire', color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300', emoji: '' },
-    { value: 'reading', label: 'En cours', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300', emoji: '' },
-    { value: 'completed', label: 'Terminé', color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300', emoji: '' },
+    { value: 'to_read', label: 'À lire', color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300', emoji: '📌' },
+    { value: 'reading', label: 'En cours', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300', emoji: '📖' },
+    { value: 'completed', label: 'Terminé', color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300', emoji: '✅' },
   ];
 
   // Fonction pour changer rapidement le statut de la série
@@ -800,6 +831,8 @@ const SeriesDetailModal = ({
     setMissingPreviousWarning(null);
     setShowWdRaw(false);
     setVerification(null);
+    setSynopsisExpanded(false);
+    setCoverProxy(false);
     // Statut lecture depuis la carte / series_library (pas toujours 'to_read')
     setSeriesStatus(series.status || series.series_status || 'to_read');
     // Réinitialiser : on ne considère une série comme possédée qu'après vérification réelle.
@@ -1099,35 +1132,39 @@ const SeriesDetailModal = ({
         </div>
 
         {/* Header */}
-        <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-4 sm:p-6">
+        <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:p-6">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
-            <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">
-              {/* Image de couverture ou icône de série */}
-              <div className="h-20 w-14 shrink-0 rounded-lg shadow-md overflow-hidden sm:w-16">
-                {series.cover_url ? (
-                  <img 
-                    src={series.cover_url} 
+            <div className="flex min-w-0 flex-1 items-start gap-2.5 sm:gap-4">
+              {/* Petite vignette à côté du titre */}
+              <div className="h-[4.5rem] w-12 shrink-0 rounded-md shadow-md overflow-hidden sm:h-20 sm:w-14">
+                {seriesCoverUrl ? (
+                  <img
+                    src={coverImgSrc(seriesCoverUrl, { forceProxy: coverProxy })}
                     alt={`Couverture de ${series.name}`}
                     className="w-full h-full object-cover"
+                    referrerPolicy={coverProxy ? undefined : 'no-referrer'}
                     onError={(e) => {
-                      // Fallback vers le dégradé si l'image ne charge pas
+                      if (!coverProxy) {
+                        setCoverProxy(true);
+                        return;
+                      }
                       e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
+                      if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
                     }}
                   />
                 ) : null}
-                <div 
-                  className={`w-full h-full bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-2xl ${series.cover_url ? 'hidden' : 'flex'}`}
+                <div
+                  className={`w-full h-full bg-gradient-to-br from-purple-500 to-blue-600 rounded-md flex items-center justify-center text-white text-xl ${seriesCoverUrl ? 'hidden' : 'flex'}`}
                 >
                   {getCategoryEmoji(series?.category)}
                 </div>
               </div>
               
               <div className="min-w-0 flex-1">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1 break-words">
+                <h2 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white mb-0.5 break-words leading-snug">
                   {series?.name}
                 </h2>
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-2">
+                <p className="text-xs sm:text-base text-gray-600 dark:text-gray-400 mb-1.5">
                   {series?.author ? (
                     <>
                       par{' '}
@@ -1263,30 +1300,41 @@ const SeriesDetailModal = ({
           </div>
         )}
 
-        {/* Section Résumé de la série */}
-        {enrichedSeries?.description && (
-          <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-4 sm:px-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
-              <BookOpenIcon className="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" />
-              Résumé de la série
+        {/* Section Résumé de la série — compact + FR prioritaire */}
+        {seriesSynopsis ? (
+          <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6">
+            <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
+              <BookOpenIcon className="w-3.5 h-3.5 mr-1 text-purple-600 dark:text-purple-400" />
+              Résumé
             </h3>
-            <div className="prose prose-gray dark:prose-invert max-w-none">
-              <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
-                {enrichedSeries.description}
-              </p>
-            </div>
+            <p
+              className={`text-gray-600 dark:text-gray-400 text-xs sm:text-sm leading-relaxed whitespace-pre-line ${
+                synopsisExpanded ? '' : 'line-clamp-4'
+              }`}
+            >
+              {seriesSynopsis}
+            </p>
+            {(seriesSynopsis.length > 220 || looksEnglish(enrichedSeries?.description || '')) && (
+              <button
+                type="button"
+                onClick={() => setSynopsisExpanded((v) => !v)}
+                className="mt-1 text-xs font-medium text-green-700 dark:text-green-400 hover:underline"
+              >
+                {synopsisExpanded ? 'Réduire' : 'Voir plus'}
+              </button>
+            )}
           </div>
-        )}
+        ) : null}
 
-        {/* Boutons rapides de changement de statut - MÊME EMPLACEMENT QUE DANS BookDetailModal */}
-        <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-4 sm:px-6">
-          <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:flex-wrap">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Changer le statut rapidement :</h3>
-            <span className="text-xs text-gray-500 sm:ml-2">
-              (Série possédée: {isSeriesOwned ? '✅' : '❌'})
-            </span>
+        {/* Boutons rapides de statut — une seule ligne compacte */}
+        <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6">
+          <div className="mb-1.5 flex items-center gap-2">
+            <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300">Statut</h3>
+            {!isSeriesOwned && (
+              <span className="text-[10px] text-gray-500">ajoutez la série pour modifier</span>
+            )}
           </div>
-          <div className="flex w-full max-w-md overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600 sm:w-fit">
+          <div className="flex w-full max-w-md overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600">
             {statusOptions.map((option) => (
               <button
                 key={option.value}
@@ -1294,7 +1342,7 @@ const SeriesDetailModal = ({
                 onClick={() => {
                   handleQuickStatusChange(option.value);
                 }}
-                className={`flex flex-1 items-center justify-center gap-1 px-2 py-2.5 text-xs font-medium transition-all sm:space-x-2 sm:px-4 sm:py-2 sm:text-sm ${
+                className={`flex flex-1 items-center justify-center gap-0.5 whitespace-nowrap px-2 py-1.5 text-[11px] sm:text-xs font-medium transition-all sm:px-3 sm:py-2 ${
                   seriesStatus === option.value
                     ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
                     : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
@@ -1302,16 +1350,11 @@ const SeriesDetailModal = ({
                 title={`Marquer comme ${option.label}`}
                 disabled={!isSeriesOwned}
               >
-                <span className="text-base">{option.emoji}</span>
+                <span className="text-xs leading-none">{option.emoji}</span>
                 <span>{option.label}</span>
               </button>
             ))}
           </div>
-          {!isSeriesOwned && (
-            <p className="text-xs text-gray-500 mt-2">
-              Ajoutez d'abord cette série à votre bibliothèque pour changer son statut
-            </p>
-          )}
         </div>
 
         {/* Actions Bar — affichée uniquement lorsqu'il y a une sélection de tomes */}

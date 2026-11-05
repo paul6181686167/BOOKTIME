@@ -1,4 +1,11 @@
-import { displaySynopsis, isUsableSynopsis, sanitizeSynopsis } from '../synopsisQuality';
+import {
+  displaySynopsis,
+  isUsableSynopsis,
+  looksEnglish,
+  looksFrench,
+  preferFrenchSynopsis,
+  sanitizeSynopsis,
+} from '../synopsisQuality';
 
 describe('isUsableSynopsis', () => {
   test('rejects Wikidata / series counters', () => {
@@ -30,5 +37,17 @@ Also contained in:
     expect(cleaned).not.toMatch(/\]\(/);
     expect(isUsableSynopsis(raw)).toBe(true);
     expect(displaySynopsis(raw)).toMatch(/dystopian novel/i);
+  });
+});
+
+describe('preferFrenchSynopsis', () => {
+  test('prefers French over English', () => {
+    const en =
+      'The War of the Worlds is a science fiction novel by H. G. Wells that was first published in 1898.';
+    const fr =
+      "La Guerre des mondes est un roman de science-fiction de H. G. Wells publié en 1898, qui a marqué l'histoire du genre.";
+    expect(looksFrench(fr)).toBe(true);
+    expect(looksEnglish(en)).toBe(true);
+    expect(preferFrenchSynopsis(en, fr)).toBe(sanitizeSynopsis(fr));
   });
 });
