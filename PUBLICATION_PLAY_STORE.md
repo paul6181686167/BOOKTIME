@@ -129,17 +129,17 @@ scanner ISBN.
 
 ## 6. Politique de confidentialité
 
-Deux pages ont été ajoutées au site et seront en ligne au prochain déploiement Vercel :
+Pages en ligne (domaine Vercel actuel) :
 
-- `https://VOTRE-DOMAINE/privacy.html` — politique de confidentialité
-- `https://VOTRE-DOMAINE/delete-account.html` — procédure de suppression de compte
+- Politique : https://booktime-paul6181686167s-projects.vercel.app/privacy.html
+- Suppression de compte : https://booktime-paul6181686167s-projects.vercel.app/delete-account.html
 
-> **À faire avant de déployer** : remplacer les deux occurrences de
-> `ADRESSE-EMAIL-A-COMPLETER` dans `frontend/public/privacy.html` et
-> `frontend/public/delete-account.html` par une adresse e-mail réellement relevée.
-
-La première URL est à renseigner dans *Règles de confidentialité*, la seconde dans
+À coller dans la Play Console : la première dans *Règles de confidentialité*, la seconde dans
 *Suppression du compte* (section « Sécurité des données »).
+
+> **À faire** : remplacer `ADRESSE-EMAIL-A-COMPLETER` dans `frontend/public/privacy.html` et
+> `frontend/public/delete-account.html` par une adresse e-mail réellement relevée, puis
+> redéployer. Sans ça, Google peut refuser la fiche.
 
 ---
 
