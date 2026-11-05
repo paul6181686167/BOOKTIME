@@ -5,8 +5,9 @@ import {
   attributeBookToSeries,
   evaluateOwnedSeriesForDisplay,
 } from '../../utils/seriesAttribution';
-import { isUsableSynopsis } from '../../utils/synopsisQuality';
+import { isUsableSynopsis, looksEnglish } from '../../utils/synopsisQuality';
 import { normalizeForSearch } from '../../utils/helpers';
+import { API_BASE_URL } from '../../config/environment';
 
 /** Clés de dédoublonnage titre (FR/EN) pour éviter livre + série rétrogradée du même ouvrage. */
 function workTitleKeys(book) {
@@ -481,6 +482,15 @@ const BookActions = {
     try {
       const result = await bookService.createBook(bookData);
       toast.success(`"${bookData.title || 'Livre'}" ajouté à la bibliothèque !`);
+      // Précharge le résumé FR immédiatement (ne bloque pas l'UI)
+      const newId = result?.id || result?.book?.id;
+      const desc = bookData?.description || result?.description || '';
+      if (newId && (!isUsableSynopsis(desc) || looksEnglish(desc))) {
+        const token = localStorage.getItem('token');
+        fetch(`${API_BASE_URL}/api/books/${newId}/synopsis?persist=true`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }).catch(() => {});
+      }
       return result;
     } catch (error) {
       console.error('Erreur lors de l\'ajout du livre:', error);

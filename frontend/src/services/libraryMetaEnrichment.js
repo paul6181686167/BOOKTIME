@@ -3,7 +3,11 @@
  * Couvertures : priorité à la recherche navigateur (fiable), puis persist backend.
  */
 import { API_BASE_URL } from '../config/environment';
-import { isUsableSynopsis, sanitizeSynopsis } from '../utils/synopsisQuality';
+import {
+  isUsableSynopsis,
+  looksEnglish,
+  sanitizeSynopsis,
+} from '../utils/synopsisQuality';
 import { evaluateOwnedSeriesForDisplay } from '../utils/seriesAttribution';
 import { isMobileClient } from '../utils/device';
 import {
@@ -117,32 +121,55 @@ function collectCoverCandidates(books, seriesLibrary) {
   return out;
 }
 
+function needsFrenchSynopsis(text) {
+  if (!isUsableSynopsis(text)) return true;
+  return looksEnglish(text);
+}
+
 function collectMetaCandidates(books, seriesLibrary) {
   const out = [];
   for (const b of books || []) {
     if (!b?.id || b.isFromOpenLibrary || b.isSeriesCard || b.isDemotedSeries) continue;
     if (!isRealLibraryId(b.id)) continue;
-    const needsDesc = !isUsableSynopsis(b.description);
+    const needsDesc = needsFrenchSynopsis(b.description);
     const needsPages = !(b.total_pages > 0);
-    if (!needsDesc && !needsPages) continue;
-    const key = `book-meta:${b.id}`;
-    if (!canAttempt(key)) continue;
-    out.push({
-      key,
-      kind: 'book-meta',
-      id: b.id,
-      title: b.title || '',
-      author: b.author || '',
-      isbn: b.isbn,
-      ol_key: b.ol_key,
-      needsDesc,
-      needsPages,
-    });
+    if (needsDesc) {
+      const key = `book-desc:${b.id}`;
+      if (canAttempt(key)) {
+        out.push({
+          key,
+          kind: 'book-meta',
+          id: b.id,
+          title: b.title || '',
+          author: b.author || '',
+          isbn: b.isbn,
+          ol_key: b.ol_key,
+          needsDesc: true,
+          needsPages: false,
+        });
+      }
+    }
+    if (needsPages) {
+      const key = `book-pages:${b.id}`;
+      if (canAttempt(key)) {
+        out.push({
+          key,
+          kind: 'book-meta',
+          id: b.id,
+          title: b.title || '',
+          author: b.author || '',
+          isbn: b.isbn,
+          ol_key: b.ol_key,
+          needsDesc: false,
+          needsPages: true,
+        });
+      }
+    }
   }
   for (const s of seriesLibrary || []) {
     if (!s?.id || !isRealLibraryId(s.id)) continue;
     if (!evaluateOwnedSeriesForDisplay(s).demote) continue;
-    const needsDesc = !isUsableSynopsis(s.description_fr);
+    const needsDesc = needsFrenchSynopsis(s.description_fr);
     const needsPages = !(s.total_pages > 0);
     if (!needsDesc && !needsPages) continue;
     const key = `demoted:${s.id}`;
@@ -159,6 +186,8 @@ function collectMetaCandidates(books, seriesLibrary) {
       needsPages,
     });
   }
+  // Résumés d'abord, pages ensuite
+  out.sort((a, b) => Number(b.needsDesc) - Number(a.needsDesc));
   return out;
 }
 
@@ -187,6 +216,26 @@ async function resolveSynopsis(item) {
   return fetchJson(`${API_BASE_URL}/api/books/resolve-synopsis?${params}`, {
     headers: authHeaders(),
   });
+}
+
+/** Force un résumé FR (traduction si la source est EN). */
+async function ensureFrenchText(raw) {
+  if (!isUsableSynopsis(raw)) return null;
+  const text = sanitizeSynopsis(raw);
+  if (!looksEnglish(text)) return text;
+  const data = await fetchJson(
+    `${API_BASE_URL}/api/books/translate-synopsis`,
+    {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    },
+    25000
+  );
+  if (isUsableSynopsis(data?.description) && !looksEnglish(data.description)) {
+    return sanitizeSynopsis(data.description);
+  }
+  return null;
 }
 
 async function resolvePages(item) {
@@ -294,18 +343,19 @@ async function enrichSeriesCover(item, { setBooks, setUserSeriesLibrary }) {
 async function enrichBookMeta(item, { setBooks }) {
   let description = null;
   let pages = null;
-  let needsDesc = item.needsDesc;
-  let needsPages = item.needsPages;
+  let needsDesc = !!item.needsDesc;
+  let needsPages = !!item.needsPages;
 
+  // Endpoint dédié : fetch + traduction FR + persist serveur
   const syn = await fetchJson(
     `${API_BASE_URL}/api/books/${item.id}/synopsis?persist=true`,
     { headers: authHeaders() },
-    10000
+    28000
   );
   if (syn) {
-    if (needsDesc && isUsableSynopsis(syn.description)) {
-      description = sanitizeSynopsis(syn.description);
-      needsDesc = false;
+    if (needsDesc) {
+      description = await ensureFrenchText(syn.description);
+      if (description) needsDesc = false;
     }
     const n = parseInt(syn.pages, 10);
     if (needsPages && n > 0) {
@@ -316,18 +366,21 @@ async function enrichBookMeta(item, { setBooks }) {
 
   if (needsDesc && (item.title || '').trim()) {
     const data = await resolveSynopsis(item);
-    if (isUsableSynopsis(data?.description)) {
-      description = sanitizeSynopsis(data.description);
-    }
+    description = await ensureFrenchText(data?.description);
+    if (description) needsDesc = false;
   }
 
   if (needsPages && (item.title || '').trim()) {
     const data = await resolvePages(item);
     const n = parseInt(data?.pages, 10);
-    if (n > 0) pages = n;
+    if (n > 0) {
+      pages = n;
+      needsPages = false;
+    }
   }
 
   if (!description && !(pages > 0)) return false;
+
   const patch = {};
   if (description) patch.description = description;
   if (pages > 0) patch.total_pages = pages;
@@ -349,6 +402,10 @@ async function enrichBookMeta(item, { setBooks }) {
       )
     );
   }
+  // Succès uniquement si la demande de cette tâche est satisfaite
+  // (évite de marquer un livre « OK » sans résumé FR)
+  if (item.needsDesc && !description) return false;
+  if (item.needsPages && !(pages > 0)) return false;
   return true;
 }
 
@@ -357,7 +414,7 @@ async function enrichDemoted(item, { setUserSeriesLibrary }) {
   let pages = null;
   if (item.needsDesc && (item.title || '').trim()) {
     const data = await resolveSynopsis(item);
-    if (isUsableSynopsis(data?.description)) description = sanitizeSynopsis(data.description);
+    description = await ensureFrenchText(data?.description);
   }
   if (item.needsPages && (item.title || '').trim()) {
     const data = await resolvePages(item);
@@ -384,6 +441,7 @@ async function enrichDemoted(item, { setUserSeriesLibrary }) {
       )
     );
   }
+  if (item.needsDesc && !description) return false;
   return true;
 }
 
@@ -425,6 +483,21 @@ export async function enrichLibraryMetadata({
   const limits = enrichmentLimits();
   running = true;
   try {
+    // 1) Résumés FR en priorité (avant les couvertures)
+    const metaLimit = Math.max(limits.maxPerRun, 40);
+    const meta = collectMetaCandidates(books, userSeriesLibrary).slice(0, metaLimit);
+    await runQueue(
+      meta,
+      async (item) => {
+        if (item.kind === 'demoted') {
+          return enrichDemoted(item, { setUserSeriesLibrary });
+        }
+        return enrichBookMeta(item, { setBooks });
+      },
+      { ...limits, concurrency: 1, betweenMs: Math.max(limits.betweenMs, 600) }
+    );
+
+    // 2) Couvertures ensuite
     for (let round = 0; round < limits.maxRounds; round += 1) {
       const covers = collectCoverCandidates(books, userSeriesLibrary).slice(
         0,
@@ -445,18 +518,6 @@ export async function enrichLibraryMetadata({
         limits
       );
     }
-
-    const meta = collectMetaCandidates(books, userSeriesLibrary).slice(0, 15);
-    await runQueue(
-      meta,
-      async (item) => {
-        if (item.kind === 'demoted') {
-          return enrichDemoted(item, { setUserSeriesLibrary });
-        }
-        return enrichBookMeta(item, { setBooks });
-      },
-      { ...limits, concurrency: 1 }
-    );
   } finally {
     running = false;
   }

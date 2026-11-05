@@ -341,12 +341,14 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
         }
 
         if (isLive()) {
-          // Marquer terminé même sans FR : évite de re-spinnner à chaque ouverture
-          pagesFetchDoneRef.current = fetchKey;
+          // Ne verrouiller que si le résumé FR est là (sinon nouvelle tentative à la réouverture)
+          if (!needsDesc || gotDesc) {
+            pagesFetchDoneRef.current = fetchKey;
+          }
         }
       } catch (err) {
-        // Ne pas verrouiller après un abort (fermeture de fiche)
-        if (isLive() && err?.name !== 'AbortError') {
+        // Ne pas verrouiller après un abort / échec résumé (réessai possible)
+        if (isLive() && err?.name !== 'AbortError' && !needsDesc) {
           pagesFetchDoneRef.current = fetchKey;
         }
       } finally {
@@ -684,7 +686,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               </div>
             </div>
 
-            {/* Résumé / 4ᵉ de couverture — compact sur mobile */}
+            {/* Résumé FR uniquement — jamais de message « Aucun résumé » */}
             {displaySynopsis ? (
               <div className="mb-3">
                 <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -699,53 +701,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                 <div className="h-3.5 w-3.5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
                 Chargement du résumé…
               </div>
-            ) : (
-              <div className="mb-3">
-                <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Résumé
-                </h3>
-                <p className="text-gray-400 dark:text-gray-500 text-xs italic mb-1">
-                  Aucun résumé en français disponible pour ce livre.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    pagesFetchDoneRef.current = null;
-                    setOlLoading(true);
-                    const token = localStorage.getItem('token');
-                    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-                    const params = new URLSearchParams({
-                      title: book.title || '',
-                      author: book.author || '',
-                      include_pages: 'false',
-                    });
-                    if (book.isbn) params.set('isbn', book.isbn);
-                    if (book.ol_key) params.set('ol_key', book.ol_key);
-                    fetch(`${API_BASE_URL}/api/books/resolve-synopsis?${params}`, { headers })
-                      .then((r) => (r.ok ? r.json() : null))
-                      .then(async (data) => {
-                        if (isUsableSynopsis(data?.description)) {
-                          const text = sanitizeSynopsis(data.description);
-                          setOlDetails({ description: text });
-                          if (book.id && !book.isFromOpenLibrary && onUpdateRef.current) {
-                            try {
-                              await onUpdateRef.current(book.id, {
-                                description: text,
-                              });
-                            } catch (_) {
-                              /* ignore */
-                            }
-                          }
-                        }
-                      })
-                      .finally(() => setOlLoading(false));
-                  }}
-                  className="text-xs font-medium text-green-600 dark:text-green-400 hover:underline"
-                >
-                  Réessayer
-                </button>
-              </div>
-            )}
+            ) : null}
 
             {/* Boutons rapides de changement de statut — une seule ligne compacte */}
             {(!book.isFromOpenLibrary || book.isOwned) && !isEditing && (

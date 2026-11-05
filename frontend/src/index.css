@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+html.cinema,
+html.cinema body,
+html.cinema #root {
+  background-color: #050505;
+}
+
 /* Inter est chargée par le <link> de public/index.html, précédé de ses
    preconnect. Un @import ici la téléchargeait une seconde fois en bloquant le
    rendu, et se retrouvait de surcroît après les directives @tailwind. */
@@ -17,7 +29,7 @@
 /* Hauteur plein écran mobile correct (évite le bug 100vh sur iOS) */
 .h-screen-mobile { height: 100dvh; }
 
-/* Motif nid d'abeille sur le fond vert (mobile + desktop) */
+/* Motif nid d'abeille (écrans auth / legacy) */
 .bg-honeycomb {
   background-color: #bce8cb !important;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath fill='none' stroke='%23166534' stroke-opacity='0.18' stroke-width='1.2' d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 34L0 84V50l28 16 28-16v34L28 100z'/%3E%3C/svg%3E") !important;
@@ -36,35 +48,60 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath fill='none' stroke='%23dcfce7' stroke-opacity='0.16' stroke-width='1.2' d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 34L0 84V50l28 16 28-16v34L28 100z'/%3E%3C/svg%3E") !important;
 }
 
-/* Custom scrollbar */
+/* Accueil cinéma — noir profond + grain très discret */
+.bg-cinema-void {
+  background-color: #050505 !important;
+  background-image:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(34, 80, 50, 0.18), transparent 55%),
+    radial-gradient(ellipse 80% 50% at 100% 100%, rgba(20, 20, 20, 0.9), transparent 50%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E") !important;
+  background-size: auto, auto, 180px 180px !important;
+  background-repeat: no-repeat, no-repeat, repeat !important;
+  color: #f3f4f6;
+}
+
+.cinema-progress-track {
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.cinema-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #c4a035, #f0d060);
+  box-shadow: 0 0 8px rgba(240, 208, 96, 0.35);
+}
+
+/* Custom scrollbar — cinéma */
 ::-webkit-scrollbar {
   width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #a8dfbb;
+  background: #0a0a0a;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #2a2a2a;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #3f3f3f;
 }
 
-/* Mode sombre — scrollbar en vert profond */
 .dark ::-webkit-scrollbar-track {
-  background: #1e3a2c;
+  background: #050505;
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: #3d7a55;
+  background: #2a2a2a;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #4f9668;
+  background: #454545;
 }
 
 /* CORRECTION: Transitions spécifiques optimisées */

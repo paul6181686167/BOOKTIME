@@ -25,7 +25,7 @@ const Header = ({
   currentContext, 
   onBackToAll 
 }) => {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, cycleTheme } = useTheme();
   const { preferredLanguage, updatePreferredLanguage } = useUserLanguage();
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
 
@@ -157,14 +157,22 @@ const Header = ({
               <span className="hidden sm:inline">Ajouter</span>
             </button>
 
-            {/* Toggle thème */}
+            {/* Cycle thème : clair → foncé → très foncé */}
             <button
-              onClick={toggleTheme}
+              onClick={cycleTheme}
               className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
+              title={
+                theme === 'light'
+                  ? 'Passer en foncé'
+                  : theme === 'dark'
+                    ? 'Passer en très foncé'
+                    : 'Passer en clair'
+              }
             >
-              {theme === 'dark' ? (
+              {theme === 'void' ? (
                 <SunIcon className="h-5 w-5" />
+              ) : theme === 'dark' ? (
+                <MoonIcon className="h-5 w-5 text-[#f0d060]" />
               ) : (
                 <MoonIcon className="h-5 w-5" />
               )}

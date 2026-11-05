@@ -425,6 +425,7 @@ def translate_synopsis_to_french(text: str) -> str:
 def ensure_french_synopsis(text: str, *, source: str = "") -> tuple[str, str]:
     """
     Garantit un résumé FR : garde le texte s'il est FR, sinon traduit.
+    Ne renvoie jamais l'anglais brut (échec traduction → chaîne vide).
     Retourne (texte, source).
     """
     cleaned = _sanitize_synopsis(text)
@@ -437,6 +438,9 @@ def ensure_french_synopsis(text: str, *, source: str = "") -> tuple[str, str]:
         if translated:
             tag = f"{source}+translate_fr" if source else "translate_fr"
             return translated, tag
+        # Échec : ne pas servir l'anglais sous couvert de résumé FR
+        if looks_english(cleaned):
+            return "", f"{source}+translate_failed" if source else "translate_failed"
     return cleaned, source or "unknown"
 
 

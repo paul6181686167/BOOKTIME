@@ -1,6 +1,46 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const ThemeContext = createContext();
+
+export const THEMES = ['light', 'dark', 'void'];
+
+export const THEME_LABELS = {
+  light: 'Clair',
+  dark: 'Foncé',
+  void: 'Très foncé',
+};
+
+function normalizeTheme(raw) {
+  if (raw === 'void' || raw === 'cinema') return 'void';
+  if (raw === 'dark' || raw === 'light') return raw;
+  return null;
+}
+
+function readInitialTheme() {
+  try {
+    const saved = localStorage.getItem('booktime-theme');
+    const normalized = normalizeTheme(saved);
+    if (normalized) return normalized;
+  } catch (_) {
+    /* ignore */
+  }
+  if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'dark';
+  }
+  return 'light';
+}
+
+function applyThemeToDocument(theme) {
+  const root = document.documentElement;
+  root.classList.toggle('dark', theme === 'dark' || theme === 'void');
+  root.classList.toggle('cinema', theme === 'void');
+
+  const color =
+    theme === 'void' ? '#050505' : theme === 'dark' ? '#234f37' : '#16a34a';
+  document.querySelectorAll('meta[name="theme-color"]').forEach((el) => {
+    el.setAttribute('content', color);
+  });
+}
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
@@ -11,29 +51,49 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [isDark, setIsDark] = useState(() => {
-    const saved = localStorage.getItem('booktime-theme');
-    if (saved) return saved === 'dark';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
+  const [theme, setThemeState] = useState(readInitialTheme);
 
   useEffect(() => {
-    // Appliquer le thème
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    applyThemeToDocument(theme);
+    try {
+      localStorage.setItem('booktime-theme', theme);
+    } catch (_) {
+      /* ignore */
     }
-    // Sauvegarder le thème
-    localStorage.setItem('booktime-theme', isDark ? 'dark' : 'light');
-  }, [isDark]);
+  }, [theme]);
 
-  const toggleTheme = () => {
-    setIsDark(!isDark);
-  };
+  const setTheme = useCallback((next) => {
+    const normalized = normalizeTheme(next);
+    if (normalized) setThemeState(normalized);
+  }, []);
+
+  /** Clair → Foncé → Très foncé → Clair */
+  const cycleTheme = useCallback(() => {
+    setThemeState((prev) => {
+      const i = THEMES.indexOf(prev);
+      return THEMES[(i + 1) % THEMES.length];
+    });
+  }, []);
+
+  // Compat anciens composants (toggle binaire)
+  const toggleTheme = useCallback(() => {
+    setThemeState((prev) => (prev === 'light' ? 'dark' : 'light'));
+  }, []);
+
+  const isDark = theme === 'dark' || theme === 'void';
+  const isVoid = theme === 'void';
 
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme }}>
+    <ThemeContext.Provider
+      value={{
+        theme,
+        setTheme,
+        cycleTheme,
+        toggleTheme,
+        isDark,
+        isVoid,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );

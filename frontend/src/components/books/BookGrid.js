@@ -9,7 +9,7 @@ import SmartCover, {
 } from './SmartCover';
 
 const GRID_CLASSES =
-  'grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 sm:gap-5 p-2 sm:p-6';
+  'grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-x-2.5 gap-y-4 sm:gap-5 p-1 sm:p-6';
 
 // Nombre de cartes animées à l'apparition. Au-delà, les cartes sont hors écran :
 // les animer coûtait du temps de rendu pour un effet invisible.
@@ -18,6 +18,35 @@ const ANIMATED_CARDS = 12;
 // Rendu progressif : taille du premier lot, puis de chaque extension
 const INITIAL_VISIBLE = 30;
 const VISIBLE_STEP = 30;
+
+/** Fraction + barre style streaming sous la couverture */
+const CinemaProgress = ({ current, total, percent }) => {
+  const hasNumbers = Number.isFinite(current) && Number.isFinite(total) && total > 0;
+  const pct = Math.min(
+    100,
+    Math.max(
+      0,
+      Number.isFinite(percent)
+        ? percent
+        : hasNumbers
+          ? Math.round((current / total) * 100)
+          : 0
+    )
+  );
+  if (!hasNumbers && pct <= 0) return null;
+  return (
+    <div className="mt-1.5 space-y-1">
+      {hasNumbers && (
+        <p className="text-[10px] sm:text-xs font-medium tabular-nums tracking-wide text-gray-500 dark:text-white/55">
+          {current}/{total}
+        </p>
+      )}
+      <div className="cinema-progress-track">
+        <div className="cinema-progress-fill" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+};
 
 const SeriesCardBody = ({ item, coverSrc, onCoverFound, priority }) => {
   // Statut série : priorité au statut manuel, sinon progression des tomes
@@ -30,9 +59,17 @@ const SeriesCardBody = ({ item, coverSrc, onCoverFound, priority }) => {
         ? 'reading'
         : 'to_read');
 
+  const done = item.completedBooks ?? 0;
+  const total = item.totalBooks ?? 0;
+  const pct =
+    item.progressPercent > 0
+      ? item.progressPercent
+      : seriesStatus === 'completed' && total > 0
+        ? 100
+        : 0;
+
   return (
     <div className={CARD_SHELL}>
-      {/* Couverture (même squelette que les livres individuels) */}
       <div className={COVER_FRAME}>
         <SmartCover
           item={item}
@@ -43,49 +80,26 @@ const SeriesCardBody = ({ item, coverSrc, onCoverFound, priority }) => {
         />
         <CoverScrim />
 
-        {/* Badge identifiant "Série" — distinction claire avec un livre individuel */}
-        <div className="absolute top-1 left-1 sm:top-2 sm:left-2">
-          <span className={`inline-flex items-center rounded-md bg-black/50 px-1.5 py-0.5 text-micro font-medium text-white sm:px-2 sm:py-1 sm:text-xs ${PILL}`}>
+        <div className="absolute top-1.5 left-1.5">
+          <span className={`inline-flex items-center rounded-md bg-black/65 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white/90 ${PILL}`}>
             Série
           </span>
         </div>
 
-        {/* Badge statut superposé — uniquement "terminé" (✓), même style que les livres */}
         {seriesStatus === 'completed' && (
-          <div className="absolute top-1 right-1 sm:top-2 sm:right-2">
-            <span className={`hidden sm:inline-flex px-1.5 py-0.5 rounded-md text-mini font-semibold bg-booktime-600/90 text-white ${PILL}`}>
+          <div className="absolute top-1.5 right-1.5">
+            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#f0d060]/90 text-[10px] font-bold text-black ${PILL}`}>
               ✓
             </span>
-            {/* Version mobile: point coloré, sans anneau */}
-            <span className="sm:hidden w-2.5 h-2.5 rounded-full block bg-booktime-500" />
           </div>
         )}
       </div>
 
-      {/* Barre de progression de la série — même endroit (bas de carte) et même couleur que les livres */}
-      {item.progressPercent > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/10 dark:bg-white/10 sm:bg-gray-200 sm:dark:bg-gray-700">
-          <div
-            key={`${item.id}-${item.completedBooks}`}
-            className="h-1 bg-blue-500 series-progress-spring"
-            style={{ width: `${Math.min(100, item.progressPercent)}%` }}
-          />
-        </div>
-      )}
-
-      <div className="pt-1.5 px-0.5 sm:p-3">
-        <h3 className="font-medium text-gray-900 dark:text-white text-tiny sm:text-sm line-clamp-2 leading-tight">
+      <div className="pt-2 px-0.5">
+        <h3 className="font-medium text-gray-900 dark:text-white text-[11px] sm:text-sm line-clamp-2 leading-snug tracking-tight">
           {item.name}
         </h3>
-        <p className="text-mini sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">
-          {item.author}
-          {item.isStaticWikidataCard && (
-            <span className="ml-1 text-indigo-500 dark:text-indigo-400">· Wikidata</span>
-          )}
-        </p>
-        <div className="mt-1 text-mini sm:text-xs font-medium text-gray-600 dark:text-gray-400">
-          {item.completedBooks}/{item.totalBooks} <span className="hidden sm:inline">tomes</span>
-        </div>
+        <CinemaProgress current={done} total={total} percent={pct} />
       </div>
     </div>
   );
@@ -93,10 +107,18 @@ const SeriesCardBody = ({ item, coverSrc, onCoverFound, priority }) => {
 
 const BookCardBody = ({ item, coverSrc, onCoverFound, priority }) => {
   const title = displayBookTitleFrFirst(item);
+  const current = item.current_page || 0;
+  const total = item.total_pages || 0;
+  const isReading = item.status === 'reading' && total > 0 && current > 0;
+  const isDone = item.status === 'completed';
+  const pct = isDone
+    ? 100
+    : isReading
+      ? Math.round((current / total) * 100)
+      : 0;
 
   return (
     <div className={CARD_SHELL}>
-      {/* Couverture (Open Library en secours si pas d’URL) */}
       <div className={COVER_FRAME}>
         <SmartCover
           item={item}
@@ -106,59 +128,34 @@ const BookCardBody = ({ item, coverSrc, onCoverFound, priority }) => {
           priority={priority}
         />
         <CoverScrim />
-      </div>
 
-      {/* Barre de progression */}
-      {item.status === 'reading' && item.total_pages > 0 && item.current_page > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/10 dark:bg-white/10 sm:bg-gray-200 sm:dark:bg-gray-700">
-          <div
-            className="h-1 bg-blue-500 reading-progress-bar"
-            style={{ width: `${Math.min(100, Math.round(((item.current_page || 0) / item.total_pages) * 100))}%` }}
-          />
-        </div>
-      )}
-
-      {/* Badge statut — terminé (✓) ou à relire */}
-      {item.status === 'completed' && (
-        <div className="absolute top-1 right-1 sm:top-2 sm:right-2">
-          <span className={`hidden sm:inline-flex px-1.5 py-0.5 rounded-md text-mini font-semibold bg-booktime-600/90 text-white ${PILL}`}>
-            ✓
-          </span>
-          <span className="sm:hidden w-2.5 h-2.5 rounded-full block bg-booktime-500" />
-        </div>
-      )}
-      {item.status === 'to_reread' && (
-        <div className="absolute top-1 right-1 sm:top-2 sm:right-2">
-          <span className={`hidden sm:inline-flex px-1.5 py-0.5 rounded-md text-mini font-semibold bg-purple-600/90 text-white ${PILL}`}>
-            🔁
-          </span>
-          <span className="sm:hidden w-2.5 h-2.5 rounded-full block bg-purple-500" />
-        </div>
-      )}
-
-      <div className="pt-1.5 px-0.5 sm:p-3">
-        <h3 className="font-medium text-gray-900 dark:text-white text-tiny sm:text-sm line-clamp-2 leading-tight">
-          {title}
-        </h3>
-        {/* Titre original si différent du titre affiché */}
-        {item.original_title && item.original_title !== title && (
-          <p className="text-micro sm:text-mini text-gray-400 dark:text-gray-500 italic line-clamp-1 mt-0.5 leading-tight">
-            {item.original_title}
-          </p>
-        )}
-        <p className="text-mini sm:text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">
-          {item.author}
-        </p>
-        {/* Étoiles — desktop seulement */}
-        {item.rating > 0 && (
-          <div className="hidden sm:flex items-center gap-0.5 mt-1.5">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <svg key={i} className={`h-2.5 w-2.5 ${i < Math.round(item.rating) ? 'text-amber-400' : 'text-gray-200 dark:text-gray-600'}`} fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-            ))}
+        {isDone && (
+          <div className="absolute top-1.5 right-1.5">
+            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#f0d060]/90 text-[10px] font-bold text-black ${PILL}`}>
+              ✓
+            </span>
           </div>
         )}
+        {item.status === 'to_reread' && (
+          <div className="absolute top-1.5 right-1.5">
+            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/15 text-[10px] text-white ${PILL}`}>
+              ↻
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="pt-2 px-0.5">
+        <h3 className="font-medium text-gray-900 dark:text-white text-[11px] sm:text-sm line-clamp-2 leading-snug tracking-tight">
+          {title}
+        </h3>
+        {(isReading || isDone) && total > 0 ? (
+          <CinemaProgress
+            current={isDone ? total : current}
+            total={total}
+            percent={pct}
+          />
+        ) : null}
       </div>
     </div>
   );
@@ -279,9 +276,9 @@ const BookGrid = ({
       <div className={GRID_CLASSES}>
         {Array.from({ length: 12 }).map((_, index) => (
           <div key={index} className="animate-pulse">
-            <div className="bg-gray-200 dark:bg-gray-700 rounded-xl aspect-[2/3] mb-3"></div>
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+            <div className="bg-white/[0.06] rounded-xl aspect-[2/3] mb-3 ring-1 ring-white/[0.04]"></div>
+            <div className="h-3 bg-white/[0.06] rounded mb-2"></div>
+            <div className="h-2 bg-white/[0.04] rounded w-3/4"></div>
           </div>
         ))}
       </div>
@@ -291,11 +288,11 @@ const BookGrid = ({
   if (showEmptyState && displayedBooks.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="text-6xl mb-4">📚</div>
+        <div className="text-5xl mb-4 opacity-40">📚</div>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
           {emptyTitle}
         </h3>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-gray-600 dark:text-white/40">
           {emptySubtitle}
         </p>
       </div>

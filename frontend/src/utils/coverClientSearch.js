@@ -1,13 +1,13 @@
 /**
  * Recherche de couverture côté navigateur :
- * Open Library → Wikipedia → Google Books (file anti-429).
+ * Open Library → IA/Amazon/AbeBooks → Wikipedia → Google Books.
  * Les échecs ne sont PAS mis en cache (évite de bloquer un livre après un timeout).
  */
 import { isUsableCoverUrl, normalizeCoverUrl } from './helpers';
 import { sanitizeBookTitle } from './openLibraryBookDisplay';
 
 const cache = new Map(); // uniquement les succès
-const CACHE_PREFIX = 'bt_cover_v5:';
+const CACHE_PREFIX = 'bt_cover_v6:';
 
 let gbCooldownUntil = 0;
 
@@ -17,21 +17,70 @@ const cleanTitle = (title) => {
     /\s*[,:\-–—]?\s*(tome|t\.?|vol\.?|volume|book|n°|no\.?)\s*\d+.*$/i,
     ''
   );
+  // Ponctuation de fin (questions FR)
+  t = t.replace(/[?？!！.…]+$/g, '').trim();
   return t.trim() || sanitizeBookTitle(title);
 };
 
-/** Variantes FR/EN pour titres courts (ex. Choses → Les Choses). */
+const norm = (s) =>
+  String(s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+/** Score de proximité titre (0–100). */
+function titleScore(query, candidate) {
+  const q = norm(query);
+  const c = norm(candidate);
+  if (!q || !c) return 0;
+  if (q === c) return 100;
+  if (c.startsWith(q) || q.startsWith(c)) return 90;
+  if (c.includes(q) || q.includes(c)) return 75;
+  const qw = q.split(/\s+/).filter((w) => w.length > 2);
+  if (!qw.length) return 0;
+  const hits = qw.filter((w) => c.includes(w)).length;
+  return Math.round((hits / qw.length) * 70);
+}
+
+/**
+ * Variantes de recherche : articles, typos fréquents, corruption OL « Cui » ↔ Q.I.
+ */
 const titleVariants = (title) => {
   const base = cleanTitle(title);
   if (!base) return [];
   const out = [base];
-  const lower = base.toLowerCase();
-  const hasArticle =
-    /^(les|le|la|l'|l’|the|a|an)\s+/i.test(base) || /^l['’]/i.test(base);
-  if (!hasArticle) {
-    out.push(`Les ${base}`, `Le ${base}`, `La ${base}`, `L'${base}`, `The ${base}`);
+
+  // Typos / orthographes proches
+  const typoMap = [
+    [/\bau pied du paradis\b/i, 'Un pied au paradis'],
+    [/\bun pied au paradis\b/i, 'Au pied du paradis'],
+    [/\bjulitte\b/i, 'Juliette'],
+  ];
+  for (const [re, repl] of typoMap) {
+    if (re.test(base)) out.push(base.replace(re, repl));
   }
-  // Dédup
+
+  // Open Library a parfois indexé « Cui » au lieu de « Q.I. » / « QI »
+  if (/\bq\.?\s*i\.?\b/i.test(base) || /\bqi\b/i.test(base)) {
+    out.push(base.replace(/\bq\.?\s*i\.?\b/gi, 'Cui').replace(/\bqi\b/gi, 'Cui'));
+    out.push(base.replace(/\bq\.?\s*i\.?\b/gi, 'QI').replace(/\bcui\b/gi, 'QI'));
+  }
+  if (/\bcui\b/i.test(base)) {
+    out.push(base.replace(/\bcui\b/gi, 'Q.I.'));
+    out.push(base.replace(/\bcui\b/gi, 'QI'));
+  }
+
+  const hasArticle = /^(les|le|la|l['’]|un|une|the|a|an)\s+/i.test(base);
+  if (!hasArticle) {
+    out.push(`Les ${base}`, `Le ${base}`, `La ${base}`, `L'${base}`, `Un ${base}`, `The ${base}`);
+  }
+
+  // Sans accents
+  const folded = base.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (folded !== base) out.push(folded);
+
   const seen = new Set();
   return out.filter((t) => {
     const k = t.toLowerCase();
@@ -73,6 +122,25 @@ export function hardenGoogleBooksCover(url) {
   return u;
 }
 
+/** ISBN-13 (978…) → ISBN-10 pour les CDN Amazon. */
+export function isbn13to10(isbn) {
+  const d = String(isbn || '').replace(/[^0-9Xx]/g, '');
+  if (d.length === 10) return d.toUpperCase();
+  if (d.length !== 13 || !d.startsWith('978')) return null;
+  const core = d.slice(3, 12);
+  let sum = 0;
+  for (let i = 0; i < 9; i += 1) sum += (10 - i) * parseInt(core[i], 10);
+  const check = (11 - (sum % 11)) % 11;
+  return core + (check === 10 ? 'X' : String(check));
+}
+
+function pickBestIsbn(isbns = []) {
+  const list = (isbns || []).map((x) => String(x).replace(/[^0-9Xx]/g, '')).filter(Boolean);
+  const isbn13 = list.find((x) => x.length === 13 && x.startsWith('978'));
+  const isbn10 = list.find((x) => x.length === 10) || (isbn13 ? isbn13to10(isbn13) : null);
+  return { isbn10, isbn13: isbn13 || null };
+}
+
 async function fetchJson(url, timeoutMs = 12000) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -94,6 +162,24 @@ function coverFromCoverI(coverI) {
   return `https://covers.openlibrary.org/b/id/${n}-M.jpg`;
 }
 
+function coverFromOcaid(ocaid) {
+  const id = String(ocaid || '').trim();
+  if (!id || id.length < 3) return null;
+  return `https://archive.org/services/img/${encodeURIComponent(id)}`;
+}
+
+function coverFromAmazonIsbn(isbn) {
+  const isbn10 = isbn13to10(isbn);
+  if (!isbn10) return null;
+  return `https://images-na.ssl-images-amazon.com/images/P/${isbn10}.01.LZZZZZZZ.jpg`;
+}
+
+function coverFromAbeBooksIsbn(isbn) {
+  const d = String(isbn || '').replace(/[^0-9Xx]/g, '');
+  if (d.length < 10) return null;
+  return `https://pictures.abebooks.com/isbn/${d}-us.jpg`;
+}
+
 async function coverFromOlWork(olKey) {
   const m = String(olKey || '').match(/(OL\d+W)\b/i);
   if (!m) return null;
@@ -112,6 +198,16 @@ async function coverFromOlWork(olKey) {
 async function coverFromIsbn(isbn) {
   const clean = String(isbn || '').replace(/[^0-9Xx]/g, '');
   if (clean.length < 10) return null;
+
+  // 1) Amazon (ISBN-10) — souvent le seul à avoir les éditions FR récentes
+  const amz = coverFromAmazonIsbn(clean);
+  if (amz) return amz;
+
+  // 2) AbeBooks
+  const abe = coverFromAbeBooksIsbn(clean);
+  if (abe) return abe;
+
+  // 3) OL métadonnées édition
   const data = await fetchJson(
     `https://openlibrary.org/isbn/${clean}.json`,
     10000
@@ -121,42 +217,111 @@ async function coverFromIsbn(isbn) {
       const url = coverFromCoverI(c);
       if (url) return url;
     }
+    if (data.ocaid) {
+      const ia = coverFromOcaid(data.ocaid);
+      if (ia) return ia;
+    }
     if (data.works?.[0]?.key) {
       const fromWork = await coverFromOlWork(data.works[0].key);
       if (fromWork) return fromWork;
     }
   }
-  // Pas d'URL ISBN brute : souvent une image vide
+  return null;
+}
+
+async function coverFromEditionKey(editionKey) {
+  const m = String(editionKey || '').match(/(OL\d+M)\b/i);
+  if (!m) return null;
+  const data = await fetchJson(
+    `https://openlibrary.org/books/${m[1]}.json`,
+    10000
+  );
+  if (!data || data.__rateLimited) return null;
+  for (const c of data.covers || []) {
+    const url = coverFromCoverI(c);
+    if (url) return url;
+  }
+  if (data.ocaid) {
+    const ia = coverFromOcaid(data.ocaid);
+    if (ia) return ia;
+  }
+  // source_records amazon:ISBN
+  for (const src of data.source_records || []) {
+    const am = String(src).match(/^amazon:(\d{9}[\dXx])$/i);
+    if (am) {
+      const url = coverFromAmazonIsbn(am[1]);
+      if (url) return url;
+    }
+  }
+  const { isbn10, isbn13 } = pickBestIsbn([
+    ...(data.isbn_10 || []),
+    ...(data.isbn_13 || []),
+  ]);
+  if (isbn10) {
+    const url = coverFromAmazonIsbn(isbn10);
+    if (url) return url;
+  }
+  if (isbn13) {
+    const url = coverFromAbeBooksIsbn(isbn13);
+    if (url) return url;
+  }
   return null;
 }
 
 async function searchOpenLibrary(title, author) {
   const variants = titleVariants(title);
   if (!variants.length) return null;
+  const queryTitle = cleanTitle(title);
 
-  for (const base of variants.slice(0, 3)) {
-    const q = author ? `${base} ${author}` : base;
+  const attempts = [];
+  for (const base of variants.slice(0, 5)) {
+    if (author) attempts.push(`${base} ${author}`);
+    attempts.push(base);
+  }
+
+  for (const q of attempts) {
     const data = await fetchJson(
-      `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=8&fields=cover_i,isbn,key,title`,
+      `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=10&fields=cover_i,isbn,key,title,edition_key,ia,author_name`,
       12000
     );
     if (!data) continue;
     if (data.__rateLimited) return '__429__';
-    for (const doc of data.docs || []) {
+
+    const ranked = (data.docs || [])
+      .map((doc) => ({ doc, score: titleScore(queryTitle, doc?.title) }))
+      .filter((x) => x.score >= 45)
+      .sort((a, b) => b.score - a.score);
+
+    for (const { doc } of ranked) {
       const url = coverFromCoverI(doc?.cover_i);
       if (url) return url;
+
+      // IA (ocaid listée dans search)
+      if (Array.isArray(doc.ia) && doc.ia[0]) {
+        const ia = coverFromOcaid(doc.ia[0]);
+        if (ia) return ia;
+      }
+
+      // ISBN → Amazon / AbeBooks
+      const { isbn10, isbn13 } = pickBestIsbn(doc.isbn || []);
+      if (isbn10) {
+        const amz = coverFromAmazonIsbn(isbn10);
+        if (amz) return amz;
+      }
+      if (isbn13) {
+        const abe = coverFromAbeBooksIsbn(isbn13);
+        if (abe) return abe;
+      }
+
+      // Dig edition (ocaid / amazon source)
+      if (Array.isArray(doc.edition_key) && doc.edition_key[0]) {
+        const fromEd = await coverFromEditionKey(doc.edition_key[0]);
+        if (fromEd) return fromEd;
+      }
     }
   }
   return null;
 }
-
-const norm = (s) =>
-  String(s || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
 
 /**
  * Wikipedia : refuse les pages auteur (sinon photo d'auteur au lieu du livre).
@@ -173,22 +338,22 @@ async function searchWikipediaCover(title, author) {
     const pageNorm = norm(pageTitle || data.title);
     const desc = String(data.description || data.extract || '').slice(0, 280);
     const blob = `${pageTitle || ''} ${data.title || ''} ${desc}`;
-    // Page personne (acteur, auteur…) → photo, pas couverture
     const isPerson =
       /\b(actress|actor|actrice|acteur|singer|chanteur|chanteuse|écrivain|écrivaine|writer|author|novelist|romancier|romanci[eè]re|personnalité|politician|footballer|footballeur|painter|peintre)\b/i.test(
         desc
       ) &&
       !/\b(novel|roman|novella|livre|récit|ouvrage|thriller|manga|bande dessin)/i.test(blob);
     if (isPerson) return null;
-    // Page = nom de l'auteur seul → ignorer
     if (authorNorm && pageNorm === authorNorm) return null;
-    if (authorNorm && pageNorm.startsWith(authorNorm) && !pageNorm.includes(titleNorm.split(' ')[0] || '___')) {
-      // "Georges Perec" alors qu'on cherche "Choses"
+    if (
+      authorNorm &&
+      pageNorm.startsWith(authorNorm) &&
+      !pageNorm.includes(titleNorm.split(' ')[0] || '___')
+    ) {
       if (!titleNorm.split(/\s+/).some((w) => w.length > 3 && pageNorm.includes(w))) {
         return null;
       }
     }
-    // Exiger un chevauchement de mots significatifs avec le titre du livre
     const titleWords = titleNorm.split(/\s+/).filter((w) => w.length > 3);
     if (titleWords.length >= 2) {
       const hits = titleWords.filter((w) => pageNorm.includes(w)).length;
@@ -196,7 +361,6 @@ async function searchWikipediaCover(title, author) {
     }
     const thumb = data.originalimage?.source || data.thumbnail?.source;
     if (!thumb || /\.svg($|\?)/i.test(thumb)) return null;
-    // Portraits Commons fréquents
     if (/\/(commons\/)?a\/a[0-9]\/.*portrait/i.test(thumb)) return null;
     return String(thumb).split('?')[0].replace('http://', 'https://');
   };
@@ -217,7 +381,7 @@ async function searchWikipediaCover(title, author) {
   ];
 
   for (const lang of ['fr', 'en']) {
-    for (const slug of directSlugs.slice(0, 6)) {
+    for (const slug of directSlugs.slice(0, 8)) {
       const hit = await summary(lang, slug);
       if (hit) return hit;
     }
@@ -242,37 +406,48 @@ async function searchWikipediaCover(title, author) {
 async function searchGoogleBooks(title, author, isbn) {
   if (Date.now() < gbCooldownUntil) return null;
 
-  let q = '';
-  const clean = String(isbn || '').replace(/[^0-9Xx]/g, '');
-  if (clean.length >= 10) {
-    q = `isbn:${clean}`;
-  } else {
+  const queries = [];
+  const cleanIsbn = String(isbn || '').replace(/[^0-9Xx]/g, '');
+  if (cleanIsbn.length >= 10) queries.push(`isbn:${cleanIsbn}`);
+
+  for (const t of titleVariants(title).slice(0, 3)) {
     const parts = [];
-    const t = cleanTitle(title);
     if (t) parts.push(`intitle:${t}`);
     if (author) parts.push(`inauthor:${author}`);
-    q = parts.join('+') || t;
+    if (parts.length) queries.push(parts.join('+'));
+    queries.push(author ? `${t} ${author}` : t);
   }
-  if (!q) return null;
 
-  const data = await fetchJson(
-    `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=8&printType=books`,
-    10000
-  );
-  if (data?.__rateLimited) {
-    gbCooldownUntil = Date.now() + 12 * 60 * 1000;
-    return '__429__';
-  }
-  if (!data) return null;
+  for (const q of queries) {
+    if (!q) continue;
+    const data = await fetchJson(
+      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=8&printType=books`,
+      10000
+    );
+    if (data?.__rateLimited) {
+      gbCooldownUntil = Date.now() + 12 * 60 * 1000;
+      return '__429__';
+    }
+    if (!data) continue;
 
-  for (const item of data.items || []) {
-    const links = item?.volumeInfo?.imageLinks || {};
-    const thumb =
-      links.medium ||
-      links.large ||
-      links.thumbnail ||
-      links.smallThumbnail;
-    if (thumb) return hardenGoogleBooksCover(thumb);
+    const want = norm(cleanTitle(title));
+    const ranked = (data.items || [])
+      .map((item) => ({
+        item,
+        score: titleScore(want, item?.volumeInfo?.title),
+      }))
+      .filter((x) => x.score >= 40 || !want)
+      .sort((a, b) => b.score - a.score);
+
+    for (const { item } of ranked) {
+      const links = item?.volumeInfo?.imageLinks || {};
+      const thumb =
+        links.medium ||
+        links.large ||
+        links.thumbnail ||
+        links.smallThumbnail;
+      if (thumb) return hardenGoogleBooksCover(thumb);
+    }
   }
   return null;
 }
@@ -291,7 +466,7 @@ function pump() {
       setTimeout(() => {
         busy = false;
         pump();
-      }, 280);
+      }, 220);
     });
 }
 
@@ -313,7 +488,6 @@ export async function searchCoverInBrowser(title, author = '', opts = {}) {
   const olKey = opts.ol_key || '';
   const key = cacheKey(title, a, isbn);
 
-  // Cache succès uniquement
   if (cache.has(key)) {
     const hit = cache.get(key);
     if (hit) return hit;
@@ -329,7 +503,7 @@ export async function searchCoverInBrowser(title, author = '', opts = {}) {
 
     let cover = null;
 
-    // 1) OL work / ISBN (métadonnées → cover_i)
+    // 1) OL work / ISBN fourni
     if (olKey) {
       cover = await coverFromOlWork(olKey);
     }
@@ -337,18 +511,18 @@ export async function searchCoverInBrowser(title, author = '', opts = {}) {
       cover = await coverFromIsbn(isbn);
     }
 
-    // 2) Open Library search (souvent le plus fiable pour les romans)
+    // 2) Open Library search (+ IA / Amazon / AbeBooks via docs)
     if (!isUsableCoverUrl(cover)) {
       cover = await searchOpenLibrary(title, a);
       if (cover === '__429__') cover = null;
     }
 
-    // 3) Wikipedia (séries / classiques) — pas les pages auteur
+    // 3) Wikipedia
     if (!isUsableCoverUrl(cover)) {
       cover = await searchWikipediaCover(title, a);
     }
 
-    // 4) Google Books — le front filtre les « image not available »
+    // 4) Google Books
     if (!isUsableCoverUrl(cover)) {
       cover = await searchGoogleBooks(title, a, isbn);
       if (cover === '__429__') cover = null;
@@ -362,7 +536,6 @@ export async function searchCoverInBrowser(title, author = '', opts = {}) {
       return finalUrl;
     }
 
-    // Pas de cache négatif
     return null;
   });
 }

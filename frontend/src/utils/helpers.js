@@ -326,9 +326,10 @@ export const isUsableCoverUrl = (url) => {
   if (!u || u.includes('undefined')) return false;
   if (u.startsWith('data:')) return false;
   if (/\/b\/(?:id|olid)\/OL\d+W/i.test(u)) return false;
-  // archive.org : OK s'il s'agit d'une image de couverture OL miroir (/download/…jpg)
-  // sinon normalizeCoverUrl tentera de le réécrire vers covers.openlibrary.org
-  if (/archive\.org/i.test(u) && !/\.(jpe?g|png|webp)(\?|$)/i.test(u) && !/\/download\//i.test(u)) {
+  // archive.org : vignettes /services/img/ et /download/…jpg OK
+  if (/archive\.org/i.test(u)) {
+    if (/\/services\/img\//i.test(u)) return true;
+    if (/\.(jpe?g|png|webp)(\?|$)/i.test(u) || /\/download\//i.test(u)) return true;
     return false;
   }
   return true;
@@ -345,10 +346,18 @@ export const normalizeCoverUrl = (url) => {
     if (!/[?&]edge=/.test(u)) u += (u.includes('?') ? '&' : '?') + 'edge=curl';
     return u;
   }
+  // Amazon / AbeBooks : garder tel quel
+  if (/ssl-images-amazon\.com/i.test(u) || /pictures\.abebooks\.com/i.test(u)) {
+    return u;
+  }
   if (/archive\.org/i.test(u)) {
+    // Couverture IA directe (services/img ou page/cover) — ne pas vider
+    if (/\/services\/img\//i.test(u) || /\/page\/cover/i.test(u) || /\/download\//i.test(u)) {
+      return u.split('?')[0];
+    }
     const arch = u.match(/(?:\/|=)(\d+)-[LM]\.jpe?g/i);
     if (arch) return `https://covers.openlibrary.org/b/id/${arch[1]}-M.jpg`;
-    return '';
+    return u;
   }
   u = u.replace(
     /(covers\.openlibrary\.org\/b\/(?:id|olid|isbn)\/[^/?]+)-[LS]\.jpe?g/i,
@@ -395,7 +404,12 @@ export const coverImgSrc = (url, { forceProxy = false } = {}) => {
     return viaWsrv(n);
   }
 
-  // archive.org : tenter la réécriture OL, sinon proxy direct (modale affiche souvent ça)
+  // Amazon / AbeBooks : proxy (évite hotlink bloqué / GIF 1×1)
+  if (/ssl-images-amazon\.com/i.test(raw) || /pictures\.abebooks\.com/i.test(raw)) {
+    return viaWsrv(raw.replace('http://', 'https://'));
+  }
+
+  // archive.org : tenter la réécriture OL, sinon proxy direct
   if (/archive\.org/i.test(raw)) {
     const rewritten = normalizeCoverUrl(raw);
     if (rewritten && /covers\.openlibrary\.org/i.test(rewritten)) {

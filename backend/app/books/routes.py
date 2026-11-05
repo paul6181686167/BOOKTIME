@@ -596,9 +596,11 @@ async def resolve_book_synopsis(
     if not description:
         description = fetched_desc or cached_desc or ""
         src = result.get("source") or ("catalog" if cached_desc else "none")
-    # Si encore anglais → traduction FR
+    # Si encore anglais → traduction FR (jamais renvoyer l'EN)
     if description and looks_english(description) and not looks_french(description):
         description, src = ensure_french_synopsis(description, source=src or "fetch")
+    if description and looks_english(description) and not looks_french(description):
+        description = ""
     pages = result.get("pages") if include_pages else cached_pages
     try:
         pages = int(pages) if pages is not None else None
@@ -805,9 +807,11 @@ async def get_book_synopsis(
     else:
         description = fetched_desc or existing_desc
 
-    # Dernier recours : traduire un résumé encore anglais
+    # Dernier recours : traduire un résumé encore anglais (jamais persister l'EN)
     if description and looks_english(description) and not looks_french(description):
         description, source = ensure_french_synopsis(description, source=source)
+    if description and looks_english(description) and not looks_french(description):
+        description = ""
 
     pages = int(existing_pages) if has_pages else result.get("pages")
     if pages is not None:
@@ -821,10 +825,10 @@ async def get_book_synopsis(
     persisted = False
     patch = {}
     if persist:
-        should_persist_desc = bool(description) and (
+        should_persist_desc = bool(description) and looks_french(description) and (
             not existing_desc
-            or (existing_is_en and looks_french(description))
-            or (existing_desc != description and looks_french(description))
+            or existing_is_en
+            or existing_desc != description
         )
         if should_persist_desc:
             patch["description"] = description

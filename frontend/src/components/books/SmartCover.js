@@ -16,15 +16,15 @@ import {
 import { resolveCoverForVisibleItem } from '../../services/libraryMetaEnrichment';
 
 export const CARD_SHELL =
-  'h-full bg-transparent sm:bg-white sm:dark:bg-gray-800 rounded-xl overflow-hidden relative transition-shadow duration-200 sm:shadow-card sm:group-hover:shadow-card-hover';
+  'h-full bg-transparent rounded-xl overflow-hidden relative transition-transform duration-200';
 
 export const COVER_FRAME =
-  'aspect-[2/3] rounded-xl sm:rounded-none bg-booktime-mist/35 dark:bg-gray-700 relative overflow-hidden';
+  'aspect-[2/3] rounded-xl bg-[#141414] relative overflow-hidden ring-1 ring-white/[0.06] shadow-[0_8px_24px_rgba(0,0,0,0.55)]';
 
 export const COVER_IMAGE =
-  'h-full w-full object-cover transition-transform duration-300 sm:group-hover:scale-[1.04]';
+  'h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.05]';
 
-export const PILL = 'backdrop-blur-sm sm:ring-1 sm:ring-white/15';
+export const PILL = 'backdrop-blur-sm ring-1 ring-white/10';
 
 const PLACEHOLDER_TINTS = [
   'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
@@ -72,7 +72,7 @@ export const CoverPlaceholder = ({ text, hidden = false }) => (
 );
 
 export const CoverScrim = () => (
-  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-black/25 to-transparent" />
+  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 );
 
 /**

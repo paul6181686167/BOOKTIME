@@ -105,7 +105,7 @@ const useSectionSort = () => {
 };
 
 // Composant de contrôles de tri
-const SortControls = ({ sortConfig, setSortConfig }) => {
+const SortControls = ({ sortConfig, setSortConfig, isVoid = false }) => {
   const fields = [
     { key: 'date_added', label: 'Date' },
     { key: 'title',      label: 'Titre' },
@@ -113,7 +113,7 @@ const SortControls = ({ sortConfig, setSortConfig }) => {
   ];
   return (
     <div className="flex items-center gap-2 ml-4">
-      <span className="text-xs text-gray-500 dark:text-gray-400">Trier par</span>
+      <span className={`text-xs ${isVoid ? 'text-white/30' : 'text-gray-500 dark:text-gray-400'}`}>Trier</span>
       {fields.map(f => (
         <button
           key={f.key}
@@ -122,10 +122,14 @@ const SortControls = ({ sortConfig, setSortConfig }) => {
               ? { ...prev, order: prev.order === 'asc' ? 'desc' : 'asc' }
               : { field: f.key, order: 'asc' }
           )}
-          className={`px-2 py-1 text-xs rounded transition-colors ${
+          className={`px-2 py-1 text-xs rounded-full transition-colors ${
             sortConfig.field === f.key
-              ? 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 font-medium'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              ? isVoid
+                ? 'bg-[#f0d060] text-black font-medium'
+                : 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 font-medium'
+              : isVoid
+                ? 'bg-white/[0.06] text-white/45 hover:bg-white/[0.1]'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
         >
           {f.label} {sortConfig.field === f.key ? (sortConfig.order === 'asc' ? '↑' : '↓') : ''}
@@ -212,6 +216,7 @@ function AppContent() {
 // Composant principal de l'application
 function MainApp() {
   const { user } = useAuth();
+  const { isVoid } = useTheme();
   const navigate = useNavigate();
   useIdlePreload();
   
@@ -802,7 +807,7 @@ function MainApp() {
   const sortedCompleted = useMemo(() => sortBooks(groupedBooks.completed || []), [sortBooks, groupedBooks.completed]);
 
   return (
-    <div className="min-h-screen bg-honeycomb transition-colors duration-200">
+    <div className={`min-h-screen transition-colors duration-200 ${isVoid ? 'bg-cinema-void' : 'bg-honeycomb'}`}>
       {/* Mobile: overlay de recherche */}
       <MobileSearchOverlay
         isOpen={showMobileSearch}
@@ -815,20 +820,23 @@ function MainApp() {
         }}
       />
 
-      {/* Header desktop + mobile compact */}
-      {/* Header translucide : le contenu défile visiblement dessous, ce qui
-          ancre la barre sans la faire peser comme un bandeau opaque. */}
-      <header className="bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl border-b-0 sm:border-b border-booktime-mist/55 dark:border-booktime-800/50 sticky top-0 z-30 safe-area-top">
+      <header
+        className={`backdrop-blur-xl sticky top-0 z-30 safe-area-top border-b ${
+          isVoid
+            ? 'bg-[#050505]/75 border-white/[0.04]'
+            : 'bg-booktime-mistSoft/75 dark:bg-gray-900/70 border-booktime-mist/55 dark:border-booktime-800/50 sm:border-b border-b-0'
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Desktop header */}
           <div className="hidden md:flex justify-between items-center h-16">
-            {/* Logo */}
             <div className="flex-shrink-0 flex items-center">
-              <span className="text-2xl">🐝</span>
-              <h1 className="ml-2 text-xl font-bold text-gray-900 dark:text-white">BOOKTIME</h1>
+              <span className="text-2xl opacity-90">🐝</span>
+              <h1 className={`ml-2 text-xl font-bold tracking-tight ${isVoid ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                BOOKTIME
+              </h1>
             </div>
             
-            {/* Barre de recherche centrale */}
             <div className="flex-1 max-w-2xl mx-8">
               <UnifiedSearchBar 
                 searchTerm={searchHook.lastSearchTerm || ''}
@@ -841,20 +849,25 @@ function MainApp() {
               />
             </div>
             
-            {/* Profil et navigation */}
             <div className="flex-shrink-0 flex items-center space-x-4">
-              {/* Action secondaire : discrète, pour ne pas concurrencer
-                  visuellement l'accent porté par l'avatar juste à côté. */}
               <button
                 onClick={() => navigate('/recommendations')}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800 rounded-lg transition-colors duration-200"
+                className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                  isVoid
+                    ? 'text-white/55 hover:text-white hover:bg-white/5'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800'
+                }`}
               >
                 <span>Recommandations</span>
               </button>
               
               <button
                 onClick={() => setShowProfileModal(true)}
-                className="bg-booktime-600 hover:bg-booktime-700 text-white font-bold py-2 px-4 rounded-full shadow-card transition-colors duration-200"
+                className={`font-bold py-2 px-4 rounded-full transition-colors duration-200 ${
+                  isVoid
+                    ? 'bg-[#f0d060] hover:bg-[#e4c24a] text-black shadow-[0_0_20px_rgba(240,208,96,0.25)]'
+                    : 'bg-booktime-600 hover:bg-booktime-700 text-white shadow-card'
+                }`}
               >
                 {user?.email?.[0]?.toUpperCase() || '?'}{(user?.email?.[1] || '')?.toUpperCase() || ''}
               </button>
@@ -864,12 +877,14 @@ function MainApp() {
           {/* Mobile header */}
           <div className="flex md:hidden justify-between items-center h-12">
             <div className="flex items-center gap-2">
-              <span className="text-xl">🐝</span>
-              <h1 className="text-base font-bold text-gray-900 dark:text-white">BOOKTIME</h1>
+              <span className="text-xl opacity-90">🐝</span>
+              <h1 className={`text-base font-bold tracking-tight ${isVoid ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                BOOKTIME
+              </h1>
             </div>
             <button
               onClick={() => setShowMobileSearch(true)}
-              className="p-2 text-gray-500 dark:text-gray-400"
+              className={`p-2 ${isVoid ? 'text-white/45 hover:text-white/80' : 'text-gray-500 dark:text-gray-400'}`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -879,23 +894,27 @@ function MainApp() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+      <main className="max-w-7xl mx-auto pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0">
         <div className="px-4 sm:px-6 lg:px-8">
           {/* Mode recherche */}
           {searchHook.isSearchMode && (
             <div className="py-3 sm:py-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
                 <div>
-                  <h2 className="font-display text-lg sm:text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
+                  <h2 className={`font-display text-lg sm:text-2xl font-semibold tracking-tight ${isVoid ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                     Résultats pour «&nbsp;{searchHook.lastSearchTerm}&nbsp;»
                   </h2>
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                  <p className={`text-xs sm:text-sm ${isVoid ? 'text-white/45' : 'text-gray-600 dark:text-gray-400'}`}>
                     {displayedBooks.length} résultat(s) trouvé(s)
                   </p>
                 </div>
                 <button
                   onClick={backToLibrary}
-                  className="self-start sm:self-auto px-3 sm:px-4 py-1.5 sm:py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 ring-1 ring-gray-900/10 dark:ring-white/10 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                  className={`self-start sm:self-auto px-3 sm:px-4 py-1.5 sm:py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                    isVoid
+                      ? 'text-white/80 bg-white/5 ring-1 ring-white/10 hover:bg-white/10'
+                      : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 ring-1 ring-gray-900/10 dark:ring-white/10 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
                 >
                   ← Retour
                 </button>
@@ -908,16 +927,19 @@ function MainApp() {
             <div className="py-3 sm:py-6">
               {/* Onglets de navigation */}
               <div className="flex justify-between items-center mb-4 sm:mb-6">
-                {/* Onglets principaux : scroll horizontal sur mobile */}
                 <div className="flex space-x-1 overflow-x-auto scrollbar-hide mobile-scroll-x pb-1 sm:pb-0 flex-1 mr-2">
                   {TAB_CONFIG.filter(tab => tab.key !== 'upcoming').map((tab) => (
                     <button
                       key={tab.key}
                       onClick={() => handleTabChange(tab.key)}
-                      className={`flex-shrink-0 px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors duration-200 text-sm sm:text-base ${
+                      className={`flex-shrink-0 px-3 sm:px-4 py-2 rounded-full font-medium transition-colors duration-200 text-sm sm:text-base ${
                         activeTab === tab.key
-                          ? 'bg-booktime-600 text-white shadow-card'
-                          : 'bg-gray-100 hover:bg-gray-200 text-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300'
+                          ? isVoid
+                            ? 'bg-[#f0d060] text-black shadow-[0_0_18px_rgba(240,208,96,0.22)]'
+                            : 'bg-booktime-600 text-white shadow-card'
+                          : isVoid
+                            ? 'bg-white/[0.04] hover:bg-white/[0.08] text-white/50'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300'
                       }`}
                     >
                       {tab.label}
@@ -925,16 +947,19 @@ function MainApp() {
                   ))}
                 </div>
                 
-                {/* Bouton "À venir" — desktop uniquement (mobile = bottom nav) */}
                 <button
                   onClick={openUpcomingPanel}
-                  className="hidden md:flex px-4 py-2 rounded-lg font-medium transition-colors duration-200 bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/20 dark:hover:bg-purple-800/30 dark:text-purple-300"
+                  className={`hidden md:flex px-4 py-2 rounded-full font-medium transition-colors duration-200 ${
+                    isVoid
+                      ? 'bg-white/[0.06] hover:bg-white/[0.1] text-white/70'
+                      : 'bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/20 dark:hover:bg-purple-800/30 dark:text-purple-300'
+                  }`}
                 >
                   <span>À venir</span>
                 </button>
               </div>
               
-              {/* Statistiques filtrées par onglet actif */}
+              {/* Stats oblongues — une seule ligne sur mobile */}
               {!searchHook.isSearchMode && (() => {
                 const completed = (groupedBooks.completed || []).length;
                 const reading   = (groupedBooks.reading   || []).length;
@@ -942,19 +967,38 @@ function MainApp() {
                 const toReread  = (groupedBooks.to_reread || []).length;
                 const total     = completed + reading + toRead + toReread;
                 return (
-                  <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
+                  <div className="flex flex-nowrap items-center gap-1.5 sm:gap-2.5 mb-4 sm:mb-6 overflow-x-auto scrollbar-hide mobile-scroll-x -mx-1 px-1">
                     {[
-                      { value: total,     label: 'Total',    color: 'text-gray-700 dark:text-gray-200',     bg: 'bg-white dark:bg-gray-800',           border: 'border-gray-200 dark:border-gray-700'  },
-                      { value: completed, label: 'Terminés', color: 'text-green-600 dark:text-green-400',   bg: 'bg-green-50 dark:bg-green-900/20',    border: 'border-green-200 dark:border-green-800' },
-                      { value: reading,   label: 'En cours', color: 'text-blue-600 dark:text-blue-400',     bg: 'bg-blue-50 dark:bg-blue-900/20',      border: 'border-blue-200 dark:border-blue-800'   },
-                      { value: toRead,    label: 'À lire',   color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/20',  border: 'border-orange-200 dark:border-orange-800'},
+                      { value: total,     label: 'Total' },
+                      { value: completed, label: 'Terminés' },
+                      { value: reading,   label: 'En cours' },
+                      { value: toRead,    label: 'À lire' },
                       ...(toReread > 0
-                        ? [{ value: toReread, label: 'À relire', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-200 dark:border-purple-800' }]
+                        ? [{ value: toReread, label: 'À relire' }]
                         : []),
                     ].map((s, i) => (
-                      <div key={s.label} className={`flex items-center gap-2 px-4 py-2 rounded-full border-0 sm:border ${s.bg} ${s.border} sm:shadow-sm section-appear`} style={{ animationDelay: `${i * 80}ms` }}>
-                        <AnimatedCounter value={s.value} className={`text-xl font-bold ${s.color}`} />
-                        <span className={`text-sm ${s.color} opacity-80`}>{s.label}</span>
+                      <div
+                        key={s.label}
+                        className={`flex-shrink-0 inline-flex items-center gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-3.5 py-1 sm:py-1.5 section-appear border ${
+                          isVoid
+                            ? 'border-white/[0.08] bg-white/[0.05]'
+                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                        }`}
+                        style={{ animationDelay: `${i * 80}ms` }}
+                      >
+                        <AnimatedCounter
+                          value={s.value}
+                          className={`text-sm sm:text-base font-semibold tabular-nums leading-none ${
+                            isVoid ? 'text-white/90' : 'text-gray-800 dark:text-gray-100'
+                          }`}
+                        />
+                        <span
+                          className={`text-[10px] sm:text-xs whitespace-nowrap leading-none ${
+                            isVoid ? 'text-white/40' : 'text-gray-500 dark:text-gray-400'
+                          }`}
+                        >
+                          {s.label}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -969,7 +1013,11 @@ function MainApp() {
 
               {/* Erreur de chargement */}
               {unifiedContent.error && !unifiedContent.loading && (
-                <div className="flex items-center gap-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+                <div className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm ${
+                  isVoid
+                    ? 'border border-red-500/30 bg-red-950/40 text-red-300'
+                    : 'border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
+                }`}>
                   <span>⚠️</span>
                   <span>Impossible de charger ta bibliothèque. Vérifie ta connexion et <button className="underline font-medium" onClick={() => unifiedContent.loadUnifiedContent({ forceRefresh: true })}>réessaie</button>.</span>
                 </div>
@@ -977,12 +1025,12 @@ function MainApp() {
 
               {/* Skeleton de chargement initial */}
               {unifiedContent.loading && (
-                <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 sm:gap-5 p-2 sm:p-6">
+                <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-x-2.5 gap-y-4 sm:gap-5 p-1 sm:p-6">
                   {Array.from({ length: 12 }).map((_, i) => (
                     <div key={i} className="animate-pulse">
-                      <div className="bg-gray-200 dark:bg-gray-700 rounded-xl aspect-[2/3] mb-2" />
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded mb-1" />
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+                      <div className={`rounded-xl aspect-[2/3] mb-2 ${isVoid ? 'bg-white/[0.06] ring-1 ring-white/[0.04]' : 'bg-gray-200 dark:bg-gray-700'}`} />
+                      <div className={`h-3 rounded mb-1 ${isVoid ? 'bg-white/[0.06]' : 'bg-gray-200 dark:bg-gray-700'}`} />
+                      <div className={`h-2 rounded w-2/3 ${isVoid ? 'bg-white/[0.04]' : 'bg-gray-200 dark:bg-gray-700'}`} />
                     </div>
                   ))}
                 </div>
@@ -992,10 +1040,10 @@ function MainApp() {
               {!unifiedContent.loading && groupedBooks.reading && groupedBooks.reading.length > 0 && (
                 <div className="section-appear">
                   <div className="flex items-center mb-3 sm:mb-4 flex-wrap gap-2">
-                    <h2 className="text-base sm:text-xl font-semibold text-yellow-600 dark:text-yellow-400">
-                      📖 En cours ({groupedBooks.reading.length})
+                    <h2 className={`text-base sm:text-xl font-semibold ${isVoid ? 'text-[#f0d060]' : 'text-yellow-600 dark:text-yellow-400'}`}>
+                      En cours ({groupedBooks.reading.length})
                     </h2>
-                    <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} />
+                    <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} isVoid={isVoid} />
                   </div>
                   <BookGrid
                     books={sortedReading}
@@ -1012,10 +1060,10 @@ function MainApp() {
               {!unifiedContent.loading && groupedBooks.to_read && groupedBooks.to_read.length > 0 && (
                 <div className="section-appear" style={{ animationDelay: '80ms' }}>
                   <div className="flex items-center mb-4 flex-wrap gap-2">
-                    <h2 className="text-xl font-semibold text-blue-600 dark:text-blue-400">
-                      📌 À lire ({groupedBooks.to_read.length})
+                    <h2 className={`text-xl font-semibold ${isVoid ? 'text-white/80' : 'text-blue-600 dark:text-blue-400'}`}>
+                      À lire ({groupedBooks.to_read.length})
                     </h2>
-                    <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} />
+                    <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} isVoid={isVoid} />
                   </div>
                   <BookGrid
                     books={sortedToRead}
@@ -1032,10 +1080,10 @@ function MainApp() {
               {!unifiedContent.loading && groupedBooks.to_reread && groupedBooks.to_reread.length > 0 && (
                 <div className="section-appear" style={{ animationDelay: '120ms' }}>
                   <div className="flex items-center mb-4 flex-wrap gap-2">
-                    <h2 className="text-xl font-semibold text-purple-600 dark:text-purple-400">
-                      🔁 À relire ({groupedBooks.to_reread.length})
+                    <h2 className={`text-xl font-semibold ${isVoid ? 'text-white/70' : 'text-purple-600 dark:text-purple-400'}`}>
+                      À relire ({groupedBooks.to_reread.length})
                     </h2>
-                    <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} />
+                    <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} isVoid={isVoid} />
                   </div>
                   <BookGrid
                     books={sortedToReread}
@@ -1052,10 +1100,10 @@ function MainApp() {
               {!unifiedContent.loading && groupedBooks.completed && groupedBooks.completed.length > 0 && (
                 <div className="section-appear" style={{ animationDelay: '160ms' }}>
                   <div className="flex items-center mb-4 flex-wrap gap-2">
-                    <h2 className="text-xl font-semibold text-green-600 dark:text-green-400">
-                      ✅ Terminé ({groupedBooks.completed.length})
+                    <h2 className={`text-xl font-semibold ${isVoid ? 'text-white/55' : 'text-green-600 dark:text-green-400'}`}>
+                      Terminé ({groupedBooks.completed.length})
                     </h2>
-                    <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} />
+                    <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} isVoid={isVoid} />
                   </div>
                   <BookGrid
                     books={sortedCompleted}
@@ -1290,7 +1338,7 @@ function MainApp() {
       <Toaster
         position="bottom-right"
         toastOptions={{
-          style: { marginBottom: 'calc(4rem + env(safe-area-inset-bottom))' }
+          style: { marginBottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }
         }}
         containerStyle={{ bottom: 0 }}
       />
@@ -1368,7 +1416,7 @@ function AppWithAuth() {
       <Toaster
         position="bottom-right"
         toastOptions={{
-          style: { marginBottom: 'calc(4rem + env(safe-area-inset-bottom))' },
+          style: { marginBottom: 'calc(5.5rem + env(safe-area-inset-bottom))' },
         }}
         containerStyle={{ bottom: 0 }}
       />

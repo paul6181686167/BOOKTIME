@@ -140,16 +140,19 @@ export const useUnifiedContent = () => {
     loadUnifiedContent({ silent: localSnap.current.hasCache });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Résumé + pages en arrière-plan (sans clic sur la vignette)
+  // Résumés FR préchargés dès que la biblio est dispo (avant ouverture des fiches)
   useEffect(() => {
     if (loading) return;
     if (!books.length && !userSeriesLibrary.length) return;
-    return scheduleLibraryMetaEnrichment({
-      books,
-      userSeriesLibrary,
-      setBooks,
-      setUserSeriesLibrary,
-    });
+    return scheduleLibraryMetaEnrichment(
+      {
+        books,
+        userSeriesLibrary,
+        setBooks,
+        setUserSeriesLibrary,
+      },
+      600
+    );
   }, [loading, books, userSeriesLibrary]);
 
   // Fiches auteurs de la biblio pré-créées en arrière-plan

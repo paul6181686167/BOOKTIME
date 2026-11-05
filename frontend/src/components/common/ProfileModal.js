@@ -80,7 +80,7 @@ function ProfileModal({
   onAddFromOpenLibrary,
 }) {
   const { user, logout } = useAuth();
-  const { isDark, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('stats'); // 'stats' | 'goal' | 'heatmap' | 'collections' | 'authors'
@@ -723,14 +723,30 @@ function ProfileModal({
           {activeTab === 'stats' && (
             <div className="mt-4 space-y-2">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white mt-2 mb-3">⚙️ Paramètres</h3>
-              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                <span className="text-sm font-medium text-gray-900 dark:text-white">Mode sombre</span>
-                <button
-                  onClick={toggleTheme}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${isDark ? 'bg-blue-600' : 'bg-gray-200'}`}
-                >
-                  <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isDark ? 'translate-x-5' : 'translate-x-1'}`} />
-                </button>
+              <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg space-y-2">
+                <span className="text-sm font-medium text-gray-900 dark:text-white">Apparence</span>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {[
+                    { id: 'light', label: 'Clair' },
+                    { id: 'dark', label: 'Foncé' },
+                    { id: 'void', label: 'Très foncé' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setTheme(opt.id)}
+                      className={`px-2 py-2 rounded-lg text-xs font-medium transition-colors ${
+                        theme === opt.id
+                          ? opt.id === 'void'
+                            ? 'bg-[#f0d060] text-black'
+                            : 'bg-booktime-600 text-white'
+                          : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 ring-1 ring-gray-200 dark:ring-gray-600'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {[
