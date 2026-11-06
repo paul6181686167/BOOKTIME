@@ -22,7 +22,11 @@ function Stars({ value, size = 'md' }) {
 /**
  * Section « Avis de la communauté » : moyenne + liste d'avis publics.
  */
-export default function CommunityReviews({ book, refreshKey = 0 }) {
+export default function CommunityReviews({
+  book,
+  refreshKey = 0,
+  emptyLabel = 'Pas encore de notes communautaires pour ce livre.',
+}) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -133,7 +137,7 @@ export default function CommunityReviews({ book, refreshKey = 0 }) {
           </>
         ) : (
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Pas encore de notes communautaires pour ce livre.
+            {emptyLabel}
           </p>
         )}
       </div>

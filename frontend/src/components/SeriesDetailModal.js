@@ -1485,7 +1485,7 @@ const SeriesDetailModal = ({
 
         {/* Note & avis de la série (comme les fiches livre) */}
         <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6 space-y-3">
-          {seriesStatus === 'completed' && isSeriesOwned ? (
+          {isSeriesOwned ? (
             <>
               <div>
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Note</h3>
@@ -1533,9 +1533,7 @@ const SeriesDetailModal = ({
             </>
           ) : (
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {isSeriesOwned
-                ? 'Passez la série en Terminé pour noter et publier un avis.'
-                : 'Ajoutez la série pour noter et publier un avis.'}
+              Ajoutez la série pour noter et publier un avis.
             </p>
           )}
 
@@ -1546,6 +1544,7 @@ const SeriesDetailModal = ({
               author: series?.author || series?.authors?.[0] || '',
             }}
             refreshKey={communityRefreshKey}
+            emptyLabel="Pas encore de notes communautaires pour cette série."
           />
         </div>
 
