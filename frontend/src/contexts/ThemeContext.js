@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
-import { isNativeApp } from '../utils/platform';
 import { getThemeChrome } from '../utils/themeChrome';
 import { applyThemeColor } from '../utils/applyThemeColor';
 
@@ -87,8 +86,7 @@ export const ThemeProvider = ({ children }) => {
   themeRef.current = theme;
 
   // Changement de thème demandé par l'utilisateur.
-  // PWA installée (mobile) : la barre système ne relit sa couleur qu'au chargement
-  // de la page → on recharge juste après avoir mémorisé le thème.
+  // App native : NativeAppShell applique la couleur de la barre système (SystemBars).
   const changeTheme = useCallback((next) => {
     const normalized = normalizeTheme(next);
     if (!normalized || normalized === themeRef.current) return;
@@ -102,13 +100,6 @@ export const ThemeProvider = ({ children }) => {
     themeRef.current = normalized;
     setThemeState(normalized);
 
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone === true;
-    const isPhone = window.matchMedia('(max-width: 767px)').matches;
-    if (isStandalone && isPhone && !isNativeApp()) {
-      window.setTimeout(() => window.location.reload(), 150);
-    }
   }, []);
 
   const setTheme = changeTheme;

@@ -90,25 +90,6 @@ function setThemeColorMeta(color) {
   ms.setAttribute('content', color);
 }
 
-/** Manifest avec couleur dynamique — Chrome PWA relit parfois au hop d’URL. */
-function syncManifestTheme(color) {
-  let link = document.querySelector('link[rel="manifest"]');
-  if (!link) {
-    link = document.createElement('link');
-    link.setAttribute('rel', 'manifest');
-    document.head.appendChild(link);
-  }
-  const c = encodeURIComponent(color);
-  link.setAttribute('href', `/manifest.json?c=${c}`);
-
-  if (navigator.serviceWorker?.controller) {
-    navigator.serviceWorker.controller.postMessage({
-      type: 'SET_THEME_COLOR',
-      color,
-    });
-  }
-}
-
 /**
  * @param {string} color hex
  * @param {'light'|'dark'|'void'} [theme]
@@ -129,5 +110,4 @@ export function applyThemeColor(color, theme) {
   setBootBackground(color);
   if (theme) setColorScheme(theme);
   setThemeColorMeta(color);
-  syncManifestTheme(color);
 }
