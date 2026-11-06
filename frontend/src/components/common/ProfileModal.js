@@ -344,7 +344,7 @@ function ProfileModal({
               <button
                 type="button"
                 onClick={() => setShowIsbnScanner(true)}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-medium text-sm shadow-sm"
+                className="md:hidden w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-medium text-sm shadow-sm"
               >
                 <span aria-hidden></span>
                 Scanner un ISBN
