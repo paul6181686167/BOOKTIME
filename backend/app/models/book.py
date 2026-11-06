@@ -46,6 +46,7 @@ class BookUpdate(BaseModel):
     publish_date: Optional[str] = None
     date_confidence: Optional[str] = None
     watchlist: Optional[bool] = None
+    is_favorite: Optional[bool] = None       # Livre préféré, visible par les amis
 
 class BookResponse(BaseModel):
     id: str

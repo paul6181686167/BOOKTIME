@@ -30,6 +30,7 @@ const ProfileModal = lazy(() => import('./components/common/ProfileModal'));
 const ExportImportModal = lazy(() => import('./components/export-import/ExportImportModal'));
 const UpcomingPanel = lazy(() => import('./components/UpcomingPanel'));
 const SocialModal = lazy(() => import('./components/social/SocialModal'));
+const FriendsModal = lazy(() => import('./components/friends/FriendsModal'));
 const AdvancedRecommendationsModal = lazy(() =>
   import('./components/advanced-recommendations/AdvancedRecommendationsModal')
 );
@@ -253,6 +254,8 @@ function MainApp() {
   const [showIsbnScanner, setShowIsbnScanner] = useState(false);
   const [showExportImportModal, setShowExportImportModal] = useState(false);
   const [showSocialModal, setShowSocialModal] = useState(false);
+  const [showFriendsModal, setShowFriendsModal] = useState(false);
+  const [friendsRecommendBook, setFriendsRecommendBook] = useState(null);
   const [showAdvancedRecommendationsModal, setShowAdvancedRecommendationsModal] = useState(false);
   const [showIntegrationsModal, setShowIntegrationsModal] = useState(false);
   const [showUpcomingPanel, setShowUpcomingPanel] = useState(false);
@@ -291,6 +294,24 @@ function MainApp() {
     window.addEventListener('openSocial', handleOpenSocial);
     return () => {
       window.removeEventListener('openSocial', handleOpenSocial);
+    };
+  }, []);
+
+  // Amis : ouverture depuis le profil, ou depuis une fiche livre pour recommander ce livre
+  useEffect(() => {
+    const handleOpenFriends = () => {
+      setFriendsRecommendBook(null);
+      setShowFriendsModal(true);
+    };
+    const handleRecommendToFriend = (event) => {
+      setFriendsRecommendBook(event?.detail?.book || null);
+      setShowFriendsModal(true);
+    };
+    window.addEventListener('openFriends', handleOpenFriends);
+    window.addEventListener('recommendToFriend', handleRecommendToFriend);
+    return () => {
+      window.removeEventListener('openFriends', handleOpenFriends);
+      window.removeEventListener('recommendToFriend', handleRecommendToFriend);
     };
   }, []);
 
@@ -1316,6 +1337,19 @@ function MainApp() {
         />
       )}
       
+      {showFriendsModal && (
+        <FriendsModal
+          isOpen={showFriendsModal}
+          onClose={() => setShowFriendsModal(false)}
+          recommendBook={friendsRecommendBook}
+          libraryBooks={unifiedContent.books || []}
+          onOpenBook={(bookLike) => {
+            booksHook.setSelectedBook(bookLike);
+            booksHook.setShowBookModal(true);
+          }}
+        />
+      )}
+
       {showSocialModal && (
         <SocialModal
           isOpen={showSocialModal}

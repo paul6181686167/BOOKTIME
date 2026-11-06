@@ -26,6 +26,7 @@ import {
 } from '../../utils/readingTime';
 import IsbnScannerModal from './IsbnScannerModal';
 import ProfileIdentityCard, { UserAvatar } from './ProfileIdentityCard';
+import friendsService from '../../services/friendsService';
 import DeleteAccountDialog from '../user/DeleteAccountDialog';
 
 // ─── Heatmap de lecture ──────────────────────────────────────────────────────
@@ -144,6 +145,22 @@ function ProfileModal({
       setProfileData(loadProfileData());
       setCollections(getCollections());
     }
+  }, [isOpen, isPage]);
+
+  // Pastille « Amis et messages » : messages non lus + demandes d'amis reçues
+  const [friendsBadge, setFriendsBadge] = useState(0);
+  useEffect(() => {
+    if (!isOpen && !isPage) return undefined;
+    let cancelled = false;
+    friendsService
+      .unreadSummary()
+      .then((s) => {
+        if (!cancelled) setFriendsBadge((s.unread_messages || 0) + (s.pending_requests || 0));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen, isPage]);
 
   const readingTime = useMemo(() => summarizeReadingTime(libraryBooks), [libraryBooks]);
@@ -363,6 +380,22 @@ function ProfileModal({
           {activeTab === 'stats' && (
             <div className="space-y-4 animate-fadeIn">
               <ProfileIdentityCard />
+              <button
+                type="button"
+                onClick={() => {
+                  // La page profil mobile reste en arrière-plan ; la fenêtre modale se ferme
+                  if (!isPage) onClose();
+                  window.setTimeout(() => window.dispatchEvent(new CustomEvent('openFriends')), 80);
+                }}
+                className="w-full flex items-center justify-between gap-2 py-3 px-4 rounded-xl bg-white dark:bg-gray-800 border border-green-600 text-green-700 dark:text-green-400 font-medium text-sm hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+              >
+                <span>Amis et messages</span>
+                {friendsBadge > 0 && (
+                  <span className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-green-600 text-white text-[11px] font-bold flex items-center justify-center">
+                    {friendsBadge}
+                  </span>
+                )}
+              </button>
               <button
                 type="button"
                 onClick={() => setShowIsbnScanner(true)}
@@ -832,7 +865,6 @@ function ProfileModal({
               </div>
 
               {[
-                { event: 'openSocial',                  label: 'Social',            color: 'purple' },
                 { event: 'openExportImport',            label: 'Export/Import',      color: 'green'  },
                 { event: 'openAdvancedRecommendations', label: 'Recommandations IA', color: 'purple' },
                 { event: 'openIntegrations',            label: 'Intégrations',       color: 'orange' },

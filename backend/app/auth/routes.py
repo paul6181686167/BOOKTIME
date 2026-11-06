@@ -428,6 +428,16 @@ async def delete_account(
     except Exception:
         pass
 
+    # Amis : demandes et messages référencent l'utilisateur par l'une ou l'autre extrémité.
+    for name, fields in (
+        ("friendships", ("requester_id", "addressee_id")),
+        ("friend_messages", ("sender_id", "recipient_id")),
+    ):
+        try:
+            db[name].delete_many({"$or": [{f: user_id} for f in fields]})
+        except Exception:
+            continue
+
     users_collection.delete_one({"id": user_id})
 
     return {"message": "Compte supprimé définitivement.", "deleted": deleted}

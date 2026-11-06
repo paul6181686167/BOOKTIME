@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { XMarkIcon, StarIcon, TrashIcon, ArrowPathIcon, SparklesIcon } from '@heroicons/react/24/outline';
-import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
+import {
+  XMarkIcon,
+  StarIcon,
+  TrashIcon,
+  ArrowPathIcon,
+  SparklesIcon,
+  HeartIcon,
+  PaperAirplaneIcon,
+} from '@heroicons/react/24/outline';
+import { StarIcon as StarSolidIcon, HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 import LanguageSelector from './LanguageSelector';
 import { API_BASE_URL } from '../config/environment';
@@ -63,6 +71,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showCollectionMenu, setShowCollectionMenu] = useState(false);
   const [coverProxy, setCoverProxy] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(!!book.is_favorite);
   const pageInputRef = useRef(null);
   const pagesFetchDoneRef = useRef(null);
   const metaReqIdRef = useRef(0);
@@ -91,6 +100,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
       volume_number: book.volume_number || '',
     });
     setPageInput(book.current_page || 0);
+    setIsFavorite(!!book.is_favorite);
     setResolvedTotalPages(book.total_pages > 0 ? book.total_pages : null);
     // Nouveau livre → reset résumé enrichi (sauf si déjà une vraie 4ᵉ en base)
     setOlDetails(
@@ -554,6 +564,38 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
 
   const displayStatus = editData.status || book.status;
 
+  // Livre préféré : visible par les amis sur ton profil
+  const handleToggleFavorite = async () => {
+    if (!book?.id || !inLibrary) return;
+    const next = !isFavorite;
+    setIsFavorite(next);
+    try {
+      await onUpdate(book.id, { is_favorite: next });
+      toast.success(next ? 'Ajouté à tes livres préférés' : 'Retiré de tes livres préférés');
+    } catch (_) {
+      setIsFavorite(!next);
+      toast.error('Impossible de modifier les livres préférés');
+    }
+  };
+
+  // Ouvre la messagerie des amis avec ce livre prêt à être envoyé
+  const handleRecommendToFriend = () => {
+    const payload = {
+      title: titleMain || book.title,
+      author: book.author,
+      cover_url: book.cover_url || book.cover_image_url || '',
+      category: book.category,
+      ol_key: book.ol_key || '',
+      isbn: book.isbn || '',
+    };
+    onClose?.();
+    // La fiche se ferme d'abord : la fenêtre des amis s'ouvre ensuite par-dessus l'écran
+    window.setTimeout(
+      () => window.dispatchEvent(new CustomEvent('recommendToFriend', { detail: { book: payload } })),
+      80
+    );
+  };
+
   const handleRatingClick = async (rating) => {
     setEditData((prev) => ({ ...prev, rating }));
     // Note saisissable dès que le livre est terminé (sans mode édition complet)
@@ -681,6 +723,35 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                     >
                       <SparklesIcon className="h-3.5 w-3.5" />
                       Similaires
+                    </button>
+                  ) : null}
+                  {inLibrary && book?.id && !book.isDemotedSeries ? (
+                    <button
+                      type="button"
+                      onClick={handleToggleFavorite}
+                      aria-pressed={isFavorite}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                        isFavorite
+                          ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-200'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {isFavorite ? (
+                        <HeartSolidIcon className="h-3.5 w-3.5" />
+                      ) : (
+                        <HeartIcon className="h-3.5 w-3.5" />
+                      )}
+                      {isFavorite ? 'Préféré' : 'Ajouter aux préférés'}
+                    </button>
+                  ) : null}
+                  {titleMain ? (
+                    <button
+                      type="button"
+                      onClick={handleRecommendToFriend}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-900/60 transition-colors"
+                    >
+                      <PaperAirplaneIcon className="h-3.5 w-3.5" />
+                      Recommander à un ami
                     </button>
                   ) : null}
                 </div>
