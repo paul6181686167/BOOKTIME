@@ -1014,8 +1014,8 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               </div>
             ))}
 
-            {/* Progression */}
-            {totalPages > 0 && (
+            {/* Progression — masquée en lecture : déjà affichée au-dessus */}
+            {totalPages > 0 && !(inLibrary && !isEditing && displayStatus === 'reading') && (
               <div>
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Progression</h3>
                 {isEditing ? (
