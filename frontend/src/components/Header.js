@@ -172,7 +172,7 @@ const Header = ({
               {theme === 'void' ? (
                 <SunIcon className="h-5 w-5" />
               ) : theme === 'dark' ? (
-                <MoonIcon className="h-5 w-5 text-[#f0d060]" />
+                <MoonIcon className="h-5 w-5 text-[#4ade80]" />
               ) : (
                 <MoonIcon className="h-5 w-5" />
               )}

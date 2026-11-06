@@ -130,6 +130,27 @@ html.cinema .bg-white {
   background-color: #141414 !important;
   color: #f3f4f6;
 }
+
+/* Très foncé : plus de jaune d’interface (pastilles « En cours », stats…).
+   Les étoiles de notation (text-yellow-400 sans variante dark) restent dorées. */
+html.cinema .dark\:text-yellow-400,
+html.cinema .dark\:text-yellow-300,
+html.cinema .text-yellow-600,
+html.cinema .text-yellow-700,
+html.cinema .text-yellow-800 {
+  color: #4ade80 !important;
+}
+html.cinema .dark\:bg-yellow-900\/20,
+html.cinema .dark\:bg-yellow-900\/30,
+html.cinema .dark\:bg-yellow-900\/40,
+html.cinema .dark\:bg-yellow-900 {
+  background-color: rgba(74, 222, 128, 0.12) !important;
+}
+html.cinema .bg-yellow-500,
+html.cinema .bg-yellow-600,
+html.cinema .dark\:bg-yellow-400 {
+  background-color: #4ade80 !important;
+}
 html.cinema .border-booktime-mist\/55,
 html.cinema .border-booktime-800\/50,
 html.cinema .dark\:border-booktime-800\/50 {
@@ -189,8 +210,8 @@ html.mobile-tabs-scroll body {
 .cinema-progress-fill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #c4a035, #f0d060);
-  box-shadow: 0 0 8px rgba(240, 208, 96, 0.35);
+  background: linear-gradient(90deg, #16a34a, #4ade80);
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.35);
 }
 
 /* Custom scrollbar — cinéma */

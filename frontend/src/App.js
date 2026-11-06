@@ -128,7 +128,7 @@ const SortControls = ({ sortConfig, setSortConfig, isVoid = false }) => {
           className={`px-2 py-1 text-xs rounded-full transition-colors ${
             sortConfig.field === f.key
               ? isVoid
-                ? 'bg-[#f0d060] text-black font-medium'
+                ? 'bg-[#4ade80] text-black font-medium'
                 : 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 font-medium'
               : isVoid
                 ? 'bg-white/[0.06] text-white/45 hover:bg-white/[0.1]'
@@ -876,7 +876,7 @@ function MainApp() {
                 onClick={() => setShowProfileModal(true)}
                 className={`font-bold py-2 px-4 rounded-full transition-colors duration-200 ${
                   isVoid
-                    ? 'bg-[#f0d060] hover:bg-[#e4c24a] text-black shadow-[0_0_20px_rgba(240,208,96,0.25)]'
+                    ? 'bg-[#4ade80] hover:bg-[#22c55e] text-black shadow-[0_0_20px_rgba(74,222,128,0.25)]'
                     : 'bg-booktime-600 hover:bg-booktime-700 text-white shadow-card'
                 }`}
               >
@@ -960,7 +960,7 @@ function MainApp() {
                       className={`flex-shrink-0 px-3 sm:px-4 py-2 rounded-full font-medium transition-colors duration-200 text-sm sm:text-base ${
                         activeTab === tab.key
                           ? isVoid
-                            ? 'bg-[#f0d060] text-black shadow-[0_0_18px_rgba(240,208,96,0.22)]'
+                            ? 'bg-[#4ade80] text-black shadow-[0_0_18px_rgba(74,222,128,0.22)]'
                             : 'bg-booktime-600 text-white shadow-card'
                           : isVoid
                             ? 'bg-white/[0.04] hover:bg-white/[0.08] text-white/50'
@@ -1065,7 +1065,7 @@ function MainApp() {
               {!unifiedContent.loading && groupedBooks.reading && groupedBooks.reading.length > 0 && (
                 <div className="section-appear">
                   <div className="flex items-center mb-3 sm:mb-4 flex-wrap gap-2">
-                    <h2 className={`text-base sm:text-xl font-semibold ${isVoid ? 'text-[#f0d060]' : 'text-yellow-600 dark:text-yellow-400'}`}>
+                    <h2 className={`text-base sm:text-xl font-semibold text-green-600 dark:text-white`}>
                       En cours ({groupedBooks.reading.length})
                     </h2>
                     <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} isVoid={isVoid} />
@@ -1085,7 +1085,7 @@ function MainApp() {
               {!unifiedContent.loading && groupedBooks.to_read && groupedBooks.to_read.length > 0 && (
                 <div className="section-appear" style={{ animationDelay: '80ms' }}>
                   <div className="flex items-center mb-4 flex-wrap gap-2">
-                    <h2 className={`text-xl font-semibold ${isVoid ? 'text-white/80' : 'text-blue-600 dark:text-blue-400'}`}>
+                    <h2 className={`text-xl font-semibold text-green-600 dark:text-white`}>
                       À lire ({groupedBooks.to_read.length})
                     </h2>
                     <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} isVoid={isVoid} />
@@ -1105,7 +1105,7 @@ function MainApp() {
               {!unifiedContent.loading && groupedBooks.to_reread && groupedBooks.to_reread.length > 0 && (
                 <div className="section-appear" style={{ animationDelay: '120ms' }}>
                   <div className="flex items-center mb-4 flex-wrap gap-2">
-                    <h2 className={`text-xl font-semibold ${isVoid ? 'text-white/70' : 'text-purple-600 dark:text-purple-400'}`}>
+                    <h2 className={`text-xl font-semibold text-green-600 dark:text-white`}>
                       À relire ({groupedBooks.to_reread.length})
                     </h2>
                     <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} isVoid={isVoid} />
@@ -1125,7 +1125,7 @@ function MainApp() {
               {!unifiedContent.loading && groupedBooks.completed && groupedBooks.completed.length > 0 && (
                 <div className="section-appear" style={{ animationDelay: '160ms' }}>
                   <div className="flex items-center mb-4 flex-wrap gap-2">
-                    <h2 className={`text-xl font-semibold ${isVoid ? 'text-white/55' : 'text-green-600 dark:text-green-400'}`}>
+                    <h2 className={`text-xl font-semibold text-green-600 dark:text-white`}>
                       Terminé ({groupedBooks.completed.length})
                     </h2>
                     <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} isVoid={isVoid} />

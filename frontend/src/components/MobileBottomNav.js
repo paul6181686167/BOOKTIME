@@ -38,7 +38,7 @@ const MobileBottomNav = ({ activeTab, onTabChange }) => {
             const isActive = activeTab === id;
             const Ic = isActive ? IconActive : Icon;
             const activeCls = isVoid
-              ? 'text-[#f0d060]'
+              ? 'text-[#4ade80]'
               : 'text-booktime-600 dark:text-booktime-400';
             const idleCls = isVoid
               ? 'text-white/35 active:text-white/70'
@@ -58,14 +58,14 @@ const MobileBottomNav = ({ activeTab, onTabChange }) => {
                   <span
                     className={`absolute inset-1.5 rounded-full ${
                       isVoid
-                        ? 'bg-[#f0d060]/12 shadow-[inset_0_0_20px_rgba(240,208,96,0.08)]'
+                        ? 'bg-[#4ade80]/12 shadow-[inset_0_0_20px_rgba(74,222,128,0.08)]'
                         : 'bg-booktime-50 dark:bg-booktime-900/40'
                     }`}
                   />
                 )}
                 <Ic
                   className={`relative z-[1] h-5 w-5 ${
-                    isActive && isVoid ? 'drop-shadow-[0_0_8px_rgba(240,208,96,0.45)]' : ''
+                    isActive && isVoid ? 'drop-shadow-[0_0_8px_rgba(74,222,128,0.45)]' : ''
                   }`}
                   aria-hidden="true"
                 />

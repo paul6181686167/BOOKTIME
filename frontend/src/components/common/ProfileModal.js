@@ -744,7 +744,7 @@ function ProfileModal({
                       className={`px-2 py-2 rounded-lg text-xs font-medium transition-colors ${
                         theme === opt.id
                           ? opt.id === 'void'
-                            ? 'bg-[#f0d060] text-black'
+                            ? 'bg-[#4ade80] text-black'
                             : 'bg-booktime-600 text-white'
                           : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 ring-1 ring-gray-200 dark:ring-gray-600'
                       }`}

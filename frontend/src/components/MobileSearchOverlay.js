@@ -67,7 +67,7 @@ const MobileSearchOverlay = ({ isOpen, onClose, searchTerm, onSearchChange, onSe
             onClick={() => onSearch(searchTerm.trim())}
             className={`w-full py-3 rounded-xl font-medium text-base transition-colors ${
               isVoid
-                ? 'bg-[#f0d060] hover:bg-[#e4c24a] text-black'
+                ? 'bg-[#4ade80] hover:bg-[#22c55e] text-black'
                 : 'bg-green-600 hover:bg-green-700 text-white'
             }`}
           >

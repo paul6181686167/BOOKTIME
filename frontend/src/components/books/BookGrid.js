@@ -88,7 +88,7 @@ const SeriesCardBody = ({ item, coverSrc, onCoverFound, priority }) => {
 
         {seriesStatus === 'completed' && (
           <div className="absolute top-1.5 right-1.5">
-            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#f0d060]/90 text-[10px] font-bold text-black ${PILL}`}>
+            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#4ade80]/90 text-[10px] font-bold text-black ${PILL}`}>
               ✓
             </span>
           </div>
@@ -131,7 +131,7 @@ const BookCardBody = ({ item, coverSrc, onCoverFound, priority }) => {
 
         {isDone && (
           <div className="absolute top-1.5 right-1.5">
-            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#f0d060]/90 text-[10px] font-bold text-black ${PILL}`}>
+            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#4ade80]/90 text-[10px] font-bold text-black ${PILL}`}>
               ✓
             </span>
           </div>
