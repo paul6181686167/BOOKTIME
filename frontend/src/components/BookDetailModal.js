@@ -536,6 +536,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     !!onAddFromOpenLibrary &&
     !book.isOwned &&
     (book.isFromOpenLibrary || book.isFromGoogleBooks);
+  const inLibrary = !!book.isOwned || (!book.isFromOpenLibrary && !book.isFromGoogleBooks);
 
   const handleAddFromOpenLibrary = async () => {
     if (!canAddFromCatalog || isAdding) return;
@@ -659,9 +660,11 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-booktime-100 dark:bg-booktime-900/30 text-booktime-800 dark:text-booktime-300">
                     {(book.category || 'roman').charAt(0).toUpperCase() + (book.category || 'roman').slice(1)}
                   </span>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getCurrentStatus().color}`}>
-                    {getCurrentStatus().label}
-                  </span>
+                  {inLibrary && (
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getCurrentStatus().color}`}>
+                      {getCurrentStatus().label}
+                    </span>
+                  )}
                   {titleMain ? (
                     <button
                       type="button"
@@ -702,7 +705,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             ) : null}
 
             {/* Boutons rapides de changement de statut — une seule ligne compacte */}
-            {(!book.isFromOpenLibrary || book.isOwned) && !isEditing && (
+            {inLibrary && !isEditing && (
               <div className="mb-3">
                 <div className="flex items-center mb-1.5">
                   <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300">Statut</h3>
@@ -776,7 +779,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             )}
 
             {/* Saisie rapide de la page (livres individuels + séries rétrogradées, comme les tomes) */}
-            {(!book.isFromOpenLibrary || book.isOwned) && !isEditing && displayStatus === 'reading' && (
+            {inLibrary && !isEditing && displayStatus === 'reading' && (
               <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800/40 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400">Progression de lecture</h3>
@@ -984,8 +987,8 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               </div>
             ) : null}
 
-            {/* Statut */}
-            {isEditing ? (
+            {/* Statut — uniquement si le livre est dans la bibliothèque */}
+            {inLibrary && (isEditing ? (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Statut
@@ -1009,7 +1012,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                   {getCurrentStatus().label}
                 </span>
               </div>
-            )}
+            ))}
 
             {/* Progression */}
             {totalPages > 0 && (
