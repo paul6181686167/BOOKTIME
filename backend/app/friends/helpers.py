@@ -95,11 +95,14 @@ def search_filter(query: str, exclude_id: str) -> Optional[Dict[str, Any]]:
     Les emails ne sont jamais cherchés par fragment pour ne pas exposer les comptes.
     """
     q = (query or "").strip()
+    # Les lecteurs qui ont désactivé « apparaître dans la recherche » restent introuvables
+    visible = {"settings.discoverable": {"$ne": False}}
     if "@" in q:
-        return {"email": q.lower(), "id": {"$ne": exclude_id}}
+        return {"email": q.lower(), "id": {"$ne": exclude_id}, **visible}
     if len(q) < 2:
         return None
     return {
         "display_name": {"$regex": re.escape(q), "$options": "i"},
         "id": {"$ne": exclude_id},
+        **visible,
     }

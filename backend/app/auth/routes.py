@@ -339,6 +339,45 @@ def clean_profile_update(data: dict) -> dict:
     return out
 
 
+SETTINGS_DEFAULTS = {
+    "discoverable": True,  # apparaître dans la recherche de lecteurs
+    "share_favorites": True,  # livres préférés visibles par les amis
+    "share_reviews": True,  # notes et avis visibles par les amis
+    "share_reading": True,  # lectures en cours visibles par les amis
+}
+MIN_PASSWORD_LENGTH = 6
+
+
+def public_settings(doc: Optional[dict]) -> dict:
+    """Réglages de l'utilisateur, complétés par les valeurs par défaut."""
+    stored = (doc or {}).get("settings") or {}
+    return {key: bool(stored.get(key, default)) for key, default in SETTINGS_DEFAULTS.items()}
+
+
+def clean_settings_update(data: dict) -> dict:
+    """Ne garde que les réglages connus, qui doivent être des booléens."""
+    out = {}
+    for key, value in (data or {}).items():
+        if key not in SETTINGS_DEFAULTS:
+            raise HTTPException(status_code=400, detail=f"Réglage inconnu : {key}")
+        if not isinstance(value, bool):
+            raise HTTPException(status_code=400, detail=f"Valeur invalide pour {key}.")
+        out[key] = value
+    return out
+
+
+class SettingsUpdateRequest(BaseModel):
+    discoverable: Optional[bool] = None
+    share_favorites: Optional[bool] = None
+    share_reviews: Optional[bool] = None
+    share_reading: Optional[bool] = None
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
 class ProfileUpdateRequest(BaseModel):
     display_name: Optional[str] = None
     bio: Optional[str] = None
@@ -352,7 +391,53 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     stored = users_collection.find_one(
         {"id": current_user.get("id")}, {"_id": 0, "password_hash": 0}
     )
-    return {**current_user, **public_profile(stored or current_user)}
+    return {
+        **current_user,
+        **public_profile(stored or current_user),
+        "settings": public_settings(stored or current_user),
+    }
+
+
+@router.put("/me/settings")
+async def update_my_settings(
+    payload: SettingsUpdateRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """Met à jour les réglages de confidentialité."""
+    updates = clean_settings_update(payload.model_dump(exclude_unset=True, exclude_none=True))
+    if not updates:
+        raise HTTPException(status_code=400, detail="Aucun réglage à mettre à jour.")
+    users_collection.update_one(
+        {"id": current_user.get("id")},
+        {"$set": {f"settings.{key}": value for key, value in updates.items()}},
+    )
+    stored = users_collection.find_one({"id": current_user.get("id")}, {"_id": 0}) or {}
+    return {"success": True, "settings": public_settings(stored)}
+
+
+@router.post("/change-password")
+async def change_password(
+    payload: ChangePasswordRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """Change le mot de passe après vérification de l'ancien."""
+    stored = users_collection.find_one({"id": current_user.get("id")})
+    if not stored or not _verify_password(payload.current_password, stored.get("password_hash", "")):
+        raise HTTPException(status_code=401, detail="Mot de passe actuel incorrect.")
+    if len(payload.new_password) < MIN_PASSWORD_LENGTH:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Le nouveau mot de passe doit faire au moins {MIN_PASSWORD_LENGTH} caractères.",
+        )
+    if payload.new_password == payload.current_password:
+        raise HTTPException(
+            status_code=400, detail="Le nouveau mot de passe doit être différent de l'ancien."
+        )
+    users_collection.update_one(
+        {"id": current_user.get("id")},
+        {"$set": {"password_hash": _hash_password(payload.new_password)}},
+    )
+    return {"success": True}
 
 
 @router.put("/me/profile")

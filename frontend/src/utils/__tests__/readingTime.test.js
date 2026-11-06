@@ -2,9 +2,33 @@ import {
   formatAsDays,
   formatDuration,
   formatWords,
+  normalizeWpm,
   pagesReadForBook,
   summarizeReadingTime,
 } from '../readingTime';
+
+describe('vitesse de lecture choisie dans les paramètres', () => {
+  it('n’accepte que les vitesses proposées, sinon la vitesse moyenne', () => {
+    expect(normalizeWpm(180)).toBe(180);
+    expect(normalizeWpm(300)).toBe(300);
+    expect(normalizeWpm(999)).toBe(238);
+    expect(normalizeWpm(undefined)).toBe(238);
+  });
+
+  it('une lecture plus rapide réduit le temps estimé, romans comme pages illustrées', () => {
+    const books = [
+      { status: 'completed', category: 'roman', total_pages: 300 },
+      { status: 'completed', category: 'bd', total_pages: 100 },
+    ];
+    const slow = summarizeReadingTime(books, 180);
+    const normal = summarizeReadingTime(books);
+    const fast = summarizeReadingTime(books, 300);
+    expect(slow.totalMinutes).toBeGreaterThan(normal.totalMinutes);
+    expect(normal.totalMinutes).toBeGreaterThan(fast.totalMinutes);
+    // À la vitesse moyenne, le résultat est inchangé
+    expect(normal.byCategory.bd.minutes).toBeCloseTo(80, 5);
+  });
+});
 
 describe('temps de lecture estimé', () => {
   it('compte toutes les pages d’un livre terminé et la page courante d’un livre en cours', () => {

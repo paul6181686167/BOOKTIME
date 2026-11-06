@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
+from ..auth.routes import public_settings
 from ..database.connection import books_collection, db, users_collection
 from ..security.jwt import get_current_user
 from .helpers import (
@@ -341,29 +342,50 @@ async def friend_profile(user_id: str, current_user: dict = Depends(get_current_
     if not doc:
         raise HTTPException(status_code=404, detail="Lecteur introuvable.")
 
+    # Réglages de confidentialité du propriétaire : il choisit ce que ses amis voient
+    # (lui-même voit toujours tout).
+    is_me = user_id == me
+    shared = {key: True for key in ("favorites", "reviews", "reading")} if is_me else {
+        "favorites": public_settings(doc)["share_favorites"],
+        "reviews": public_settings(doc)["share_reviews"],
+        "reading": public_settings(doc)["share_reading"],
+    }
+
     base = {"user_id": user_id}
-    favorites = [
-        _book_summary(b)
-        for b in books_collection.find({**base, "is_favorite": True}, {"_id": 0}).limit(60)
-    ]
-    reviewed = list(
-        books_collection.find(
-            {
-                **base,
-                "$or": [
-                    {"rating": {"$gt": 0}},
-                    {"review": {"$type": "string", "$ne": ""}},
-                ],
-            },
-            {"_id": 0},
-        )
-        .sort("updated_at", -1)
-        .limit(60)
+    favorites = (
+        [
+            _book_summary(b)
+            for b in books_collection.find({**base, "is_favorite": True}, {"_id": 0}).limit(60)
+        ]
+        if shared["favorites"]
+        else []
     )
-    reading = [
-        _book_summary(b)
-        for b in books_collection.find({**base, "status": "reading"}, {"_id": 0}).limit(6)
-    ]
+    reviewed = (
+        list(
+            books_collection.find(
+                {
+                    **base,
+                    "$or": [
+                        {"rating": {"$gt": 0}},
+                        {"review": {"$type": "string", "$ne": ""}},
+                    ],
+                },
+                {"_id": 0},
+            )
+            .sort("updated_at", -1)
+            .limit(60)
+        )
+        if shared["reviews"]
+        else []
+    )
+    reading = (
+        [
+            _book_summary(b)
+            for b in books_collection.find({**base, "status": "reading"}, {"_id": 0}).limit(6)
+        ]
+        if shared["reading"]
+        else []
+    )
     return {
         "user": _user_card(doc),
         "stats": {
@@ -373,7 +395,9 @@ async def friend_profile(user_id: str, current_user: dict = Depends(get_current_
         "favorites": favorites,
         "reviews": [_book_summary(b) for b in reviewed],
         "reading": reading,
-        "is_me": user_id == me,
+        # Sections que l'ami a choisi de ne pas montrer (affichage d'un message adapté)
+        "hidden": [name for name, visible in shared.items() if not visible],
+        "is_me": is_me,
     }
 
 

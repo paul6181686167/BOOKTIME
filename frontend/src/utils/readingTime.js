@@ -41,13 +41,27 @@ const toPositiveInt = (v) => {
   return Number.isFinite(n) && n > 0 ? n : 0;
 };
 
+/** Vitesses de lecture proposées dans les paramètres (mots par minute). */
+export const READING_SPEEDS = [
+  { id: 'slow', label: 'Tranquille', wpm: 180 },
+  { id: 'normal', label: 'Moyenne', wpm: WORDS_PER_MINUTE },
+  { id: 'fast', label: 'Rapide', wpm: 300 },
+];
+
+/** Vitesse enregistrée valide, sinon la vitesse moyenne. */
+export function normalizeWpm(value) {
+  const n = Number(value);
+  return READING_SPEEDS.some((s) => s.wpm === n) ? n : WORDS_PER_MINUTE;
+}
+
 /** Minutes nécessaires pour lire `pages` pages d'une catégorie. */
-export function minutesForPages(category, pages) {
+export function minutesForPages(category, pages, wordsPerMinute = WORDS_PER_MINUTE) {
   const profile = READING_PROFILES[category] || READING_PROFILES.roman;
   if (profile.wordsPerPage) {
-    return (pages * profile.wordsPerPage) / WORDS_PER_MINUTE;
+    return (pages * profile.wordsPerPage) / wordsPerMinute;
   }
-  return pages * profile.minutesPerPage;
+  // Pages illustrées : le temps par page suit le rythme de lecture de l'utilisateur
+  return (pages * profile.minutesPerPage * WORDS_PER_MINUTE) / wordsPerMinute;
 }
 
 /** Pages lues d'un livre : tout si terminé, la page courante si en cours. */
@@ -72,7 +86,7 @@ export function pagesReadForBook(book) {
  * Résumé du temps de lecture par catégorie et au total.
  * Les séries (cartes agrégées) sont ignorées : leurs tomes sont déjà des livres.
  */
-export function summarizeReadingTime(books) {
+export function summarizeReadingTime(books, wordsPerMinute = WORDS_PER_MINUTE) {
   const byCategory = {};
   READING_CATEGORIES.forEach((c) => {
     byCategory[c] = { books: 0, pages: 0, minutes: 0, words: 0 };
@@ -87,7 +101,7 @@ export function summarizeReadingTime(books) {
     const entry = byCategory[category];
     entry.books += book.status === 'completed' ? 1 : 0;
     entry.pages += pages;
-    entry.minutes += minutesForPages(category, pages);
+    entry.minutes += minutesForPages(category, pages, wordsPerMinute);
     if (READING_PROFILES[category].wordsPerPage) {
       entry.words += pages * READING_PROFILES[category].wordsPerPage;
     }

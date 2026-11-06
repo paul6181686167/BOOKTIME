@@ -55,6 +55,8 @@ export default function FriendProfileView({ friend, onOpenBook, onOpenChat, onRe
   }
 
   const { user, stats, favorites, reviews, reading } = data;
+  const hidden = data.hidden || [];
+  const hiddenNote = `${user.display_name} ne montre pas cette section.`;
 
   return (
     <div className="space-y-5">
@@ -87,7 +89,9 @@ export default function FriendProfileView({ friend, onOpenBook, onOpenChat, onRe
         <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
           Livres préférés
         </h3>
-        {favorites.length === 0 ? (
+        {hidden.includes('favorites') ? (
+          <p className="text-sm text-gray-500 dark:text-gray-400 italic">{hiddenNote}</p>
+        ) : favorites.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">Aucun livre préféré pour le moment.</p>
         ) : (
           <div className="flex gap-3 overflow-x-auto pb-2">
@@ -124,9 +128,11 @@ export default function FriendProfileView({ friend, onOpenBook, onOpenChat, onRe
 
       <section>
         <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
-          Avis ({reviews.length})
+          Avis{hidden.includes('reviews') ? '' : ` (${reviews.length})`}
         </h3>
-        {reviews.length === 0 ? (
+        {hidden.includes('reviews') ? (
+          <p className="text-sm text-gray-500 dark:text-gray-400 italic">{hiddenNote}</p>
+        ) : reviews.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">Aucun avis pour le moment.</p>
         ) : (
           <div className="space-y-2">

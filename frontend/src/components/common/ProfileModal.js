@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
+import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { bookService } from '../../services/bookService';
@@ -19,6 +20,7 @@ import {
   READING_CATEGORIES,
   READING_PROFILES,
   WORDS_PER_MINUTE,
+  normalizeWpm,
   formatAsDays,
   formatDuration,
   formatWords,
@@ -27,6 +29,7 @@ import {
 import IsbnScannerModal from './IsbnScannerModal';
 import ProfileIdentityCard, { UserAvatar } from './ProfileIdentityCard';
 import friendsService from '../../services/friendsService';
+import ProfileSettings from './ProfileSettings';
 import DeleteAccountDialog from '../user/DeleteAccountDialog';
 
 // ─── Heatmap de lecture ──────────────────────────────────────────────────────
@@ -96,7 +99,7 @@ function ProfileModal({
   const { theme, setTheme } = useTheme();
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('stats'); // 'stats' | 'goal' | 'heatmap' | 'collections' | 'authors'
+  const [activeTab, setActiveTab] = useState('stats'); // 'stats' | 'goal' | 'heatmap' | 'collections' | 'authors' | 'settings'
   const [showIsbnScanner, setShowIsbnScanner] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
@@ -163,7 +166,14 @@ function ProfileModal({
     };
   }, [isOpen, isPage]);
 
-  const readingTime = useMemo(() => summarizeReadingTime(libraryBooks), [libraryBooks]);
+  const readingWpm = normalizeWpm(profileData.reading_wpm);
+  const readingTime = useMemo(
+    () => summarizeReadingTime(libraryBooks, readingWpm),
+    [libraryBooks, readingWpm]
+  );
+  // Temps par page des pages illustrées, au rythme choisi (en secondes)
+  const secondsPerPage = (category) =>
+    Math.round((READING_PROFILES[category].minutesPerPage * 60 * WORDS_PER_MINUTE) / readingWpm);
 
   const libraryChoices = useMemo(() => {
     const books = (libraryBooks || [])
@@ -339,18 +349,35 @@ function ProfileModal({
             <div className="flex items-center gap-3 min-w-0">
               <UserAvatar user={user} size={40} />
               <div className="min-w-0">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Profil</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                  {activeTab === 'settings' ? 'Paramètres' : 'Profil'}
+                </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
                   {user?.display_name || user?.email}
                 </p>
               </div>
             </div>
-            {!isPage && (
+            <div className="flex items-center gap-1 shrink-0">
               <button
-                onClick={onClose}
-                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >✕</button>
-            )}
+                type="button"
+                onClick={() => setActiveTab((tab) => (tab === 'settings' ? 'stats' : 'settings'))}
+                aria-label={activeTab === 'settings' ? 'Fermer les paramètres' : 'Ouvrir les paramètres'}
+                aria-pressed={activeTab === 'settings'}
+                className={`p-2 rounded-lg transition-colors ${
+                  activeTab === 'settings'
+                    ? 'bg-green-600 text-white'
+                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                <Cog6ToothIcon className="h-5 w-5" />
+              </button>
+              {!isPage && (
+                <button
+                  onClick={onClose}
+                  className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >✕</button>
+              )}
+            </div>
           </div>
 
           {/* Onglets : sur la page mobile, les 5 tiennent ensemble, sans défilement */}
@@ -476,10 +503,10 @@ function ProfileModal({
                         })}
                       </div>
                       <p className="text-[11px] leading-snug text-gray-500 dark:text-gray-400">
-                        Estimation : romans à {WORDS_PER_MINUTE} mots par minute et{' '}
+                        Estimation : romans à {readingWpm} mots par minute et{' '}
                         {READING_PROFILES.roman.wordsPerPage} mots par page, romans graphiques à{' '}
-                        {Math.round(READING_PROFILES.bd.minutesPerPage * 60)} s par page, mangas à{' '}
-                        {Math.round(READING_PROFILES.manga.minutesPerPage * 60)} s par page.
+                        {secondsPerPage('bd')} s par page, mangas à {secondsPerPage('manga')} s par
+                        page. Tu peux régler ta vitesse dans les paramètres.
                         {readingTime.guessedBooks > 0
                           ? ` Pour ${readingTime.guessedBooks} livre${readingTime.guessedBooks > 1 ? 's' : ''} terminé${readingTime.guessedBooks > 1 ? 's' : ''} sans nombre de pages, une taille moyenne est utilisée.`
                           : ''}
@@ -834,76 +861,25 @@ function ProfileModal({
             </div>
           )}
 
-          {/* Paramètres (toujours visibles en bas) */}
-          {activeTab === 'stats' && (
-            <div className="mt-4 space-y-2">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mt-2 mb-3">Paramètres</h3>
-              <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg space-y-2">
-                <span className="text-sm font-medium text-gray-900 dark:text-white">Apparence</span>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {[
-                    { id: 'light', label: 'Clair' },
-                    { id: 'dark', label: 'Foncé' },
-                    { id: 'void', label: 'Très foncé' },
-                  ].map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setTheme(opt.id)}
-                      className={`px-2 py-2 rounded-lg text-xs font-medium transition-colors ${
-                        theme === opt.id
-                          ? opt.id === 'void'
-                            ? 'bg-[#4ade80] text-black'
-                            : 'bg-booktime-600 text-white'
-                          : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 ring-1 ring-gray-200 dark:ring-gray-600'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {[
-                { event: 'openExportImport',            label: 'Export/Import',      color: 'green'  },
-                { event: 'openAdvancedRecommendations', label: 'Recommandations IA', color: 'purple' },
-                { event: 'openIntegrations',            label: 'Intégrations',       color: 'orange' },
-              ].map(({ event, label, color }) => (
-                <button
-                  key={event}
-                  onClick={() => {
-                    if (isPage) {
-                      onClose();
-                      window.setTimeout(() => window.dispatchEvent(new CustomEvent(event)), 80);
-                    } else {
-                      onClose();
-                      window.dispatchEvent(new CustomEvent(event));
-                    }
-                  }}
-                  className={`w-full p-2.5 bg-${color}-50 dark:bg-${color}-900/20 hover:bg-${color}-100 dark:hover:bg-${color}-900/30 rounded-lg transition-colors text-sm font-medium text-${color}-700 dark:text-${color}-300`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+          {/* ─── PARAMÈTRES ─── */}
+          {activeTab === 'settings' && (
+            <ProfileSettings
+              user={user}
+              theme={theme}
+              setTheme={setTheme}
+              readingWpm={readingWpm}
+              onChangeWpm={(wpm) => updateProfileData({ reading_wpm: wpm })}
+              onTriggerEvent={(event) => {
+                if (!isPage) onClose();
+                window.setTimeout(() => window.dispatchEvent(new CustomEvent(event)), 80);
+              }}
+              onEditProfile={() => setActiveTab('stats')}
+              onLogout={handleLogout}
+              onDeleteAccount={() => setShowDeleteAccount(true)}
+            />
           )}
         </div>
 
-        {/* Footer */}
-        <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
-          <button
-            onClick={handleLogout}
-            className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
-          >
-            Se déconnecter
-          </button>
-          <button
-            onClick={() => setShowDeleteAccount(true)}
-            className="w-full text-xs text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors py-1"
-          >
-            Supprimer mon compte
-          </button>
-        </div>
       </div>
   );
 

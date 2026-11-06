@@ -106,6 +106,51 @@ class AuthService {
     }
   }
 
+  /** Réglages de confidentialité (visibilité auprès des amis, recherche de lecteurs). */
+  async fetchSettings() {
+    try {
+      const response = await fetch(`${this.backendUrl}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) return { success: false };
+      const data = await response.json();
+      return { success: true, settings: data.settings || {} };
+    } catch (_) {
+      return { success: false };
+    }
+  }
+
+  async updateSettings(patch) {
+    return this._send('PUT', '/api/auth/me/settings', patch);
+  }
+
+  async changePassword(currentPassword, newPassword) {
+    return this._send('POST', '/api/auth/change-password', {
+      current_password: currentPassword,
+      new_password: newPassword,
+    });
+  }
+
+  async _send(method, path, body) {
+    try {
+      const response = await fetch(`${this.backendUrl}${path}`, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok) return { success: true, ...data };
+      const msg =
+        typeof data.detail === 'string' ? data.detail : data.detail?.[0]?.msg || 'Action impossible';
+      return { success: false, error: msg };
+    } catch (error) {
+      return { success: false, error: error.message || 'Serveur inaccessible' };
+    }
+  }
+
   /** Enregistre nom, biographie et/ou photo (avatar_url vide = retirer la photo). */
   async updateProfile(patch) {
     try {
