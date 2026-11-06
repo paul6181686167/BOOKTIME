@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { getThemeChrome } from '../utils/themeChrome';
 import { applyThemeColor } from '../utils/applyThemeColor';
 
@@ -38,7 +38,7 @@ function applyThemeToDocument(theme) {
   root.classList.toggle('cinema', theme === 'void');
 
   const chrome = getThemeChrome(theme);
-  applyThemeColor(chrome.page);
+  applyThemeColor(chrome.page, theme);
 
   const apple = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
   if (apple) {
@@ -60,15 +60,17 @@ export const useTheme = () => {
 export const ThemeProvider = ({ children }) => {
   const [theme, setThemeState] = useState(readInitialTheme);
 
-  useEffect(() => {
+  // Avant paint : Chrome Android lit theme-color tout de suite au changement
+  useLayoutEffect(() => {
     applyThemeToDocument(theme);
     try {
       localStorage.setItem('booktime-theme', theme);
     } catch (_) {
       /* ignore */
     }
+  }, [theme]);
 
-    // Chrome Android ne repeint parfois la barre qu’au retour au premier plan
+  useEffect(() => {
     const refresh = () => applyThemeToDocument(theme);
     window.addEventListener('pageshow', refresh);
     document.addEventListener('visibilitychange', refresh);

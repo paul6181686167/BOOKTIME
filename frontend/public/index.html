@@ -5,12 +5,10 @@
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon-32.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <!-- Chrome Android : theme-color (= fond). Défaut noir pour éviter le vert accent. -->
+    <!-- Une seule theme-color (sans media) : sinon Chrome fige la barre sur le thème OS -->
     <meta name="theme-color" content="#050505" id="bt-theme-color" />
-    <meta name="theme-color" content="#050505" media="(prefers-color-scheme: light)" id="bt-theme-color-light" />
-    <meta name="theme-color" content="#050505" media="(prefers-color-scheme: dark)" id="bt-theme-color-dark" />
     <meta name="msapplication-navbutton-color" content="#050505" />
-    <meta name="color-scheme" content="dark light" />
+    <meta name="color-scheme" content="dark" />
     <!-- iOS PWA -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -35,11 +33,12 @@
           if (t === 'void') page = '#050505';
           else if (t === 'dark') page = '#234f37';
           else if (!t && window.matchMedia('(prefers-color-scheme: dark)').matches) page = '#234f37';
-          document.querySelectorAll('meta[name="theme-color"]').forEach(function (el) {
-            el.setAttribute('content', page);
-          });
+          var meta = document.getElementById('bt-theme-color');
+          if (meta) meta.setAttribute('content', page);
           var ms = document.querySelector('meta[name="msapplication-navbutton-color"]');
           if (ms) ms.setAttribute('content', page);
+          var scheme = document.querySelector('meta[name="color-scheme"]');
+          if (scheme) scheme.setAttribute('content', t === 'light' ? 'light' : 'dark');
           var boot = document.getElementById('bt-boot-bg');
           if (!boot) {
             boot = document.createElement('style');
@@ -49,6 +48,7 @@
           boot.textContent = 'html,body,#root{background-color:' + page + ' !important;}';
           var root = document.documentElement;
           root.style.backgroundColor = page;
+          root.style.colorScheme = t === 'light' ? 'light' : 'dark';
           if (t === 'dark' || t === 'void') root.classList.add('dark');
           if (t === 'void') root.classList.add('cinema');
         } catch (e) { /* ignore */ }

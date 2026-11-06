@@ -13,7 +13,7 @@ const payload = {
   sha: String(sha),
   short,
   builtAt: new Date().toISOString(),
-  sw: 'booktime-v13-single-vercel',
+  sw: 'booktime-v14-theme-bar-live',
 };
 
 const out = path.join(__dirname, '..', 'public', 'version.json');
