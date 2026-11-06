@@ -5,9 +5,12 @@
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon-32.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <!-- Chrome Android colore la barre système avec theme-color -->
+    <!-- Chrome Android : theme-color (= fond). Défaut noir pour éviter le vert accent. -->
     <meta name="theme-color" content="#050505" id="bt-theme-color" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#050505" media="(prefers-color-scheme: light)" id="bt-theme-color-light" />
+    <meta name="theme-color" content="#050505" media="(prefers-color-scheme: dark)" id="bt-theme-color-dark" />
+    <meta name="msapplication-navbutton-color" content="#050505" />
+    <meta name="color-scheme" content="dark light" />
     <!-- iOS PWA -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -20,7 +23,7 @@
       name="description"
       content="Booktime — suis tes lectures, découvre des séries et gère ta bibliothèque."
     />
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json?v=12" />
 
     <!-- Appliquer le thème AVANT le paint (évite barre système verte / splash vert) -->
     <script>
@@ -32,8 +35,18 @@
           if (t === 'void') page = '#050505';
           else if (t === 'dark') page = '#234f37';
           else if (!t && window.matchMedia('(prefers-color-scheme: dark)').matches) page = '#234f37';
-          var meta = document.getElementById('bt-theme-color');
-          if (meta) meta.setAttribute('content', page);
+          document.querySelectorAll('meta[name="theme-color"]').forEach(function (el) {
+            el.setAttribute('content', page);
+          });
+          var ms = document.querySelector('meta[name="msapplication-navbutton-color"]');
+          if (ms) ms.setAttribute('content', page);
+          var boot = document.getElementById('bt-boot-bg');
+          if (!boot) {
+            boot = document.createElement('style');
+            boot.id = 'bt-boot-bg';
+            document.head.appendChild(boot);
+          }
+          boot.textContent = 'html,body,#root{background-color:' + page + ' !important;}';
           var root = document.documentElement;
           root.style.backgroundColor = page;
           if (t === 'dark' || t === 'void') root.classList.add('dark');
@@ -106,13 +119,19 @@
         display: none;
       }
 
-      /* Fond dès le 1er paint — respect html.cinema / html.dark (script ci-dessus) */
+      /* Fond 1er paint : noir par défaut (= theme-color), pas le vert mist
+         (Chrome Android colore souvent la barre système depuis le fond page). */
       html, body, #root {
         overscroll-behavior-y: none;
         min-height: 100%;
+        background-color: #050505;
+      }
+      html:not(.dark):not(.cinema),
+      html:not(.dark):not(.cinema) body,
+      html:not(.dark):not(.cinema) #root {
         background-color: #bce8cb;
       }
-      html.dark, html.dark body, html.dark #root {
+      html.dark:not(.cinema), html.dark:not(.cinema) body, html.dark:not(.cinema) #root {
         background-color: #234f37;
         background-image: none;
       }

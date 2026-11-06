@@ -27,9 +27,9 @@
       "purpose": "maskable"
     }
   ],
-  "start_url": "/",
+  "start_url": "/?homescreen=1&v=12",
   "scope": "/",
-  "id": "/",
+  "id": "booktime-v12-chrome",
   "display": "standalone",
   "display_override": ["standalone", "browser"],
   "orientation": "portrait-primary",

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getThemeChrome } from '../utils/themeChrome';
+import { applyThemeColor } from '../utils/applyThemeColor';
 
 const ThemeContext = createContext();
 
@@ -37,32 +38,15 @@ function applyThemeToDocument(theme) {
   root.classList.toggle('cinema', theme === 'void');
 
   const chrome = getThemeChrome(theme);
-  // Fond document = thème (visible derrière la barre système Android transparente)
-  root.style.backgroundColor = chrome.page;
-  if (document.body) {
-    document.body.style.backgroundColor = chrome.page;
+  applyThemeColor(chrome.page);
+
+  const apple = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+  if (apple) {
+    apple.setAttribute(
+      'content',
+      theme === 'light' ? 'default' : 'black-translucent'
+    );
   }
-  const appRoot = document.getElementById('root');
-  if (appRoot) {
-    appRoot.style.backgroundColor = chrome.page;
-  }
-  // Chrome Android : theme-color = barre système (doit matcher le fond, jamais #16a34a)
-  document.querySelectorAll('meta[name="theme-color"]').forEach((el) => {
-    if (el.hasAttribute('media')) el.remove();
-  });
-  let themeMeta =
-    document.getElementById('bt-theme-color') ||
-    document.querySelector('meta[name="theme-color"]');
-  if (!themeMeta) {
-    themeMeta = document.createElement('meta');
-    themeMeta.setAttribute('name', 'theme-color');
-    themeMeta.id = 'bt-theme-color';
-    document.head.appendChild(themeMeta);
-  }
-  themeMeta.setAttribute('content', chrome.page);
-  // Forcer un « tick » : certains Chrome Android ne repeignent la barre que si la meta change
-  themeMeta.removeAttribute('content');
-  themeMeta.setAttribute('content', chrome.page);
 }
 
 export const useTheme = () => {
@@ -83,6 +67,15 @@ export const ThemeProvider = ({ children }) => {
     } catch (_) {
       /* ignore */
     }
+
+    // Chrome Android ne repeint parfois la barre qu’au retour au premier plan
+    const refresh = () => applyThemeToDocument(theme);
+    window.addEventListener('pageshow', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.removeEventListener('pageshow', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
   }, [theme]);
 
   const setTheme = useCallback((next) => {

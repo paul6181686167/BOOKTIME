@@ -1,5 +1,5 @@
 /* Booktime PWA Service Worker — bump force redeploy cache Vercel */
-const SW_VERSION = 'booktime-v11-scroll-fix';
+const SW_VERSION = 'booktime-v12-system-bar';
 const SHELL_CACHE = `${SW_VERSION}-shell`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const API_CACHE = `${SW_VERSION}-api`;
@@ -7,7 +7,6 @@ const API_CACHE = `${SW_VERSION}-api`;
 const SHELL_URLS = [
   '/',
   '/index.html',
-  '/manifest.json',
   '/favicon.ico',
   '/icon-192.png',
   '/icon-512.png',
@@ -158,24 +157,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // manifest / version : toujours réseau d'abord (theme-color barre système)
+  // manifest / version : réseau uniquement (jamais de cache → theme_color à jour)
   if (
     url.origin === self.location.origin &&
     (url.pathname.endsWith('/manifest.json') || url.pathname.endsWith('/version.json'))
   ) {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response && response.ok) {
-            const copy = response.clone();
-            caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
-          }
-          return response;
-        })
-        .catch(async () => {
-          const cache = await caches.open(RUNTIME_CACHE);
-          return (await cache.match(request)) || Response.error();
-        })
+      fetch(request, { cache: 'no-store' }).catch(() => Response.error())
     );
     return;
   }

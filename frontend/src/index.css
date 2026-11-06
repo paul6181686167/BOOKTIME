@@ -6,12 +6,19 @@ html,
 body,
 #root {
   min-height: 100%;
+  /* Défaut noir : évite que Chrome peigne la barre système en vert mist */
+  background-color: #050505;
+}
+
+html:not(.dark):not(.cinema),
+html:not(.dark):not(.cinema) body,
+html:not(.dark):not(.cinema) #root {
   background-color: #bce8cb;
 }
 
-html.dark,
-html.dark body,
-html.dark #root {
+html.dark:not(.cinema),
+html.dark:not(.cinema) body,
+html.dark:not(.cinema) #root {
   background-color: #234f37;
 }
 
