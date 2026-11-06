@@ -46,14 +46,22 @@ function applyThemeToDocument(theme) {
   if (appRoot) {
     appRoot.style.backgroundColor = chrome.page;
   }
-  // Chrome Android : theme-color = couleur de la barre système (pas le vert accent)
-  let themeMeta = document.querySelector('meta[name="theme-color"]:not([media])');
+  // Chrome Android : theme-color = barre système (doit matcher le fond, jamais #16a34a)
+  document.querySelectorAll('meta[name="theme-color"]').forEach((el) => {
+    if (el.hasAttribute('media')) el.remove();
+  });
+  let themeMeta =
+    document.getElementById('bt-theme-color') ||
+    document.querySelector('meta[name="theme-color"]');
   if (!themeMeta) {
-    document.querySelectorAll('meta[name="theme-color"]').forEach((el) => el.remove());
     themeMeta = document.createElement('meta');
     themeMeta.setAttribute('name', 'theme-color');
+    themeMeta.id = 'bt-theme-color';
     document.head.appendChild(themeMeta);
   }
+  themeMeta.setAttribute('content', chrome.page);
+  // Forcer un « tick » : certains Chrome Android ne repeignent la barre que si la meta change
+  themeMeta.removeAttribute('content');
   themeMeta.setAttribute('content', chrome.page);
 }
 

@@ -1,5 +1,5 @@
 /* Booktime PWA Service Worker — bump force redeploy cache Vercel */
-const SW_VERSION = 'booktime-v9-cachebust';
+const SW_VERSION = 'booktime-v10-theme-bar';
 const SHELL_CACHE = `${SW_VERSION}-shell`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const API_CACHE = `${SW_VERSION}-api`;
@@ -155,6 +155,28 @@ self.addEventListener('fetch', (event) => {
   // Bibliothèque → cache d'abord (puis refresh réseau) pour mobile / Render lent
   if (isApiLibraryRequest(url)) {
     event.respondWith(staleWhileRevalidate(request, API_CACHE));
+    return;
+  }
+
+  // manifest / version : toujours réseau d'abord (theme-color barre système)
+  if (
+    url.origin === self.location.origin &&
+    (url.pathname.endsWith('/manifest.json') || url.pathname.endsWith('/version.json'))
+  ) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.ok) {
+            const copy = response.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
+          }
+          return response;
+        })
+        .catch(async () => {
+          const cache = await caches.open(RUNTIME_CACHE);
+          return (await cache.match(request)) || Response.error();
+        })
+    );
     return;
   }
 
