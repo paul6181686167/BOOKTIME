@@ -1143,7 +1143,7 @@ function MainApp() {
 
               {/* Section Découvrir — toujours visible en bas pour découvrir plus */}
               {!unifiedContent.loading && ((groupedBooks.reading?.length || 0) + (groupedBooks.to_read?.length || 0) + (groupedBooks.to_reread?.length || 0) + (groupedBooks.completed?.length || 0)) < 10 && (
-                <div className="section-appear mt-4 pt-6 border-t border-gray-100 dark:border-gray-800" style={{ animationDelay: '240ms' }}>
+                <div className="section-appear" style={{ animationDelay: '240ms' }}>
                   <DiscoverSection
                     activeCategory={activeTab}
                     userBooks={unifiedContent.books || []}

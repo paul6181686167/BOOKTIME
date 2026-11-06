@@ -6,7 +6,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import {
-  SparklesIcon,
   PlusIcon,
   CheckIcon,
   BookOpenIcon,
@@ -195,25 +194,12 @@ const DiscoverSection = ({ activeCategory = 'roman', userBooks = [], onBookAdded
         (book.ol_key && (b.ol_key === book.ol_key || b.id === book.ol_key))
     );
 
-  if (!catalogReady) {
-    return (
-      <div className="text-center py-16">
-        <SparklesIcon className="h-12 w-12 text-gray-200 dark:text-gray-700 mx-auto mb-4" />
-        <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          Catalogue en cours de chargement
-        </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-4">
-          Le catalogue n'est pas encore rempli. Lance le script de seed pour le peupler :
-        </p>
-        <code className="text-xs bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg text-gray-700 dark:text-gray-300">
-          cd backend && python scripts/seed_catalog.py
-        </code>
-      </div>
-    );
-  }
+  // Catalogue vide ou indisponible (ex. romans graphiques) : on n'affiche rien,
+  // pas de message technique à l'utilisateur.
+  if (!catalogReady) return null;
 
   return (
-    <div>
+    <div className="mt-4 pt-6 border-t border-gray-100 dark:border-gray-800">
       {/* Titre */}
       <div className="flex items-center gap-2 mb-5">
         <FireIcon className="h-5 w-5 text-orange-500" />
