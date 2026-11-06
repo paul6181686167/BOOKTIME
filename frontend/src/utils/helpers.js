@@ -548,6 +548,13 @@ export const resolveOpenLibraryCoverUrl = (entity) => {
   return null;
 };
 
+/** Tomes d'une carte série : `volumes` peut être un simple nombre (ex. 3), pas une liste. */
+const seriesChildren = (entity) => {
+  if (Array.isArray(entity?.books)) return entity.books;
+  if (Array.isArray(entity?.volumes)) return entity.volumes;
+  return [];
+};
+
 /** Chaîne de secours si la 1ʳᵉ URL échoue au chargement. */
 export const coverFallbackCandidates = (entity) => {
   if (!entity) return [];
@@ -573,7 +580,7 @@ export const coverFallbackCandidates = (entity) => {
     push(`https://covers.openlibrary.org/b/id/${Number(entity.cover_i)}-M.jpg`);
   }
   // Cartes série : couvertures des tomes
-  for (const b of entity.books || entity.volumes || []) {
+  for (const b of seriesChildren(entity)) {
     if (!b || typeof b !== 'object') continue;
     push(b.cover_url);
     push(b.cover_image_url);
@@ -595,7 +602,7 @@ export const resolveCoverForGridItem = (item) => {
       cover_url: item.cover_url || item.cover_image_url,
     });
     if (direct) return direct;
-    for (const b of item.books || item.volumes || []) {
+    for (const b of seriesChildren(item)) {
       if (typeof b !== 'object') continue;
       const c = resolveOpenLibraryCoverUrl(b);
       if (c) return c;
