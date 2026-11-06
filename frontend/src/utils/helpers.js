@@ -369,12 +369,17 @@ export const normalizeCoverUrl = (url) => {
 /** Params wsrv : vignette légère (grille mobile ≈ 110px CSS → 160–180 px suffit). */
 const COVER_PROXY_PARAMS = 'w=160&q=68&output=webp&n=-1&maxage=31d';
 
-const viaWsrv = (hostPathOrUrl) => {
-  const hostPath = String(hostPathOrUrl || '')
-    .replace(/^https?:\/\//i, '')
-    .replace(/^\/\//, '');
-  if (!hostPath) return '';
-  return `https://wsrv.nl/?url=${encodeURIComponent(hostPath)}&${COVER_PROXY_PARAMS}`;
+const viaWsrv = (hostPathOrUrl, { keepScheme = false } = {}) => {
+  let target = String(hostPathOrUrl || '').trim();
+  if (keepScheme) {
+    if (!/^https?:\/\//i.test(target)) {
+      target = `https://${target.replace(/^\/\//, '')}`;
+    }
+  } else {
+    target = target.replace(/^https?:\/\//i, '').replace(/^\/\//, '');
+  }
+  if (!target) return '';
+  return `https://wsrv.nl/?url=${encodeURIComponent(target)}&${COVER_PROXY_PARAMS}`;
 };
 
 const olCoverDirect = (url) => {
@@ -404,9 +409,10 @@ export const coverImgSrc = (url, { forceProxy = false } = {}) => {
     return viaWsrv(n);
   }
 
-  // Amazon / AbeBooks : proxy (évite hotlink bloqué / GIF 1×1)
+  // Amazon / AbeBooks : wsrv n’accepte ces hôtes qu’avec le schéma https://
+  // (sans schéma → 404, et la vignette reste le fond noir de la carte).
   if (/ssl-images-amazon\.com/i.test(raw) || /pictures\.abebooks\.com/i.test(raw)) {
-    return viaWsrv(raw.replace('http://', 'https://'));
+    return viaWsrv(raw.replace(/^http:\/\//i, 'https://'), { keepScheme: true });
   }
 
   // archive.org : tenter la réécriture OL, sinon proxy direct
