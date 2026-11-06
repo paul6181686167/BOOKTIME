@@ -868,7 +868,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
               </button>
             )}
             
-            <div className="flex flex-row flex-wrap items-center justify-end gap-1 md:gap-2">
+            <div className="hidden md:flex flex-row flex-wrap items-center justify-end gap-1 md:gap-2">
             <button
               type="button"
               onClick={onClose}
