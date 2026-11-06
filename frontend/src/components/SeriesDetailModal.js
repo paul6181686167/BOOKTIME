@@ -1693,8 +1693,8 @@ const SeriesDetailModal = ({
 
         {/* Books List (Section détaillée existante) - SUPPRIMÉE SUR DEMANDE UTILISATEUR */}
 
-        {/*  NOUVEAU : Section Chapitres Individuels et Prédictions - UNIQUEMENT POUR LES MANGAS */}
-        {series && series.name && series.category === 'manga' && (
+        {/* Chapitres sortis : mangas et BD (romans graphiques) */}
+        {series && series.name && ['manga', 'bd', 'graphic_novel', 'graphic_novels'].includes(series.category) && (
           <ChapterSection 
             seriesName={series.name} 
             onClose={() => {/* Optionnel: logique fermeture section */}} 

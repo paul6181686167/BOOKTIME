@@ -110,10 +110,7 @@ export const useSeriesChapters = (seriesName) => {
 
       if (!response.ok) {
         if (response.status === 401) {
-          console.error(' Token expiré ou invalide - Nettoyage localStorage');
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          throw new Error('Session expirée, veuillez vous reconnecter');
+          throw new Error('Les chapitres sortis n’ont pas pu être chargés. Réessaie dans un instant.');
         } else if (response.status === 404) {
           const errorText = await response.text();
           console.error(' 404 Error Details:', errorText);

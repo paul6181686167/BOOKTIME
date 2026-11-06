@@ -18,7 +18,14 @@ from fastapi.responses import JSONResponse
 from typing import Optional, Dict, Any, List
 import logging
 
-from ..dependencies import get_current_user
+from ..security.jwt import get_current_user
+
+
+def _user_id(user) -> str:
+    """Le jeton de connexion renvoie un document utilisateur (dict), pas un objet."""
+    if isinstance(user, dict):
+        return str(user.get("id") or user.get("user_id") or "")
+    return str(getattr(user, "id", "") or "")
 from .service import ChapterService
 from .models import (
     SeriesChapters,
@@ -51,7 +58,7 @@ async def get_series_chapters(
         Données complètes de la série avec chapitres et prédictions
     """
     try:
-        logger.info(f"Récupération chapitres pour {series_name} (user: {current_user.id})")
+        logger.info(f"Récupération chapitres pour {series_name} (user: {_user_id(current_user)})")
         
         series_data = await service.get_series_chapters(series_name, force_refresh=force_refresh)
         
@@ -92,7 +99,7 @@ async def refresh_series_chapters(
         Confirmation de l'actualisation
     """
     try:
-        logger.info(f"Rafraîchissement forcé pour {series_name} (user: {current_user.id})")
+        logger.info(f"Rafraîchissement forcé pour {series_name} (user: {_user_id(current_user)})")
         
         success = await service.refresh_series_chapters(series_name)
         
@@ -129,7 +136,7 @@ async def get_upcoming_releases(
         Planning organisé par période (cette semaine, semaine prochaine, ce mois)
     """
     try:
-        logger.info(f"Récupération planning sorties (user: {current_user.id})")
+        logger.info(f"Récupération planning sorties (user: {_user_id(current_user)})")
         
         releases = await service.get_upcoming_releases()
         
@@ -166,7 +173,7 @@ async def get_user_chapter_stats(
         
         return {
             "success": True,
-            "user_id": current_user.id,
+            "user_id": _user_id(current_user),
             "stats": stats,
             "last_updated": "now"
         }
@@ -193,7 +200,7 @@ async def search_series_in_apis(
         Résultats de recherche dans AniList et MangaUpdates avec scores de confiance
     """
     try:
-        logger.info(f"Recherche série {series_name} (user: {current_user.id})")
+        logger.info(f"Recherche série {series_name} (user: {_user_id(current_user)})")
         
         search_results = await service.search_series_in_apis(series_name)
         
@@ -277,7 +284,7 @@ async def get_integrations_status(
         Statut de santé de chaque API (AniList, MangaUpdates)
     """
     try:
-        logger.info(f"Vérification statut intégrations (user: {current_user.id})")
+        logger.info(f"Vérification statut intégrations (user: {_user_id(current_user)})")
         
         status = await service.get_integration_status()
         
@@ -324,14 +331,14 @@ async def update_predictions_config(
                 detail="confidence_threshold doit être entre 0 et 1"
             )
         
-        logger.info(f"Mise à jour config prédictions (user: {current_user.id})")
+        logger.info(f"Mise à jour config prédictions (user: {_user_id(current_user)})")
         
         # Configuration sauvegardée (implémentation future)
         updated_config = {
             "enable_predictions": enable_predictions,
             "confidence_threshold": confidence_threshold,
             "updated_at": "now",
-            "updated_by": current_user.id
+            "updated_by": _user_id(current_user)
         }
         
         return {
@@ -400,7 +407,7 @@ async def debug_series_data(
         Données de debug détaillées
     """
     try:
-        logger.info(f"Debug série {series_name} (user: {current_user.id})")
+        logger.info(f"Debug série {series_name} (user: {_user_id(current_user)})")
         
         # Données basiques
         debug_info = {
