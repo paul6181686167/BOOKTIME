@@ -26,6 +26,7 @@ const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const ExportImportPage = lazy(() => import('./components/exportimport/ExportImportPage'));
 const UpcomingPage = lazy(() => import('./pages/UpcomingPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const AdminPage = lazy(() => import('./pages/AdminPage'));
 const ProfileModal = lazy(() => import('./components/common/ProfileModal'));
 const ExportImportModal = lazy(() => import('./components/export-import/ExportImportModal'));
 const UpcomingPanel = lazy(() => import('./components/UpcomingPanel'));
@@ -231,6 +232,7 @@ function AppContent() {
       <Routes>
         <Route path="/series/:seriesName" element={<SeriesDetailPage />} />
         <Route path="/export-import" element={<ExportImportPage />} />
+        <Route path="/admin" element={<AdminPage />} />
         <Route path="/catalogue/*" element={<OpenLibraryBookPage />} />
         <Route
           path="/*"

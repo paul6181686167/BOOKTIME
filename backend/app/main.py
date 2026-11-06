@@ -78,6 +78,7 @@ from .export_import.routes import router as export_import_router
 # Import du router social (Phase 3.3)
 from .social.routes import router as social_router
 from .friends.routes import router as friends_router
+from .admin.routes import router as admin_router
 # Import du router recommendations avancées (Phase 3.4)
 from .recommendations.advanced_routes import router as advanced_recommendations_router
 # Import du router intégrations externes (Phase 3.5)
@@ -268,6 +269,7 @@ app.include_router(recommendations_router)  # Phase 3.1
 app.include_router(export_import_router)  # Phase 3.2
 app.include_router(social_router)  # Phase 3.3
 app.include_router(friends_router)
+app.include_router(admin_router)
 app.include_router(advanced_recommendations_router)  # Phase 3.4
 app.include_router(integrations_router)  # Phase 3.5
 app.include_router(wikipedia_router)  # Session 87.5

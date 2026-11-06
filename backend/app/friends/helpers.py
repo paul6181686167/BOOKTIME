@@ -96,7 +96,8 @@ def search_filter(query: str, exclude_id: str) -> Optional[Dict[str, Any]]:
     """
     q = (query or "").strip()
     # Les lecteurs qui ont désactivé « apparaître dans la recherche » restent introuvables
-    visible = {"settings.discoverable": {"$ne": False}}
+    # Un compte banni n'apparaît plus non plus.
+    visible = {"settings.discoverable": {"$ne": False}, "banned": {"$ne": True}}
     if "@" in q:
         return {"email": q.lower(), "id": {"$ne": exclude_id}, **visible}
     if len(q) < 2:

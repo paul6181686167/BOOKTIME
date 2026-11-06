@@ -114,7 +114,7 @@ class AuthService {
       });
       if (!response.ok) return { success: false };
       const data = await response.json();
-      return { success: true, settings: data.settings || {} };
+      return { success: true, settings: data.settings || {}, isAdmin: data.is_admin === true };
     } catch (_) {
       return { success: false };
     }

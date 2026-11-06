@@ -30,6 +30,28 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return str(encoded_jwt) if isinstance(encoded_jwt, bytes) else encoded_jwt
 
+LAST_SEEN_INTERVAL_SECONDS = 300
+
+
+def should_touch_last_seen(last_seen, now, interval=LAST_SEEN_INTERVAL_SECONDS) -> bool:
+    """Vrai si la dernière activité est absente ou trop ancienne pour être réécrite."""
+    if not isinstance(last_seen, datetime):
+        return True
+    return (now - last_seen).total_seconds() >= interval
+
+
+def _touch_last_seen(user: dict) -> None:
+    """Note la dernière activité (au plus une écriture toutes les 5 min par utilisateur)."""
+    now = datetime.utcnow()
+    if not should_touch_last_seen(user.get("last_seen"), now):
+        return
+    try:
+        users_collection.update_one({"id": user.get("id")}, {"$set": {"last_seen": now}})
+    except Exception:
+        # Un échec d'écriture ne doit jamais bloquer une requête authentifiée.
+        pass
+
+
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Obtenir l'utilisateur actuel à partir du token JWT"""
     try:
@@ -50,6 +72,12 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="User not found"
             )
+        if user.get("banned"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Compte suspendu"
+            )
+        _touch_last_seen(user)
         return user
     except jwt.PyJWTError:
         raise HTTPException(

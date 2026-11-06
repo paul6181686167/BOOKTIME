@@ -13,6 +13,7 @@ import os
 import bcrypt
 from ..models.user import UserAuth
 from ..database.connection import users_collection, db
+from ..admin.helpers import is_admin
 from ..security.jwt import (
     create_access_token,
     get_current_user,
@@ -198,6 +199,9 @@ async def login(user_data: UserAuth):
 
     if not _verify_password(user_data.password, user.get("password_hash", "")):
         raise HTTPException(status_code=400, detail="Email ou mot de passe incorrect")
+
+    if user.get("banned"):
+        raise HTTPException(status_code=403, detail="Ce compte a été suspendu.")
 
     access_token_expires = timedelta(
         minutes=_token_ttl_minutes(bool(user_data.remember_me))
@@ -395,6 +399,8 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         **current_user,
         **public_profile(stored or current_user),
         "settings": public_settings(stored or current_user),
+        # Affiche le lien « Administration » dans les paramètres (le contrôle réel est côté serveur)
+        "is_admin": is_admin(stored or current_user),
     }
 
 

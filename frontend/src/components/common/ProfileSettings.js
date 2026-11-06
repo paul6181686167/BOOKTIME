@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import AuthService from '../../services/authService';
 import { READING_SPEEDS } from '../../utils/readingTime';
 
@@ -204,13 +205,16 @@ export default function ProfileSettings({
   onDeleteAccount,
 }) {
   const authService = useRef(new AuthService()).current;
+  const navigate = useNavigate();
   const [settings, setSettings] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [savingKey, setSavingKey] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     authService.fetchSettings().then((res) => {
       if (cancelled) return;
+      setIsAdmin(res.success && res.isAdmin === true);
       // En cas d'échec réseau, on affiche les valeurs par défaut (tout activé)
       setSettings(
         res.success
@@ -319,6 +323,18 @@ export default function ProfileSettings({
           ))}
         </div>
       </Section>
+
+      {isAdmin ? (
+        <Section title="Administration">
+          <button
+            type="button"
+            onClick={() => navigate('/admin')}
+            className="w-full py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700 text-sm font-medium text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600"
+          >
+            Ouvrir le tableau de bord administrateur
+          </button>
+        </Section>
+      ) : null}
 
       <Section title="Session">
         <button

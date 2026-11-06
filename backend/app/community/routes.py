@@ -244,7 +244,7 @@ async def get_community_book_reviews(
             profiles[p["user_id"]] = p
         for u in db.users.find(
             {"id": {"$in": user_ids}},
-            {"_id": 0, "id": 1, "email": 1},
+            {"_id": 0, "id": 1, "email": 1, "banned": 1},
         ):
             users[u["id"]] = u
 
@@ -255,6 +255,9 @@ async def get_community_book_reviews(
             continue
         profile = profiles.get(uid)
         if not _is_profile_public(profile):
+            continue
+        # Les avis d'un compte banni ne sont plus affichés
+        if (users.get(uid) or {}).get("banned"):
             continue
         public_rows.append(r)
 
