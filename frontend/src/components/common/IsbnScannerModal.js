@@ -8,8 +8,20 @@ function normalizeIsbn(raw) {
     .toUpperCase();
 }
 
+/** Longueur + clé de contrôle : écarte les codes-barres mal lus par la caméra. */
 function isValidIsbn(isbn) {
-  return isbn.length === 10 || isbn.length === 13;
+  if (isbn.length === 13 && /^\d{13}$/.test(isbn)) {
+    let total = 0;
+    for (let i = 0; i < 12; i += 1) total += Number(isbn[i]) * (i % 2 === 0 ? 1 : 3);
+    return (10 - (total % 10)) % 10 === Number(isbn[12]);
+  }
+  if (isbn.length === 10 && /^\d{9}[\dX]$/.test(isbn)) {
+    let total = 0;
+    for (let i = 0; i < 9; i += 1) total += Number(isbn[i]) * (10 - i);
+    total += isbn[9] === 'X' ? 10 : Number(isbn[9]);
+    return total % 11 === 0;
+  }
+  return false;
 }
 
 function readCaps(scanner) {
@@ -54,20 +66,32 @@ async function applyBarcodeFocus(scanner) {
   }
 }
 
-/** Relance explicite de la mise au point (bouton ou toucher sur l'image). */
-async function triggerFocus(scanner) {
+/**
+ * Mise au point au toucher, comme l'appareil photo d'un téléphone : point d'intérêt
+ * (x, y entre 0 et 1) quand le navigateur le gère, sinon simple relance de l'autofocus.
+ */
+async function triggerFocus(scanner, point) {
   if (!scanner) return;
   const caps = readCaps(scanner);
-  try {
+  const attempts = [];
+  if (point) {
+    const poi = { x: point.x, y: point.y };
     if (hasFocusMode(caps, 'single-shot')) {
-      await scanner.applyVideoConstraints({ advanced: [{ focusMode: 'single-shot' }] });
-      await wait(700);
-    } else if (hasFocusMode(caps, 'manual')) {
-      await scanner.applyVideoConstraints({ advanced: [{ focusMode: 'manual' }] });
-      await wait(300);
+      attempts.push({ pointsOfInterest: [poi], focusMode: 'single-shot' });
     }
-  } catch (_) {
-    /* ignore */
+    attempts.push({ pointsOfInterest: [poi] });
+  }
+  if (hasFocusMode(caps, 'single-shot')) attempts.push({ focusMode: 'single-shot' });
+  else if (hasFocusMode(caps, 'manual')) attempts.push({ focusMode: 'manual' });
+
+  for (const advanced of attempts) {
+    try {
+      await scanner.applyVideoConstraints({ advanced: [advanced] });
+      await wait(700);
+      break;
+    } catch (_) {
+      /* essaie la variante suivante */
+    }
   }
   await applyBarcodeFocus(scanner);
 }
@@ -82,16 +106,22 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
   const [foundBook, setFoundBook] = useState(null);
   const [adding, setAdding] = useState(false);
   const [cameraError, setCameraError] = useState('');
-  const [hint, setHint] = useState('');
+  const [focusRing, setFocusRing] = useState(null);
   const scannerRef = useRef(null);
   const handledRef = useRef(false);
   const focusTimerRef = useRef(null);
+  const ringTimerRef = useRef(null);
+  const lastTriedRef = useRef({ isbn: '', at: 0 });
   const readerId = 'booktime-isbn-reader';
 
   const stopScanner = useCallback(async () => {
     if (focusTimerRef.current) {
       clearTimeout(focusTimerRef.current);
       focusTimerRef.current = null;
+    }
+    if (ringTimerRef.current) {
+      clearTimeout(ringTimerRef.current);
+      ringTimerRef.current = null;
     }
     const scanner = scannerRef.current;
     scannerRef.current = null;
@@ -110,8 +140,13 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
   const lookupIsbn = useCallback(
     async (isbnRaw) => {
       const isbn = normalizeIsbn(isbnRaw);
-      if (!isValidIsbn(isbn)) {
+      if (isbn.length !== 10 && isbn.length !== 13) {
         toast.error('ISBN invalide (10 ou 13 chiffres)');
+        return;
+      }
+      if (!isValidIsbn(isbn)) {
+        toast.error('ISBN invalide : vérifie les chiffres');
+        handledRef.current = false;
         return;
       }
       setLookingUp(true);
@@ -156,7 +191,6 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
 
   const startScanner = useCallback(async () => {
     setCameraError('');
-    setHint('Place le code-barres dans la bande, à ~15 cm, en bonne lumière.');
     handledRef.current = false;
     await stopScanner();
     try {
@@ -194,9 +228,12 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
       const onDecoded = async (decoded) => {
         if (handledRef.current) return;
         const isbn = normalizeIsbn(decoded);
+        // Clé de contrôle fausse = code mal lu : on continue de scanner sans rien dire
         if (!isValidIsbn(isbn)) return;
+        const last = lastTriedRef.current;
+        if (last.isbn === isbn && Date.now() - last.at < 5000) return;
+        lastTriedRef.current = { isbn, at: Date.now() };
         handledRef.current = true;
-        setHint('ISBN détecté…');
         toast.success(`ISBN détecté : ${isbn}`);
         await lookupIsbn(isbn);
       };
@@ -225,9 +262,7 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
 
       // Autofocus + zoom une fois le flux démarré
       focusTimerRef.current = setTimeout(() => {
-        applyBarcodeFocus(scanner).then(() => {
-          setHint('Tiens le livre stable dans la bande rouge.');
-        });
+        applyBarcodeFocus(scanner);
       }, 900);
     } catch (err) {
       console.warn('Camera scan error', err);
@@ -238,24 +273,20 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
     }
   }, [lookupIsbn, stopScanner]);
 
-  const handleRefocus = async () => {
-    const scanner = scannerRef.current;
-    if (!scanner) {
-      await startScanner();
-      return;
-    }
-    setHint('Mise au point…');
-    await triggerFocus(scanner);
-    setHint('Recadre le code-barres dans la bande.');
-  };
-
-  // Toucher l'image = relancer la mise au point (comme l'appareil photo)
-  const handleTapFocus = async () => {
+  // Toucher le cadre = mise au point à cet endroit, comme l'appareil photo du téléphone
+  const handleTapFocus = async (e) => {
     const scanner = scannerRef.current;
     if (!scanner || !scanning) return;
-    setHint('Mise au point…');
-    await triggerFocus(scanner);
-    setHint('Tiens le livre stable dans la bande rouge.');
+    const rect = e.currentTarget.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+    setFocusRing({ x: px, y: py, key: Date.now() });
+    if (ringTimerRef.current) clearTimeout(ringTimerRef.current);
+    ringTimerRef.current = setTimeout(() => setFocusRing(null), 1100);
+    await triggerFocus(scanner, {
+      x: Math.min(1, Math.max(0, px / rect.width)),
+      y: Math.min(1, Math.max(0, py / rect.height)),
+    });
   };
 
   useEffect(() => {
@@ -264,8 +295,9 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
       setFoundBook(null);
       setManualIsbn('');
       setCameraError('');
-      setHint('');
+      setFocusRing(null);
       handledRef.current = false;
+      lastTriedRef.current = { isbn: '', at: 0 };
       return undefined;
     }
     const t = setTimeout(() => {
@@ -310,14 +342,9 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
         </div>
 
         <div className="flex items-center justify-between px-4 py-3 border-b border-booktime-mist/55 dark:border-booktime-800/50 bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl">
-          <div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-              Scanner un ISBN
-            </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Aligne le code-barres dans la bande horizontale
-            </p>
-          </div>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+            Scanner un ISBN
+          </h2>
           <button
             type="button"
             onClick={onClose}
@@ -330,11 +357,11 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {!foundBook && (
             <>
-              <div className="relative">
+              <div className="relative overflow-hidden rounded-xl bg-black">
                 <div
                   id={readerId}
                   onClick={handleTapFocus}
-                  className="w-full overflow-hidden rounded-xl bg-black min-h-[280px] isbn-scanner-view"
+                  className="w-full min-h-[280px] isbn-scanner-view"
                 />
                 <style>{`
                   #${readerId} video {
@@ -343,78 +370,75 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
                     min-height: 280px !important;
                   }
                   #${readerId} img { display: none !important; }
+                  @keyframes isbn-focus-ring {
+                    0% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+                    25% { opacity: 1; }
+                    100% { transform: translate(-50%, -50%) scale(1); opacity: 0.9; }
+                  }
                 `}</style>
-              </div>
 
-              {hint && (
-                <p className="text-sm text-center text-gray-600 dark:text-gray-300">
-                  {hint}
-                </p>
-              )}
+                {focusRing && (
+                  <div
+                    key={focusRing.key}
+                    className="absolute pointer-events-none rounded-lg border-2 border-yellow-300"
+                    style={{
+                      left: focusRing.x,
+                      top: focusRing.y,
+                      width: 72,
+                      height: 72,
+                      animation: 'isbn-focus-ring 0.35s ease-out forwards',
+                      boxShadow: '0 0 0 1px rgba(0,0,0,0.35)',
+                    }}
+                  />
+                )}
 
-              <ul className="text-xs text-gray-500 dark:text-gray-400 space-y-1 px-1">
-                <li>· Bonne lumière (évite le contre-jour)</li>
-                <li>· Distance ~10–20 cm, code-barres bien à plat</li>
-                <li>· Remplis toute la bande rouge avec le code</li>
-                <li>· Touche l’image pour relancer la mise au point</li>
-              </ul>
-
-              {cameraError && (
-                <p className="text-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3">
-                  {cameraError}
-                </p>
-              )}
-
-              <div className="flex gap-2">
-                {scanning ? (
-                  <button
-                    type="button"
-                    onClick={handleRefocus}
-                    className="flex-1 py-2.5 rounded-lg border border-green-600 text-green-700 dark:text-green-400 font-medium"
-                  >
-                    Relancer la mise au point
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={startScanner}
-                    className="flex-1 py-2.5 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700"
-                  >
-                    Activer la caméra
-                  </button>
+                {lookingUp && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/55 pointer-events-none">
+                    <div className="w-8 h-8 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  </div>
                 )}
               </div>
 
-              <div className="space-y-2 pt-1">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Ou saisis l’ISBN
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={manualIsbn}
-                    onChange={(e) => setManualIsbn(e.target.value)}
-                    placeholder="978…"
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
+              {cameraError && (
+                <div className="space-y-2">
+                  <p className="text-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3">
+                    {cameraError}
+                  </p>
                   <button
                     type="button"
-                    disabled={lookingUp || !normalizeIsbn(manualIsbn)}
-                    onClick={() => lookupIsbn(manualIsbn)}
-                    className="px-4 py-2 rounded-lg bg-green-600 text-white font-medium disabled:opacity-40"
+                    onClick={startScanner}
+                    className="w-full py-2.5 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700"
                   >
-                    {lookingUp ? '…' : 'OK'}
+                    Activer la caméra
                   </button>
                 </div>
+              )}
+
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={manualIsbn}
+                  onChange={(e) => setManualIsbn(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !lookingUp && normalizeIsbn(manualIsbn)) {
+                      lookupIsbn(manualIsbn);
+                    }
+                  }}
+                  placeholder="Saisir l’ISBN"
+                  aria-label="Saisir l’ISBN"
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+                <button
+                  type="button"
+                  disabled={lookingUp || !normalizeIsbn(manualIsbn)}
+                  onClick={() => lookupIsbn(manualIsbn)}
+                  className="px-4 py-2 rounded-lg bg-green-600 text-white font-medium disabled:opacity-40"
+                >
+                  {lookingUp ? '…' : 'OK'}
+                </button>
               </div>
             </>
-          )}
-
-          {lookingUp && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
-              Recherche du livre…
-            </p>
           )}
 
           {foundBook && (
