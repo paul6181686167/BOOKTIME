@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useLayoutEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
+import { isNativeApp } from '../utils/platform';
 import { getThemeChrome } from '../utils/themeChrome';
 import { applyThemeColor } from '../utils/applyThemeColor';
 
@@ -82,46 +83,44 @@ export const ThemeProvider = ({ children }) => {
     };
   }, [theme]);
 
-  const setTheme = useCallback((next) => {
+  const themeRef = useRef(theme);
+  themeRef.current = theme;
+
+  // Changement de thème demandé par l'utilisateur.
+  // PWA installée (mobile) : la barre système ne relit sa couleur qu'au chargement
+  // de la page → on recharge juste après avoir mémorisé le thème.
+  const changeTheme = useCallback((next) => {
     const normalized = normalizeTheme(next);
-    if (!normalized) return;
-    // Immédiat (avant le re-render) : Chrome lit theme-color tout de suite
+    if (!normalized || normalized === themeRef.current) return;
+
     applyThemeToDocument(normalized);
     try {
       localStorage.setItem('booktime-theme', normalized);
     } catch (_) {
       /* ignore */
     }
+    themeRef.current = normalized;
     setThemeState(normalized);
+
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true;
+    const isPhone = window.matchMedia('(max-width: 767px)').matches;
+    if (isStandalone && isPhone && !isNativeApp()) {
+      window.setTimeout(() => window.location.reload(), 150);
+    }
   }, []);
+
+  const setTheme = changeTheme;
 
   const cycleTheme = useCallback(() => {
-    setThemeState((prev) => {
-      const i = THEMES.indexOf(prev);
-      const next = THEMES[(i + 1) % THEMES.length];
-      applyThemeToDocument(next);
-      try {
-        localStorage.setItem('booktime-theme', next);
-      } catch (_) {
-        /* ignore */
-      }
-      return next;
-    });
-  }, []);
+    const i = THEMES.indexOf(themeRef.current);
+    changeTheme(THEMES[(i + 1) % THEMES.length]);
+  }, [changeTheme]);
 
   const toggleTheme = useCallback(() => {
-    setThemeState((prev) => {
-      const next = prev === 'light' ? 'dark' : 'light';
-      applyThemeToDocument(next);
-      try {
-        localStorage.setItem('booktime-theme', next);
-      } catch (_) {
-        /* ignore */
-      }
-      return next;
-    });
-  }, []);
-
+    changeTheme(themeRef.current === 'light' ? 'dark' : 'light');
+  }, [changeTheme]);
   const isDark = theme === 'dark' || theme === 'void';
   const isVoid = theme === 'void';
 

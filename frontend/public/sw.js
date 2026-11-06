@@ -1,5 +1,5 @@
 /* Booktime PWA Service Worker — bump force redeploy cache Vercel */
-const SW_VERSION = 'booktime-v15-theme-bar-sync';
+const SW_VERSION = 'booktime-v16-theme-reload';
 /** Dernière couleur de barre demandée par l’app (manifest dynamique). */
 let liveThemeColor = '#050505';
 const SHELL_CACHE = `${SW_VERSION}-shell`;

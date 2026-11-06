@@ -99,7 +99,7 @@ function syncManifestTheme(color) {
     document.head.appendChild(link);
   }
   const c = encodeURIComponent(color);
-  link.setAttribute('href', `/manifest.json?c=${c}&t=${Date.now()}`);
+  link.setAttribute('href', `/manifest.json?c=${c}`);
 
   if (navigator.serviceWorker?.controller) {
     navigator.serviceWorker.controller.postMessage({
