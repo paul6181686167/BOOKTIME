@@ -248,7 +248,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
           const fetchResolve = async () => {
             if (!(book.title || '').trim()) return null;
             const params = new URLSearchParams({
-              title: book.title || '',
+              title: displayBookTitleFrFirst(book) || book.title || '',
               author:
                 book.author && book.author !== 'Auteur inconnu' ? book.author : '',
               include_pages: 'false',

@@ -120,6 +120,19 @@ _FR_TITLE_ALIASES: dict[str, tuple[str, ...]] = {
     "six crows": ("Six de Cœur",),
     "ender s game": ("La Stratégie Ender",),
     "enders game": ("La Stratégie Ender",),
+    "for whom bell tolls": ("Pour qui sonne le glas",),
+    "whom bell tolls": ("Pour qui sonne le glas",),
+    "sun also rises": ("Le soleil se lève aussi",),
+    "farewell to arms": ("L'Adieu aux armes",),
+    "farewell arms": ("L'Adieu aux armes",),
+    "lightning thief": ("Le Voleur de foudre",),
+    "lost hero": ("Le Héros perdu",),
+    "complete short stories of ernest hemingway": (
+        "Nouvelles complètes d'Ernest Hemingway",
+    ),
+    "short stories of ernest hemingway": (
+        "Nouvelles complètes d'Ernest Hemingway",
+    ),
 }
 
 # ISBN poche FR connus (prioritaires sur les recherches floues)
@@ -192,6 +205,17 @@ _PLACEHOLDER_SYNOPSIS = re.compile(
     r")"
 )
 
+# Fiches scolaires, pas la quatrième de couverture
+_STUDY_GUIDE = re.compile(
+    r"(?i)("
+    r"profil d['’ ]une [oœ]uvre|"
+    r"fiche de lecture|"
+    r"commentaire compos|"
+    r"analyse critique|"
+    r"dans la collection\s+[\"«']?\s*profil"
+    r")"
+)
+
 
 def _sanitize_synopsis(text: str) -> str:
     """Retire markdown OL, sections annexes et URLs."""
@@ -216,9 +240,13 @@ def is_usable_synopsis(text: str | None) -> bool:
         return False
     if _PLACEHOLDER_SYNOPSIS.search(t):
         return False
+    if _STUDY_GUIDE.search(t[:500]):
+        return False
     if re.search(r"(?i)wikidata\s*[·•|]", t):
         return False
     if re.search(r"(?i)^also contained in\b", t):
+        return False
+    if _is_off_book_blurb(t):
         return False
     if len(re.findall(r"\]\(", t)) >= 2:
         return False
@@ -960,6 +988,8 @@ def _scan_google_items_for_description(
         if _is_secondary_literature(vi_title):
             continue
         desc = _clean(vi.get("description") or "")
+        if _STUDY_GUIDE.search(desc[:500]) or _STUDY_GUIDE.search(vi_title):
+            continue
         if desc and len(desc) > len(best):
             best = desc[:2000]
             if not out_pages.get("pages"):
@@ -1057,11 +1087,22 @@ def _ol_work_description_only(ol_key: str) -> str:
 
 
 _FILM_OR_ADAPTATION = re.compile(
-    r"(?i)\b("
-    r"film|cin[eé]ma|cin[eé]matographique|television|t[eé]l[eé]vision|"
-    r"s[eé]rie t[eé]l[eé]|adaptation (au cin[eé]|t[eé]l[eé])|episode|réalisateur"
-    r")\b"
+    r"(?i)("
+    r"\b(film|cin[eé]ma|cin[eé]matographique|television|t[eé]l[eé]vision|"
+    r"s[eé]rie t[eé]l[eé]|[eé]pisode|[eé]pisodes|r[eé]alisateur|"
+    r"chanson|chansons|album|single|morceau|morceaux)\b|"
+    r"bande[- ]originale|jeu vid[eé]o|du groupe|piste de l['’ ]?album"
+    r")"
 )
+_BOOKISH_PAGE = re.compile(
+    r"(?i)\b(roman|romans|novel|novella|livre|livres|book|books|r[eé]cit|nouvelle|nouvelles)\b"
+)
+
+
+def _is_off_book_blurb(text: str) -> bool:
+    """Intro d'une chanson, d'un album ou d'un film homonyme, pas d'un livre."""
+    head = (text or "")[:450]
+    return bool(_FILM_OR_ADAPTATION.search(head) and not _BOOKISH_PAGE.search(head))
 
 
 def _description_from_wikipedia(
@@ -1098,27 +1139,24 @@ def _description_from_wikipedia(
                 if not sr.ok:
                     continue
                 hits = (sr.json().get("query") or {}).get("search") or []
-                page_title = None
+                accepted: list[str] = []
                 for hit in hits:
                     ht = str(hit.get("title") or "")
                     snippet = str(hit.get("snippet") or "")
                     if _is_secondary_literature(ht):
                         continue
-                    if _FILM_OR_ADAPTATION.search(ht) and not re.search(
-                        r"(?i)\b(roman|novel|livre|book)\b", ht
-                    ):
+                    # Chanson, album, film : homonymes fréquents (ex. Metallica)
+                    if _FILM_OR_ADAPTATION.search(ht) and not _BOOKISH_PAGE.search(ht):
                         continue
                     if _title_match_score(t, ht) < 50 and t.lower() not in ht.lower():
                         continue
-                    # Rejeter les hits clairement film si le titre du livre matche aussi un film
-                    if _FILM_OR_ADAPTATION.search(snippet) and not re.search(
-                        r"(?i)\b(roman|novel|novella|récit|livre)\b", snippet
-                    ):
+                    if _FILM_OR_ADAPTATION.search(snippet) and not _BOOKISH_PAGE.search(snippet):
                         continue
-                    page_title = ht
-                    break
-                if not page_title:
+                    accepted.append(ht)
+                if not accepted:
                     continue
+                bookish = [ht for ht in accepted if _BOOKISH_PAGE.search(ht)]
+                page_title = bookish[0] if bookish else accepted[0]
                 er = requests.get(
                     f"https://{lang}.wikipedia.org/w/api.php",
                     params={
@@ -1139,11 +1177,7 @@ def _description_from_wikipedia(
                     extract = _clean(page.get("extract") or "")
                     if not is_usable_synopsis(extract):
                         continue
-                    # Intro film → ignorer
-                    head = extract[:280]
-                    if _FILM_OR_ADAPTATION.search(head) and not re.search(
-                        r"(?i)\b(roman|novel|novella|récit)\b", head
-                    ):
+                    if _is_off_book_blurb(extract):
                         continue
                     if len(extract) > 1200:
                         cut = extract[:1200]

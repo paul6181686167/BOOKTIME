@@ -41,7 +41,15 @@ export function isUsableSynopsis(text) {
   if (/^s[ée]rie\s+de\s+\d+\s+tome/i.test(cleaned)) return false;
   if (/^s[ée]rie\s+(roman|bd|manga)\b/i.test(cleaned)) return false;
   if (/^collection\s+de\s+\d+\s+livre/i.test(cleaned)) return false;
+  if (/profil d['’ ]une [oœ]uvre|fiche de lecture|commentaire compos|analyse critique|dans la collection\s+["«']?\s*profil/i.test(cleaned.slice(0, 500))) {
+    return false;
+  }
   if (/^also contained in\b/i.test(cleaned)) return false;
+  // Homonyme chanson / album / film (ex. « For Whom the Bell Tolls » = Metallica)
+  const head = cleaned.slice(0, 450);
+  const offBook = /\b(chanson|chansons|album|single|morceau|morceaux|film|cin[eé]ma|t[eé]l[eé]vision|[eé]pisode|r[eé]alisateur)\b|bande[- ]originale|jeu vid[eé]o|du groupe|piste de l['’ ]?album/i;
+  const bookish = /\b(roman|romans|novel|novella|livre|livres|book|books|r[eé]cit|nouvelle|nouvelles)\b/i;
+  if (offBook.test(head) && !bookish.test(head)) return false;
   // Trop de « liens » restants → pas une 4ᵉ
   const mdLeft = (cleaned.match(/\]\(/g) || []).length;
   if (mdLeft >= 2) return false;

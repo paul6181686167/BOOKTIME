@@ -14,6 +14,18 @@ describe('isUsableSynopsis', () => {
     expect(isUsableSynopsis('Série roman populaire.')).toBe(false);
   });
 
+  test('rejects a song page that shares the book title', () => {
+    const song =
+      "For Whom The Bell Tolls (« Pour qui sonne le glas » en français) est la troisième piste de l'album Ride the Lightning du groupe Metallica. Elle est également disponible sur les albums live du groupe.";
+    expect(isUsableSynopsis(song)).toBe(false);
+  });
+
+  test('keeps a novel that was adapted to film', () => {
+    const novel =
+      "Pour qui sonne le glas est un roman d'Ernest Hemingway publié en 1940, pendant la guerre d'Espagne. Il a ensuite été adapté au cinéma.";
+    expect(isUsableSynopsis(novel)).toBe(true);
+  });
+
   test('accepts a real blurb', () => {
     expect(
       isUsableSynopsis(

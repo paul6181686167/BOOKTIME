@@ -15,6 +15,32 @@ def test_rejects_series_counters():
     assert not is_usable_synopsis("Série roman populaire.")
 
 
+def test_rejects_song_homonym():
+    song = (
+        "For Whom The Bell Tolls (« Pour qui sonne le glas » en français) est la "
+        "troisième piste de l'album Ride the Lightning du groupe Metallica. "
+        "Elle est également disponible sur les albums live du groupe."
+    )
+    assert not is_usable_synopsis(song)
+
+
+def test_rejects_study_guide():
+    guide = (
+        "Dans la collection \"Profil d'une œuvre\", Georges Bonneville nous offre "
+        "ici une analyse critique de « Pour qui sonne le glas », œuvre majeure "
+        "d'Ernest Hemingway."
+    )
+    assert not is_usable_synopsis(guide)
+
+
+def test_keeps_novel_adapted_to_film():
+    novel = (
+        "Pour qui sonne le glas est un roman d'Ernest Hemingway publié en 1940, "
+        "pendant la guerre d'Espagne. Il a ensuite été adapté au cinéma."
+    )
+    assert is_usable_synopsis(novel)
+
+
 def test_accepts_real_blurb():
     blurb = (
         "Dans une Amérique futuriste, les pompiers brûlent les livres. "
