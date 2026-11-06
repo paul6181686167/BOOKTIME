@@ -115,10 +115,15 @@ const DiscoverCard = ({ book, onAdd, alreadyOwned }) => {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
+function isGraphicNovelsCategory(category) {
+  return category === 'graphic_novels' || category === 'graphic_novel';
+}
+
 const DiscoverSection = ({ activeCategory = 'roman', userBooks = [], onBookAdded }) => {
+  const graphicNovels = isGraphicNovelsCategory(activeCategory);
   const [books, setBooks] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [catalogReady, setCatalogReady] = useState(true);
+  const [isLoading, setIsLoading] = useState(!graphicNovels);
+  const [catalogReady, setCatalogReady] = useState(!graphicNovels);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
 
@@ -158,11 +163,19 @@ const DiscoverSection = ({ activeCategory = 'roman', userBooks = [], onBookAdded
     }
   }, [activeCategory, page]);
 
-  // Reset + reload à chaque changement de catégorie
+  // Reset + reload à chaque changement de catégorie.
+  // Romans graphiques : pas de catalogue à afficher (mobile et ordinateur).
   useEffect(() => {
+    if (isGraphicNovelsCategory(activeCategory)) {
+      setBooks([]);
+      setCatalogReady(false);
+      setIsLoading(false);
+      return;
+    }
     setBooks([]);
     setPage(0);
     setHasMore(true);
+    setCatalogReady(true);
     loadBooks(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCategory]);

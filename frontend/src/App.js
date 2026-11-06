@@ -1141,8 +1141,8 @@ function MainApp() {
                 </div>
               )}
 
-              {/* Section Découvrir — toujours visible en bas pour découvrir plus */}
-              {!unifiedContent.loading && ((groupedBooks.reading?.length || 0) + (groupedBooks.to_read?.length || 0) + (groupedBooks.to_reread?.length || 0) + (groupedBooks.completed?.length || 0)) < 10 && (
+              {/* Section Découvrir — pas pour Romans graphiques (catalogue vide) */}
+              {activeTab !== 'graphic_novels' && !unifiedContent.loading && ((groupedBooks.reading?.length || 0) + (groupedBooks.to_read?.length || 0) + (groupedBooks.to_reread?.length || 0) + (groupedBooks.completed?.length || 0)) < 10 && (
                 <div className="section-appear" style={{ animationDelay: '240ms' }}>
                   <DiscoverSection
                     activeCategory={activeTab}
@@ -1163,15 +1163,19 @@ function MainApp() {
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
                       Ta bibliothèque est vide
                     </h3>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">
-                      Découvre des livres populaires et ajoute-les à ta collection !
-                    </p>
+                    {activeTab !== 'graphic_novels' && (
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">
+                        Découvre des livres populaires et ajoute-les à ta collection !
+                      </p>
+                    )}
                   </div>
-                  <DiscoverSection
-                    activeCategory={activeTab}
-                    userBooks={unifiedContent.books || []}
-                    onBookAdded={() => unifiedContent.refreshAfterAdd('books')}
-                  />
+                  {activeTab !== 'graphic_novels' && (
+                    <DiscoverSection
+                      activeCategory={activeTab}
+                      userBooks={unifiedContent.books || []}
+                      onBookAdded={() => unifiedContent.refreshAfterAdd('books')}
+                    />
+                  )}
                 </div>
               )}
             </div>

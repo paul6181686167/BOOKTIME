@@ -1,5 +1,5 @@
 /* Booktime PWA Service Worker — bump force redeploy cache Vercel */
-const SW_VERSION = 'booktime-v17-static-manifest';
+const SW_VERSION = 'booktime-v18-graphic-discover';
 const SHELL_CACHE = `${SW_VERSION}-shell`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const API_CACHE = `${SW_VERSION}-api`;
