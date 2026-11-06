@@ -46,6 +46,13 @@ const FR_DISPLAY_ALIASES = {
   'the martian': 'Seul sur Mars',
   'six of crows': 'Six de Cœur',
   "ender's game": 'La Stratégie Ender',
+  'the lightning thief': 'Le Voleur de foudre',
+  'the lost hero': 'Le Héros perdu',
+  'for whom the bell tolls': 'Pour qui sonne le glas',
+  'the sun also rises': 'Le soleil se lève aussi',
+  'a farewell to arms': "L'Adieu aux armes",
+  'the complete short stories of ernest hemingway': "Nouvelles complètes d'Ernest Hemingway",
+  'the short stories of ernest hemingway': "Nouvelles complètes d'Ernest Hemingway",
 };
 
 function aliasFrenchDisplayTitle(title) {
@@ -55,10 +62,139 @@ function aliasFrenchDisplayTitle(title) {
   if (/ὀδύσσ|οδυσσ|odysseia/i.test(t)) return "L'Odyssée";
   if (/ἰλιάς|ιλιας|iliad/i.test(t) && t.length < 40) return "L'Iliade";
   const key = t.toLowerCase();
+  const head = key.split(/[:/]/)[0].trim();
   if (FR_DISPLAY_ALIASES[key]) return FR_DISPLAY_ALIASES[key];
-  const stripped = key.replace(/^the\s+/, '');
+  if (FR_DISPLAY_ALIASES[head]) return FR_DISPLAY_ALIASES[head];
+  const stripped = key.replace(/^(the|a|an)\s+/, '');
   if (FR_DISPLAY_ALIASES[stripped]) return FR_DISPLAY_ALIASES[stripped];
   return '';
+}
+
+/** Plus le score est haut, plus le titre a l'air français. */
+function frenchTitleScore(title) {
+  const t = String(title || '').trim();
+  if (!t) return 0;
+  let score = frenchAccentScore(t) * 4;
+  if (/^(le|la|les|l['’]|un|une|des|du|au|aux|pour)\b/i.test(t)) score += 6;
+  if (/^(the|a|an)\b/i.test(t)) score -= 4;
+  if (/\b(of|and|for|with|from|whom)\b/i.test(t) && frenchAccentScore(t) === 0) score -= 3;
+  return score;
+}
+
+/**
+ * Titre anglais de recommandation : article anglais ou mots de liaison,
+ * sans marque française. Les noms propres (« Percy Jackson ») restent tels quels.
+ */
+export function titleNeedsFrenchLookup(title) {
+  const t = String(title || '').trim();
+  if (!t || frenchTitleScore(t) >= 6) return false;
+  if (/^(the|a|an)\b/i.test(t)) return true;
+  return /\b(of|and|for|with|from|whom|also)\b/i.test(t) && frenchAccentScore(t) === 0;
+}
+
+function tidyFrenchTitle(title) {
+  return String(title || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\.$/, '')
+    .replace(/([lL])['’]\s+/g, "$1'");
+}
+
+/** Choisit l'édition française la plus lisible parmi les titres Open Library. */
+export function pickFrenchEditionTitle(titles, englishTitle) {
+  const english = String(englishTitle || '').trim().toLowerCase();
+  let best = '';
+  let bestScore = 0;
+  for (const raw of titles || []) {
+    const title = tidyFrenchTitle(raw);
+    if (!title || title.toLowerCase() === english) continue;
+    if (title.includes('/') || title.length > 90) continue;
+    let score = frenchAccentScore(title) * 4;
+    if (/^(le|la|les|l['’]|un|une|des|du|au|aux|pour)\b/i.test(title)) score += 8;
+    if (/\b(the|and|of|for|with)\b/i.test(title) && frenchAccentScore(title) === 0) score -= 6;
+    if (/tome\s*\d/i.test(title) && !/^(le|la|les|l['’])/i.test(title)) score -= 3;
+    if (score > bestScore) {
+      bestScore = score;
+      best = title;
+    }
+  }
+  return bestScore > 0 ? best : '';
+}
+
+function workKeyFromBook(book) {
+  const raw = String(book?.ol_key || book?.book_id || book?.key || '');
+  const withPath = raw.match(/(\/works\/OL\d+W)/i);
+  if (withPath) return withPath[1];
+  const bare = raw.match(/\b(OL\d+W)\b/i);
+  return bare ? `/works/${bare[1]}` : '';
+}
+
+const frenchEditionCache = new Map();
+let frenchLookupActive = 0;
+const frenchLookupWaiters = [];
+
+function withFrenchLookupSlot(task) {
+  return new Promise((resolve, reject) => {
+    const run = () => {
+      frenchLookupActive += 1;
+      task().then(resolve, reject).finally(() => {
+        frenchLookupActive -= 1;
+        const next = frenchLookupWaiters.shift();
+        if (next) next();
+      });
+    };
+    if (frenchLookupActive < 4) run();
+    else frenchLookupWaiters.push(run);
+  });
+}
+
+async function lookupFrenchEdition(book, english) {
+  let work = workKeyFromBook(book);
+  if (!work) {
+    const q = [english, book?.author].filter(Boolean).join(' ');
+    const searchUrl = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=1&fields=key,title`;
+    const found = await fetch(searchUrl).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    const key = found?.docs?.[0]?.key || '';
+    if (String(key).includes('/works/')) work = key;
+  }
+  if (!work) return '';
+  const editionsUrl =
+    `https://openlibrary.org/query.json?type=/type/edition&works=${work}` +
+    '&languages=/languages/fre&title=&limit=12';
+  const editions = await fetch(editionsUrl).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  const titles = Array.isArray(editions) ? editions.map((e) => e?.title).filter(Boolean) : [];
+  return pickFrenchEditionTitle(titles, english);
+}
+
+/**
+ * Titre français d'une reco : alias connu, sinon édition Open Library en français.
+ * Retourne le titre courant si aucune édition française n'est trouvable.
+ */
+export async function resolveFrenchDisplayTitle(book) {
+  const current = displayBookTitleFrFirst(book);
+  if (!current || !titleNeedsFrenchLookup(current)) return current;
+  const key = `${workKeyFromBook(book) || current}|${book?.author || ''}`.toLowerCase();
+  if (frenchEditionCache.has(key)) return frenchEditionCache.get(key);
+  try {
+    const stored = sessionStorage.getItem(`bt-fr-title:${key}`);
+    if (stored) {
+      frenchEditionCache.set(key, stored);
+      return stored;
+    }
+  } catch {
+    /* sessionStorage indisponible */
+  }
+  const french = await withFrenchLookupSlot(() => lookupFrenchEdition(book, current));
+  const result = french || current;
+  frenchEditionCache.set(key, result);
+  if (french) {
+    try {
+      sessionStorage.setItem(`bt-fr-title:${key}`, french);
+    } catch {
+      /* quota */
+    }
+  }
+  return result;
 }
 
 /**
@@ -67,13 +203,15 @@ function aliasFrenchDisplayTitle(title) {
 export function displayBookTitleFrFirst(book) {
   if (!book) return '';
   let raw = '';
-  if (book.display_title != null && String(book.display_title).trim() !== '') {
-    raw = String(book.display_title).trim();
+  const titleFr = (book.title_fr || '').trim();
+  const display = (book.display_title || '').trim();
+  if (display && titleFr && frenchTitleScore(titleFr) > frenchTitleScore(display)) {
+    raw = titleFr;
+  } else if (display) {
+    raw = display;
+  } else if (titleFr) {
+    raw = titleFr;
   } else {
-    const titleFr = (book.title_fr || '').trim();
-    if (titleFr) {
-      raw = titleFr;
-    } else {
       const t = (book.title || '').trim();
       const o = (book.original_title || '').trim();
       const langs = book.available_languages || [];
@@ -93,7 +231,6 @@ export function displayBookTitleFrFirst(book) {
           else raw = t || o;
         }
       }
-    }
   }
   const aliased = aliasFrenchDisplayTitle(raw) || aliasFrenchDisplayTitle(book?.title) || aliasFrenchDisplayTitle(book?.original_title);
   if (aliased) return sanitizeBookTitle(aliased);

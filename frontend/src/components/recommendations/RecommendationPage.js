@@ -26,7 +26,7 @@ import {
 import { recommendationService } from '../../services/recommendationService';
 import { handleAddSeriesToLibrary } from '../series/SeriesActions';
 import { API_BASE_URL } from '../../config/environment';
-import { displayBookTitleFrFirst } from '../../utils/openLibraryBookDisplay';
+import { displayBookTitleFrFirst, resolveFrenchDisplayTitle, titleNeedsFrenchLookup } from '../../utils/openLibraryBookDisplay';
 import { resolveCoverForGridItem } from '../../utils/helpers';
 import {
   groupRecosAsBooktimeItems,
@@ -410,13 +410,6 @@ const BookCard = ({
           <h3 className="font-medium text-gray-900 dark:text-white text-tiny sm:text-sm line-clamp-2 leading-tight">
             {title}
           </h3>
-          {book.original_title &&
-            book.original_title !== title &&
-            !isSeries && (
-              <p className="text-micro sm:text-mini text-gray-400 dark:text-gray-500 italic line-clamp-1 mt-0.5 leading-tight">
-                {book.original_title}
-              </p>
-            )}
           <p className="text-mini sm:text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">
             {book.author}
           </p>
@@ -852,6 +845,52 @@ const RecommendationPage = () => {
   useEffect(() => {
     loadRecommendations(activeTab);
   }, [activeTab, loadRecommendations]);
+
+  // Les recos OL arrivent souvent avec le titre anglais. On le remplace
+  // par l'édition française dès qu'elle existe.
+  useEffect(() => {
+    const pending = [];
+    Object.values(sections).forEach((list) => {
+      (list || []).forEach((item) => {
+        if (!item || item.isSeriesCard) return;
+        const label = displayBookTitleFrFirst(item);
+        if (titleNeedsFrenchLookup(label)) pending.push(item);
+      });
+    });
+    if (!pending.length) return undefined;
+    let cancel = false;
+    (async () => {
+      const updates = new Map();
+      await Promise.all(pending.map(async (item) => {
+        const french = await resolveFrenchDisplayTitle(item);
+        const current = displayBookTitleFrFirst(item);
+        if (french && french !== current) updates.set(item, french);
+      }));
+      if (cancel || updates.size === 0) return;
+      setSections((prev) => {
+        let changed = false;
+        const next = {};
+        Object.entries(prev).forEach(([key, list]) => {
+          next[key] = (list || []).map((item) => {
+            const french = updates.get(item);
+            if (!french) return item;
+            changed = true;
+            return {
+              ...item,
+              title: french,
+              display_title: french,
+              title_fr: french,
+              original_title: item.original_title || item.title,
+            };
+          });
+        });
+        return changed ? next : prev;
+      });
+    })();
+    return () => {
+      cancel = true;
+    };
+  }, [sections]);
 
   const selectSeed = useCallback(
     (option) => {
