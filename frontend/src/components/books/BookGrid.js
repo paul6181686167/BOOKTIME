@@ -96,7 +96,7 @@ const SeriesCardBody = ({ item, coverSrc, onCoverFound, priority }) => {
       </div>
 
       <div className="pt-2 px-0.5">
-        <h3 className="font-medium text-gray-900 dark:text-white text-[11px] sm:text-sm line-clamp-2 leading-snug tracking-tight">
+        <h3 className="font-medium text-gray-900 dark:text-white text-[11px] sm:text-sm line-clamp-2 leading-snug tracking-tight min-h-[2.75em]">
           {item.name}
         </h3>
         <CinemaProgress current={done} total={total} percent={pct} />
@@ -146,7 +146,7 @@ const BookCardBody = ({ item, coverSrc, onCoverFound, priority }) => {
       </div>
 
       <div className="pt-2 px-0.5">
-        <h3 className="font-medium text-gray-900 dark:text-white text-[11px] sm:text-sm line-clamp-2 leading-snug tracking-tight">
+        <h3 className="font-medium text-gray-900 dark:text-white text-[11px] sm:text-sm line-clamp-2 leading-snug tracking-tight min-h-[2.75em]">
           {title}
         </h3>
         {(isReading || isDone) && total > 0 ? (
