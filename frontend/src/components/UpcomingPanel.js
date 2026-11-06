@@ -51,6 +51,10 @@ const TYPE_META = {
     label: 'Auteur suivi',
     badge: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
   },
+  suggestion: {
+    label: 'Suggestion',
+    badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
   watchlist: {
     label: 'Surveillé',
     badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -133,6 +137,9 @@ const ItemCard = ({ item, onMigrate, onRemove, onWatch }) => {
         {item.author && (
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">{item.author}</p>
         )}
+        {item.reason && item.type === 'suggestion' && (
+          <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5 line-clamp-1">{item.reason}</p>
+        )}
         <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
           <span
             className={`inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full font-medium ${meta.badge}`}
@@ -175,7 +182,7 @@ const ItemCard = ({ item, onMigrate, onRemove, onWatch }) => {
           >
             <TrashIcon className="h-3.5 w-3.5" />
           </button>
-        ) : item.type === 'next_tome' || item.type === 'author_release' ? (
+        ) : item.type === 'next_tome' || item.type === 'author_release' || item.type === 'suggestion' ? (
           watched ? (
             <div className="p-1.5 text-green-500">
               <CheckIcon className="h-4 w-4" />
@@ -209,6 +216,7 @@ const NOTIF_MODES = [
 const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
   const isPage = variant === 'page';
   const [groups, setGroups] = useState(EMPTY_GROUPS);
+  const [suggestions, setSuggestions] = useState([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -232,6 +240,7 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
           upcomingService.getNotificationSettings().catch(() => null),
         ]);
         setGroups({ ...EMPTY_GROUPS, ...(data.groups || {}) });
+        setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
         setTotal(data.counts?.total || 0);
         setNotifications((notifData.notifications || []).filter((n) => !n.read));
         if (settings?.notif_upcoming) setNotifMode(settings.notif_upcoming);
@@ -246,7 +255,7 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
   useEffect(() => {
     if (!isOpen && !isPage) return;
     // v3 = pipeline perf (Wikidata parallèle, GB réduit) — 1 seul refresh forcé
-    const LOGIC_V = '3';
+    const LOGIC_V = '4';
     const key = 'booktime_upcoming_logic_v';
     const stale = localStorage.getItem(key) !== LOGIC_V;
     loadData(stale);
@@ -314,7 +323,7 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
 
   if (!isOpen && !isPage) return null;
 
-  const hasAny = GROUP_META.some((g) => (groups[g.key] || []).length > 0);
+  const hasAny = suggestions.length > 0 || GROUP_META.some((g) => (groups[g.key] || []).length > 0);
 
   const shellClass = isPage
     ? 'min-h-full bg-honeycomb flex flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))]'
@@ -464,7 +473,27 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
               <p className="text-sm text-gray-500 dark:text-gray-400">Chargement...</p>
             </div>
           ) : hasAny ? (
-            GROUP_META.map(({ key, title, header, Icon }) => {
+            <>
+            {suggestions.length > 0 && (
+              <section>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-2 flex items-center gap-1.5">
+                  <BookOpenIcon className="h-3.5 w-3.5" />
+                  Selon tes lectures ({suggestions.length})
+                </h3>
+                <div className="space-y-2">
+                  {suggestions.map((item) => (
+                    <ItemCard
+                      key={item.id}
+                      item={item}
+                      onMigrate={handleMigrate}
+                      onRemove={handleRemove}
+                      onWatch={handleWatch}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+            {GROUP_META.map(({ key, title, header, Icon }) => {
               const list = groups[key] || [];
               if (list.length === 0) return null;
               return (
@@ -488,15 +517,15 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
                   </div>
                 </section>
               );
-            })
+            })}
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <h3 className="text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Aucune sortie à venir
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
-                Ajoute des séries à ta bibliothèque pour voir leurs prochains tomes, ou surveille un
-                livre via la recherche ci-dessus.
+                Les prochains tomes de tes séries et des suggestions selon tes genres s'affichent ici.
               </p>
             </div>
           )}

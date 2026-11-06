@@ -16,6 +16,8 @@ import unicodedata
 from datetime import date, datetime, timedelta
 from typing import Any, Optional
 
+import requests
+
 from ..database.connection import books_collection, series_library_collection
 from ..static_wikidata import service as wd
 from ..google_books import service as gb
@@ -708,6 +710,250 @@ async def _build_manga_chapters(
     return items
 
 
+# Genres proposés dans « À venir », du plus spécifique au plus large.
+_TASTE_GENRES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
+    ("fantasy", 'subject:"Fantasy"', ("fantasy", "fantastique")),
+    ("science-fiction", 'subject:"Science fiction"', ("science fiction", "science-fiction")),
+    ("polar", 'subject:"Detective and mystery stories"', ("polar", "detective", "mystery", "crime")),
+    ("thriller", 'subject:"Thriller"', ("thriller", "suspense")),
+    ("romance", 'subject:"Romance"', ("romance", "amour")),
+    ("jeunesse", 'subject:"Young adult fiction"', ("jeunesse", "young adult")),
+    ("historique", 'subject:"Historical fiction"', ("historique", "historical")),
+    ("horreur", 'subject:"Horror"', ("horreur", "horror", "epouvante")),
+)
+_MAX_TASTE_QUERIES = 4
+_MAX_SUGGESTIONS = 8
+_SUGGESTION_PAST_DAYS = 75
+
+
+def taste_queries(books: list[dict], followed_authors: list[str] | None = None) -> list[tuple[str, str]]:
+    """Requêtes Google Books (query, raison) selon les lectures en cours et les genres."""
+    followed = {_norm(a) for a in (followed_authors or []) if a}
+    genre_weight: dict[str, float] = {}
+    author_weight: dict[str, float] = {}
+    category_weight: dict[str, float] = {}
+
+    for book in books or []:
+        status = (book.get("status") or "").strip()
+        if status == "upcoming":
+            continue
+        weight = 1.0
+        if status == "reading":
+            weight = 5.0
+        elif status == "completed":
+            weight = 2.5
+        elif status == "to_reread":
+            weight = 2.0
+        try:
+            rating = float(book.get("rating") or 0)
+        except (TypeError, ValueError):
+            rating = 0.0
+        if rating >= 4:
+            weight += 1.5
+
+        author = (book.get("author") or "").split(",")[0].strip()
+        if author and _norm(author) not in followed:
+            author_weight[author] = author_weight.get(author, 0.0) + weight
+
+        blob = _norm(f"{book.get('genre') or ''} {book.get('category') or ''}")
+        for label, _query, keywords in _TASTE_GENRES:
+            if any(_norm(k) in blob for k in keywords):
+                genre_weight[label] = genre_weight.get(label, 0.0) + weight
+
+        category = (book.get("category") or "").strip().lower()
+        if category in ("manga", "bd", "roman"):
+            category_weight[category] = category_weight.get(category, 0.0) + weight
+
+    queries: list[tuple[str, str]] = []
+    # D'abord ce qui est en cours de lecture (auteurs), puis les genres dominants.
+    reading_authors = []
+    for book in books or []:
+        if (book.get("status") or "") != "reading":
+            continue
+        author = (book.get("author") or "").split(",")[0].strip()
+        if author and _norm(author) not in followed and author not in reading_authors:
+            reading_authors.append(author)
+    for author in reading_authors[:2]:
+        queries.append((f'inauthor:"{author}"', f"Parce que tu lis {author}"))
+
+    if not reading_authors:
+        for author, _w in sorted(author_weight.items(), key=lambda x: x[1], reverse=True)[:1]:
+            queries.append((f'inauthor:"{author}"', f"Proche de {author}"))
+
+    for label, query, _keywords in _TASTE_GENRES:
+        if genre_weight.get(label, 0) <= 0:
+            continue
+        queries.append((query, f"Dans tes genres : {label}"))
+
+    if category_weight.get("manga", 0) >= 3 and "manga" not in genre_weight:
+        queries.append(('subject:"Manga"', "Dans tes genres : manga"))
+    if category_weight.get("bd", 0) >= 3:
+        queries.append(('subject:"Comics & Graphic Novels"', "Dans tes genres : bande dessinée"))
+
+    # Les genres les plus lus d'abord, en gardant les requêtes auteur en tête.
+    author_part = [q for q in queries if q[0].startswith("inauthor:")]
+    genre_part = [q for q in queries if not q[0].startswith("inauthor:")]
+    genre_part.sort(key=lambda q: genre_weight.get(q[1].split(" : ")[-1], 0), reverse=True)
+    return (author_part + genre_part)[:_MAX_TASTE_QUERIES]
+
+
+def _gb_newest_fr(query: str, max_results: int = 8) -> list[dict]:
+    if not gb.is_enabled():
+        return []
+    try:
+        raw = gb.search_volumes(
+            query,
+            max_results=max_results,
+            order_by="newest",
+            lang_restrict="fr",
+            print_type="books",
+        )
+        return [gb.simplify_item(it) for it in (raw.get("items") or []) if isinstance(it, dict)]
+    except Exception as exc:  # pragma: no cover - API externe
+        logger.debug("Suggestions GB échouées (%s) : %s", query, exc)
+        return []
+
+
+def _ol_newest(query: str, max_results: int = 8) -> list[dict]:
+    """Repli Open Library : éditions récentes en français."""
+    year = date.today().year
+    q = query
+    q = re.sub(r'^subject:"([^"]+)"$', r"\1", q)
+    q = re.sub(r'^inauthor:"([^"]+)"$', r"\1", q)
+    try:
+        resp = requests.get(
+            "https://openlibrary.org/search.json",
+            params={
+                "q": q,
+                "language": "fre",
+                "sort": "new",
+                "limit": max_results,
+                "fields": "title,author_name,cover_i,first_publish_year,key,isbn",
+            },
+            timeout=8,
+            headers={"User-Agent": "Booktime/1.0 (upcoming)"},
+        )
+        if not resp.ok:
+            return []
+        out = []
+        for doc in (resp.json() or {}).get("docs") or []:
+            pub_year = doc.get("first_publish_year")
+            try:
+                pub_year = int(pub_year)
+            except (TypeError, ValueError):
+                continue
+            if pub_year < year:
+                continue
+            authors = doc.get("author_name") or []
+            cover_i = doc.get("cover_i")
+            isbn = (doc.get("isbn") or [""])[0]
+            out.append(
+                {
+                    "title": doc.get("title") or "",
+                    "authors": authors[:1],
+                    "published_date": str(pub_year),
+                    "thumbnail": (
+                        f"https://covers.openlibrary.org/b/id/{cover_i}-M.jpg" if cover_i else ""
+                    ),
+                    "isbn_13": isbn if len(str(isbn)) == 13 else "",
+                    "isbn_10": isbn if len(str(isbn)) == 10 else "",
+                    "categories": [],
+                    "subtitle": "",
+                }
+            )
+        return out
+    except Exception as exc:  # pragma: no cover
+        logger.debug("Suggestions OL échouées (%s) : %s", query, exc)
+        return []
+
+
+def _suggestions_for_query(
+    query: str,
+    reason: str,
+    *,
+    owned_titles: set[str],
+    seen: set[str],
+    today: date,
+    today_iso: str,
+) -> list[dict]:
+    past = (today - timedelta(days=_SUGGESTION_PAST_DAYS)).isoformat()
+    hits = _gb_newest_fr(query)
+    if not hits:
+        hits = _ol_newest(query)
+    out: list[dict] = []
+    for it in hits:
+        title = (it.get("title") or "").strip()
+        key = _norm(title)
+        if not key or key in seen or key in owned_titles:
+            continue
+        iso, conf = parse_pub_date(it.get("published_date"))
+        if not iso or iso < past:
+            continue
+        authors = it.get("authors") or []
+        author = authors[0] if authors else (it.get("author") or "")
+        if isinstance(author, list):
+            author = author[0] if author else ""
+        seen.add(key)
+        cover = (it.get("thumbnail") or "").replace("http://", "https://")
+        out.append(
+            {
+                "id": f"suggest:{key}",
+                "type": "suggestion",
+                "title": title,
+                "author": author,
+                "cover_url": cover,
+                "category": gb.infer_book_category_from_google_item(it) if it.get("categories") is not None else "roman",
+                "series_name": None,
+                "volume": None,
+                "date": iso,
+                "date_confidence": conf,
+                "source": "suggestion",
+                "available": iso <= today_iso,
+                "confirmed": False,
+                "reason": reason,
+                "isbn": it.get("isbn_13") or it.get("isbn_10") or "",
+                "google_books_id": it.get("google_books_id") or "",
+            }
+        )
+        if len(out) >= 3:
+            break
+    return out
+
+
+def _build_taste_suggestions(
+    user_id: str,
+    followed_authors: list[str],
+    owned_titles: set[str],
+    already: set[str],
+    today: date,
+    today_iso: str,
+) -> list[dict]:
+    proj = {"_id": 0, "title": 1, "author": 1, "genre": 1, "category": 1, "status": 1, "rating": 1}
+    try:
+        books = list(books_collection.find({"user_id": user_id}, proj))
+    except Exception as exc:  # pragma: no cover
+        logger.debug("Profil de lecture indisponible : %s", exc)
+        return []
+    queries = taste_queries(books, followed_authors)
+    if not queries:
+        return []
+    seen = set(already)
+    suggestions: list[dict] = []
+    for query, reason in queries:
+        if len(suggestions) >= _MAX_SUGGESTIONS:
+            break
+        batch = _suggestions_for_query(
+            query,
+            reason,
+            owned_titles=owned_titles,
+            seen=seen,
+            today=today,
+            today_iso=today_iso,
+        )
+        suggestions.extend(batch)
+    return suggestions[:_MAX_SUGGESTIONS]
+
+
 def _group_items(items: list[dict], today: date) -> dict[str, list[dict]]:
     end_of_week = (today + timedelta(days=(6 - today.weekday()))).isoformat()
     # Fin de mois : 28 + 4 jours puis retour au 1er, moins 1 jour.
@@ -820,6 +1066,10 @@ async def get_upcoming_for_user(current_user: dict) -> dict[str, Any]:
             out.extend(r)
         return out
 
+    followed = current_user.get("followed_authors") or []
+    if not isinstance(followed, list):
+        followed = []
+
     next_tomes, author_items, watchlist, manga = await asyncio.gather(
         _enrich_tomes(),
         _author_releases(),
@@ -828,14 +1078,26 @@ async def get_upcoming_for_user(current_user: dict) -> dict[str, Any]:
     )
 
     items = next_tomes + author_items + manga + watchlist
+    already = {_norm(it.get("title")) for it in items if it.get("title")}
+    suggestions = await asyncio.to_thread(
+        _build_taste_suggestions,
+        user_id,
+        followed,
+        owned_titles,
+        already,
+        today,
+        today_iso,
+    )
     groups = _group_items(items, today)
 
     counts = {k: len(v) for k, v in groups.items()}
-    counts["total"] = len(items)
+    counts["suggestions"] = len(suggestions)
+    counts["total"] = len(items) + len(suggestions)
 
     return {
         "items": items,
         "groups": groups,
+        "suggestions": suggestions,
         "counts": counts,
         "generated_at": datetime.utcnow().isoformat(),
     }
