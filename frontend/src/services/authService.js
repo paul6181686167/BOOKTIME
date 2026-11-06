@@ -85,6 +85,53 @@ class AuthService {
     }
   }
 
+  /** Profil complet (nom, biographie, photo) depuis le serveur. */
+  async fetchProfile() {
+    try {
+      const response = await fetch(`${this.backendUrl}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) return { success: false };
+      const data = await response.json();
+      return {
+        success: true,
+        profile: {
+          display_name: data.display_name || '',
+          bio: data.bio || '',
+          avatar_url: data.avatar_url || '',
+        },
+      };
+    } catch (_) {
+      return { success: false };
+    }
+  }
+
+  /** Enregistre nom, biographie et/ou photo (avatar_url vide = retirer la photo). */
+  async updateProfile(patch) {
+    try {
+      const response = await fetch(`${this.backendUrl}/api/auth/me/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify(patch),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return { success: true, profile: data.profile };
+      }
+      const error = await response.json().catch(() => ({}));
+      const msg =
+        typeof error.detail === 'string'
+          ? error.detail
+          : error.detail?.[0]?.msg || 'Enregistrement impossible';
+      return { success: false, error: msg };
+    } catch (error) {
+      return { success: false, error: error.message || 'Serveur inaccessible' };
+    }
+  }
+
   async deleteAccount(password) {
     try {
       const response = await fetch(`${this.backendUrl}/api/auth/me`, {

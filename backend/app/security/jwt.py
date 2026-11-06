@@ -41,7 +41,10 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
                 detail="Invalid authentication credentials"
             )
         
-        user = users_collection.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+        # La photo de profil (data URL) n'est pas chargée à chaque requête : /api/auth/me la renvoie.
+        user = users_collection.find_one(
+            {"id": user_id}, {"_id": 0, "password_hash": 0, "avatar_url": 0}
+        )
         if user is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

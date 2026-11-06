@@ -59,8 +59,22 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // Fusionne des champs (nom, biographie, photo) dans l'utilisateur courant et dans le stockage local
+  const updateUser = (patch) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      try {
+        localStorage.setItem('user', JSON.stringify(next));
+      } catch (_) {
+        /* stockage plein : l'état en mémoire reste à jour */
+      }
+      return next;
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, updateUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

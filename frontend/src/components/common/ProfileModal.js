@@ -25,6 +25,7 @@ import {
   summarizeReadingTime,
 } from '../../utils/readingTime';
 import IsbnScannerModal from './IsbnScannerModal';
+import ProfileIdentityCard, { UserAvatar } from './ProfileIdentityCard';
 import DeleteAccountDialog from '../user/DeleteAccountDialog';
 
 // ─── Heatmap de lecture ──────────────────────────────────────────────────────
@@ -318,9 +319,14 @@ function ProfileModal({
         {/* Header */}
         <div className="flex-shrink-0 p-4 border-b border-booktime-mist/55 dark:border-booktime-800/50 bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl safe-area-top sticky top-0 z-10">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Profil</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{user?.email}</p>
+            <div className="flex items-center gap-3 min-w-0">
+              <UserAvatar user={user} size={40} />
+              <div className="min-w-0">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Profil</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                  {user?.display_name || user?.email}
+                </p>
+              </div>
             </div>
             {!isPage && (
               <button
@@ -356,6 +362,7 @@ function ProfileModal({
           {/* ─── STATS ─── */}
           {activeTab === 'stats' && (
             <div className="space-y-4 animate-fadeIn">
+              <ProfileIdentityCard />
               <button
                 type="button"
                 onClick={() => setShowIsbnScanner(true)}

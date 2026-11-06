@@ -3,6 +3,9 @@ from pydantic import BaseModel
 from datetime import datetime, timedelta
 import uuid
 import secrets
+import re
+import base64
+from typing import Optional
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -204,7 +207,7 @@ async def login(user_data: UserAuth):
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "user": {"id": user["id"], "email": user["email"]},
+        "user": {"id": user["id"], "email": user["email"], **public_profile(user)},
     }
 
 @router.post("/forgot-password")
@@ -283,10 +286,89 @@ async def reset_password(data: ResetPasswordRequest):
     return {"message": "Mot de passe réinitialisé avec succès."}
 
 
+PROFILE_FIELDS = ("display_name", "bio", "avatar_url")
+MAX_DISPLAY_NAME = 40
+MAX_BIO = 300
+# Photo redimensionnée côté application (~256 px) : quelques dizaines de Ko en base64.
+MAX_AVATAR_CHARS = 150_000
+_AVATAR_RE = re.compile(r"^data:image/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$")
+
+
+def public_profile(doc: dict) -> dict:
+    """Champs de profil exposés au client (valeurs vides plutôt qu'absentes)."""
+    doc = doc or {}
+    return {
+        "display_name": doc.get("display_name") or "",
+        "bio": doc.get("bio") or "",
+        "avatar_url": doc.get("avatar_url") or "",
+    }
+
+
+def clean_profile_update(data: dict) -> dict:
+    """Valide et nettoie les champs de profil reçus. Lève HTTPException 400 si invalide."""
+    out = {}
+    if "display_name" in data:
+        name = " ".join(str(data["display_name"] or "").split())
+        if len(name) > MAX_DISPLAY_NAME:
+            raise HTTPException(
+                status_code=400, detail=f"Le nom ne peut pas dépasser {MAX_DISPLAY_NAME} caractères."
+            )
+        out["display_name"] = name
+    if "bio" in data:
+        bio = str(data["bio"] or "").replace("\r\n", "\n").strip()
+        if len(bio) > MAX_BIO:
+            raise HTTPException(
+                status_code=400, detail=f"La biographie ne peut pas dépasser {MAX_BIO} caractères."
+            )
+        out["bio"] = bio
+    if "avatar_url" in data:
+        avatar = str(data["avatar_url"] or "").strip()
+        if avatar:
+            if len(avatar) > MAX_AVATAR_CHARS:
+                raise HTTPException(status_code=400, detail="Photo trop volumineuse.")
+            match = _AVATAR_RE.match(avatar)
+            if not match:
+                raise HTTPException(
+                    status_code=400, detail="Format de photo non pris en charge (JPEG, PNG ou WebP)."
+                )
+            try:
+                base64.b64decode(match.group(2), validate=True)
+            except Exception:
+                raise HTTPException(status_code=400, detail="Photo illisible.")
+        out["avatar_url"] = avatar
+    return out
+
+
+class ProfileUpdateRequest(BaseModel):
+    display_name: Optional[str] = None
+    bio: Optional[str] = None
+    # Chaîne vide = retirer la photo
+    avatar_url: Optional[str] = None
+
+
 @router.get("/me")
 async def get_me(current_user: dict = Depends(get_current_user)):
-    """Obtenir les informations de l'utilisateur actuel"""
-    return current_user
+    """Obtenir les informations de l'utilisateur actuel (profil et photo inclus)."""
+    stored = users_collection.find_one(
+        {"id": current_user.get("id")}, {"_id": 0, "password_hash": 0}
+    )
+    return {**current_user, **public_profile(stored or current_user)}
+
+
+@router.put("/me/profile")
+async def update_my_profile(
+    payload: ProfileUpdateRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """Met à jour le nom affiché, la biographie et la photo de profil."""
+    sent = payload.model_dump(exclude_unset=True)
+    updates = clean_profile_update(sent)
+    if not updates:
+        raise HTTPException(status_code=400, detail="Aucune donnée à mettre à jour.")
+
+    users_collection.update_one({"id": current_user.get("id")}, {"$set": updates})
+    stored = users_collection.find_one({"id": current_user.get("id")}, {"_id": 0}) or {}
+    return {"success": True, "profile": public_profile(stored)}
 
 
 # Collections portant des documents rattachés à un utilisateur via user_id.
