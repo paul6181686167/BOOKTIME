@@ -16,6 +16,7 @@ import { coverImgSrc } from '../utils/helpers';
 import AddToCollectionMenu from './common/AddToCollectionMenu';
 import CommunityReviews from './common/CommunityReviews';
 import confetti from 'canvas-confetti';
+import { useTheme } from '../contexts/ThemeContext';
 
 // Déclenche les confettis de célébration
 const launchConfetti = () => {
@@ -33,6 +34,7 @@ const launchConfetti = () => {
 
 const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibrary, onAuthorClick }) => {
   const navigate = useNavigate();
+  const { isVoid } = useTheme();
   const titleMain = useMemo(() => displayBookTitleFrFirst(book), [book]);
   const [isEditing, setIsEditing] = useState(false);
   const [bouncing, setBouncing] = useState(null); // id du bouton en train de bouncer
@@ -609,7 +611,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content-wide modal-animate w-full md:w-auto" onClick={(e) => e.stopPropagation()}>
+      <div className={`modal-content-wide modal-animate w-full md:w-auto${isVoid ? ' void-sheet' : ''}`} onClick={(e) => e.stopPropagation()}>
         {/* Barre mobile sticky : fermeture toujours visible */}
         <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 md:hidden border-b border-booktime-mist/55 dark:border-booktime-800/50 bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl">
           <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Détail</span>

@@ -4,6 +4,7 @@ import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { API_BASE_URL } from '../config/environment';
 import { EXTENDED_SERIES_DATABASE } from '../utils/seriesDatabaseExtended';
 import { buildMergedLibraryVolumeRowsFromOlBooks } from '../utils/openLibraryBookDisplay';
+import { useTheme } from '../contexts/ThemeContext';
 
 // Cherche une série dans la base statique par nom (insensible à la casse)
 const findSeriesInDB = (name) => {
@@ -21,6 +22,7 @@ const findSeriesInDB = (name) => {
 };
 
 const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpenSeries, onAddSeries }) => {
+  const { isVoid } = useTheme();
   const [authorInfo, setAuthorInfo] = useState(null);
   const [authorBooks, setAuthorBooks] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -377,7 +379,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
 
   return (
     <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1100 }}>
-      <div className="modal-content-wide w-full md:w-auto" onClick={(e) => e.stopPropagation()}>
+      <div className={`modal-content-wide w-full md:w-auto${isVoid ? ' void-sheet' : ''}`} onClick={(e) => e.stopPropagation()}>
         {/* Barre mobile avec bouton fermeture */}
         <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 md:hidden border-b border-booktime-mist/55 dark:border-booktime-800/50 bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl">
           <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Auteur</span>

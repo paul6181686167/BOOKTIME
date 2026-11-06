@@ -75,23 +75,20 @@
   height: 0;
 }
 
-.dark .modal-content {
+html.dark:not(.cinema) .modal-content,
+html.dark:not(.cinema) .modal-content-wide {
   background: #163528;
   border: 1px solid #1e3a2c;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
 }
 
-/* Mode sombre pour la classe wide */
-.dark .modal-content-wide {
-  background: #163528;
-  border: 1px solid #1e3a2c;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-}
-
-/* Très foncé : fiches livre / série noires, plus le vert sombre */
+/* Très foncé : fiches livre / série / auteur noires */
 html.cinema .modal-content,
-html.cinema .modal-content-wide {
+html.cinema .modal-content-wide,
+.void-sheet {
   background: #141414 !important;
+  background-color: #141414 !important;
+  background-image: none !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
   color: #f3f4f6;
 }

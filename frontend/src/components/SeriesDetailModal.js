@@ -31,6 +31,7 @@ import AddToCollectionMenu from './common/AddToCollectionMenu';
 import CommunityReviews from './common/CommunityReviews';
 import { coverImgSrc } from '../utils/helpers';
 import { preferFrenchSynopsis } from '../utils/synopsisQuality';
+import { useTheme } from '../contexts/ThemeContext';
 
 const isPersistedLibraryId = (id) =>
   id &&
@@ -109,6 +110,7 @@ const SeriesDetailModal = ({
   userSeriesLibrary = []
 }) => {
   const navigate = useNavigate();
+  const { isVoid } = useTheme();
   const seriesDisplayName = series?.name || series?.series_name || series?.title || '';
   const goToSimilar = () => {
     const name = seriesDisplayName;
@@ -1259,7 +1261,7 @@ const SeriesDetailModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 md:p-4">
-      <div className="modal-content-wide shadow-2xl overflow-hidden w-full md:w-auto">
+      <div className={`modal-content-wide shadow-2xl overflow-hidden w-full md:w-auto${isVoid ? ' void-sheet' : ''}`}>
         
         {/* Barre mobile sticky : fermeture toujours visible */}
         <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 md:hidden border-b border-booktime-mist/55 dark:border-booktime-800/50 bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl">

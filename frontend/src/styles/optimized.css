@@ -29,13 +29,23 @@
 }
 
 /* Mode sombre — verts profonds (alignés sur gray 700–900 du theme) */
-.dark {
+html.dark:not(.cinema) {
   --color-bg-primary: #234f37;
   --color-bg-secondary: #163528;
   --color-bg-tertiary: #1e3a2c;
   --color-text-primary: #f0fdf4;
   --color-text-secondary: #c5e0d0;
   --color-border: #3d7a55;
+}
+
+/* Très foncé : mêmes variables, sans vert */
+html.cinema {
+  --color-bg-primary: #050505;
+  --color-bg-secondary: #141414;
+  --color-bg-tertiary: #1a1a1a;
+  --color-text-primary: #f3f4f6;
+  --color-text-secondary: #d1d5db;
+  --color-border: rgba(255, 255, 255, 0.08);
 }
 
 /* Mode clair — fond vert doux, un cran plus saturé */
@@ -281,4 +291,17 @@ body,
   .book-card {
     break-inside: avoid;
   }
+}
+
+/* Dernière couche : la fiche Très foncé ne reprend pas le vert du mode Foncé */
+html.dark.cinema .modal-content,
+html.dark.cinema .modal-content-wide,
+html.cinema .modal-content,
+html.cinema .modal-content-wide,
+.void-sheet {
+  background: #141414 !important;
+  background-color: #141414 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #f3f4f6;
 }
