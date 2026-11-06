@@ -846,6 +846,9 @@ const RecommendationPage = () => {
     loadRecommendations(activeTab);
   }, [activeTab, loadRecommendations]);
 
+  // Une passe par livre : un titre encore anglais ne doit pas relancer la recherche.
+  const frenchTitleAttempts = useRef(new Map());
+
   // Les recos OL arrivent souvent avec le titre anglais. On le remplace
   // par l'édition française dès qu'elle existe.
   useEffect(() => {
@@ -854,7 +857,11 @@ const RecommendationPage = () => {
       (list || []).forEach((item) => {
         if (!item || item.isSeriesCard) return;
         const label = displayBookTitleFrFirst(item);
-        if (titleNeedsFrenchLookup(label)) pending.push(item);
+        if (!titleNeedsFrenchLookup(label)) return;
+        const id = String(item.ol_key || item.book_id || item.id || `${label}|${item.author || ''}`);
+        if (frenchTitleAttempts.current.has(id)) return;
+        frenchTitleAttempts.current.set(id, null);
+        pending.push(item);
       });
     });
     if (!pending.length) return undefined;
@@ -864,7 +871,8 @@ const RecommendationPage = () => {
       await Promise.all(pending.map(async (item) => {
         const french = await resolveFrenchDisplayTitle(item);
         const current = displayBookTitleFrFirst(item);
-        if (french && french !== current) updates.set(item, french);
+        if (!french || french === current || titleNeedsFrenchLookup(french)) return;
+        updates.set(item, french);
       }));
       if (cancel || updates.size === 0) return;
       setSections((prev) => {
