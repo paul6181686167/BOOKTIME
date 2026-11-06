@@ -3,6 +3,7 @@ import { toast } from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
 import { API_BASE_URL } from '../../config/environment';
 import { wakeBackend, isBackendRemote } from '../../utils/backendWake';
+import TermsContent from '../legal/TermsContent';
 
 // Login Page Component
 function LoginPage() {
@@ -11,6 +12,8 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [rememberMe, setRememberMe] = useState(true);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
@@ -64,6 +67,10 @@ function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.email || !formData.password) return;
+    if (!isLogin && !acceptTerms) {
+      toast.error("Accepte les conditions générales d'utilisation pour créer un compte");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -71,7 +78,7 @@ function LoginPage() {
       if (isLogin) {
         result = await login(formData.email, formData.password, rememberMe);
       } else {
-        result = await register(formData.email, formData.password);
+        result = await register(formData.email, formData.password, acceptTerms);
       }
 
       console.log(' Résultat reçu:', result);
@@ -226,6 +233,31 @@ function LoginPage() {
               </div>
             )}
 
+            {!isLogin && (
+              <label className="flex items-start gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={acceptTerms}
+                  onChange={(e) => setAcceptTerms(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  J'ai lu et j'accepte les{' '}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowTerms(true);
+                    }}
+                    className="text-green-600 dark:text-green-400 underline"
+                  >
+                    conditions générales d'utilisation
+                  </button>
+                  .
+                </span>
+              </label>
+            )}
+
             {isLogin && (
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
@@ -242,7 +274,7 @@ function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading || (!formData.email || !formData.password)}
+              disabled={loading || !formData.email || !formData.password || (!isLogin && !acceptTerms)}
               className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Chargement...' : (isLogin ? 'Se connecter' : 'Créer un compte')}
@@ -259,7 +291,71 @@ function LoginPage() {
             )}
           </form>
         </div>
+
+        {isLogin && (
+          <p className="text-center text-xs text-gray-500 dark:text-gray-400">
+            <button
+              type="button"
+              onClick={() => setShowTerms(true)}
+              className="underline hover:text-gray-700 dark:hover:text-gray-200"
+            >
+              Conditions générales d'utilisation
+            </button>
+          </p>
+        )}
       </div>
+
+      {showTerms && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Conditions générales d'utilisation"
+        >
+          <div className="bg-white dark:bg-gray-800 sm:rounded-2xl rounded-t-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-700">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                Conditions générales d'utilisation
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowTerms(false)}
+                aria-label="Fermer"
+                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="overflow-y-auto px-5 py-4">
+              <TermsContent />
+            </div>
+            <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-700">
+              {!isLogin && !acceptTerms ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAcceptTerms(true);
+                    setShowTerms(false);
+                  }}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg text-sm font-medium"
+                >
+                  J'accepte
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowTerms(false)}
+                  className="w-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 py-2.5 rounded-lg text-sm font-medium"
+                >
+                  Fermer
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal mot de passe oublié */}
       {showForgot && (

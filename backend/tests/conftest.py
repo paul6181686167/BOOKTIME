@@ -34,7 +34,7 @@ def test_password() -> str:
 async def registered_user(test_client: AsyncClient, unique_email: str, test_password: str):
     r = await test_client.post(
         "/api/auth/register",
-        json={"email": unique_email, "password": test_password},
+        json={"email": unique_email, "password": test_password, "accept_terms": True},
     )
     assert r.status_code == 200, r.text
     data = r.json()

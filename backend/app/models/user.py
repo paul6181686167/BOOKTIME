@@ -7,6 +7,13 @@ class UserAuth(BaseModel):
     password: str = Field(..., min_length=6)
     remember_me: bool = True
 
+class RegisterRequest(UserAuth):
+    """Inscription : l'acceptation des conditions générales d'utilisation est obligatoire."""
+
+    accept_terms: bool = False
+    terms_version: Optional[str] = Field(default=None, max_length=32)
+
+
 class UserCreate(BaseModel):
     """Modèle pour création d'utilisateur"""
     email: EmailStr

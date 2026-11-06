@@ -27,6 +27,7 @@ const ExportImportPage = lazy(() => import('./components/exportimport/ExportImpo
 const UpcomingPage = lazy(() => import('./pages/UpcomingPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
 const ProfileModal = lazy(() => import('./components/common/ProfileModal'));
 const ExportImportModal = lazy(() => import('./components/export-import/ExportImportModal'));
 const UpcomingPanel = lazy(() => import('./components/UpcomingPanel'));
@@ -1446,6 +1447,7 @@ function App() {
               <Routes>
                 {/* Route publique */}
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/cgu" element={<TermsPage />} />
                 {/* Toutes les autres routes passent par AppWithAuth (vérification login) */}
                 <Route path="/*" element={<AppWithAuth />} />
               </Routes>

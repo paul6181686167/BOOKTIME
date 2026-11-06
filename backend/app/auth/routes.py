@@ -11,7 +11,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
 import bcrypt
-from ..models.user import UserAuth
+from ..models.user import UserAuth, RegisterRequest
 from ..database.connection import users_collection, db
 from ..admin.helpers import is_admin
 from ..security.jwt import (
@@ -159,8 +159,13 @@ def _verify_password(plain: str, hashed: str) -> bool:
 
 
 @router.post("/register")
-async def register(user_data: UserAuth):
-    """Enregistrer un nouvel utilisateur (email + mot de passe)"""
+async def register(user_data: RegisterRequest):
+    """Enregistrer un nouvel utilisateur (email + mot de passe + acceptation des CGU)"""
+    if not user_data.accept_terms:
+        raise HTTPException(
+            status_code=400,
+            detail="Tu dois accepter les conditions générales d'utilisation pour créer un compte.",
+        )
     email_lower = user_data.email.lower().strip()
     existing_user = users_collection.find_one({"email": email_lower})
 
@@ -174,6 +179,8 @@ async def register(user_data: UserAuth):
         "email": email_lower,
         "password_hash": password_hash,
         "created_at": datetime.utcnow(),
+        "terms_accepted_at": datetime.utcnow(),
+        "terms_version": (user_data.terms_version or "").strip() or None,
     }
 
     users_collection.insert_one(user)

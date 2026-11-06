@@ -101,7 +101,7 @@ describe('useAuth Hook', () => {
       await result.current.register('new@example.com', 'pwd123');
     });
 
-    expect(mockRegister).toHaveBeenCalledWith('new@example.com', 'pwd123');
+    expect(mockRegister).toHaveBeenCalledWith('new@example.com', 'pwd123', false);
     expect(result.current.user).toEqual(mockUser);
   });
 

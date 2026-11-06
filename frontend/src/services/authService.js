@@ -1,5 +1,6 @@
 // Service d'authentification multi-environnement
 import { API_BASE_URL } from '../config/environment';
+import { TERMS_VERSION } from '../legal/terms';
 
 class AuthService {
   constructor() {
@@ -37,14 +38,19 @@ class AuthService {
     }
   }
 
-  async register(email, password) {
+  async register(email, password, acceptTerms = false) {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000);
       const response = await fetch(`${this.backendUrl}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+          accept_terms: !!acceptTerms,
+          terms_version: TERMS_VERSION,
+        }),
         signal: controller.signal
       });
       clearTimeout(timeoutId);

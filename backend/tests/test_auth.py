@@ -18,7 +18,7 @@ class TestAuthentication:
     ):
         response = await test_client.post(
             "/api/auth/register",
-            json={"email": unique_email, "password": test_password},
+            json={"email": unique_email, "password": test_password, "accept_terms": True},
         )
         assert response.status_code == 200
         data = response.json()
@@ -40,7 +40,7 @@ class TestAuthentication:
     ):
         await test_client.post(
             "/api/auth/register",
-            json={"email": unique_email, "password": test_password},
+            json={"email": unique_email, "password": test_password, "accept_terms": True},
         )
         login_response = await test_client.post(
             "/api/auth/login",
