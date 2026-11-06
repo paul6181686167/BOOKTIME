@@ -75,37 +75,46 @@ const FR_MARKERS = new Set([
   'série', 'serie', 'personnage', 'personnages', 'édition', 'edition', 'chapitre',
 ]);
 
-/** Heuristique : le texte ressemble davantage au français qu'à l'anglais. */
-export function looksFrench(text) {
+function langScores(text) {
   const t = String(text || '').trim();
-  if (t.length < 20) return false;
   const accentN = (t.match(/[àâäéèêëïîôùûüçœæÀÂÄÉÈÊËÏÎÔÙÛÜÇŒÆ]/g) || []).length;
   const tokens = t.toLowerCase().match(/[a-zàâäéèêëïîôùûüçœæ']+/gi) || [];
-  if (!tokens.length) return false;
-  const frHits = tokens.filter((w) => FR_STOP.has(w)).length;
-  const enHits = tokens.filter((w) => EN_STOP.has(w)).length;
-  const frMark = tokens.filter((w) => FR_MARKERS.has(w)).length;
-  if (accentN >= 3) return true;
-  if (accentN >= 1 && frHits >= enHits) return true;
-  if (frHits >= 3 && frHits > enHits) return true;
-  if (frHits >= 2 && enHits === 0) return true;
-  if (frMark >= 2 && frMark >= enHits) return true;
+  return {
+    len: t.length,
+    accentN,
+    tokens,
+    frHits: tokens.filter((w) => FR_STOP.has(w)).length,
+    enHits: tokens.filter((w) => EN_STOP.has(w)).length,
+    frMark: tokens.filter((w) => FR_MARKERS.has(w)).length,
+    enMark: tokens.filter((w) => EN_MARKERS.has(w)).length,
+  };
+}
+
+/** Anglais dominant, même avec 1–2 accents (noms propres). */
+function englishDominant({ enHits, frHits }) {
+  return enHits >= 6 && enHits >= frHits * 2;
+}
+
+/** Heuristique : le texte ressemble davantage au français qu'à l'anglais. */
+export function looksFrench(text) {
+  const s = langScores(text);
+  if (s.len < 20 || !s.tokens.length) return false;
+  if (englishDominant(s)) return false;
+  if (s.accentN >= 3 && s.frHits + 1 >= s.enHits) return true;
+  if (s.accentN >= 1 && s.frHits >= s.enHits) return true;
+  if (s.frHits >= 3 && s.frHits > s.enHits) return true;
+  if (s.frHits >= 2 && s.enHits === 0) return true;
+  if (s.frMark >= 2 && s.frMark >= s.enHits) return true;
   return false;
 }
 
 export function looksEnglish(text) {
-  const t = String(text || '').trim();
-  if (t.length < 20) return false;
-  if (looksFrench(t)) return false;
-  const tokens = t.toLowerCase().match(/[a-z']+/g) || [];
-  if (!tokens.length) return false;
-  const enHits = tokens.filter((w) => EN_STOP.has(w)).length;
-  const frHits = tokens.filter((w) => FR_STOP.has(w)).length;
-  const enMark = tokens.filter((w) => EN_MARKERS.has(w)).length;
-  const accentN = (t.match(/[àâäéèêëïîôùûüçœæ]/gi) || []).length;
-  if (accentN > 0) return false;
-  if (enMark >= 2 && enHits >= frHits) return true;
-  return enHits >= 3 && enHits > frHits;
+  const s = langScores(text);
+  if (s.len < 20 || !s.tokens.length) return false;
+  if (englishDominant(s)) return true;
+  if (looksFrench(text)) return false;
+  if (s.enMark >= 2 && s.enHits >= s.frHits) return true;
+  return s.enHits >= 3 && s.enHits > s.frHits;
 }
 
 /**

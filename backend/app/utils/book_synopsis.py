@@ -241,25 +241,32 @@ _EN_STOPWORDS = {
 }
 
 
+def _lang_scores(text: str | None) -> tuple[int, int, int, int]:
+    t = (text or "").strip()
+    accent_n = len(re.findall(r"[àâäéèêëïîôùûüçœæÀÂÄÉÈÊËÏÎÔÙÛÜÇŒÆ]", t))
+    tokens = re.findall(r"[a-zA-ZàâäéèêëïîôùûüçœæÀÂÄÉÈÊËÏÎÔÙÛÜÇŒÆ']+", t.lower())
+    fr_hits = sum(1 for w in tokens if w in _FR_STOPWORDS)
+    en_hits = sum(1 for w in tokens if w in _EN_STOPWORDS)
+    return accent_n, fr_hits, en_hits, len(tokens)
+
+
 def looks_french(text: str | None) -> bool:
     """Heuristique : le texte ressemble davantage au français qu'à l'anglais."""
     t = (text or "").strip()
     if len(t) < 20:
         return False
-    accent_n = len(re.findall(r"[àâäéèêëïîôùûüçœæÀÂÄÉÈÊËÏÎÔÙÛÜÇŒÆ]", t))
-    tokens = re.findall(r"[a-zA-ZàâäéèêëïîôùûüçœæÀÂÄÉÈÊËÏÎÔÙÛÜÇŒÆ']+", t.lower())
-    if not tokens:
+    accent_n, fr_hits, en_hits, n_tokens = _lang_scores(t)
+    if not n_tokens:
         return False
-    fr_hits = sum(1 for w in tokens if w in _FR_STOPWORDS)
-    en_hits = sum(1 for w in tokens if w in _EN_STOPWORDS)
-    # Accents forts → FR ; sinon comparer les stopwords
-    if accent_n >= 3:
+    # Paragraphe anglais avec quelques accents (noms) : pas du français
+    if en_hits >= 6 and en_hits >= fr_hits * 2:
+        return False
+    if accent_n >= 3 and fr_hits + 1 >= en_hits:
         return True
     if accent_n >= 1 and fr_hits >= en_hits:
         return True
     if fr_hits >= 3 and fr_hits > en_hits:
         return True
-    # Titres / phrases courts avec mots FR typiques
     if fr_hits >= 2 and en_hits == 0:
         return True
     return False
@@ -277,17 +284,16 @@ def looks_english(text: str | None) -> bool:
     t = (text or "").strip()
     if len(t) < 20:
         return False
+    _accent_n, fr_hits, en_hits, n_tokens = _lang_scores(t)
+    if not n_tokens:
+        return False
+    # Anglais dominant même avec quelques accents
+    if en_hits >= 6 and en_hits >= fr_hits * 2:
+        return True
     if looks_french(t):
         return False
     tokens = re.findall(r"[a-zA-Z']+", t.lower())
-    if not tokens:
-        return False
-    en_hits = sum(1 for w in tokens if w in _EN_STOPWORDS)
-    fr_hits = sum(1 for w in tokens if w in _FR_STOPWORDS)
     en_mark = sum(1 for w in tokens if w in _EN_MARKERS)
-    accent_n = len(re.findall(r"[àâäéèêëïîôùûüçœæ]", t, flags=re.I))
-    if accent_n > 0:
-        return False
     if en_mark >= 2 and en_hits >= fr_hits:
         return True
     return en_hits >= 3 and en_hits > fr_hits

@@ -126,7 +126,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
 
     const isLive = () => metaReqIdRef.current === reqId;
     const abort = new AbortController();
-    const fetchTimeoutMs = 12000;
+    const fetchTimeoutMs = 22000;
 
     const fetchWithTimeout = async (url, opts = {}) => {
       if (abort.signal.aborted) {

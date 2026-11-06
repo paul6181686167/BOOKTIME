@@ -88,6 +88,14 @@
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
 }
 
+/* Très foncé : fiches livre / série noires, plus le vert sombre */
+html.cinema .modal-content,
+html.cinema .modal-content-wide {
+  background: #141414 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #f3f4f6;
+}
+
 @keyframes modalSlideIn {
   from {
     opacity: 0;
