@@ -15,6 +15,15 @@ import {
   collectionContains,
   normalizeCollection,
 } from '../../utils/collectionsStorage';
+import {
+  READING_CATEGORIES,
+  READING_PROFILES,
+  WORDS_PER_MINUTE,
+  formatAsDays,
+  formatDuration,
+  formatWords,
+  summarizeReadingTime,
+} from '../../utils/readingTime';
 import IsbnScannerModal from './IsbnScannerModal';
 import DeleteAccountDialog from '../user/DeleteAccountDialog';
 
@@ -135,6 +144,8 @@ function ProfileModal({
       setCollections(getCollections());
     }
   }, [isOpen, isPage]);
+
+  const readingTime = useMemo(() => summarizeReadingTime(libraryBooks), [libraryBooks]);
 
   const libraryChoices = useMemo(() => {
     const books = (libraryBooks || [])
@@ -379,6 +390,60 @@ function ProfileModal({
                         {stats.total_pages_read?.toLocaleString('fr-FR')}
                       </div>
                       <div className="text-xs text-purple-600 dark:text-purple-400">Pages lues</div>
+                    </div>
+                  )}
+                  {readingTime.totalMinutes > 0 && (
+                    <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 space-y-3">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+                          {formatDuration(readingTime.totalMinutes)}
+                        </div>
+                        <div className="text-xs text-amber-700 dark:text-amber-300">
+                          de lecture estimées
+                        </div>
+                        {formatAsDays(readingTime.totalMinutes) && (
+                          <div className="text-[11px] text-amber-700/80 dark:text-amber-300/80 mt-0.5">
+                            {formatAsDays(readingTime.totalMinutes)}
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        {READING_CATEGORIES.filter((c) => readingTime.byCategory[c].minutes > 0).map((c) => {
+                          const entry = readingTime.byCategory[c];
+                          const share = Math.round((entry.minutes / readingTime.totalMinutes) * 100);
+                          return (
+                            <div key={c}>
+                              <div className="flex items-baseline justify-between text-sm">
+                                <span className="font-medium text-gray-800 dark:text-gray-100">
+                                  {READING_PROFILES[c].label}
+                                </span>
+                                <span className="font-bold text-amber-700 dark:text-amber-300">
+                                  {formatDuration(entry.minutes)}
+                                </span>
+                              </div>
+                              <div className="w-full bg-white/70 dark:bg-gray-700/60 rounded-full h-1.5 overflow-hidden my-1">
+                                <div
+                                  className="h-1.5 rounded-full bg-amber-500"
+                                  style={{ width: `${share}%` }}
+                                />
+                              </div>
+                              <div className="text-[11px] text-gray-600 dark:text-gray-400">
+                                {entry.pages.toLocaleString('fr-FR')} pages
+                                {entry.words > 0 ? ` · environ ${formatWords(entry.words)}` : ''}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p className="text-[11px] leading-snug text-gray-500 dark:text-gray-400">
+                        Estimation : romans à {WORDS_PER_MINUTE} mots par minute et{' '}
+                        {READING_PROFILES.roman.wordsPerPage} mots par page, romans graphiques à{' '}
+                        {Math.round(READING_PROFILES.bd.minutesPerPage * 60)} s par page, mangas à{' '}
+                        {Math.round(READING_PROFILES.manga.minutesPerPage * 60)} s par page.
+                        {readingTime.guessedBooks > 0
+                          ? ` Pour ${readingTime.guessedBooks} livre${readingTime.guessedBooks > 1 ? 's' : ''} terminé${readingTime.guessedBooks > 1 ? 's' : ''} sans nombre de pages, une taille moyenne est utilisée.`
+                          : ''}
+                      </p>
                     </div>
                   )}
                 </>
