@@ -12,34 +12,64 @@ function isValidIsbn(isbn) {
   return isbn.length === 10 || isbn.length === 13;
 }
 
+function readCaps(scanner) {
+  try {
+    return scanner?.getRunningTrackCapabilities?.() || {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function hasFocusMode(caps, mode) {
+  const modes = caps.focusMode;
+  if (!modes) return false;
+  return Array.isArray(modes) ? modes.includes(mode) : modes === mode;
+}
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Autofocus continu + léger zoom. Chaque réglage est isolé : un refus n'annule pas les autres. */
 async function applyBarcodeFocus(scanner) {
   if (!scanner) return;
-  try {
-    const caps = scanner.getRunningTrackCapabilities?.() || {};
-    const advanced = [];
-    if (caps.zoom) {
-      const max = typeof caps.zoom === 'object' ? caps.zoom.max : caps.zoom;
-      const min = typeof caps.zoom === 'object' ? caps.zoom.min : 1;
-      // Léger zoom pour grossir le code-barres sans trop flouter
-      const target = Math.min(Number(max) || 2, Math.max(Number(min) || 1, 1.8));
-      advanced.push({ zoom: target });
-    }
-    if (caps.focusDistance) {
-      advanced.push({ focusDistance: 0.1 });
-    }
-    await scanner.applyVideoConstraints({
-      focusMode: 'continuous',
-      width: { ideal: 1920 },
-      height: { ideal: 1080 },
-      ...(advanced.length ? { advanced } : {}),
-    });
-  } catch (_) {
+  const caps = readCaps(scanner);
+
+  if (hasFocusMode(caps, 'continuous')) {
     try {
-      await scanner.applyVideoConstraints({ focusMode: 'continuous' });
-    } catch (__) {
-      /* appareil sans autofocus programmable */
+      await scanner.applyVideoConstraints({ advanced: [{ focusMode: 'continuous' }] });
+    } catch (_) {
+      /* ignore */
     }
   }
+
+  if (caps.zoom) {
+    try {
+      const max = Number(typeof caps.zoom === 'object' ? caps.zoom.max : caps.zoom) || 1;
+      const min = Number(typeof caps.zoom === 'object' ? caps.zoom.min : 1) || 1;
+      // Léger zoom : permet de tenir le livre plus loin que la distance minimale de mise au point
+      const target = Math.min(max, Math.max(min, 1.6));
+      await scanner.applyVideoConstraints({ advanced: [{ zoom: target }] });
+    } catch (_) {
+      /* ignore */
+    }
+  }
+}
+
+/** Relance explicite de la mise au point (bouton ou toucher sur l'image). */
+async function triggerFocus(scanner) {
+  if (!scanner) return;
+  const caps = readCaps(scanner);
+  try {
+    if (hasFocusMode(caps, 'single-shot')) {
+      await scanner.applyVideoConstraints({ advanced: [{ focusMode: 'single-shot' }] });
+      await wait(700);
+    } else if (hasFocusMode(caps, 'manual')) {
+      await scanner.applyVideoConstraints({ advanced: [{ focusMode: 'manual' }] });
+      await wait(300);
+    }
+  } catch (_) {
+    /* ignore */
+  }
+  await applyBarcodeFocus(scanner);
 }
 
 /**
@@ -145,48 +175,51 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
       });
       scannerRef.current = scanner;
 
-      // Préférer la caméra arrière haute résolution si listée
-      let cameraConfig = {
-        facingMode: { ideal: 'environment' },
+      // facingMode « environment » laisse Android choisir l'objectif principal (avec autofocus).
+      // Choisir une caméra par deviceId risquait de tomber sur l'ultra grand-angle ou le macro.
+      const scanConfig = {
+        fps: 15,
+        // Bande large et basse = cadre naturel d’un ISBN
+        qrbox: (viewW, viewH) => {
+          const w = Math.floor(Math.min(viewW * 0.92, 360));
+          const h = Math.floor(Math.min(viewH * 0.22, 120));
+          return { width: Math.max(220, w), height: Math.max(70, h) };
+        },
+        aspectRatio: 1.777,
+        disableFlip: true,
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true,
+        },
       };
-      try {
-        const cameras = await Html5Qrcode.getCameras();
-        const back =
-          cameras.find((c) => /back|rear|environment|arrière|背面/i.test(c.label || '')) ||
-          cameras[cameras.length - 1];
-        if (back?.id) cameraConfig = { deviceId: { exact: back.id } };
-      } catch (_) {
-        /* facingMode suffit */
-      }
+      const onDecoded = async (decoded) => {
+        if (handledRef.current) return;
+        const isbn = normalizeIsbn(decoded);
+        if (!isValidIsbn(isbn)) return;
+        handledRef.current = true;
+        setHint('ISBN détecté…');
+        toast.success(`ISBN détecté : ${isbn}`);
+        await lookupIsbn(isbn);
+      };
 
-      await scanner.start(
-        cameraConfig,
-        {
-          fps: 15,
-          // Bande large et basse = cadre naturel d’un ISBN
-          qrbox: (viewW, viewH) => {
-            const w = Math.floor(Math.min(viewW * 0.92, 360));
-            const h = Math.floor(Math.min(viewH * 0.22, 120));
-            return { width: Math.max(220, w), height: Math.max(70, h) };
+      try {
+        // Haute résolution : le code-barres reste net même un peu flou
+        await scanner.start(
+          { facingMode: { ideal: 'environment' } },
+          {
+            ...scanConfig,
+            videoConstraints: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+            },
           },
-          aspectRatio: 1.777,
-          disableFlip: true,
-          experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true,
-          },
-        },
-        async (decoded) => {
-          if (handledRef.current) return;
-          const isbn = normalizeIsbn(decoded);
-          if (!isValidIsbn(isbn)) return;
-          // ISBN livres commencent souvent par 978/979 — on accepte aussi les autres EAN-13 valides
-          handledRef.current = true;
-          setHint('ISBN détecté…');
-          toast.success(`ISBN détecté : ${isbn}`);
-          await lookupIsbn(isbn);
-        },
-        () => {}
-      );
+          onDecoded,
+          () => {}
+        );
+      } catch (_) {
+        // Repli : contraintes minimales
+        await scanner.start({ facingMode: 'environment' }, scanConfig, onDecoded, () => {});
+      }
 
       setScanning(true);
 
@@ -212,9 +245,17 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
       return;
     }
     setHint('Mise au point…');
-    await applyBarcodeFocus(scanner);
+    await triggerFocus(scanner);
     setHint('Recadre le code-barres dans la bande.');
-    toast.success('Mise au point relancée');
+  };
+
+  // Toucher l'image = relancer la mise au point (comme l'appareil photo)
+  const handleTapFocus = async () => {
+    const scanner = scannerRef.current;
+    if (!scanner || !scanning) return;
+    setHint('Mise au point…');
+    await triggerFocus(scanner);
+    setHint('Tiens le livre stable dans la bande rouge.');
   };
 
   useEffect(() => {
@@ -292,6 +333,7 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
               <div className="relative">
                 <div
                   id={readerId}
+                  onClick={handleTapFocus}
                   className="w-full overflow-hidden rounded-xl bg-black min-h-[280px] isbn-scanner-view"
                 />
                 <style>{`
@@ -314,6 +356,7 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
                 <li>· Bonne lumière (évite le contre-jour)</li>
                 <li>· Distance ~10–20 cm, code-barres bien à plat</li>
                 <li>· Remplis toute la bande rouge avec le code</li>
+                <li>· Touche l’image pour relancer la mise au point</li>
               </ul>
 
               {cameraError && (
