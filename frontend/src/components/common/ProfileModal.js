@@ -293,7 +293,7 @@ function ProfileModal({
       <div
         className={
           isPage
-            ? 'bg-honeycomb min-h-screen w-full flex flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))]'
+            ? 'bg-honeycomb min-h-full w-full flex flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))]'
             : 'bg-[#f3faf6] dark:bg-gray-800 md:rounded-2xl shadow-2xl w-full md:max-w-lg max-h-[92dvh] md:max-h-[90vh] flex flex-col modal-animate safe-area-bottom'
         }
         style={isPage ? undefined : { borderRadius: '20px 20px 0 0' }}
@@ -335,8 +335,8 @@ function ProfileModal({
           </div>
         </div>
 
-        {/* Contenu */}
-        <div className="flex-1 overflow-y-auto p-4">
+        {/* Contenu : scroll = diapositive parente en mode page */}
+        <div className={isPage ? 'p-4' : 'flex-1 overflow-y-auto p-4'}>
 
           {/* ─── STATS ─── */}
           {activeTab === 'stats' && (

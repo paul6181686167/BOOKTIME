@@ -34,6 +34,21 @@ export default function PrimaryTabsLayout({ slides }) {
     setMounted((prev) => (prev[activeIndex] ? prev : { ...prev, [activeIndex]: true }));
   }, [activeIndex]);
 
+  // Verrouille le scroll document sur mobile (le scroll vit dans chaque diapositive)
+  useEffect(() => {
+    if (!isMobile) return undefined;
+    document.documentElement.classList.add('mobile-tabs-scroll');
+    return () => document.documentElement.classList.remove('mobile-tabs-scroll');
+  }, [isMobile]);
+
+  // Remonter en haut de la diapo active au changement d’onglet
+  useEffect(() => {
+    if (!isMobile) return;
+    const slides = document.querySelectorAll('.mobile-slideshow-slide');
+    const el = slides[activeIndex];
+    if (el) el.scrollTop = 0;
+  }, [activeIndex, isMobile]);
+
   const handleTabChange = (tabId) => {
     const path = primaryTabToPath(tabId);
     if (path !== location.pathname) navigate(path);

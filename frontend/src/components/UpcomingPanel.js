@@ -317,7 +317,7 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
   const hasAny = GROUP_META.some((g) => (groups[g.key] || []).length > 0);
 
   const shellClass = isPage
-    ? 'min-h-screen bg-honeycomb flex flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))]'
+    ? 'min-h-full bg-honeycomb flex flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))]'
     : 'fixed top-0 left-0 h-full w-80 sm:w-96 bg-honeycomb shadow-2xl z-50 flex flex-col transition-transform duration-300';
 
   return (
@@ -456,8 +456,8 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
           </div>
         )}
 
-        {/* Contenu scrollable */}
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-6">
+        {/* Contenu : scroll = diapositive parente en mode page */}
+        <div className={isPage ? 'px-4 py-3 space-y-6' : 'flex-1 overflow-y-auto px-4 py-3 space-y-6'}>
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <div className="animate-spin rounded-full h-8 w-8 border-2 border-amber-500 border-t-transparent" />
