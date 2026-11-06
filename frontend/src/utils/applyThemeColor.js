@@ -1,6 +1,6 @@
-/** Chrome Android : barre système = fond du thème app (pas le mode OS). */
+/** Chrome Android : barre système = fond du thème app. */
 
-let nudgeTimer = 0;
+let applyTimer = 0;
 
 function setBootBackground(color) {
   let style = document.getElementById('bt-boot-bg');
@@ -9,52 +9,32 @@ function setBootBackground(color) {
     style.id = 'bt-boot-bg';
     document.head.appendChild(style);
   }
-  style.textContent = `html,body,#root{background-color:${color} !important;}`;
+  // Couvre aussi les zones safe-area (barre geste Android souvent translucide)
+  style.textContent = `
+    :root { --bt-chrome: ${color}; }
+    html, body, #root { background-color: ${color} !important; }
+    .mobile-slideshow { background-color: ${color} !important; }
+    #bt-chrome-fill {
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: -80px;
+      bottom: -80px;
+      z-index: -1;
+      pointer-events: none;
+      background-color: ${color};
+    }
+  `;
 }
 
-/**
- * Une seule meta theme-color, sans media query.
- * Les media (prefers-color-scheme) figeaient la barre sur le thème OS (souvent « Foncé »).
- */
-function setThemeColorMeta(color) {
-  document
-    .querySelectorAll('meta[name="theme-color"][media]')
-    .forEach((el) => el.remove());
-
-  let meta =
-    document.getElementById('bt-theme-color') ||
-    document.querySelector('meta[name="theme-color"]:not([media])');
-
-  if (!meta) {
-    meta = document.createElement('meta');
-    meta.setAttribute('name', 'theme-color');
-    meta.id = 'bt-theme-color';
-    document.head.insertBefore(meta, document.head.firstChild);
-  }
-
-  // Chrome ne repeint parfois que si la valeur change clairement
-  const nudge =
-    color === '#050505'
-      ? '#050506'
-      : color === '#234f37'
-        ? '#234f38'
-        : color === '#bce8cb'
-          ? '#bce8cc'
-          : '#000001';
-
-  meta.setAttribute('content', nudge);
-  if (nudgeTimer) window.clearTimeout(nudgeTimer);
-  nudgeTimer = window.setTimeout(() => {
-    meta.setAttribute('content', color);
-  }, 40);
-
-  let ms = document.querySelector('meta[name="msapplication-navbutton-color"]');
-  if (!ms) {
-    ms = document.createElement('meta');
-    ms.setAttribute('name', 'msapplication-navbutton-color');
-    document.head.appendChild(ms);
-  }
-  ms.setAttribute('content', color);
+function ensureChromeFill() {
+  if (document.getElementById('bt-chrome-fill')) return;
+  const el = document.createElement('div');
+  el.id = 'bt-chrome-fill';
+  el.setAttribute('aria-hidden', 'true');
+  document.body
+    ? document.body.prepend(el)
+    : document.documentElement.appendChild(el);
 }
 
 function setColorScheme(theme) {
@@ -70,6 +50,66 @@ function setColorScheme(theme) {
 }
 
 /**
+ * Recrée la meta (Chrome garde parfois une référence morte).
+ * Flash contrasté obligatoire : un nudge ±1 hex est ignoré sur Android.
+ */
+function setThemeColorMeta(color) {
+  document.querySelectorAll('meta[name="theme-color"]').forEach((el) => el.remove());
+
+  const flash = color === '#bce8cb' ? '#050505' : '#bce8cb';
+
+  const meta = document.createElement('meta');
+  meta.setAttribute('name', 'theme-color');
+  meta.id = 'bt-theme-color';
+  meta.setAttribute('content', flash);
+  document.head.insertBefore(meta, document.head.firstChild);
+
+  // Aussi les media = même couleur app (évite le piège du thème OS)
+  ['(prefers-color-scheme: light)', '(prefers-color-scheme: dark)'].forEach((media, i) => {
+    const m = document.createElement('meta');
+    m.setAttribute('name', 'theme-color');
+    m.id = `bt-theme-color-${i}`;
+    m.setAttribute('media', media);
+    m.setAttribute('content', flash);
+    document.head.appendChild(m);
+  });
+
+  if (applyTimer) window.clearTimeout(applyTimer);
+  applyTimer = window.setTimeout(() => {
+    document.querySelectorAll('meta[name="theme-color"]').forEach((el) => {
+      el.setAttribute('content', color);
+    });
+  }, 50);
+
+  let ms = document.querySelector('meta[name="msapplication-navbutton-color"]');
+  if (!ms) {
+    ms = document.createElement('meta');
+    ms.setAttribute('name', 'msapplication-navbutton-color');
+    document.head.appendChild(ms);
+  }
+  ms.setAttribute('content', color);
+}
+
+/** Manifest avec couleur dynamique — Chrome PWA relit parfois au hop d’URL. */
+function syncManifestTheme(color) {
+  let link = document.querySelector('link[rel="manifest"]');
+  if (!link) {
+    link = document.createElement('link');
+    link.setAttribute('rel', 'manifest');
+    document.head.appendChild(link);
+  }
+  const c = encodeURIComponent(color);
+  link.setAttribute('href', `/manifest.json?c=${c}&t=${Date.now()}`);
+
+  if (navigator.serviceWorker?.controller) {
+    navigator.serviceWorker.controller.postMessage({
+      type: 'SET_THEME_COLOR',
+      color,
+    });
+  }
+}
+
+/**
  * @param {string} color hex
  * @param {'light'|'dark'|'void'} [theme]
  */
@@ -77,12 +117,17 @@ export function applyThemeColor(color, theme) {
   if (typeof document === 'undefined' || !color) return;
 
   const root = document.documentElement;
+  root.style.setProperty('--bt-chrome', color);
   root.style.backgroundColor = color;
-  if (document.body) document.body.style.backgroundColor = color;
+  if (document.body) {
+    document.body.style.backgroundColor = color;
+    ensureChromeFill();
+  }
   const appRoot = document.getElementById('root');
   if (appRoot) appRoot.style.backgroundColor = color;
 
   setBootBackground(color);
   if (theme) setColorScheme(theme);
   setThemeColorMeta(color);
+  syncManifestTheme(color);
 }

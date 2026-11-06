@@ -1,5 +1,7 @@
 /* Booktime PWA Service Worker — bump force redeploy cache Vercel */
-const SW_VERSION = 'booktime-v14-theme-bar-live';
+const SW_VERSION = 'booktime-v15-theme-bar-sync';
+/** Dernière couleur de barre demandée par l’app (manifest dynamique). */
+let liveThemeColor = '#050505';
 const SHELL_CACHE = `${SW_VERSION}-shell`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const API_CACHE = `${SW_VERSION}-api`;
@@ -157,13 +159,38 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // manifest / version : réseau uniquement (jamais de cache → theme_color à jour)
-  if (
-    url.origin === self.location.origin &&
-    (url.pathname.endsWith('/manifest.json') || url.pathname.endsWith('/version.json'))
-  ) {
+  // version.json : toujours frais
+  if (url.origin === self.location.origin && url.pathname.endsWith('/version.json')) {
     event.respondWith(
       fetch(request, { cache: 'no-store' }).catch(() => Response.error())
+    );
+    return;
+  }
+
+  // manifest : injecte theme_color live (?c=#hex ou message SET_THEME_COLOR)
+  if (url.origin === self.location.origin && url.pathname.endsWith('/manifest.json')) {
+    event.respondWith(
+      (async () => {
+        const fromQuery = url.searchParams.get('c');
+        if (fromQuery && /^#[0-9A-Fa-f]{6}$/.test(fromQuery)) {
+          liveThemeColor = fromQuery;
+        }
+        try {
+          const res = await fetch(request, { cache: 'no-store' });
+          const json = await res.json();
+          json.theme_color = liveThemeColor;
+          json.background_color = liveThemeColor;
+          return new Response(JSON.stringify(json), {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/manifest+json',
+              'Cache-Control': 'no-store',
+            },
+          });
+        } catch (_) {
+          return Response.error();
+        }
+      })()
     );
     return;
   }
@@ -181,7 +208,12 @@ self.addEventListener('fetch', (event) => {
 });
 
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
+  const data = event.data;
+  if (!data || typeof data !== 'object') return;
+  if (data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  }
+  if (data.type === 'SET_THEME_COLOR' && typeof data.color === 'string') {
+    liveThemeColor = data.color;
   }
 });

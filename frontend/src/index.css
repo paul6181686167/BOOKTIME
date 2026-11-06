@@ -153,6 +153,7 @@ html.mobile-tabs-scroll body {
   max-height: 100dvh;
   overflow: hidden;
   z-index: 0;
+  background-color: var(--bt-chrome, #050505);
 }
 
 .mobile-slideshow-track {

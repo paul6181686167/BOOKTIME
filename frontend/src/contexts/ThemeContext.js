@@ -32,7 +32,7 @@ function readInitialTheme() {
   return 'light';
 }
 
-function applyThemeToDocument(theme) {
+export function applyThemeToDocument(theme) {
   const root = document.documentElement;
   root.classList.toggle('dark', theme === 'dark' || theme === 'void');
   root.classList.toggle('cinema', theme === 'void');
@@ -60,7 +60,6 @@ export const useTheme = () => {
 export const ThemeProvider = ({ children }) => {
   const [theme, setThemeState] = useState(readInitialTheme);
 
-  // Avant paint : Chrome Android lit theme-color tout de suite au changement
   useLayoutEffect(() => {
     applyThemeToDocument(theme);
     try {
@@ -72,30 +71,55 @@ export const ThemeProvider = ({ children }) => {
 
   useEffect(() => {
     const refresh = () => applyThemeToDocument(theme);
+    const onVis = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
     window.addEventListener('pageshow', refresh);
-    document.addEventListener('visibilitychange', refresh);
+    document.addEventListener('visibilitychange', onVis);
     return () => {
       window.removeEventListener('pageshow', refresh);
-      document.removeEventListener('visibilitychange', refresh);
+      document.removeEventListener('visibilitychange', onVis);
     };
   }, [theme]);
 
   const setTheme = useCallback((next) => {
     const normalized = normalizeTheme(next);
-    if (normalized) setThemeState(normalized);
+    if (!normalized) return;
+    // Immédiat (avant le re-render) : Chrome lit theme-color tout de suite
+    applyThemeToDocument(normalized);
+    try {
+      localStorage.setItem('booktime-theme', normalized);
+    } catch (_) {
+      /* ignore */
+    }
+    setThemeState(normalized);
   }, []);
 
-  /** Clair → Foncé → Très foncé → Clair */
   const cycleTheme = useCallback(() => {
     setThemeState((prev) => {
       const i = THEMES.indexOf(prev);
-      return THEMES[(i + 1) % THEMES.length];
+      const next = THEMES[(i + 1) % THEMES.length];
+      applyThemeToDocument(next);
+      try {
+        localStorage.setItem('booktime-theme', next);
+      } catch (_) {
+        /* ignore */
+      }
+      return next;
     });
   }, []);
 
-  // Compat anciens composants (toggle binaire)
   const toggleTheme = useCallback(() => {
-    setThemeState((prev) => (prev === 'light' ? 'dark' : 'light'));
+    setThemeState((prev) => {
+      const next = prev === 'light' ? 'dark' : 'light';
+      applyThemeToDocument(next);
+      try {
+        localStorage.setItem('booktime-theme', next);
+      } catch (_) {
+        /* ignore */
+      }
+      return next;
+    });
   }, []);
 
   const isDark = theme === 'dark' || theme === 'void';
