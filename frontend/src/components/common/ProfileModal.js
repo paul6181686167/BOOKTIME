@@ -319,13 +319,17 @@ function ProfileModal({
             )}
           </div>
 
-          {/* Onglets */}
-          <div className="flex gap-1 mt-3 overflow-x-auto">
+          {/* Onglets : sur la page mobile, les 5 tiennent ensemble, sans défilement */}
+          <div className={isPage ? 'mt-3 grid grid-cols-5 gap-1' : 'flex gap-1 mt-3 overflow-x-auto'}>
             {tabs.map(t => (
               <button
                 key={t.key}
                 onClick={() => setActiveTab(t.key)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${
+                className={`font-medium rounded-full transition-colors ${
+                  isPage
+                    ? 'min-w-0 px-px py-1.5 text-[9px] leading-tight tracking-tight text-center'
+                    : 'px-3 py-1.5 text-xs whitespace-nowrap'
+                } ${
                   activeTab === t.key
                     ? 'bg-green-600 text-white'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
