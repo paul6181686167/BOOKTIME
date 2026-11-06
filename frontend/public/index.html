@@ -69,13 +69,12 @@
     <title>Booktime</title>
 
     <style>
-      /* Splash / loading — thème app */
+      /* Splash : noir par défaut (évite barre système verte pendant le boot) */
       #loading {
         position: fixed;
         inset: 0;
-        background-color: #bce8cb;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath fill='none' stroke='%23166534' stroke-opacity='0.18' stroke-width='1.2' d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 34L0 84V50l28 16 28-16v34L28 100z'/%3E%3C/svg%3E");
-        background-size: 56px 100px;
+        background-color: #050505;
+        background-image: none;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -85,11 +84,16 @@
         padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
       }
 
-      @media (prefers-color-scheme: dark) {
-        #loading {
-          background-color: #234f37;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath fill='none' stroke='%23dcfce7' stroke-opacity='0.16' stroke-width='1.2' d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 34L0 84V50l28 16 28-16v34L28 100z'/%3E%3C/svg%3E");
-        }
+      html:not(.dark):not(.cinema) #loading {
+        background-color: #bce8cb;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath fill='none' stroke='%23166534' stroke-opacity='0.18' stroke-width='1.2' d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 34L0 84V50l28 16 28-16v34L28 100z'/%3E%3C/svg%3E");
+        background-size: 56px 100px;
+      }
+
+      html.dark:not(.cinema) #loading {
+        background-color: #234f37;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath fill='none' stroke='%23dcfce7' stroke-opacity='0.16' stroke-width='1.2' d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 34L0 84V50l28 16 28-16v34L28 100z'/%3E%3C/svg%3E");
+        background-size: 56px 100px;
       }
 
       #loading img {
