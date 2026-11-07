@@ -90,7 +90,8 @@ def _book(
         "title": title.strip(),
         "author": author.strip() or "Auteur inconnu",
         "category": category,
-        "cover_url": cover_url or f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg",
+        # Vide si inconnue : lookup_book_by_isbn cherche ensuite une couverture réelle
+        "cover_url": (cover_url or "").replace("http://", "https://"),
         "first_publish_year": year,
         "isbn": isbn,
         "subjects": (subjects or [])[:5],
@@ -313,6 +314,39 @@ def _from_bnf(isbn: str) -> Optional[dict]:
         return None
 
 
+# ── Couverture ─────────────────────────────────────────────────────────────
+
+def _is_real_image(url: str) -> bool:
+    """Vrai si l'adresse renvoie bien une image (Open Library répond 404 avec default=false)."""
+    try:
+        resp = requests.get(url, timeout=5, headers=_UA, stream=True, allow_redirects=True)
+        try:
+            ctype = (resp.headers.get("Content-Type") or "").lower()
+            return resp.status_code == 200 and ctype.startswith("image/")
+        finally:
+            resp.close()
+    except requests.RequestException:
+        return False
+
+
+def find_cover(found: dict, variants: list[str]) -> str:
+    """Couverture réellement disponible : celle de la source, sinon Open Library, sinon Google Books."""
+    current = (found.get("cover_url") or "").strip()
+    if current:
+        return current
+    for variant in variants:
+        url = f"https://covers.openlibrary.org/b/isbn/{variant}-M.jpg?default=false"
+        if _is_real_image(url):
+            return url
+    if found.get("source") != "google_books":
+        for variant in variants:
+            google = _from_google_books(variant, lambda _subjects: "roman")
+            thumb = (google or {}).get("cover_url") or ""
+            if thumb:
+                return thumb
+    return ""
+
+
 def lookup_book_by_isbn(isbn: str, detect_category) -> Optional[dict]:
     """Renvoie le meilleur résultat parmi les sources, ou None."""
     clean = clean_isbn(isbn)
@@ -359,4 +393,5 @@ def lookup_book_by_isbn(isbn: str, detect_category) -> Optional[dict]:
                 found["number_of_pages"] = extra["total_pages"]
             if not found.get("publisher") and extra.get("publisher"):
                 found["publisher"] = extra["publisher"]
+    found["cover_url"] = find_cover(found, variants)
     return found

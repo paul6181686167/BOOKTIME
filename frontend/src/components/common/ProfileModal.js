@@ -91,7 +91,7 @@ function ProfileModal({
   librarySeries = [],
   onOpenBook,
   onOpenSeries,
-  onAddFromOpenLibrary,
+  onBookImported,
   variant = 'modal',
 }) {
   const isPage = variant === 'page';
@@ -893,12 +893,8 @@ function ProfileModal({
       <IsbnScannerModal
         isOpen={showIsbnScanner}
         onClose={() => setShowIsbnScanner(false)}
-        onAddBook={async (book) => {
-          if (!onAddFromOpenLibrary) {
-            throw new Error('Ajout non disponible');
-          }
-          await onAddFromOpenLibrary(book);
-          setShowIsbnScanner(false);
+        onAdded={async (book) => {
+          await onBookImported?.(book);
           if (!isPage) onClose();
         }}
       />

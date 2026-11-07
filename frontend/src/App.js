@@ -600,6 +600,16 @@ function MainApp() {
     }
   };
 
+  // Livre déjà ajouté côté serveur (scan ISBN) : on rafraîchit seulement l'affichage
+  const refreshLibraryAfterImport = async () => {
+    await Promise.allSettled([
+      unifiedContent.refreshAfterAdd('books'),
+      unifiedContent.refreshAfterAdd('stats'),
+      booksHook.loadBooks(),
+      booksHook.loadStats(),
+    ]);
+  };
+
   // Fonction pour ajouter une série à la bibliothèque
   const handleAddSeries = async (series) => {
     const apiStartTime = Date.now();
@@ -1295,10 +1305,7 @@ function MainApp() {
         <IsbnScannerModal
           isOpen={showIsbnScanner}
           onClose={() => setShowIsbnScanner(false)}
-          onAddBook={async (book) => {
-            await handleAddFromOpenLibrary(book);
-            setShowIsbnScanner(false);
-          }}
+          onAdded={refreshLibraryAfterImport}
         />
       )}
 
@@ -1308,6 +1315,7 @@ function MainApp() {
           onClose={() => setShowProfileModal(false)}
           onAuthorClick={handleAuthorClick}
           onAddFromOpenLibrary={handleAddFromOpenLibrary}
+          onBookImported={refreshLibraryAfterImport}
           libraryBooks={unifiedContent.books || []}
           librarySeries={unifiedContent.userSeriesLibrary || []}
           onOpenBook={(bookId) => {

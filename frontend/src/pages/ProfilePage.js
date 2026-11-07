@@ -1,6 +1,5 @@
 import React, { useState, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
 import ProfileModal from '../components/common/ProfileModal';
 import useUnifiedContent from '../hooks/useUnifiedContent';
 import BookActions from '../components/books/BookActions';
@@ -41,18 +40,12 @@ export default function ProfilePage() {
             });
           }
         }}
-        onAddFromOpenLibrary={async (book) => {
-          try {
-            await BookActions.addBook(book);
-            await unified.refreshAfterAdd?.('books', {
-              expectNewItem: true,
-              maxRetries: 2,
-              retryDelay: 800,
-            });
-            toast.success('Livre ajouté');
-          } catch (err) {
-            toast.error(err?.message || "Erreur lors de l'ajout");
-          }
+        onBookImported={async () => {
+          await unified.refreshAfterAdd?.('books', {
+            expectNewItem: true,
+            maxRetries: 2,
+            retryDelay: 800,
+          });
         }}
       />
 

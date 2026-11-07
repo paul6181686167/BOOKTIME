@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { API_BASE_URL } from '../../config/environment';
 
@@ -96,10 +97,61 @@ async function triggerFocus(scanner, point) {
   await applyBarcodeFocus(scanner);
 }
 
+const VALID_CATEGORIES = ['roman', 'bd', 'manga'];
+
+/** Corps envoyé à l'import : uniquement des champs propres, même chemin que la recherche. */
+export function buildImportPayload(book) {
+  const toInt = (value) => {
+    const n = parseInt(value, 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+  return {
+    ol_key: book.ol_key || '',
+    title: String(book.title || '').trim(),
+    author: book.author && book.author !== 'Auteur inconnu' ? String(book.author).trim() : '',
+    category: VALID_CATEGORIES.includes(book.category) ? book.category : 'roman',
+    cover_url: book.cover_url || '',
+    isbn: book.isbn || '',
+    description: book.description || '',
+    publisher: typeof book.publisher === 'string' ? book.publisher : '',
+    total_pages: toInt(book.total_pages || book.number_of_pages),
+    first_publish_year: toInt(book.first_publish_year),
+  };
+}
+
+/** Vignette : repli lisible si la couverture est absente, cassée ou réduite à un pixel. */
+function CoverThumb({ url, title }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [url]);
+
+  if (!url || failed) {
+    return (
+      <div
+        className="w-full h-full flex items-center justify-center p-1.5 text-center text-[11px] leading-tight font-medium text-gray-500 dark:text-gray-300 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600"
+        data-testid="cover-placeholder"
+      >
+        {title}
+      </div>
+    );
+  }
+  return (
+    <img
+      src={url}
+      alt=""
+      className="w-full h-full object-cover"
+      onLoad={(e) => {
+        if (e.currentTarget.naturalWidth <= 1) setFailed(true);
+      }}
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 /**
  * Scan caméra ISBN (EAN-13 / code-barres livre) + saisie manuelle.
+ * `onAdded(book)` est appelé après l'ajout réussi pour rafraîchir la bibliothèque.
  */
-export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBook }) {
+export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAdded }) {
   const [scanning, setScanning] = useState(false);
   const [manualIsbn, setManualIsbn] = useState('');
   const [lookingUp, setLookingUp] = useState(false);
@@ -313,11 +365,35 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
   if (!isOpen) return null;
 
   const handleAdd = async () => {
-    if (!foundBook || !onAddBook) return;
+    if (!foundBook || adding) return;
     setAdding(true);
     try {
-      await onAddBook(foundBook);
-      toast.success('Livre ajouté à ta bibliothèque');
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/api/openlibrary/import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(buildImportPayload(foundBook)),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 409) {
+        toast('Ce livre est déjà dans ta bibliothèque');
+        onClose();
+        return;
+      }
+      if (!res.ok) {
+        throw new Error(
+          typeof data.detail === 'string' ? data.detail : "Impossible d'ajouter le livre"
+        );
+      }
+      toast.success(`« ${foundBook.title} » ajouté à ta bibliothèque`);
+      try {
+        await onAdded?.(data.book || foundBook);
+      } catch (_) {
+        /* le livre est ajouté : un échec de rafraîchissement ne doit pas l'annuler */
+      }
       onClose();
     } catch (err) {
       toast.error(err?.message || "Impossible d'ajouter le livre");
@@ -326,9 +402,14 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
     }
   };
 
-  return (
+  // Rendu dans <body> : la fenêtre ne doit dépendre d'aucun parent (carrousel de pages
+  // transformé, barre de navigation du bas) qui la rognerait ou la recouvrirait.
+  const modal = (
     <div
-      className="fixed inset-0 z-[60] bg-black/80 flex items-end md:items-center justify-center md:p-4"
+      className="fixed inset-0 z-[1300] bg-black/80 flex items-end md:items-center justify-center md:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Scanner un ISBN"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -361,14 +442,16 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
                 <div
                   id={readerId}
                   onClick={handleTapFocus}
-                  className="w-full min-h-[280px] isbn-scanner-view"
+                  className="w-full h-[34dvh] min-h-[200px] max-h-[300px] isbn-scanner-view"
                 />
                 <style>{`
+                  #${readerId} { overflow: hidden; }
                   #${readerId} video {
                     object-fit: cover !important;
                     width: 100% !important;
-                    min-height: 280px !important;
+                    height: 100% !important;
                   }
+                  #${readerId} > div { height: 100% !important; }
                   #${readerId} img { display: none !important; }
                   @keyframes isbn-focus-ring {
                     0% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
@@ -445,13 +528,7 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
             <div className="space-y-3">
               <div className="flex gap-3">
                 <div className="w-20 h-28 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0">
-                  {foundBook.cover_url ? (
-                    <img
-                      src={foundBook.cover_url}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  ) : null}
+                  <CoverThumb url={foundBook.cover_url} title={foundBook.title} />
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-semibold text-gray-900 dark:text-white">
@@ -491,4 +568,6 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAddBo
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }
