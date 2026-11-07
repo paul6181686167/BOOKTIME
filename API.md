@@ -548,9 +548,9 @@ chapters = api.chapters.get_series('One Piece')
 ## 📞 **SUPPORT ET ASSISTANCE**
 
 ### **Documentation Technique**
-- [CHAPTERS_SYSTEM_DOCUMENTATION.md](./CHAPTERS_SYSTEM_DOCUMENTATION.md) : Système chapitres complet
-- [API_CHAPTERS_ENDPOINTS.md](./API_CHAPTERS_ENDPOINTS.md) : Endpoints chapitres détaillés
-- [FRONTEND_CHAPTERS_GUIDE.md](./FRONTEND_CHAPTERS_GUIDE.md) : Guide développeur frontend
+- [CHAPTERS_SYSTEM_DOCUMENTATION.md](./archive/docs/CHAPTERS_SYSTEM_DOCUMENTATION.md) : Système chapitres complet
+- [API_CHAPTERS_ENDPOINTS.md](./archive/docs/API_CHAPTERS_ENDPOINTS.md) : Endpoints chapitres détaillés
+- [FRONTEND_CHAPTERS_GUIDE.md](./archive/docs/FRONTEND_CHAPTERS_GUIDE.md) : Guide développeur frontend
 - [ARCHITECTURE.md](./ARCHITECTURE.md) : Architecture générale
 - [DEPLOYMENT.md](./DEPLOYMENT.md) : Guide déploiement
 

@@ -17,6 +17,20 @@ Une application de tracking de livres inspirée de TV Time, pour gérer votre co
 - **Backend** : FastAPI (Python)
 - **Base de données** : MongoDB
 
+## Structure du dépôt
+
+| Dossier / fichier | Contenu |
+| --- | --- |
+| `frontend/` | Application React (+ projet Android Capacitor dans `frontend/android`) |
+| `backend/` | API FastAPI et ses tests (`backend/tests`) |
+| `e2e/` | Parcours de bout en bout mobiles (Playwright, `npm run e2e`) |
+| `scripts/`, `data/`, `config/` | Outils d'exploitation, données et configuration |
+| `extract_wikidata_series.py` et scripts `wikidata_*` | Pipeline d'extraction Wikidata encore utilisé (voir `TESTER_LOCAL.md`) |
+| `archive/` | Anciens scripts de test/diagnostic, rapports de sessions et guides de déploiement obsolètes (conservés pour l'historique, non maintenus) |
+| `Dockerfile`, `render.yaml`, `vercel.json`, `railway.json` | Déploiement |
+
+Documents de référence : `API.md`, `ARCHITECTURE.md`, `DEPLOYMENT.md`, `CHANGELOG.md`, `PUBLICATION_PLAY_STORE.md`.
+
 ## Installation
 
 ### 1. Backend
