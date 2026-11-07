@@ -15,9 +15,17 @@ const MobileSearchOverlay = ({ isOpen, onClose, searchTerm, onSearchChange, onSe
 
   if (!isOpen) return null;
 
+  // L'overlay couvre tout l'écran : sans fermeture, les résultats restent cachés derrière lui.
+  const runSearch = () => {
+    const term = searchTerm?.trim();
+    if (!term) return;
+    onSearch(term);
+    onClose();
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (searchTerm?.trim()) onSearch(searchTerm.trim());
+    runSearch();
   };
 
   return (
@@ -64,7 +72,7 @@ const MobileSearchOverlay = ({ isOpen, onClose, searchTerm, onSearchChange, onSe
         ) : (
           <button
             type="button"
-            onClick={() => onSearch(searchTerm.trim())}
+            onClick={runSearch}
             className={`w-full py-3 rounded-xl font-medium text-base transition-colors ${
               isVoid
                 ? 'bg-[#4ade80] hover:bg-[#22c55e] text-black'

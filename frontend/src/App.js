@@ -862,6 +862,8 @@ function MainApp() {
         onSearchChange={searchHook.handleSearchTermChange}
         onSearch={(term) => {
           searchHook.handleSearchTermChange(term);
+          // L'overlay se ferme seul après la recherche (voir MobileSearchOverlay)
+          window.scrollTo?.(0, 0);
           searchOpenLibrary(term);
         }}
       />
