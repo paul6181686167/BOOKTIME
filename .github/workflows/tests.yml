@@ -89,3 +89,48 @@ jobs:
         env:
           CI: 'false'
           DISABLE_ESLINT_PLUGIN: 'true'
+
+  e2e-mobile:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci --include=dev
+        env:
+          NODE_ENV: development
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npx react-scripts build
+        env:
+          CI: 'false'
+          DISABLE_ESLINT_PLUGIN: 'true'
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save @playwright/test
+          npx playwright install --with-deps chromium
+
+      - name: Run mobile e2e tests
+        run: npx playwright test
+        env:
+          CI: 'true'
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/

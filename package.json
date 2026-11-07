@@ -1,16 +1,21 @@
 {
-  "name": "booktime",
-  "version": "0.1.0",
-  "private": true,
-  "description": "Monorepo Booktime — le frontend Vercel se build depuis /frontend",
-  "scripts": {
-    "install:frontend": "npm ci --prefix frontend --include=dev",
-    "build": "npm run build --prefix frontend",
-    "build:frontend": "npm run build --prefix frontend",
-    "start:frontend": "npm start --prefix frontend",
-    "test:frontend": "npm run test:pipelines --prefix frontend"
-  },
-  "engines": {
-    "node": ">=18"
-  }
+    "name":  "booktime",
+    "version":  "0.1.0",
+    "private":  true,
+    "description":  "Monorepo Booktime — le frontend Vercel se build depuis /frontend",
+    "scripts":  {
+                    "install:frontend":  "npm ci --prefix frontend --include=dev",
+                    "build":  "npm run build --prefix frontend",
+                    "build:frontend":  "npm run build --prefix frontend",
+                    "start:frontend":  "npm start --prefix frontend",
+                    "test:frontend":  "npm run test:pipelines --prefix frontend",
+                    "e2e:mobile":  "playwright test",
+                    "e2e:mobile:build":  "npm run build && playwright test"
+                },
+    "engines":  {
+                    "node":  ">=18"
+                },
+    "devDependencies":  {
+                            "@playwright/test":  "^1.65.0"
+                        }
 }

@@ -85,3 +85,8 @@ coverage/
 *.bak
 *.backup
 *~-e
+
+# Playwright
+test-results/
+playwright-report/
+node_modules/
