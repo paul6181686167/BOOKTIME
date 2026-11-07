@@ -1301,6 +1301,10 @@ function MainApp() {
           userBooks={unifiedContent.books || []}
           onAddBook={async (bookData) => { await BookActions.addBook(bookData); await unifiedContent.refreshAfterAdd('books'); }}
           onOpenSeries={(series) => {
+            // La fiche auteur est rendue dans document.body (au-dessus du carrousel) :
+            // on la ferme pour que la fiche série s'affiche bien par-dessus.
+            setShowAuthorModal(false);
+            setSelectedAuthor(null);
             seriesHook.setSelectedSeries(series);
             seriesHook.setShowSeriesModal(true);
           }}

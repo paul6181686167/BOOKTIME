@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { XMarkIcon, UserIcon, BookOpenIcon, CalendarIcon, QueueListIcon, ChevronDownIcon, ChevronUpIcon, StarIcon, TrophyIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { API_BASE_URL } from '../config/environment';
@@ -374,9 +375,20 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
 
   if (!isOpen || !author) return null;
 
-  return (
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1100 }}>
-      <div className={`modal-content-wide w-full md:w-auto${isVoid ? ' void-sheet' : ''}`} onClick={(e) => e.stopPropagation()}>
+  // Rendu dans document.body : hors du carrousel mobile (transform + pointer-events
+  // des diapositives) qui bloquait le défilement de la fiche.
+  return createPortal(
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1300 }}>
+      <div
+        className={`modal-content-wide w-full md:w-auto${isVoid ? ' void-sheet' : ''}`}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
+          touchAction: 'pan-y',
+        }}
+      >
         {/* Barre mobile avec bouton fermeture */}
         <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 md:hidden border-b border-booktime-mist/55 dark:border-booktime-800/50 bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl">
           <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Auteur</span>
@@ -384,6 +396,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
             <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
+        <div className="px-4 pt-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))] md:p-0">
         <div className="flex items-start justify-between mb-6">
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
@@ -882,8 +895,10 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
             </p>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
