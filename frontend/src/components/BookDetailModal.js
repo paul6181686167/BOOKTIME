@@ -40,6 +40,9 @@ const launchConfetti = () => {
   fire(0.1,  { spread: 120, startVelocity: 45 });
 };
 
+// Livres dont le résumé a déjà été comparé à la 4ᵉ de couverture pendant cette session
+const verifiedSynopsisBooks = new Set();
+
 const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibrary, onAuthorClick }) => {
   const navigate = useNavigate();
   const { isVoid } = useTheme();
@@ -123,14 +126,21 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     // Relancer la résolution si résumé anglais (préférer une version FR)
     const needsDesc = !isUsableSynopsis(storedDesc) || looksEnglish(storedDesc);
     const needsPages = !(book.total_pages > 0);
-    if (!needsDesc && !needsPages) {
+    // Résumé présent : on le compare une fois à la 4ᵉ de couverture réelle de l'édition
+    const needsVerify =
+      !needsDesc &&
+      !!book.id &&
+      !book.isFromOpenLibrary &&
+      !book.isDemotedSeries &&
+      !verifiedSynopsisBooks.has(book.id);
+    if (!needsDesc && !needsPages && !needsVerify) {
       return;
     }
 
     const reqId = ++metaReqIdRef.current;
     const token = localStorage.getItem('token');
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    const fetchKey = `${book.id}|${book.title}|p=${needsPages}|d=${needsDesc}`;
+    const fetchKey = `${book.id}|${book.title}|p=${needsPages}|d=${needsDesc}|v=${needsVerify}`;
     if (pagesFetchDoneRef.current === fetchKey) {
       setOlLoading(false);
       return;
@@ -211,6 +221,23 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
           );
           if (r.ok && isLive()) {
             const data = await r.json();
+            if (book.id) verifiedSynopsisBooks.add(book.id);
+            // Le serveur a trouvé la 4ᵉ de couverture de l'édition : elle remplace l'ancien résumé
+            if (
+              data?.replaced &&
+              isUsableSynopsis(data.description) &&
+              !looksEnglish(data.description)
+            ) {
+              const backCover = sanitizeSynopsis(data.description);
+              setOlDetails({ description: backCover });
+              if (onUpdateRef.current) {
+                try {
+                  await onUpdateRef.current(book.id, { description: backCover });
+                } catch (_) {
+                  /* ignore */
+                }
+              }
+            }
             await applyMeta({
               description: data?.description,
               pages: data?.pages,

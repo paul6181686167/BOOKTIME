@@ -14,8 +14,9 @@ PIXEL = "data:image/png;base64," + base64.b64encode(b"\x89PNG\r\n\x1a\nfake").de
 
 
 def test_public_profile_returns_empty_strings_when_missing():
-    assert public_profile({}) == {"display_name": "", "bio": "", "avatar_url": ""}
-    assert public_profile(None) == {"display_name": "", "bio": "", "avatar_url": ""}
+    empty = {"display_name": "", "bio": "", "avatar_url": "", "username": ""}
+    assert public_profile({}) == empty
+    assert public_profile(None) == empty
 
 
 def test_name_and_bio_are_trimmed():

@@ -582,7 +582,13 @@ def _fill_synopsis_sync(book_id: str, user_id: str, title: str, author: str, isb
         if is_usable_synopsis(cand) and not looks_english(cand):
             books_collection.update_one(
                 {"id": book_id, "user_id": user_id},
-                {"$set": {"description": cand, "updated_at": datetime.utcnow()}},
+                {
+                    "$set": {
+                        "description": cand,
+                        "description_source": syn.get("source") or "fetch",
+                        "updated_at": datetime.utcnow(),
+                    }
+                },
             )
     except Exception as exc:
         logger.debug("Synopsis différé import fail: %s", exc)

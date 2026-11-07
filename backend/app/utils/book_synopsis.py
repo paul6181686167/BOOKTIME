@@ -220,6 +220,8 @@ _STUDY_GUIDE = re.compile(
 def _sanitize_synopsis(text: str) -> str:
     """Retire markdown OL, sections annexes et URLs."""
     t = text or ""
+    # Les éditeurs séparent les paragraphes de la 4ᵉ par <br> / <p> : on garde ces coupures
+    t = re.sub(r"(?i)<\s*br\s*/?\s*>|</\s*(?:p|div|li)\s*>", "\n\n", t)
     t = re.sub(r"<[^>]+>", " ", t)
     t = re.split(
         r"(?is)(?:^|\n)\s*(?:Also contained in|Contenu dans|See also|Voir aussi|"
@@ -229,8 +231,11 @@ def _sanitize_synopsis(text: str) -> str:
     )[0]
     t = re.sub(r"\[([^\]]+)\]\((?:https?://)?[^)]+\)", r"\1", t)
     t = re.sub(r"https?://\S+", " ", t)
-    t = re.sub(r"\s+", " ", t).strip()
-    return t
+    t = re.sub(r"[^\S\n]+", " ", t)  # espaces multiples -> un seul (sauf retours à la ligne)
+    t = re.sub(r" ?\n ?", "\n", t)
+    t = re.sub(r"\n{2,}", "\n\n", t)  # un paragraphe = une ligne vide
+    t = re.sub(r"(?<!\n)\n(?!\n)", " ", t)  # retour simple au milieu d'une phrase -> espace
+    return t.strip()
 
 
 def is_usable_synopsis(text: str | None) -> bool:
@@ -849,25 +854,40 @@ def _ol_key_from_search(title: str, author: str = "", *, language: Optional[str]
 
 
 def _from_openlibrary_isbn(isbn: str) -> str:
+    """Description de l'édition Open Library portant cet ISBN (jamais les « notes » techniques)."""
     clean = re.sub(r"[^0-9Xx]", "", isbn or "")
     if len(clean) not in (10, 13):
         return ""
     try:
-        r = requests.get(
-            "https://openlibrary.org/api/books",
-            params={"bibkeys": f"ISBN:{clean}", "jscmd": "data", "format": "json"},
-            timeout=_OL_TIMEOUT,
-        )
+        r = requests.get(f"https://openlibrary.org/isbn/{clean}.json", timeout=_OL_TIMEOUT)
         if not r.ok:
             return ""
-        data = (r.json() or {}).get(f"ISBN:{clean}") or {}
-        desc = data.get("notes") or data.get("description") or ""
-        if isinstance(desc, dict):
-            desc = desc.get("value", "")
-        return _clean(str(desc))
+        return _clean(_as_text((r.json() or {}).get("description")))
     except Exception as exc:
         logger.debug("OL isbn synopsis fail: %s", exc)
         return ""
+
+
+# Sources dont le texte est la 4ᵉ de couverture d'une édition (et non un article encyclopédique)
+BACK_COVER_SOURCES = ("google_books_isbn", "openlibrary_isbn", "google_books")
+
+
+def fetch_back_cover_by_isbn(isbn: str) -> tuple[str, str]:
+    """4ᵉ de couverture de l'édition exacte (ISBN) : Google Books puis Open Library.
+
+    Retourne (texte, source) ou ("", "none").
+    """
+    clean = re.sub(r"[^0-9Xx]", "", isbn or "")
+    if len(clean) not in (10, 13):
+        return "", "none"
+    gb = _description_from_google_books(isbn=clean, prefer_lang="fr")
+    desc = gb.get("description") or ""
+    if is_usable_synopsis(desc) and not looks_english(desc):
+        return desc, "google_books_isbn"
+    ol = _from_openlibrary_isbn(clean)
+    if is_usable_synopsis(ol) and not looks_english(ol):
+        return ol, "openlibrary_isbn"
+    return "", "none"
 
 
 def _french_paperback_pages_from_google(
@@ -1071,15 +1091,8 @@ def _ol_work_description_only(ol_key: str) -> str:
         if not r.ok:
             return ""
         data = r.json() or {}
+        # Pas de repli sur « first_sentence » : la première phrase du roman n'est pas sa 4ᵉ
         desc = _clean(_as_text(data.get("description")))
-        if not desc:
-            fs = data.get("first_sentence")
-            if isinstance(fs, dict):
-                desc = _clean(_as_text(fs))
-            elif isinstance(fs, list) and fs:
-                desc = _clean(_as_text(fs[0]))
-            elif isinstance(fs, str):
-                desc = _clean(fs)
         return desc[:2000] if desc else ""
     except Exception as exc:
         logger.debug("OL work desc-only fail %s: %s", key, exc)
@@ -1197,12 +1210,13 @@ def _fast_book_description(
     """
     Résumé rapide priorisant le français — et la latence.
 
+    Objectif : le texte imprimé au dos du livre (4ᵉ de couverture).
+
     Ordre :
-    0) Open Library par ol_key (1 requête, souvent <1s) → retour immédiat si utilisable
-    1) Google Books FR
-    2) Wikipédia FR
-    3) Open Library search
-    4) Replis EN
+    0) 4ᵉ de l'édition exacte par ISBN (Google Books, Open Library)
+    1) Google Books FR par titre + auteur (4ᵉ d'une édition du même livre)
+    2) Description de la work Open Library (par ol_key, puis par recherche)
+    3) Wikipédia, en dernier recours (présentation de l'œuvre, pas une 4ᵉ)
     """
     found_key = (ol_key or "").strip()
     title_tries = _french_title_candidates(title)
@@ -1214,14 +1228,13 @@ def _fast_book_description(
         and not found_key.lower().startswith("gbooks_")
     )
 
-    # 0) Work OL connue — retour immédiat UNIQUEMENT si le texte est FR.
-    # Sinon on continue (GB/Wiki FR) pour éviter d'afficher un résumé anglais.
-    if has_ol_work:
-        desc = _ol_work_description_only(found_key)
-        if is_usable_synopsis(desc):
-            if looks_french(desc):
-                return desc, "openlibrary", found_key
-            candidates.append((desc, "openlibrary"))
+    # 00) 4ᵉ de couverture de l'édition exacte (ISBN) : c'est le texte imprimé au dos du livre
+    if isbn:
+        cover_text, cover_source = fetch_back_cover_by_isbn(isbn)
+        if cover_text:
+            if looks_french(cover_text):
+                return cover_text, cover_source, found_key
+            candidates.append((cover_text, cover_source))
 
     # 1) Google Books en français (meilleure 4ᵉ) — limité aux 2 premiers titres
     for t_try in title_tries[:2]:
@@ -1234,15 +1247,16 @@ def _fast_book_description(
                 return desc, "google_books", found_key
             candidates.append((desc, "google_books"))
 
-    # 2) Wikipédia FR
-    for t_try in title_tries[:2]:
-        wiki = _description_from_wikipedia(t_try, author, langs=("fr",))
-        if is_usable_synopsis(wiki):
-            if looks_french(wiki):
-                return wiki, "wikipedia", found_key
-            candidates.append((wiki, "wikipedia"))
+    # 2) Work OL connue — retour immédiat UNIQUEMENT si le texte est FR.
+    # Sinon on continue pour éviter d'afficher un résumé anglais.
+    if has_ol_work:
+        desc = _ol_work_description_only(found_key)
+        if is_usable_synopsis(desc):
+            if looks_french(desc):
+                return desc, "openlibrary", found_key
+            candidates.append((desc, "openlibrary"))
 
-    # 3) Open Library search (si pas déjà de work key)
+    # 2 bis) Open Library search (si pas déjà de work key)
     if not has_ol_work:
         for t_try in title_tries[:2]:
             key = _ol_key_from_search(t_try, author, language="fre")
@@ -1257,16 +1271,16 @@ def _fast_book_description(
                         return desc, "openlibrary_search", key
                     candidates.append((desc, "openlibrary_search"))
 
-    if isbn:
-        ol_isbn = _from_openlibrary_isbn(isbn)
-        if is_usable_synopsis(ol_isbn):
-            if looks_french(ol_isbn):
-                return ol_isbn, "openlibrary_isbn", found_key
-            candidates.append((ol_isbn, "openlibrary_isbn"))
-
-    # 4) Wikipédia EN en dernier recours
-    for t_try in title_tries[:1]:
-        wiki = _description_from_wikipedia(t_try, author, langs=("fr", "en"))
+    # 3) Wikipédia (FR puis EN) en tout dernier recours : une présentation de l'œuvre,
+    # pas la 4ᵉ de couverture, donc seulement si rien d'autre n'existe.
+    for t_try in title_tries[:2]:
+        wiki = _description_from_wikipedia(t_try, author, langs=("fr",))
+        if is_usable_synopsis(wiki):
+            if looks_french(wiki):
+                return wiki, "wikipedia", found_key
+            candidates.append((wiki, "wikipedia"))
+    if not candidates:
+        wiki = _description_from_wikipedia(title_tries[0] if title_tries else title, author, langs=("fr", "en"))
         if is_usable_synopsis(wiki):
             candidates.append((wiki, "wikipedia"))
 

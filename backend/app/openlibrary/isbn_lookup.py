@@ -225,7 +225,6 @@ def _from_google_books(isbn: str, detect_category) -> Optional[dict]:
         title = (it.get("title") or "").strip()
         if not title:
             return None
-        sub = (it.get("subtitle") or "").strip()
         thumb = (it.get("thumbnail") or "").replace("http://", "https://")
         return _book(
             isbn=isbn,
@@ -236,7 +235,8 @@ def _from_google_books(isbn: str, detect_category) -> Optional[dict]:
             year=str(it.get("published_date") or "")[:4] or None,
             pages=it.get("page_count"),
             subjects=it.get("categories") or [],
-            description=(it.get("description") or "")[:2000] or sub,
+            # Jamais le sous-titre à la place de la 4ᵉ de couverture
+            description=(it.get("description") or "")[:2000],
             source="google_books",
             category=gb.infer_book_category_from_google_item(it),
         )

@@ -757,6 +757,7 @@ async def get_book_synopsis(
     Persiste la description sur le livre si elle était vide.
     """
     from ..utils.book_synopsis import (
+        BACK_COVER_SOURCES,
         ensure_french_synopsis,
         fetch_book_synopsis,
         is_usable_synopsis,
@@ -778,11 +779,18 @@ async def get_book_synopsis(
     existing_pages = book.get("total_pages")
     has_pages = isinstance(existing_pages, (int, float)) and int(existing_pages) > 0
 
-    if existing_desc and has_pages and not existing_is_en:
+    # Origine du résumé stocké : tant qu'elle est inconnue (livres anciens), on le compare
+    # une fois à la 4ᵉ de couverture réelle de l'édition, puis on mémorise l'origine.
+    existing_src = (book.get("description_source") or "").strip()
+    verified = bool(existing_src)
+
+    if existing_desc and has_pages and not existing_is_en and verified:
         return {
             "description": existing_desc,
             "pages": int(existing_pages),
             "source": "stored",
+            "description_source": existing_src,
+            "replaced": False,
             "persisted": False,
             "book_id": book_id,
         }
@@ -799,11 +807,20 @@ async def get_book_synopsis(
         fetched_desc = ""
 
     source = result.get("source") or "none"
-    if existing_is_en and fetched_desc and looks_french(fetched_desc):
+    fetched_is_back_cover = bool(
+        fetched_desc
+        and source.split("+")[0] in BACK_COVER_SOURCES
+        and looks_french(fetched_desc)
+    )
+    if existing_desc and not existing_is_en:
+        if not verified and fetched_is_back_cover:
+            # La 4ᵉ de couverture de l'édition remplace un résumé d'origine inconnue
+            description = fetched_desc
+        else:
+            description = existing_desc
+            source = existing_src or "stored"
+    elif existing_is_en and fetched_desc and looks_french(fetched_desc):
         description = fetched_desc
-    elif existing_desc and not existing_is_en:
-        description = existing_desc
-        source = "stored"
     else:
         description = fetched_desc or existing_desc
 
@@ -832,6 +849,11 @@ async def get_book_synopsis(
         )
         if should_persist_desc:
             patch["description"] = description
+        if description and not verified:
+            # « stored » = résumé conservé faute de mieux : on ne le re-vérifie plus à chaque ouverture
+            patch["description_source"] = (
+                source if source and source not in ("stored", "none") else "unverified"
+            )
         if pages and not has_pages:
             patch["total_pages"] = pages
         if result.get("ol_key") and not book.get("ol_key"):
@@ -848,6 +870,8 @@ async def get_book_synopsis(
         "description": description,
         "pages": pages,
         "source": source or ("stored" if existing_desc and not existing_is_en else "none"),
+        "description_source": patch.get("description_source") or existing_src,
+        "replaced": bool(existing_desc and description and description != existing_desc),
         "persisted": persisted,
         "book_id": book_id,
         "ol_key": result.get("ol_key") or book.get("ol_key"),
