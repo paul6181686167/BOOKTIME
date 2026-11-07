@@ -1,10 +1,13 @@
 import jwt
 import os
 from datetime import datetime, timedelta
-from fastapi import HTTPException, Depends, status
+from typing import Optional
+
+from fastapi import HTTPException, Depends, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from ..database.connection import users_collection
+from .cookies import enforce_csrf, token_from_cookie
 
 load_dotenv()
 
@@ -17,7 +20,8 @@ REMEMBER_ME_EXPIRE_MINUTES = int(os.getenv("REMEMBER_ME_EXPIRE_MINUTES", "129600
 SESSION_EXPIRE_MINUTES = int(os.getenv("SESSION_EXPIRE_MINUTES", "1440"))  # 1 jour sans remember me
 
 # Security
-security = HTTPBearer()
+# auto_error=False : le jeton peut aussi venir du cookie httpOnly (voir cookies.py)
+security = HTTPBearer(auto_error=False)
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     """Creer un token JWT"""
@@ -52,10 +56,29 @@ def _touch_last_seen(user: dict) -> None:
         pass
 
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Obtenir l'utilisateur actuel à partir du token JWT"""
+def _extract_token(credentials: Optional[HTTPAuthorizationCredentials], request: Optional[Request]) -> str:
+    """Jeton de l'en-tête Authorization, sinon du cookie httpOnly (si activé, avec contrôle CSRF)."""
+    if credentials is not None and credentials.credentials:
+        return credentials.credentials
+    cookie_token = token_from_cookie(request)
+    if cookie_token:
+        enforce_csrf(request)
+        return cookie_token
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Not authenticated",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+def get_current_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    request: Request = None,
+):
+    """Obtenir l'utilisateur actuel à partir du token JWT (en-tête Bearer ou cookie httpOnly)"""
+    token = _extract_token(credentials, request)
     try:
-        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
         if user_id is None:
             raise HTTPException(

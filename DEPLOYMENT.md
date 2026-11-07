@@ -181,3 +181,25 @@ Ces URLs restent **privées** et non-indexées par défaut.
 - HTTPS par défaut sur toutes les plateformes
 
 **Temps total de déploiement : 15-20 minutes** ⚡
+
+## 🍪 Session par cookie httpOnly (option)
+
+Par défaut le jeton de connexion est conservé dans le `localStorage` du navigateur. Pour qu'il ne soit
+plus lisible par JavaScript (protection contre le vol de session via une faille XSS), le backend sait
+aussi le déposer dans un cookie `httpOnly`. Le jeton reste renvoyé dans la réponse : l'application
+Android et les anciennes versions du site continuent de fonctionner.
+
+| Variable | Rôle |
+| --- | --- |
+| `AUTH_COOKIE_ENABLED=true` | Active le dépôt du cookie à la connexion et son acceptation à la place de l'en-tête `Authorization` |
+| `AUTH_COOKIE_SAMESITE` | `none` (défaut, front Vercel et API Render sur des domaines différents), `lax` ou `strict` si front et API partagent le même site |
+| `AUTH_COOKIE_SECURE` | `true` (défaut) ; `false` uniquement en développement http (avec `AUTH_COOKIE_SAMESITE=lax`) |
+| `AUTH_COOKIE_NAME` | Nom du cookie (défaut `booktime_session`) |
+
+Protection CSRF : une requête qui modifie des données et qui s'authentifie par cookie doit porter l'en-tête
+`X-Requested-With: BookTime`. `POST /api/auth/logout` supprime le cookie.
+
+**Avant de basculer le front sur le cookie** (supprimer le jeton du `localStorage`) il reste à : envoyer
+`credentials: 'include'` et l'en-tête `X-Requested-With` sur tous les appels (une centaine de lectures du jeton
+dans le code), gérer le blocage des cookies tiers (Safari, Chrome) quand front et API sont sur des domaines
+différents — idéalement en servant l'API sous le même domaine — et valider le comportement dans la WebView de l'APK.

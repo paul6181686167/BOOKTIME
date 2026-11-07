@@ -233,6 +233,12 @@ class AuthService {
     localStorage.removeItem('user');
     // Bibliothèque et fiches gardées pour le hors ligne : propres au compte
     clearUserCaches();
+    // Supprime le cookie de session httpOnly s'il est utilisé (sans effet sinon)
+    try {
+      fetch(`/api/auth/logout`, { method: 'POST', credentials: 'include', keepalive: true }).catch(() => {});
+    } catch {
+      /* hors ligne ou fetch indisponible : le cookie expirera de lui-même */
+    }
   }
 }
 

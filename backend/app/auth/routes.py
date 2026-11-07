@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Response
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 import uuid
@@ -12,6 +12,7 @@ from email.mime.multipart import MIMEMultipart
 import os
 import bcrypt
 from ..models.user import UserAuth, RegisterRequest
+from ..security.cookies import clear_auth_cookie, set_auth_cookie
 from ..database.connection import users_collection, db
 from ..admin.helpers import is_admin
 from ..friends.identity import clean_username
@@ -163,7 +164,7 @@ def _verify_password(plain: str, hashed: str) -> bool:
 
 
 @router.post("/register")
-async def register(user_data: RegisterRequest):
+async def register(user_data: RegisterRequest, response: Response):
     """Enregistrer un nouvel utilisateur (email + mot de passe + acceptation des CGU)"""
     if not user_data.accept_terms:
         raise HTTPException(
@@ -191,6 +192,7 @@ async def register(user_data: RegisterRequest):
 
     access_token_expires = timedelta(minutes=_token_ttl_minutes(True))
     access_token = create_access_token(data={"sub": user_id}, expires_delta=access_token_expires)
+    set_auth_cookie(response, access_token, int(access_token_expires.total_seconds()))
 
     return {
         "access_token": access_token,
@@ -200,7 +202,7 @@ async def register(user_data: RegisterRequest):
 
 
 @router.post("/login")
-async def login(user_data: UserAuth):
+async def login(user_data: UserAuth, response: Response):
     """Connexion (email + mot de passe)"""
     email_lower = user_data.email.lower().strip()
     user = users_collection.find_one({"email": email_lower}, {"_id": 0})
@@ -218,12 +220,20 @@ async def login(user_data: UserAuth):
         minutes=_token_ttl_minutes(bool(user_data.remember_me))
     )
     access_token = create_access_token(data={"sub": user["id"]}, expires_delta=access_token_expires)
+    set_auth_cookie(response, access_token, int(access_token_expires.total_seconds()))
 
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "user": {"id": user["id"], "email": user["email"], **public_profile(user)},
     }
+
+@router.post("/logout")
+async def logout(response: Response):
+    """Déconnexion : supprime le cookie de session httpOnly (le jeton localStorage est effacé côté appli)."""
+    clear_auth_cookie(response)
+    return {"success": True}
+
 
 @router.post("/forgot-password")
 async def forgot_password(data: ForgotPasswordRequest):
