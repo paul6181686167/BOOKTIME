@@ -111,6 +111,7 @@ function ProfileModal({
   // Collections
   const [collections, setCollections] = useState(() => getCollections());
   const [newCollectionName, setNewCollectionName] = useState('');
+  const [creatingCollection, setCreatingCollection] = useState(false);
   const [expandedCollectionId, setExpandedCollectionId] = useState(null);
   const [pickerQuery, setPickerQuery] = useState('');
   const [pickerFilter, setPickerFilter] = useState('all'); // all | book | series
@@ -252,8 +253,14 @@ function ProfileModal({
     setCollections(result.collections);
     setProfileData(loadProfileData());
     setNewCollectionName('');
+    setCreatingCollection(false);
     setExpandedCollectionId(result.collection.id);
     toast.success(`Collection « ${result.collection.name} » créée`);
+  };
+
+  const cancelCreateCollection = () => {
+    setCreatingCollection(false);
+    setNewCollectionName('');
   };
 
   const handleDeleteCollection = (id) => {
@@ -661,20 +668,40 @@ function ProfileModal({
                 Crée des étagères (ex. « Coups de cœur ») puis ajoute des livres ou des séries de ta bibliothèque.
               </p>
 
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newCollectionName}
-                  onChange={e => setNewCollectionName(e.target.value)}
-                  placeholder="Nom de la collection..."
-                  className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                  onKeyDown={e => e.key === 'Enter' && handleAddCollection()}
-                />
+              {creatingCollection ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    autoFocus
+                    value={newCollectionName}
+                    onChange={e => setNewCollectionName(e.target.value)}
+                    placeholder="Nom de la collection..."
+                    className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleAddCollection();
+                      if (e.key === 'Escape') cancelCreateCollection();
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCollection}
+                    className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm"
+                  >Créer</button>
+                  <button
+                    type="button"
+                    onClick={cancelCreateCollection}
+                    className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg transition-colors text-sm"
+                  >Annuler</button>
+                </div>
+              ) : (
                 <button
-                  onClick={handleAddCollection}
-                  className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm"
-                >+ Créer</button>
-              </div>
+                  type="button"
+                  onClick={() => setCreatingCollection(true)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium"
+                >
+                  + Créer une collection
+                </button>
+              )}
 
               {collections.length === 0 ? (
                 <div className="text-center py-6 text-gray-400">
