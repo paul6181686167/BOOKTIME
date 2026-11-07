@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   XMarkIcon,
@@ -685,9 +686,20 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     return statusMeta.find((s) => s.value === displayStatus) || statusOptions[0];
   };
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className={`modal-content-wide modal-animate w-full md:w-auto${isVoid ? ' void-sheet' : ''}`} onClick={(e) => e.stopPropagation()}>
+  // Rendu dans document.body : hors du carrousel mobile (transform, pointer-events,
+  // empilement) qui pouvait bloquer les boutons et le défilement de la fiche.
+  return createPortal(
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1200 }}>
+      <div
+        className={`modal-content-wide modal-animate w-full md:w-auto${isVoid ? ' void-sheet' : ''}`}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
+          touchAction: 'pan-y',
+        }}
+      >
         {/* Barre mobile sticky : fermeture toujours visible */}
         <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 md:hidden border-b border-booktime-mist/55 dark:border-booktime-800/50 bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl">
           <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Détail</span>
@@ -1422,7 +1434,8 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
         )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

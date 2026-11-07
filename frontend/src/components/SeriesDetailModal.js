@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   BookOpenIcon,
@@ -1267,8 +1268,12 @@ const SeriesDetailModal = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 md:p-4">
+  // Rendu dans document.body : hors du carrousel mobile (transform, pointer-events).
+  return createPortal(
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center md:p-4"
+      style={{ zIndex: 1200 }}
+    >
       <div className={`modal-content-wide shadow-2xl overflow-hidden w-full md:w-auto${isVoid ? ' void-sheet' : ''}`}>
         
         {/* Barre mobile sticky : fermeture toujours visible */}
@@ -1784,7 +1789,8 @@ const SeriesDetailModal = ({
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
