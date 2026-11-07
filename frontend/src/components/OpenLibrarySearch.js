@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ModalOverlay, { MODAL_Z } from './common/ModalOverlay';
 import { MagnifyingGlassIcon, BookOpenIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import { bookService } from '../services/bookService';
 import toast from 'react-hot-toast';
@@ -70,7 +71,7 @@ const OpenLibrarySearch = ({ onImport, onClose, defaultCategory = 'roman' }) => 
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <ModalOverlay onClose={onClose} zIndex={MODAL_Z.panel} ariaLabel="Recherche Open Library" closeOnBackdrop={false} className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
@@ -221,7 +222,7 @@ const OpenLibrarySearch = ({ onImport, onClose, defaultCategory = 'roman' }) => 
           </div>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 };
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useTheme } from '../contexts/ThemeContext';
+import ModalOverlay, { MODAL_Z } from './common/ModalOverlay';
 
 const MobileSearchOverlay = ({ isOpen, onClose, searchTerm, onSearchChange, onSearch }) => {
   const inputRef = useRef(null);
@@ -29,7 +30,7 @@ const MobileSearchOverlay = ({ isOpen, onClose, searchTerm, onSearchChange, onSe
   };
 
   return (
-    <div className="md:hidden fixed inset-0 z-50 flex flex-col bg-honeycomb">
+    <ModalOverlay onClose={onClose} zIndex={MODAL_Z.panel} ariaLabel="Recherche" closeOnBackdrop={false} className="md:hidden fixed inset-0 flex flex-col bg-honeycomb">
       <form
         onSubmit={handleSubmit}
         className={`flex items-center gap-3 px-4 py-3 backdrop-blur-xl border-b safe-area-top ${
@@ -83,7 +84,7 @@ const MobileSearchOverlay = ({ isOpen, onClose, searchTerm, onSearchChange, onSe
           </button>
         )}
       </div>
-    </div>
+    </ModalOverlay>
   );
 };
 

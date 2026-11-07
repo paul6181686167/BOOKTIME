@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import ModalOverlay, { MODAL_Z } from '../common/ModalOverlay';
 import { UserAvatar } from '../common/ProfileIdentityCard';
 import FriendsHome from './FriendsHome';
 import FriendChat from './FriendChat';
@@ -44,11 +45,7 @@ export default function FriendsModal({
         : `Profil de ${view.friend.display_name}`;
 
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 md:p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+    <ModalOverlay onClose={onClose} zIndex={MODAL_Z.panel} ariaLabel="Amis" closeOnBackdrop className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center md:p-4"
     >
       <div
         className="bg-[#f3faf6] dark:bg-gray-800 md:rounded-2xl shadow-2xl w-full md:max-w-lg h-[92dvh] md:h-[80vh] flex flex-col modal-animate safe-area-bottom overflow-hidden"
@@ -121,6 +118,6 @@ export default function FriendsModal({
           </div>
         )}
       </div>
-    </div>
+    </ModalOverlay>
   );
 }

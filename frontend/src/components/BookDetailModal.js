@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { createPortal } from 'react-dom';
+import ModalOverlay, { MODAL_Z } from './common/ModalOverlay';
 import { useNavigate } from 'react-router-dom';
 import {
   XMarkIcon,
@@ -688,8 +688,8 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
 
   // Rendu dans document.body : hors du carrousel mobile (transform, pointer-events,
   // empilement) qui pouvait bloquer les boutons et le défilement de la fiche.
-  return createPortal(
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1200 }}>
+  return (
+    <ModalOverlay onClose={onClose} zIndex={MODAL_Z.sheet} ariaLabel="Fiche livre">
       <div
         className={`modal-content-wide modal-animate w-full md:w-auto${isVoid ? ' void-sheet' : ''}`}
         onClick={(e) => e.stopPropagation()}
@@ -1434,8 +1434,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
         )}
         </div>
       </div>
-    </div>,
-    document.body
+    </ModalOverlay>
   );
 };
 

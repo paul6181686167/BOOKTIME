@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import ModalOverlay, { MODAL_Z } from './common/ModalOverlay';
 import { XMarkIcon, UserIcon, BookOpenIcon, CalendarIcon, QueueListIcon, ChevronDownIcon, ChevronUpIcon, StarIcon, TrophyIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { API_BASE_URL } from '../config/environment';
@@ -377,8 +377,8 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
 
   // Rendu dans document.body : hors du carrousel mobile (transform + pointer-events
   // des diapositives) qui bloquait le défilement de la fiche.
-  return createPortal(
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1300 }}>
+  return (
+    <ModalOverlay onClose={onClose} zIndex={MODAL_Z.nested} ariaLabel="Fiche auteur">
       <div
         className={`modal-content-wide w-full md:w-auto${isVoid ? ' void-sheet' : ''}`}
         onClick={(e) => e.stopPropagation()}
@@ -898,8 +898,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
         )}
         </div>
       </div>
-    </div>,
-    document.body
+    </ModalOverlay>
   );
 };
 

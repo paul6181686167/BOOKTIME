@@ -1,3 +1,4 @@
+import ModalOverlay, { MODAL_Z } from '../common/ModalOverlay';
 /**
  * PHASE 3.3 - Modal Social Principal
  * Interface principale pour les fonctionnalités sociales
@@ -132,7 +133,7 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <ModalOverlay onClose={onClose} zIndex={MODAL_Z.panel} ariaLabel="Communauté" closeOnBackdrop={false} className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
       <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6">
@@ -377,7 +378,7 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
           onClose={() => setSelectedUserId(null)}
         />
       )}
-    </div>
+    </ModalOverlay>
   );
 };
 

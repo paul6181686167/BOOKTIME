@@ -20,6 +20,7 @@ import {
   nextFreeCollectionColor,
 } from '../../utils/collectionsStorage';
 import CollectionColorPicker from './CollectionColorPicker';
+import ModalOverlay, { MODAL_Z } from './ModalOverlay';
 import {
   READING_CATEGORIES,
   READING_PROFILES,
@@ -975,15 +976,15 @@ function ProfileModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 md:p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+    <ModalOverlay
+      onClose={onClose}
+      zIndex={MODAL_Z.panel}
+      ariaLabel="Profil"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center md:p-4"
     >
       {sheet}
       {dialogs}
-    </div>
+    </ModalOverlay>
   );
 }
 

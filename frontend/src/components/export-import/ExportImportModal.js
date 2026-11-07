@@ -1,3 +1,4 @@
+import ModalOverlay, { MODAL_Z } from '../common/ModalOverlay';
 /**
  * PHASE 3.2 - Modal Export/Import de Données
  * Interface utilisateur complète pour export/import
@@ -200,7 +201,7 @@ const ExportImportModal = ({ isOpen, onClose, backendUrl, token }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <ModalOverlay onClose={onClose} zIndex={MODAL_Z.panel} ariaLabel="Export et import" closeOnBackdrop={false} className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         
         {/* Header */}
@@ -473,7 +474,7 @@ const ExportImportModal = ({ isOpen, onClose, backendUrl, token }) => {
           )}
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 };
 

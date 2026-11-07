@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { createPortal } from 'react-dom';
+import ModalOverlay, { MODAL_Z } from './common/ModalOverlay';
 import { useNavigate } from 'react-router-dom';
 import {
   BookOpenIcon,
@@ -1269,10 +1269,13 @@ const SeriesDetailModal = ({
   if (!isOpen) return null;
 
   // Rendu dans document.body : hors du carrousel mobile (transform, pointer-events).
-  return createPortal(
-    <div
+  return (
+    <ModalOverlay
+      onClose={onClose}
+      zIndex={MODAL_Z.sheet}
+      ariaLabel="Fiche série"
+      closeOnBackdrop={false}
       className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center md:p-4"
-      style={{ zIndex: 1200 }}
     >
       <div className={`modal-content-wide shadow-2xl overflow-hidden w-full md:w-auto${isVoid ? ' void-sheet' : ''}`}>
         
@@ -1789,8 +1792,7 @@ const SeriesDetailModal = ({
         </div>
 
       </div>
-    </div>,
-    document.body
+    </ModalOverlay>
   );
 };
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ModalOverlay, { MODAL_Z } from '../common/ModalOverlay';
 import { toast } from 'react-hot-toast';
 import AuthService from '../../services/authService';
 
@@ -36,7 +37,7 @@ const DeleteAccountDialog = ({ isOpen, onClose, onDeleted }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
+    <ModalOverlay onClose={onClose} zIndex={MODAL_Z.dialog} ariaLabel="Supprimer mon compte" closeOnBackdrop={false} className="fixed inset-0 flex items-center justify-center bg-black/60 p-4">
       <div className="w-full max-w-md rounded-xl bg-white dark:bg-gray-800 shadow-xl">
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
@@ -93,7 +94,7 @@ const DeleteAccountDialog = ({ isOpen, onClose, onDeleted }) => {
           </div>
         </form>
       </div>
-    </div>
+    </ModalOverlay>
   );
 };
 
