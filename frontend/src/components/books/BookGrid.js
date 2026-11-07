@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { resolveCoverForGridItem } from '../../utils/helpers';
 import { displayBookTitleFrFirst } from '../../utils/openLibraryBookDisplay';
+import { colorsForGridItem, collectionRimShadow } from '../../utils/collectionsStorage';
+import useCollectionColors from '../../hooks/useCollectionColors';
 import SmartCover, {
   CARD_SHELL,
   COVER_FRAME,
@@ -18,6 +20,12 @@ const ANIMATED_CARDS = 12;
 // Rendu progressif : taille du premier lot, puis de chaque extension
 const INITIAL_VISIBLE = 30;
 const VISIBLE_STEP = 30;
+
+/** Liseré aux couleurs des collections qui contiennent l'élément */
+const rimStyle = (colors) => {
+  const boxShadow = collectionRimShadow(colors);
+  return boxShadow ? { boxShadow } : undefined;
+};
 
 /** Fraction + barre style streaming sous la couverture */
 const CinemaProgress = ({ current, total, percent }) => {
@@ -48,7 +56,7 @@ const CinemaProgress = ({ current, total, percent }) => {
   );
 };
 
-const SeriesCardBody = ({ item, coverSrc, onCoverFound, priority }) => {
+const SeriesCardBody = ({ item, coverSrc, onCoverFound, priority, rimColors }) => {
   // Statut série : priorité au statut manuel, sinon progression des tomes
   const seriesStatus =
     item.status ||
@@ -70,7 +78,7 @@ const SeriesCardBody = ({ item, coverSrc, onCoverFound, priority }) => {
 
   return (
     <div className={CARD_SHELL}>
-      <div className={COVER_FRAME}>
+      <div className={COVER_FRAME} style={rimStyle(rimColors)}>
         <SmartCover
           item={item}
           alt={item.name}
@@ -105,7 +113,7 @@ const SeriesCardBody = ({ item, coverSrc, onCoverFound, priority }) => {
   );
 };
 
-const BookCardBody = ({ item, coverSrc, onCoverFound, priority }) => {
+const BookCardBody = ({ item, coverSrc, onCoverFound, priority, rimColors }) => {
   const title = displayBookTitleFrFirst(item);
   const current = item.current_page || 0;
   const total = item.total_pages || 0;
@@ -119,7 +127,7 @@ const BookCardBody = ({ item, coverSrc, onCoverFound, priority }) => {
 
   return (
     <div className={CARD_SHELL}>
-      <div className={COVER_FRAME}>
+      <div className={COVER_FRAME} style={rimStyle(rimColors)}>
         <SmartCover
           item={item}
           alt={title}
@@ -163,7 +171,7 @@ const BookCardBody = ({ item, coverSrc, onCoverFound, priority }) => {
 
 // Carte mémoïsée : sans cela, changer d'onglet ou de tri redessinait toutes les
 // cartes de la bibliothèque, ce qui se sentait nettement sur mobile.
-const GridCard = React.memo(({ item, index, onSelect, onCoverFound }) => {
+const GridCard = React.memo(({ item, index, onSelect, onCoverFound, rimColors }) => {
   const coverSrc = resolveCoverForGridItem(item);
   const animated = index < ANIMATED_CARDS;
   // Premier écran + un peu sous la ligne de flottaison
@@ -178,9 +186,9 @@ const GridCard = React.memo(({ item, index, onSelect, onCoverFound }) => {
       onClick={() => onSelect(item)}
     >
       {item.isSeriesCard ? (
-        <SeriesCardBody item={item} coverSrc={coverSrc} onCoverFound={onCoverFound} priority={priority} />
+        <SeriesCardBody item={item} coverSrc={coverSrc} onCoverFound={onCoverFound} priority={priority} rimColors={rimColors} />
       ) : (
-        <BookCardBody item={item} coverSrc={coverSrc} onCoverFound={onCoverFound} priority={priority} />
+        <BookCardBody item={item} coverSrc={coverSrc} onCoverFound={onCoverFound} priority={priority} rimColors={rimColors} />
       )}
     </div>
   );
@@ -198,6 +206,7 @@ const BookGrid = ({
   emptyTitle = 'Aucun livre dans votre bibliothèque',
   emptySubtitle = 'Commencez par rechercher des livres à ajouter à votre collection.',
 }) => {
+  const collectionColors = useCollectionColors();
   // Filtre soft : n'exclure un livre « saga » que si une carte série du même nom
   // est déjà présente (évite de vider la grille quand OL tague saga sans carte).
   const displayedBooks = React.useMemo(() => {
@@ -308,6 +317,7 @@ const BookGrid = ({
             index={index}
             onSelect={handleSelect}
             onCoverFound={onCoverFound}
+            rimColors={colorsForGridItem(collectionColors, item)}
           />
         ))}
       </div>

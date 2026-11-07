@@ -15,7 +15,11 @@ import {
   removeItemFromCollection,
   collectionContains,
   normalizeCollection,
+  collectionColor,
+  setCollectionColor,
+  nextFreeCollectionColor,
 } from '../../utils/collectionsStorage';
+import CollectionColorPicker from './CollectionColorPicker';
 import {
   READING_CATEGORIES,
   READING_PROFILES,
@@ -112,6 +116,7 @@ function ProfileModal({
   const [collections, setCollections] = useState(() => getCollections());
   const [newCollectionName, setNewCollectionName] = useState('');
   const [creatingCollection, setCreatingCollection] = useState(false);
+  const [newCollectionColor, setNewCollectionColor] = useState(() => nextFreeCollectionColor());
   const [expandedCollectionId, setExpandedCollectionId] = useState(null);
   const [pickerQuery, setPickerQuery] = useState('');
   const [pickerFilter, setPickerFilter] = useState('all'); // all | book | series
@@ -244,7 +249,7 @@ function ProfileModal({
   };
 
   const handleAddCollection = () => {
-    const result = createCollection(newCollectionName);
+    const result = createCollection(newCollectionName, newCollectionColor);
     if (!result.ok) {
       if (result.reason === 'exists') toast.error('Cette collection existe déjà');
       else toast.error('Nom invalide');
@@ -256,6 +261,16 @@ function ProfileModal({
     setCreatingCollection(false);
     setExpandedCollectionId(result.collection.id);
     toast.success(`Collection « ${result.collection.name} » créée`);
+  };
+
+  const startCreateCollection = () => {
+    setNewCollectionColor(nextFreeCollectionColor());
+    setCreatingCollection(true);
+  };
+
+  const handleChangeCollectionColor = (id, color) => {
+    const result = setCollectionColor(id, color);
+    if (result.ok) setCollections(result.collections);
   };
 
   const cancelCreateCollection = () => {
@@ -669,6 +684,7 @@ function ProfileModal({
               </p>
 
               {creatingCollection ? (
+                <div className="space-y-2">
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -693,10 +709,15 @@ function ProfileModal({
                     className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg transition-colors text-sm"
                   >Annuler</button>
                 </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Couleur</span>
+                  <CollectionColorPicker value={newCollectionColor} onChange={setNewCollectionColor} />
+                </div>
+                </div>
               ) : (
                 <button
                   type="button"
-                  onClick={() => setCreatingCollection(true)}
+                  onClick={startCreateCollection}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium"
                 >
                   + Créer une collection
@@ -711,6 +732,7 @@ function ProfileModal({
                 <div className="space-y-2">
                   {collections.map((raw) => {
                     const c = normalizeCollection(raw);
+                    const color = collectionColor(c);
                     const items = c.items || [];
                     const open = expandedCollectionId === c.id;
                     const q = pickerQuery.trim().toLowerCase();
@@ -740,7 +762,13 @@ function ProfileModal({
                             className="flex-1 min-w-0 text-left"
                           >
                             <span className="font-medium text-gray-900 dark:text-white text-sm">
-                              {open ? '▾' : '▸'} {c.name}
+                              {open ? '▾' : '▸'}{' '}
+                              <span
+                                aria-hidden="true"
+                                className="inline-block h-2.5 w-2.5 rounded-full align-middle mr-1"
+                                style={{ backgroundColor: color }}
+                              />
+                              {c.name}
                             </span>
                             <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
                               {items.length} élément{items.length !== 1 ? 's' : ''}
@@ -758,6 +786,13 @@ function ProfileModal({
 
                         {open && (
                           <div className="px-3 pb-3 space-y-3 border-t border-gray-200 dark:border-gray-600 pt-3">
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs text-gray-500 dark:text-gray-400">Couleur</span>
+                              <CollectionColorPicker
+                                value={color}
+                                onChange={(hex) => handleChangeCollectionColor(c.id, hex)}
+                              />
+                            </div>
                             {items.length === 0 ? (
                               <p className="text-xs text-gray-500 dark:text-gray-400 italic">
                                 Collection vide — ajoute un livre ou une série ci-dessous.
@@ -769,7 +804,10 @@ function ProfileModal({
                                     key={it.key}
                                     className="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-gray-800"
                                   >
-                                    <div className="w-8 h-11 rounded overflow-hidden bg-gray-200 dark:bg-gray-600 shrink-0">
+                                    <div
+                                      className="w-8 h-11 rounded overflow-hidden bg-gray-200 dark:bg-gray-600 shrink-0"
+                                      style={{ boxShadow: `0 0 0 2px ${color}` }}
+                                    >
                                       {it.cover_url ? (
                                         <img src={it.cover_url} alt="" className="w-full h-full object-cover" />
                                       ) : (
