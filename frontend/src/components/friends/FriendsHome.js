@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import friendsService from '../../services/friendsService';
 import { UserAvatar } from '../common/ProfileIdentityCard';
+import ShareProfilePanel from './ShareProfilePanel';
+import QrScanModal from './QrScanModal';
 
 const REFRESH_MS = 15000;
 
@@ -13,7 +15,18 @@ function preview(last) {
 }
 
 /** Liste d'amis, demandes en attente et recherche de lecteurs. */
-export default function FriendsHome({ recommendBook, onOpenChat, onOpenProfile, onCountsChange }) {
+export default function FriendsHome({
+  recommendBook,
+  inviteCode,
+  onOpenChat,
+  onOpenProfile,
+  onCountsChange,
+}) {
+  const [showShare, setShowShare] = useState(false);
+  const [showScan, setShowScan] = useState(false);
+  const [invite, setInvite] = useState(null);
+  const [inviteError, setInviteError] = useState('');
+  const [inviteLoading, setInviteLoading] = useState(false);
   const [friends, setFriends] = useState([]);
   const [requests, setRequests] = useState({ incoming: [], outgoing: [] });
   const [loading, setLoading] = useState(true);
@@ -48,6 +61,24 @@ export default function FriendsHome({ recommendBook, onOpenChat, onOpenProfile, 
     }, REFRESH_MS);
     return () => clearInterval(timer);
   }, [load]);
+
+  // Lecteur retrouvé grâce à un lien ou à un QR code
+  const resolveCode = useCallback(async (code) => {
+    setInviteLoading(true);
+    setInviteError('');
+    setInvite(null);
+    try {
+      setInvite(await friendsService.byCode(code));
+    } catch (err) {
+      setInviteError(err.message || 'Ce code est introuvable');
+    } finally {
+      setInviteLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (inviteCode) resolveCode(inviteCode);
+  }, [inviteCode, resolveCode]);
 
   // Recherche avec délai : évite une requête à chaque touche
   useEffect(() => {
@@ -93,6 +124,17 @@ export default function FriendsHome({ recommendBook, onOpenChat, onOpenProfile, 
   const addFriend = async (user) => {
     const ok = await run(user.id, () => friendsService.sendRequest(user.id), 'Demande envoyée');
     if (ok) {
+      setInvite((current) =>
+        current && current.user.id === user.id
+          ? {
+              ...current,
+              user: {
+                ...current.user,
+                state: current.user.state === 'pending_in' ? 'friends' : 'pending_out',
+              },
+            }
+          : current
+      );
       setResults((list) =>
         (list || []).map((u) =>
           u.id === user.id ? { ...u, state: u.state === 'pending_in' ? 'friends' : 'pending_out' } : u
@@ -102,6 +144,7 @@ export default function FriendsHome({ recommendBook, onOpenChat, onOpenProfile, 
   };
 
   const searchAction = (user) => {
+    if (user.state === 'me') return <span className="text-xs text-gray-500">Toi</span>;
     if (user.state === 'friends') return <span className="text-xs text-green-600 font-medium">Ami</span>;
     if (user.state === 'pending_out')
       return <span className="text-xs text-gray-500">Demande envoyée</span>;
@@ -127,12 +170,100 @@ export default function FriendsHome({ recommendBook, onOpenChat, onOpenProfile, 
         </div>
       )}
 
+      {(inviteLoading || inviteError || invite) && (
+        <div
+          className="rounded-xl border border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 p-3"
+          data-testid="invite-card"
+        >
+          {inviteLoading ? (
+            <p className="text-sm text-gray-600 dark:text-gray-300">Recherche du lecteur…</p>
+          ) : inviteError ? (
+            <div className="flex items-start gap-2">
+              <p className="flex-1 text-sm text-amber-700 dark:text-amber-300">{inviteError}</p>
+              <button
+                type="button"
+                onClick={() => setInviteError('')}
+                className="text-xs text-gray-500 px-2 py-1"
+              >
+                Fermer
+              </button>
+            </div>
+          ) : (
+            <>
+              <p className="text-xs font-semibold uppercase tracking-wide text-green-800 dark:text-green-300 mb-2">
+                Lecteur trouvé
+              </p>
+              <div className="flex items-center gap-3">
+                <UserAvatar user={invite.user} size={48} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                    {invite.user.display_name}
+                  </p>
+                  {invite.user.username ? (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      @{invite.user.username}
+                    </p>
+                  ) : null}
+                  {invite.user.bio ? (
+                    <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                      {invite.user.bio}
+                    </p>
+                  ) : null}
+                </div>
+                {invite.is_me ? (
+                  <span className="text-xs text-gray-500">C’est ton code</span>
+                ) : (
+                  searchAction(invite.user)
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setInvite(null)}
+                className="mt-2 text-xs text-gray-500 hover:text-gray-700"
+              >
+                Fermer
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setShowShare((open) => !open)}
+          aria-expanded={showShare}
+          className="flex-1 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium"
+        >
+          {showShare ? 'Masquer mon QR code' : 'Partager mon profil'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowScan(true)}
+          className="flex-1 px-3 py-2 rounded-lg border border-green-600 text-green-700 dark:text-green-400 text-sm font-medium"
+        >
+          Scanner un QR code
+        </button>
+      </div>
+
+      {showShare && <ShareProfilePanel />}
+
+      {showScan && (
+        <QrScanModal
+          onClose={() => setShowScan(false)}
+          onCode={(code) => {
+            setShowScan(false);
+            resolveCode(code);
+          }}
+        />
+      )}
+
       <div>
         <input
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Trouver un lecteur (nom ou adresse email)"
+          placeholder="Trouver un lecteur (@pseudo, nom ou email)"
           aria-label="Trouver un lecteur"
           className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
         />
@@ -142,8 +273,8 @@ export default function FriendsHome({ recommendBook, onOpenChat, onOpenProfile, 
               <p className="text-xs text-gray-500 px-1">Recherche…</p>
             ) : results.length === 0 ? (
               <p className="text-xs text-gray-500 px-1">
-                Aucun lecteur trouvé. Les lecteurs se trouvent par leur nom affiché ou leur adresse
-                email complète.
+                Aucun lecteur trouvé. Cherche par @pseudo, par nom affiché ou par adresse email
+                complète, ou scanne son QR code.
               </p>
             ) : (
               results.map((u) => (
@@ -156,6 +287,11 @@ export default function FriendsHome({ recommendBook, onOpenChat, onOpenProfile, 
                     <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                       {u.display_name}
                     </p>
+                    {u.username ? (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        @{u.username}
+                      </p>
+                    ) : null}
                     {u.bio ? (
                       <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{u.bio}</p>
                     ) : null}

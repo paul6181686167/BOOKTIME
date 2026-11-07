@@ -105,6 +105,7 @@ class AuthService {
           display_name: data.display_name || '',
           bio: data.bio || '',
           avatar_url: data.avatar_url || '',
+          username: data.username || '',
         },
       };
     } catch (_) {

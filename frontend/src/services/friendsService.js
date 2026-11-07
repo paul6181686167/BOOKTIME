@@ -21,6 +21,8 @@ async function request(method, path, body) {
 
 const friendsService = {
   search: (q) => request('GET', `/search?q=${encodeURIComponent(q)}`),
+  myCode: () => request('GET', '/me/code'),
+  byCode: (code) => request('GET', `/by-code/${encodeURIComponent(code)}`),
   sendRequest: (userId) => request('POST', '/requests', { user_id: userId }),
   listRequests: () => request('GET', '/requests'),
   acceptRequest: (requestId) => request('POST', `/requests/${requestId}/accept`),

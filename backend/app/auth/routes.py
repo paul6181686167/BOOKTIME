@@ -14,6 +14,7 @@ import bcrypt
 from ..models.user import UserAuth, RegisterRequest
 from ..database.connection import users_collection, db
 from ..admin.helpers import is_admin
+from ..friends.identity import clean_username
 from ..security.jwt import (
     create_access_token,
     get_current_user,
@@ -297,7 +298,7 @@ async def reset_password(data: ResetPasswordRequest):
     return {"message": "Mot de passe réinitialisé avec succès."}
 
 
-PROFILE_FIELDS = ("display_name", "bio", "avatar_url")
+PROFILE_FIELDS = ("display_name", "bio", "avatar_url", "username")
 MAX_DISPLAY_NAME = 40
 MAX_BIO = 300
 # Photo redimensionnée côté application (~256 px) : quelques dizaines de Ko en base64.
@@ -312,12 +313,15 @@ def public_profile(doc: dict) -> dict:
         "display_name": doc.get("display_name") or "",
         "bio": doc.get("bio") or "",
         "avatar_url": doc.get("avatar_url") or "",
+        "username": doc.get("username") or "",
     }
 
 
 def clean_profile_update(data: dict) -> dict:
     """Valide et nettoie les champs de profil reçus. Lève HTTPException 400 si invalide."""
     out = {}
+    if "username" in data:
+        out["username"] = clean_username(data["username"])
     if "display_name" in data:
         name = " ".join(str(data["display_name"] or "").split())
         if len(name) > MAX_DISPLAY_NAME:
@@ -394,6 +398,8 @@ class ProfileUpdateRequest(BaseModel):
     bio: Optional[str] = None
     # Chaîne vide = retirer la photo
     avatar_url: Optional[str] = None
+    # Pseudo unique, sans « @ » ; chaîne vide = retirer le pseudo
+    username: Optional[str] = None
 
 
 @router.get("/me")
@@ -464,8 +470,26 @@ async def update_my_profile(
     if not updates:
         raise HTTPException(status_code=400, detail="Aucune donnée à mettre à jour.")
 
-    users_collection.update_one({"id": current_user.get("id")}, {"$set": updates})
-    stored = users_collection.find_one({"id": current_user.get("id")}, {"_id": 0}) or {}
+    me = current_user.get("id")
+    operation: dict = {}
+    if "username" in updates:
+        username = updates.pop("username")
+        if username:
+            taken = users_collection.find_one({"username": username, "id": {"$ne": me}}, {"id": 1})
+            if taken:
+                raise HTTPException(status_code=409, detail="Ce pseudo est déjà pris.")
+            updates["username"] = username
+        else:
+            operation["$unset"] = {"username": ""}
+    if updates:
+        operation["$set"] = updates
+    users_collection.update_one({"id": me}, operation)
+    try:
+        # Garde-fou contre deux inscriptions simultanées du même pseudo (sans effet s'il existe déjà)
+        users_collection.create_index("username", unique=True, sparse=True)
+    except Exception:
+        pass
+    stored = users_collection.find_one({"id": me}, {"_id": 0}) or {}
     return {"success": True, "profile": public_profile(stored)}
 
 

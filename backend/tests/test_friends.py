@@ -29,14 +29,14 @@ def test_search_filter_never_matches_email_fragments():
     exact = search_filter("Paul@Mail.fr", "me")
     assert exact["email"] == "paul@mail.fr"
     by_name = search_filter("pa", "me")
-    assert "display_name" in by_name and "email" not in by_name
+    assert "$or" in by_name and "email" not in by_name
     assert search_filter("p", "me") is None
     assert search_filter("", "me") is None
 
 
 def test_search_filter_escapes_regex():
     flt = search_filter("a.*", "me")
-    assert flt["display_name"]["$regex"] == r"a\.\*"
+    assert flt["$or"][1]["display_name"]["$regex"] == r"a\.\*"
 
 
 def test_clean_message_requires_text_or_book():

@@ -81,6 +81,8 @@ import MobileSearchOverlay from './components/MobileSearchOverlay';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
 import OfflineBanner from './components/OfflineBanner';
 import PrimaryTabsLayout from './components/navigation/PrimaryTabsLayout';
+import FriendInvitePage from './pages/FriendInvitePage';
+import { PENDING_FRIEND_CODE_KEY, normalizeFriendCode } from './utils/friendLink';
 
 import './App.css';
 import './styles/optimized.css';
@@ -234,6 +236,7 @@ function AppContent() {
         <Route path="/series/:seriesName" element={<SeriesDetailPage />} />
         <Route path="/export-import" element={<ExportImportPage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/ami/:code" element={<FriendInvitePage />} />
         <Route path="/catalogue/*" element={<OpenLibraryBookPage />} />
         <Route
           path="/*"
@@ -259,6 +262,7 @@ function MainApp() {
   const [showSocialModal, setShowSocialModal] = useState(false);
   const [showFriendsModal, setShowFriendsModal] = useState(false);
   const [friendsRecommendBook, setFriendsRecommendBook] = useState(null);
+  const [friendsInviteCode, setFriendsInviteCode] = useState('');
   const [showAdvancedRecommendationsModal, setShowAdvancedRecommendationsModal] = useState(false);
   const [showIntegrationsModal, setShowIntegrationsModal] = useState(false);
   const [showUpcomingPanel, setShowUpcomingPanel] = useState(false);
@@ -302,14 +306,26 @@ function MainApp() {
 
   // Amis : ouverture depuis le profil, ou depuis une fiche livre pour recommander ce livre
   useEffect(() => {
-    const handleOpenFriends = () => {
+    const handleOpenFriends = (event) => {
       setFriendsRecommendBook(null);
+      setFriendsInviteCode(event?.detail?.code || '');
       setShowFriendsModal(true);
     };
     const handleRecommendToFriend = (event) => {
       setFriendsRecommendBook(event?.detail?.book || null);
+      setFriendsInviteCode('');
       setShowFriendsModal(true);
     };
+    // Lien /ami/CODE ouvert (ou QR code scanné avec l'appareil photo) : on ouvre la fiche du lecteur
+    try {
+      const pending = localStorage.getItem(PENDING_FRIEND_CODE_KEY);
+      if (pending) {
+        localStorage.removeItem(PENDING_FRIEND_CODE_KEY);
+        handleOpenFriends({ detail: { code: normalizeFriendCode(pending) } });
+      }
+    } catch (_) {
+      /* stockage indisponible */
+    }
     window.addEventListener('openFriends', handleOpenFriends);
     window.addEventListener('recommendToFriend', handleRecommendToFriend);
     return () => {
@@ -1355,6 +1371,7 @@ function MainApp() {
           isOpen={showFriendsModal}
           onClose={() => setShowFriendsModal(false)}
           recommendBook={friendsRecommendBook}
+          inviteCode={friendsInviteCode}
           libraryBooks={unifiedContent.books || []}
           onOpenBook={(bookLike) => {
             booksHook.setSelectedBook(bookLike);

@@ -26,7 +26,9 @@ from .helpers import (
     pair_key,
     parse_iso,
     search_filter,
+    search_rank,
 )
+from .identity import normalize_friend_code, new_friend_code, safe_label
 
 router = APIRouter(prefix="/api/friends", tags=["friends"])
 
@@ -72,6 +74,7 @@ def _user_card(doc: Optional[dict]) -> Dict[str, Any]:
     return {
         "id": doc.get("id"),
         "display_name": display_label(doc),
+        "username": doc.get("username") or "",
         "bio": doc.get("bio") or "",
         "avatar_url": doc.get("avatar_url") or "",
     }
@@ -138,6 +141,59 @@ def _book_summary(doc: dict) -> Dict[str, Any]:
     }
 
 
+# ---------- partage de profil (code d'ami, lien, QR code) ----------
+
+
+@router.get("/me/code")
+async def my_friend_code(current_user: dict = Depends(get_current_user)):
+    """Code d'ami personnel, créé à la première demande. Sert au lien et au QR code."""
+    me = _me(current_user)
+    doc = (
+        users_collection.find_one(
+            {"id": me}, {"_id": 0, "friend_code": 1, "username": 1, "display_name": 1}
+        )
+        or {}
+    )
+    code = normalize_friend_code(doc.get("friend_code"))
+    if not code:
+        for _ in range(8):
+            candidate = new_friend_code()
+            if not users_collection.find_one({"friend_code": candidate}, {"id": 1}):
+                code = candidate
+                break
+        if not code:
+            raise HTTPException(status_code=503, detail="Impossible de créer le code, réessaie.")
+        users_collection.update_one({"id": me}, {"$set": {"friend_code": code}})
+    return {
+        "code": code,
+        "username": doc.get("username") or "",
+        "display_name": doc.get("display_name") or "",
+    }
+
+
+@router.get("/by-code/{code}")
+async def reader_by_code(code: str, current_user: dict = Depends(get_current_user)):
+    """Retrouve un lecteur grâce à son code d'ami (lien partagé ou QR code scanné).
+
+    Fonctionne même si le lecteur a désactivé l'apparition dans la recherche : il a
+    lui-même choisi de partager ce code.
+    """
+    me = _me(current_user)
+    clean = normalize_friend_code(code)
+    if not clean:
+        raise HTTPException(status_code=400, detail="Code d'ami invalide.")
+    doc = users_collection.find_one(
+        {"friend_code": clean, "banned": {"$ne": True}}, {"_id": 0, "password_hash": 0}
+    )
+    if not doc:
+        raise HTTPException(status_code=404, detail="Ce code ne correspond à aucun lecteur.")
+    card = _user_card(doc)
+    card["display_name"] = safe_label(doc)
+    is_me = doc["id"] == me
+    card["state"] = "me" if is_me else _relation_state(me, _relation(me, doc["id"]))
+    return {"user": card, "is_me": is_me}
+
+
 # ---------- recherche et demandes ----------
 
 
@@ -146,7 +202,7 @@ async def search_readers(
     q: str = Query("", max_length=80),
     current_user: dict = Depends(get_current_user),
 ):
-    """Cherche un lecteur par nom affiché, ou par adresse email exacte."""
+    """Cherche un lecteur par @pseudo, nom affiché, ou adresse email exacte."""
     me = _me(current_user)
     flt = search_filter(q, me)
     if not flt:
@@ -154,6 +210,7 @@ async def search_readers(
     found = list(
         users_collection.find(flt, {"_id": 0, "password_hash": 0}).limit(MAX_SEARCH_RESULTS)
     )
+    found.sort(key=lambda doc: search_rank(doc, q))
     out = []
     for doc in found:
         card = _user_card(doc)

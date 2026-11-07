@@ -91,19 +91,40 @@ def clean_message(text: Any, book: Any) -> Dict[str, Any]:
 def search_filter(query: str, exclude_id: str) -> Optional[Dict[str, Any]]:
     """Filtre Mongo de recherche d'un lecteur.
 
-    Une adresse email exacte retrouve le compte ; sinon on cherche dans le nom affiché.
+    « @pseudo » cherche un pseudo (début de pseudo) ; une adresse email exacte retrouve le compte ;
+    sinon on cherche dans le pseudo (début) et dans le nom affiché (fragment).
     Les emails ne sont jamais cherchés par fragment pour ne pas exposer les comptes.
     """
     q = (query or "").strip()
     # Les lecteurs qui ont désactivé « apparaître dans la recherche » restent introuvables
     # Un compte banni n'apparaît plus non plus.
     visible = {"settings.discoverable": {"$ne": False}, "banned": {"$ne": True}}
+    others = {"id": {"$ne": exclude_id}}
+    if q.startswith("@"):
+        handle = q.lstrip("@").strip().lower()
+        if len(handle) < 2:
+            return None
+        return {"username": {"$regex": "^" + re.escape(handle)}, **others, **visible}
     if "@" in q:
-        return {"email": q.lower(), "id": {"$ne": exclude_id}, **visible}
+        return {"email": q.lower(), **others, **visible}
     if len(q) < 2:
         return None
     return {
-        "display_name": {"$regex": re.escape(q), "$options": "i"},
-        "id": {"$ne": exclude_id},
+        "$or": [
+            {"username": {"$regex": "^" + re.escape(q.lower())}},
+            {"display_name": {"$regex": re.escape(q), "$options": "i"}},
+        ],
+        **others,
         **visible,
     }
+
+
+def search_rank(doc: Optional[dict], query: str) -> int:
+    """Ordre des résultats : pseudo exact, puis début de pseudo, puis le reste."""
+    handle = (query or "").strip().lstrip("@").lower()
+    username = str((doc or {}).get("username") or "")
+    if username and username == handle:
+        return 0
+    if username and username.startswith(handle):
+        return 1
+    return 2

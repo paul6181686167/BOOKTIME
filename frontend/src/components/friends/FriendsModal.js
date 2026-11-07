@@ -8,7 +8,14 @@ import FriendProfileView from './FriendProfileView';
  * Fenêtre des amis : liste et recherche, profil d'un ami, messagerie.
  * `recommendBook` : livre à recommander (ouvert depuis une fiche) — l'utilisateur choisit l'ami.
  */
-export default function FriendsModal({ isOpen, onClose, libraryBooks, onOpenBook, recommendBook }) {
+export default function FriendsModal({
+  isOpen,
+  onClose,
+  libraryBooks,
+  onOpenBook,
+  recommendBook,
+  inviteCode,
+}) {
   const [view, setView] = useState({ name: 'home' });
   const [pendingBook, setPendingBook] = useState(recommendBook || null);
 
@@ -99,6 +106,7 @@ export default function FriendsModal({ isOpen, onClose, libraryBooks, onOpenBook
             {view.name === 'home' ? (
               <FriendsHome
                 recommendBook={pendingBook}
+                inviteCode={inviteCode}
                 onOpenChat={openChat}
                 onOpenProfile={(friend) => setView({ name: 'profile', friend })}
               />

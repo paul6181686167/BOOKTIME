@@ -1,6 +1,10 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import ProfileEditForm, { buildProfilePatch } from '../ProfileEditForm';
+import ProfileEditForm, {
+  buildProfilePatch,
+  normalizeHandleInput,
+  validateHandle,
+} from '../ProfileEditForm';
 import ProfileIdentityCard from '../ProfileIdentityCard';
 import AuthService from '../../../services/authService';
 
@@ -38,6 +42,34 @@ describe('buildProfilePatch', () => {
       display_name: 'Alicia',
       avatar_url: '',
     });
+  });
+});
+
+describe('pseudo', () => {
+  test('normalise et valide le pseudo saisi', () => {
+    expect(normalizeHandleInput('  @Alice.SF ')).toBe('alice.sf');
+    expect(validateHandle('')).toBe('');
+    expect(validateHandle('ab')).toMatch(/Entre 3 et 20/);
+    expect(validateHandle('éric')).toMatch(/sans accent/);
+    expect(validateHandle('alice_sf')).toBe('');
+  });
+
+  test('entre dans le patch seulement s’il change', () => {
+    const base = { name: 'Alice', bio: 'Lectrice', avatar: undefined };
+    expect(buildProfilePatch({ ...mockUser, username: 'alice' }, { ...base, username: '@Alice' })).toEqual({});
+    expect(buildProfilePatch(mockUser, { ...base, username: '@Alice' })).toEqual({ username: 'alice' });
+    expect(buildProfilePatch({ ...mockUser, username: 'alice' }, { ...base, username: '' })).toEqual({
+      username: '',
+    });
+  });
+
+  test('un pseudo invalide bloque l’enregistrement', () => {
+    const update = jest.spyOn(AuthService.prototype, 'updateProfile');
+    render(<ProfileEditForm onDone={jest.fn()} />);
+    fireEvent.change(screen.getByLabelText('Pseudo'), { target: { value: 'ab' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    expect(update).not.toHaveBeenCalled();
+    expect(mockToast.error).toHaveBeenCalled();
   });
 });
 

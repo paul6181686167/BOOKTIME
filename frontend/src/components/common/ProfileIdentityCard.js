@@ -58,6 +58,9 @@ export default function ProfileIdentityCard() {
         <UserAvatar user={user} size={64} />
         <div className="min-w-0 flex-1">
           <p className="font-semibold text-gray-900 dark:text-white truncate">{title}</p>
+          {user?.username ? (
+            <p className="text-sm text-green-700 dark:text-green-400 truncate">@{user.username}</p>
+          ) : null}
           {user?.display_name && (
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
           )}
