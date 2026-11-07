@@ -6,21 +6,16 @@ import {
   CheckCircleIcon,
   ClockIcon,
   PlusIcon,
-  ExclamationTriangleIcon,
   XMarkIcon,
-  TrashIcon,
   SparklesIcon,
-  StarIcon,
 } from '@heroicons/react/24/outline';
-import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { bookService } from '../services/bookService';
 import { deleteSeriesFromLibrary } from '../services/seriesLibraryService';
 import { EXTENDED_SERIES_DATABASE } from '../utils/seriesDatabaseExtended';
-import TomeDropdown from './TomeDropdown'; // ← AJOUT : Import du nouveau composant
 import ChapterSection from './ChapterSection'; // ← NOUVEAU : Import du composant chapitres
 import toast from 'react-hot-toast';
 import { API_BASE_URL } from '../config/environment';
-import { displayBookTitleFrFirst, mergeOpenLibraryBooksByVolume, sortOpenLibraryBooksByVolume } from '../utils/openLibraryBookDisplay';
+import { displayBookTitleFrFirst, mergeOpenLibraryBooksByVolume } from '../utils/openLibraryBookDisplay';
 import {
   mergeStaticWdWorksWithOpenLibrary,
   enrichVolumeRowsGoogleBooksIsbnThenIntitle,
@@ -28,78 +23,21 @@ import {
 } from '../utils/sourceMerge';
 import { DEFAULT_SERIES_MODAL_GOOGLE_BOOKS } from '../utils/searchSourcePipeline';
 import { isVolumeUnreleased, countReleasedVolumes } from '../utils/volumeRelease';
-import AddToCollectionMenu from './common/AddToCollectionMenu';
-import CommunityReviews from './common/CommunityReviews';
-import { coverImgSrc } from '../utils/helpers';
 import { prefetchAuthor } from '../services/authorPrefetch';
 import { preferFrenchSynopsis } from '../utils/synopsisQuality';
 import { useTheme } from '../contexts/ThemeContext';
-
-const isPersistedLibraryId = (id) =>
-  id &&
-  typeof id === 'string' &&
-  !id.startsWith('ol_') &&
-  !id.startsWith('series_') &&
-  !id.startsWith('jikan_') &&
-  !id.startsWith('gbooks_');
-
-
-function parseVolumeFromWork(vol) {
-  if (vol == null || vol === '') return null;
-  const m = String(vol).match(/\d+/);
-  if (!m) return null;
-  const n = parseInt(m[0], 10);
-  return Number.isNaN(n) ? null : n;
-}
-
-/** volumes peut être un nombre (référentiel) ou un tableau (série bibliothèque). */
-function resolveVolumesCount(volumes, fallback = 0) {
-  if (typeof volumes === 'number' && Number.isFinite(volumes)) return volumes;
-  if (Array.isArray(volumes)) return volumes.length;
-  return fallback;
-}
-
-function volumeTitlesFromLibraryVolumes(volumes) {
-  if (!Array.isArray(volumes)) return null;
-  const map = {};
-  volumes.forEach((v, i) => {
-    const num = v?.volume_number ?? i + 1;
-    map[num] = v?.volume_title || v?.title || `Tome ${num}`;
-  });
-  return Object.keys(map).length ? map : null;
-}
-
-function normalizeSeriesVolumesField(seriesData) {
-  if (!seriesData || !Array.isArray(seriesData.volumes)) return seriesData;
-  return {
-    ...seriesData,
-    volumes: seriesData.volumes.length,
-    volume_titles:
-      seriesData.volume_titles || volumeTitlesFromLibraryVolumes(seriesData.volumes) || {},
-  };
-}
-
-function mapStaticWikidataWorksToOlBooks(works) {
-  return (works || []).map((w, i) => {
-    const titleFr = w.title_fr || '';
-    const titleEn = w.title_en || '';
-    const primary = titleFr || titleEn || 'Œuvre';
-    const vn = parseVolumeFromWork(w.volume);
-    return {
-      title: primary,
-      display_title: displayBookTitleFrFirst({
-        title: primary,
-        original_title: titleFr && titleEn && titleFr !== titleEn ? titleEn : undefined,
-      }),
-      volume_number: vn != null ? vn : i + 1,
-      first_publish_year: w.publication_date ? parseInt(String(w.publication_date).slice(0, 4), 10) : null,
-      cover_url: null,
-      ol_key: null,
-      work_qid: w.work_qid,
-      isFromStaticWikidata: true,
-    };
-  });
-}
+import SeriesHeader from './series-detail/SeriesHeader';
+import SeriesStatusBar from './series-detail/SeriesStatusBar';
+import SeriesTomeList from './series-detail/SeriesTomeList';
+import PreviousTomesDialog from './series-detail/PreviousTomesDialog';
+import SeriesLibraryActions from './series-detail/SeriesLibraryActions';
+import SeriesRatingReview from './series-detail/SeriesRatingReview';
+import {
+  isPersistedLibraryId,
+  resolveVolumesCount,
+  normalizeSeriesVolumesField,
+  mapStaticWikidataWorksToOlBooks,
+} from '../utils/seriesDetailHelpers';
 
 const SeriesDetailModal = ({ 
   series, 
@@ -1247,25 +1185,6 @@ const SeriesDetailModal = ({
     }
   };
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300';
-      case 'reading':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-    }
-  };
-
-  const getStatusLabel = (status) => {
-    switch (status) {
-      case 'completed': return 'Lu';
-      case 'reading': return 'En cours';
-      default: return 'Non lu';
-    }
-  };
-
   if (!isOpen) return null;
 
   // Rendu dans document.body : hors du carrousel mobile (transform, pointer-events).
@@ -1287,174 +1206,30 @@ const SeriesDetailModal = ({
           </button>
         </div>
 
-        {/* Header */}
-        <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:p-6">
-          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
-            <div className="flex min-w-0 flex-1 items-start gap-2.5 sm:gap-4">
-              {/* Petite vignette à côté du titre */}
-              <div className="h-[4.5rem] w-12 shrink-0 rounded-md shadow-md overflow-hidden sm:h-20 sm:w-14">
-                {seriesCoverUrl ? (
-                  <img
-                    src={coverImgSrc(seriesCoverUrl, { forceProxy: coverProxy })}
-                    alt={`Couverture de ${series.name}`}
-                    className="w-full h-full object-cover"
-                    referrerPolicy={coverProxy ? undefined : 'no-referrer'}
-                    onError={(e) => {
-                      if (!coverProxy) {
-                        setCoverProxy(true);
-                        return;
-                      }
-                      e.target.style.display = 'none';
-                      if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-                <div
-                  className={`w-full h-full bg-gradient-to-br from-purple-500 to-blue-600 rounded-md flex items-center justify-center text-white text-xl font-semibold ${seriesCoverUrl ? 'hidden' : 'flex'}`}
-                >
-                  {(series?.name || 'S').charAt(0).toUpperCase()}
-                </div>
-              </div>
-              
-              <div className="min-w-0 flex-1">
-                <h2 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white mb-0.5 break-words leading-snug">
-                  {series?.name}
-                </h2>
-                <p className="text-xs sm:text-base text-gray-600 dark:text-gray-400 mb-1.5">
-                  {series?.author ? (
-                    <>
-                      par{' '}
-                      <button 
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (onAuthorClick) onAuthorClick(series?.author);
-                        }}
-                        className="text-left text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors underline"
-                      >
-                        {series?.author}
-                      </button>
-                    </>
-                  ) : (
-                    <span className="text-gray-500 dark:text-gray-400">Référentiel Wikidata statique</span>
-                  )}
-                </p>
-                <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
-                  <span className={`px-2 py-1 rounded-full font-medium ${getStatusBadge(seriesStatus)}`}>
-                    {getStatusLabel(seriesStatus)}
-                  </span>
-                  <span className="text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                     {resolveVolumesCount(
-                      enrichedSeries?.volumes,
-                      olBooks.length || books.length || (series?.books?.length) || 0
-                    )} tome(s)
-                  </span>
-                  {seriesDisplayName ? (
-                    <button
-                      type="button"
-                      onClick={goToSimilar}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full font-medium bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-900/60"
-                    >
-                      <SparklesIcon className="h-3.5 w-3.5" />
-                      Similaires
-                    </button>
-                  ) : null}
-                  {series.fromStaticWikidata && series.staticWikidataDetail && (
-                    <>
-                      <a
-                        href={`https://www.wikidata.org/wiki/${series.wikidata_qid || series.staticWikidataDetail.qid}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-indigo-600 dark:text-indigo-400 hover:underline"
-                      >
-                        Wikidata ↗
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => setShowWdRaw((v) => !v)}
-                        className="text-gray-600 dark:text-gray-400 hover:underline"
-                      >
-                        {showWdRaw ? 'Masquer JSON' : 'JSON brut'}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex w-full flex-col gap-2 md:w-auto md:shrink-0 md:items-end">
-              {/* Bouton Ajouter — identique à celui des livres individuels (pleine largeur sur mobile) */}
-              {onAddSeries && !isSeriesOwned && (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (isAdding || addDone) return;
-                    setIsAdding(true);
-                    try {
-                      await onAddSeries({ ...series, mergedLibraryVolumes: olBooks });
-                      setAddDone(true);
-                      setTimeout(() => {
-                        checkIfSeriesOwned();
-                        setIsAdding(false);
-                        setAddDone(false);
-                      }, 1000);
-                    } catch (error) {
-                      console.error('Erreur lors de l\'ajout de la série:', error);
-                      toast.error(error.message || 'Erreur lors de l\'ajout de la série');
-                      setIsAdding(false);
-                    }
-                  }}
-                  disabled={isAdding || addDone}
-                  className={`btn-ripple w-full md:w-auto md:min-w-[180px] px-4 py-3 md:py-2 text-sm font-semibold text-white rounded-xl md:rounded-lg transition-all flex items-center justify-center gap-2 ${
-                    addDone
-                      ? 'bg-green-500 cursor-default'
-                      : isAdding
-                      ? 'bg-green-500 cursor-not-allowed opacity-80'
-                      : 'bg-green-600 hover:bg-green-700 hover:shadow-md active:bg-green-800'
-                  }`}
-                >
-                  {addDone ? (
-                    <>
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span>Ajouté !</span>
-                    </>
-                  ) : isAdding ? (
-                    <>
-                      <span className="btn-spinner" />
-                      <span>Ajout en cours…</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                      </svg>
-                      <span>Ajouter à ma bibliothèque</span>
-                    </>
-                  )}
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={onClose}
-                className="hidden md:block p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                aria-label="Fermer"
-              >
-                <span className="text-xl leading-none">✕</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {showWdRaw && series.staticWikidataDetail && (
-          <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6">
-            <pre className="max-h-56 overflow-auto rounded bg-gray-50 p-3 text-left text-[10px] leading-snug text-gray-800 dark:bg-gray-900 dark:text-gray-200 sm:text-xs">
-              {JSON.stringify(series.staticWikidataDetail, null, 2)}
-            </pre>
-          </div>
-        )}
+        {/* En-tête de la fiche (et JSON Wikidata) */}
+        <SeriesHeader
+          series={series}
+          seriesCoverUrl={seriesCoverUrl}
+          coverProxy={coverProxy}
+          setCoverProxy={setCoverProxy}
+          onAuthorClick={onAuthorClick}
+          seriesStatus={seriesStatus}
+          enrichedSeries={enrichedSeries}
+          olBooks={olBooks}
+          books={books}
+          seriesDisplayName={seriesDisplayName}
+          goToSimilar={goToSimilar}
+          showWdRaw={showWdRaw}
+          setShowWdRaw={setShowWdRaw}
+          onAddSeries={onAddSeries}
+          isSeriesOwned={isSeriesOwned}
+          isAdding={isAdding}
+          setIsAdding={setIsAdding}
+          addDone={addDone}
+          setAddDone={setAddDone}
+          checkIfSeriesOwned={checkIfSeriesOwned}
+          onClose={onClose}
+        />
 
         {/* Section Résumé de la série — compact + FR prioritaire */}
         {seriesSynopsis ? (
@@ -1469,35 +1244,12 @@ const SeriesDetailModal = ({
           </div>
         ) : null}
 
-        {/* Boutons rapides de statut — une seule ligne compacte */}
-        <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6">
-          <div className="mb-1.5 flex items-center gap-2">
-            <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300">Statut</h3>
-            {!isSeriesOwned && (
-              <span className="text-[10px] text-gray-500">ajoutez la série pour modifier</span>
-            )}
-          </div>
-          <div className="flex w-full max-w-md overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600">
-            {statusOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => {
-                  handleQuickStatusChange(option.value);
-                }}
-                className={`flex flex-1 items-center justify-center whitespace-nowrap px-2 py-1.5 text-[11px] sm:text-xs font-medium transition-all sm:px-3 sm:py-2 ${
-                  seriesStatus === option.value
-                    ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
-                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
-                }`}
-                title={`Marquer comme ${option.label}`}
-                disabled={!isSeriesOwned}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <SeriesStatusBar
+          statusOptions={statusOptions}
+          handleQuickStatusChange={handleQuickStatusChange}
+          seriesStatus={seriesStatus}
+          isSeriesOwned={isSeriesOwned}
+        />
 
         {/* Actions Bar — affichée uniquement lorsqu'il y a une sélection de tomes */}
         {selectedTomes.size > 0 && (
@@ -1516,131 +1268,23 @@ const SeriesDetailModal = ({
           </div>
         )}
 
-        {/* Liste des tomes avec mini-fiches dropdown */}
-        <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-4 sm:px-6">
-          <div className="sticky top-0 z-10 -mx-4 mb-3 flex items-center justify-between border-b border-gray-100 bg-white px-4 py-2 dark:border-gray-800 dark:bg-gray-800 sm:static sm:mx-0 sm:mb-3 sm:border-0 sm:bg-transparent sm:p-0 dark:sm:bg-transparent">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white sm:text-lg">Liste des tomes</h3>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300 sm:hidden"
-            >
-              Fermer
-            </button>
-          </div>
-          
-          {(resolveVolumesCount(enrichedSeries?.volumes) > 0) || olBooks.length > 0 ? (
-            <div className="space-y-1">
-              {(() => {
-                const volumeCount = resolveVolumesCount(enrichedSeries?.volumes);
-                // Construire la liste finale : préférence enrichedSeries (base statique) > olBooks (Wikidata/OL)
-                if (volumeCount > 0 && !enrichedSeries.fromFallbackBooks) {
-                  // Source : EXTENDED_SERIES_DATABASE → style TomeDropdown exact comme Harry Potter
-                  return Array.from({ length: volumeCount }, (_, index) => {
-                    const tomeNumber = index + 1;
-                    const tomeTitle = enrichedSeries.volume_titles?.[tomeNumber] || `${enrichedSeries.name} - Tome ${tomeNumber}`;
-                    const isRead = readTomes.has(tomeNumber);
-                    return (
-                      <TomeDropdown
-                        key={tomeNumber}
-                        tomeNumber={tomeNumber}
-                        tomeTitle={tomeTitle}
-                        seriesData={enrichedSeries}
-                        tomeStatus={tomeStatuses[String(tomeNumber)]?.status || 'non_lu'}
-                        currentPage={tomeStatuses[String(tomeNumber)]?.currentPage || null}
-                        rating={tomeStatuses[String(tomeNumber)]?.rating || 0}
-                        review={tomeStatuses[String(tomeNumber)]?.review || ''}
-                        onStatusChange={handleTomeStatusChange}
-                        onFeedbackChange={handleTomeFeedbackChange}
-                        onToggleRead={handleTomeReadToggle}
-                      />
-                    );
-                  });
-                }
+        <SeriesTomeList
+          onClose={onClose}
+          enrichedSeries={enrichedSeries}
+          olBooks={olBooks}
+          series={series}
+          readTomes={readTomes}
+          tomeStatuses={tomeStatuses}
+          handleTomeStatusChange={handleTomeStatusChange}
+          handleTomeFeedbackChange={handleTomeFeedbackChange}
+          handleTomeReadToggle={handleTomeReadToggle}
+        />
 
-                // Source : Wikidata ou OL → construire un enrichedSeries synthétique
-                const booksToShowRaw = olBooks.length > 0 ? olBooks : (series.books || []);
-                const booksToShow = mergeOpenLibraryBooksByVolume([...booksToShowRaw]).sort(sortOpenLibraryBooksByVolume);
-                const syntheticVolumeTitles = {};
-                booksToShow.forEach((b, i) => {
-                  const num = b.volume_number || (i + 1);
-                  syntheticVolumeTitles[num] = displayBookTitleFrFirst(b) || `${series.name} - Tome ${num}`;
-                });
-                const syntheticSeries = {
-                  ...enrichedSeries,
-                  volumes: booksToShow.length,
-                  volume_titles: syntheticVolumeTitles,
-                };
-                return booksToShow.map((book, index) => {
-                  const tomeNumber = book.volume_number || (index + 1);
-                  const tomeTitle = syntheticVolumeTitles[tomeNumber] || displayBookTitleFrFirst(book);
-                  return (
-                    <TomeDropdown
-                      key={book.ol_key || book.id || `tome-${tomeNumber}-${index}`}
-                      tomeNumber={tomeNumber}
-                      tomeTitle={tomeTitle}
-                      seriesData={syntheticSeries}
-                      tomeStatus={tomeStatuses[String(tomeNumber)]?.status || 'non_lu'}
-                      currentPage={tomeStatuses[String(tomeNumber)]?.currentPage || null}
-                      rating={tomeStatuses[String(tomeNumber)]?.rating || 0}
-                      review={tomeStatuses[String(tomeNumber)]?.review || ''}
-                      onStatusChange={handleTomeStatusChange}
-                      onFeedbackChange={handleTomeFeedbackChange}
-                      onToggleRead={handleTomeReadToggle}
-                    />
-                  );
-                });
-              })()}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-              Informations sur les tomes non disponibles pour cette série
-            </p>
-          )}
-        </div>
-
-        {/* Modal de confirmation pour cocher les tomes précédents */}
-        {missingPreviousWarning && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-full">
-                  <ExclamationTriangleIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Suggestion de lecture
-                </h3>
-              </div>
-              
-              <div className="mb-6">
-                <p className="text-gray-700 dark:text-gray-300 mb-3">
-                  Vous avez marqué comme lu le <strong>tome {missingPreviousWarning.currentTome}</strong>.
-                </p>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Souhaitez-vous également marquer comme lus les tomes précédents ?
-                </p>
-                <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  <strong>Tomes concernés :</strong> {missingPreviousWarning.missingTomes.join(', ')}
-                </div>
-              </div>
-              
-              <div className="flex space-x-3">
-                <button
-                  onClick={handleCheckPreviousTomes}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 text-sm font-medium"
-                >
-                  Oui, cocher les précédents
-                </button>
-                <button
-                  onClick={() => setMissingPreviousWarning(null)}
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg transition-colors duration-200 text-sm font-medium"
-                >
-                  Non, juste ce tome
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <PreviousTomesDialog
+          missingPreviousWarning={missingPreviousWarning}
+          handleCheckPreviousTomes={handleCheckPreviousTomes}
+          setMissingPreviousWarning={setMissingPreviousWarning}
+        />
 
         {/* Books List (Section détaillée existante) - SUPPRIMÉE SUR DEMANDE UTILISATEUR */}
 
@@ -1666,130 +1310,31 @@ const SeriesDetailModal = ({
           </div>
         ) : null}
 
-        {/* Collection + Retirer */}
-        {(isSeriesOwned || series.isOwnedSeries || series.isLibrarySeries || series.isSeriesCard || (series.books && series.books.length > 0) || books.length > 0) && (
-          <div className="px-4 sm:px-6 py-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
-            {(isSeriesOwned || series.isOwnedSeries || series.isLibrarySeries) && (series.id || series._id) && (
-              <div>
-                {showCollectionMenu ? (
-                  <AddToCollectionMenu
-                    item={{
-                      type: 'series',
-                      id: series.id || series._id,
-                      title: series.name || series.series_name || 'Série',
-                      author: series.author || series.authors?.[0] || '',
-                      cover_url: series.cover_url || series.cover_image_url || null,
-                    }}
-                    onClose={() => setShowCollectionMenu(false)}
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setShowCollectionMenu(true)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
-                  >
-                    Ajouter à une collection
-                  </button>
-                )}
-              </div>
-            )}
-            {confirmDelete ? (
-              <div className="flex items-center justify-between bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3">
-                <span className="text-sm text-red-700 dark:text-red-300 font-medium">
-                  Retirer définitivement cette série ?
-                </span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setConfirmDelete(false)}
-                    className="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    onClick={handleDeleteSeries}
-                    disabled={deleting}
-                    className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors font-medium disabled:opacity-50"
-                  >
-                    {deleting ? 'Suppression…' : 'Confirmer'}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => setConfirmDelete(true)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-              >
-                <TrashIcon className="h-4 w-4" />
-                Retirer de ma bibliothèque
-              </button>
-            )}
-          </div>
-        )}
+        <SeriesLibraryActions
+          isSeriesOwned={isSeriesOwned}
+          series={series}
+          books={books}
+          showCollectionMenu={showCollectionMenu}
+          setShowCollectionMenu={setShowCollectionMenu}
+          confirmDelete={confirmDelete}
+          setConfirmDelete={setConfirmDelete}
+          handleDeleteSeries={handleDeleteSeries}
+          deleting={deleting}
+        />
 
-        {/* Note & avis — tout en bas de la fiche */}
-        <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6 space-y-3">
-          {isSeriesOwned ? (
-            <>
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Note</h3>
-                <div className="flex space-x-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => handleSeriesRatingClick(star)}
-                      className="h-6 w-6 cursor-pointer"
-                      aria-label={`Noter ${star} sur 5`}
-                    >
-                      {star <= (seriesRating || 0) ? (
-                        <StarSolidIcon className="h-6 w-6 text-yellow-400" />
-                      ) : (
-                        <StarIcon className="h-6 w-6 text-gray-300 dark:text-gray-600" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Avis</h3>
-                <textarea
-                  value={seriesReview}
-                  onChange={(e) => setSeriesReview(e.target.value)}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-booktime-500 transition-colors"
-                  placeholder="Qu’avez-vous pensé de cette série ?"
-                />
-                <button
-                  type="button"
-                  onClick={handleSeriesReviewPublish}
-                  disabled={
-                    publishingSeriesReview ||
-                    !(seriesReview || '').trim() ||
-                    (seriesReview || '').trim() === (savedSeriesReview || '').trim()
-                  }
-                  className="mt-2 px-4 py-2 text-sm font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  {publishingSeriesReview ? 'Publication…' : 'Publier'}
-                </button>
-              </div>
-            </>
-          ) : (
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Ajoutez la série pour noter et publier un avis.
-            </p>
-          )}
-
-          <CommunityReviews
-            book={{
-              title: seriesDisplayName,
-              name: seriesDisplayName,
-              author: series?.author || series?.authors?.[0] || '',
-            }}
-            refreshKey={communityRefreshKey}
-            emptyLabel="Pas encore de notes communautaires pour cette série."
-          />
-        </div>
+        <SeriesRatingReview
+          isSeriesOwned={isSeriesOwned}
+          seriesRating={seriesRating}
+          handleSeriesRatingClick={handleSeriesRatingClick}
+          seriesReview={seriesReview}
+          setSeriesReview={setSeriesReview}
+          handleSeriesReviewPublish={handleSeriesReviewPublish}
+          publishingSeriesReview={publishingSeriesReview}
+          savedSeriesReview={savedSeriesReview}
+          seriesDisplayName={seriesDisplayName}
+          series={series}
+          communityRefreshKey={communityRefreshKey}
+        />
 
       </div>
     </ModalOverlay>
