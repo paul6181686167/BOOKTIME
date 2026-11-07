@@ -873,7 +873,6 @@ function ProfileModal({
                 if (!isPage) onClose();
                 window.setTimeout(() => window.dispatchEvent(new CustomEvent(event)), 80);
               }}
-              onEditProfile={() => setActiveTab('stats')}
               onLogout={handleLogout}
               onDeleteAccount={() => setShowDeleteAccount(true)}
             />

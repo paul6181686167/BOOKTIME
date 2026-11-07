@@ -158,29 +158,45 @@ class AuthService {
   }
 
   /** Enregistre nom, biographie et/ou photo (avatar_url vide = retirer la photo). */
-  async updateProfile(patch) {
-    try {
-      const response = await fetch(`${this.backendUrl}/api/auth/me/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify(patch),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        return { success: true, profile: data.profile };
+  async updateProfile(patch, { attempts = 3, timeoutMs = 30000, retryDelayMs = 2000 } = {}) {
+    // Le serveur gratuit peut dormir (premier appel de 30 à 60 s) : on relance plutôt
+    // que d'abandonner. Seules les pannes réseau, délais dépassés et erreurs 5xx sont relancés.
+    let lastError = 'Serveur inaccessible';
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(`${this.backendUrl}/api/auth/me/profile`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify(patch),
+          signal: controller.signal,
+        });
+        if (response.ok) {
+          const data = await response.json();
+          return { success: true, profile: data.profile };
+        }
+        const error = await response.json().catch(() => ({}));
+        const msg =
+          typeof error.detail === 'string'
+            ? error.detail
+            : error.detail?.[0]?.msg || 'Enregistrement impossible';
+        if (response.status < 500) return { success: false, error: msg };
+        lastError = msg;
+      } catch (error) {
+        lastError =
+          error.name === 'AbortError'
+            ? 'Le serveur met du temps à répondre'
+            : error.message || 'Serveur inaccessible';
+      } finally {
+        clearTimeout(timer);
       }
-      const error = await response.json().catch(() => ({}));
-      const msg =
-        typeof error.detail === 'string'
-          ? error.detail
-          : error.detail?.[0]?.msg || 'Enregistrement impossible';
-      return { success: false, error: msg };
-    } catch (error) {
-      return { success: false, error: error.message || 'Serveur inaccessible' };
+      if (attempt < attempts) await new Promise((r) => setTimeout(r, retryDelayMs));
     }
+    return { success: false, error: lastError };
   }
 
   async deleteAccount(password) {

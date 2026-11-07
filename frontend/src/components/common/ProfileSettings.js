@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import AuthService from '../../services/authService';
 import { READING_SPEEDS } from '../../utils/readingTime';
+import ProfileEditForm from './ProfileEditForm';
 
 const THEMES = [
   { id: 'light', label: 'Clair' },
@@ -200,7 +201,6 @@ export default function ProfileSettings({
   readingWpm,
   onChangeWpm,
   onTriggerEvent,
-  onEditProfile,
   onLogout,
   onDeleteAccount,
 }) {
@@ -208,6 +208,7 @@ export default function ProfileSettings({
   const navigate = useNavigate();
   const [settings, setSettings] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
   const [savingKey, setSavingKey] = useState(null);
 
   useEffect(() => {
@@ -243,13 +244,17 @@ export default function ProfileSettings({
     <div className="space-y-4 animate-fadeIn">
       <Section title="Compte">
         <p className="text-sm text-gray-600 dark:text-gray-400 break-all">{user?.email}</p>
-        <button
-          type="button"
-          onClick={onEditProfile}
-          className="w-full py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700 text-sm font-medium text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600"
-        >
-          Modifier mon profil (photo, nom, biographie)
-        </button>
+        {editingProfile ? (
+          <ProfileEditForm onDone={() => setEditingProfile(false)} />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setEditingProfile(true)}
+            className="w-full py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700 text-sm font-medium text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600"
+          >
+            Modifier mon profil (photo, nom, biographie)
+          </button>
+        )}
         <PasswordForm />
       </Section>
 
