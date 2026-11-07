@@ -5,9 +5,10 @@ Pour chaque utilisateur ayant activé les notifications, recalcule ses sorties,
 met à jour le cache, et notifie les nouvelles sorties devenues disponibles
 (in-app toujours ; e-mail si le mode = "email" et un SMTP est configuré).
 
-Bornes de charge : seuls les utilisateurs ayant explicitement choisi un mode de
-notification (≠ "none") sont traités par le job. Les autres voient malgré tout
-des données fraîches au chargement (cache reconstruit à la demande).
+Bornes de charge : tous les comptes sont traités sauf ceux qui ont choisi "none"
+(le mode par défaut est "in_app"), dans la limite de UPCOMING_MAX_USERS par passage.
+Les autres voient malgré tout des données fraîches au chargement (cache reconstruit
+à la demande).
 """
 
 from __future__ import annotations
@@ -26,10 +27,27 @@ logger = logging.getLogger(__name__)
 
 _scheduler = None
 REFRESH_HOURS = int(os.getenv("UPCOMING_REFRESH_HOURS", "12"))
+DEFAULT_NOTIF_MODE = "in_app"
+# Borne de charge par passage (chaque compte déclenche des appels à des API externes)
+MAX_USERS_PER_RUN = int(os.getenv("UPCOMING_MAX_USERS", "300"))
+
+
+def notif_mode(user: dict) -> str:
+    """Mode de notification d'un utilisateur ; sans réglage = valeur par défaut (in_app)."""
+    return (user.get("notif_upcoming") or DEFAULT_NOTIF_MODE).strip() or DEFAULT_NOTIF_MODE
+
+
+def eligible_users_query() -> dict:
+    """Tous les comptes sauf ceux qui ont explicitement désactivé les notifications.
+
+    Un compte sans réglage a le mode par défaut (in_app) : il reçoit donc les
+    notifications de sortie sans avoir à ouvrir le panneau « À venir ».
+    """
+    return {"notif_upcoming": {"$ne": "none"}}
 
 
 def _process_user(user: dict) -> None:
-    mode = (user.get("notif_upcoming") or "none").strip()
+    mode = notif_mode(user)
     if mode == "none":
         return
 
@@ -68,9 +86,9 @@ def _refresh_all_and_notify() -> None:
     try:
         users = list(
             users_collection.find(
-                {"notif_upcoming": {"$nin": [None, "none"]}},
+                eligible_users_query(),
                 {"_id": 0, "id": 1, "email": 1, "notif_upcoming": 1, "followed_authors": 1},
-            )
+            ).limit(MAX_USERS_PER_RUN)
         )
     except Exception as exc:
         logger.warning("Job prochaines sorties : lecture users échouée : %s", exc)

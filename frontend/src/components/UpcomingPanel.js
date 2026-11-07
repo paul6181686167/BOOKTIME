@@ -20,6 +20,7 @@ import {
   BellIcon,
 } from '@heroicons/react/24/outline';
 import { upcomingService } from '../services/upcomingService';
+import { NOTIFICATIONS_CHANGED_EVENT } from '../hooks/useUnreadNotifications';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -242,7 +243,15 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
         setGroups({ ...EMPTY_GROUPS, ...(data.groups || {}) });
         setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
         setTotal(data.counts?.total || 0);
-        setNotifications((notifData.notifications || []).filter((n) => !n.read));
+        const unreadList = (notifData.notifications || []).filter((n) => !n.read);
+        setNotifications(unreadList);
+        if (unreadList.length > 0) {
+          // Vues dans le panneau : elles restent affichées ici mais ne gonflent plus le badge
+          upcomingService
+            .markAllNotificationsRead()
+            .then(() => window.dispatchEvent(new Event(NOTIFICATIONS_CHANGED_EVENT)))
+            .catch(() => {});
+        }
         if (settings?.notif_upcoming) setNotifMode(settings.notif_upcoming);
         hasLoadedRef.current = true;
       } finally {
@@ -276,6 +285,7 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
     setNotifications([]);
     try {
       await upcomingService.markAllNotificationsRead();
+      window.dispatchEvent(new Event(NOTIFICATIONS_CHANGED_EVENT));
     } catch {
       /* silencieux */
     }

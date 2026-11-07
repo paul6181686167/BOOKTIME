@@ -78,6 +78,8 @@ import SeriesActions from './components/series/SeriesActions';
 import BookActions from './components/books/BookActions';
 import BookGrid from './components/books/BookGrid';
 import MobileSearchOverlay from './components/MobileSearchOverlay';
+import NotificationBadge from './components/common/NotificationBadge';
+import useUnreadNotifications from './hooks/useUnreadNotifications';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
 import OfflineBanner from './components/OfflineBanner';
 import PrimaryTabsLayout from './components/navigation/PrimaryTabsLayout';
@@ -267,6 +269,7 @@ function MainApp() {
   const [showAdvancedRecommendationsModal, setShowAdvancedRecommendationsModal] = useState(false);
   const [showIntegrationsModal, setShowIntegrationsModal] = useState(false);
   const [showUpcomingPanel, setShowUpcomingPanel] = useState(false);
+  const unreadNotifications = useUnreadNotifications();
   const [upcomingMounted, setUpcomingMounted] = useState(false);
   const openUpcomingPanel = useCallback(() => {
     setUpcomingMounted(true);
@@ -1034,6 +1037,7 @@ function MainApp() {
                   }`}
                 >
                   <span>À venir</span>
+                  <NotificationBadge count={unreadNotifications} className="ml-2 self-center" />
                 </button>
               </div>
               

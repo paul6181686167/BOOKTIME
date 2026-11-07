@@ -12,6 +12,8 @@ import {
   CalendarDaysIcon as CalendarIconSolid,
 } from '@heroicons/react/24/solid';
 import { useTheme } from '../contexts/ThemeContext';
+import useUnreadNotifications from '../hooks/useUnreadNotifications';
+import NotificationBadge from './common/NotificationBadge';
 
 const NAV_ITEMS = [
   { id: 'home',            label: 'Biblio',      Icon: HomeIcon,          IconActive: HomeIconSolid },
@@ -23,6 +25,7 @@ const NAV_ITEMS = [
 /** Barre d’onglets flottante oblongue — distincte de la barre système Android. */
 const MobileBottomNav = ({ activeTab, onTabChange }) => {
   const { isVoid } = useTheme();
+  const unreadNotifications = useUnreadNotifications();
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 pointer-events-none safe-area-bottom">
@@ -48,7 +51,11 @@ const MobileBottomNav = ({ activeTab, onTabChange }) => {
                 key={id}
                 type="button"
                 onClick={() => onTabChange(id)}
-                aria-label={label}
+                aria-label={
+                  id === 'upcoming' && unreadNotifications
+                    ? `${label}, ${unreadNotifications} notification(s) non lue(s)`
+                    : label
+                }
                 aria-current={isActive ? 'page' : undefined}
                 className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 transition-all duration-200 ${
                   isActive ? activeCls : idleCls
@@ -61,6 +68,12 @@ const MobileBottomNav = ({ activeTab, onTabChange }) => {
                         ? 'bg-[#4ade80]/12 shadow-[inset_0_0_20px_rgba(74,222,128,0.08)]'
                         : 'bg-booktime-50 dark:bg-booktime-900/40'
                     }`}
+                  />
+                )}
+                {id === 'upcoming' && (
+                  <NotificationBadge
+                    count={unreadNotifications}
+                    className="absolute right-[22%] top-1.5 z-[2]"
                   />
                 )}
                 <Ic
