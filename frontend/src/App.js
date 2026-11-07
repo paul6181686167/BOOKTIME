@@ -83,6 +83,7 @@ import OfflineBanner from './components/OfflineBanner';
 import PrimaryTabsLayout from './components/navigation/PrimaryTabsLayout';
 import FriendInvitePage from './pages/FriendInvitePage';
 import { PENDING_FRIEND_CODE_KEY, normalizeFriendCode } from './utils/friendLink';
+import useCollectionsSync from './hooks/useCollectionsSync';
 
 import './App.css';
 import './styles/optimized.css';
@@ -1493,6 +1494,7 @@ function App() {
 // App with Auth Wrapper
 function AppWithAuth() {
   const { user, loading } = useAuth();
+  useCollectionsSync(user?.id);
 
   if (loading) {
     return (

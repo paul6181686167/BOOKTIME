@@ -76,7 +76,32 @@ export function getCollections() {
   return (data.collections || []).map(normalizeCollection);
 }
 
-export function saveCollections(collections) {
+/** État de synchronisation avec le compte : { userId, version, dirty }. */
+export const SYNC_STATE_KEY = 'booktime_collections_sync';
+
+export function getSyncState() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SYNC_STATE_KEY));
+    return s && typeof s === 'object' ? s : {};
+  } catch {
+    return {};
+  }
+}
+
+export function setSyncState(patch) {
+  try {
+    localStorage.setItem(SYNC_STATE_KEY, JSON.stringify({ ...getSyncState(), ...patch }));
+  } catch {
+    /* stockage plein ou indisponible */
+  }
+}
+
+/**
+ * Enregistre les collections localement.
+ * `fromSync` : l'écriture vient du serveur → ne pas marquer « à envoyer ».
+ */
+export function saveCollections(collections, { fromSync = false } = {}) {
+  if (!fromSync) setSyncState({ dirty: true });
   const data = loadProfileData();
   saveProfileData({ ...data, collections });
   try {

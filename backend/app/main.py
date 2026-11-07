@@ -100,6 +100,7 @@ from .upcoming.routes import router as upcoming_router
 from .notifications.routes import router as notifications_router
 from .settings.routes import router as settings_router
 from .community.routes import router as community_router
+from .user_collections.routes import router as user_collections_router
 
 app = FastAPI(
     title="BookTime API",
@@ -283,6 +284,7 @@ app.include_router(upcoming_router)  # Prochaines sorties (prochains tomes + man
 app.include_router(notifications_router)  # Notifications in-app
 app.include_router(settings_router)  # Réglages (préférences de notification)
 app.include_router(community_router)  # Avis / notes de la communauté
+app.include_router(user_collections_router)  # Collections synchronisées
 
 if __name__ == "__main__":
     import uvicorn
