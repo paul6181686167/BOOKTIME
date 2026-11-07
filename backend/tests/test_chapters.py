@@ -31,6 +31,7 @@ from app.chapters.models import (
 from app.chapters.integrations.anilist import AniListService
 from app.main import app
 from app.dependencies import get_current_user as deps_get_current_user
+from app.security.jwt import get_current_user as jwt_get_current_user
 
 # Client de test
 client = TestClient(app)
@@ -43,9 +44,13 @@ def chapters_auth_override():
     def fake_user():
         return SimpleNamespace(id="test-user", email="pytest@example.com")
 
-    app.dependency_overrides[deps_get_current_user] = fake_user
+    # Les routes chapitres dépendent de security.jwt ; on surcharge aussi l'ancien alias
+    overridden = (deps_get_current_user, jwt_get_current_user)
+    for dep in overridden:
+        app.dependency_overrides[dep] = fake_user
     yield
-    app.dependency_overrides.pop(deps_get_current_user, None)
+    for dep in overridden:
+        app.dependency_overrides.pop(dep, None)
 
 
 class TestChapterService:
