@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { bookService } from '../services/bookService';
+import logger from '../utils/logger';
 
 const useStats = () => {
   const [stats, setStats] = useState({});
@@ -13,7 +14,7 @@ const useStats = () => {
       const response = await bookService.getStats();
       setStats(response || {});
     } catch (err) {
-      console.error('Error loading stats:', err);
+      logger.error('Error loading stats:', err);
       setError('Erreur lors du chargement des statistiques');
       setStats({});
     } finally {

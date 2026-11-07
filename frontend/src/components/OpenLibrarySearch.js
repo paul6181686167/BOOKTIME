@@ -4,6 +4,7 @@ import { MagnifyingGlassIcon, BookOpenIcon, PhotoIcon } from '@heroicons/react/2
 import { bookService } from '../services/bookService';
 import toast from 'react-hot-toast';
 import { displayBookTitleFrFirst } from '../utils/openLibraryBookDisplay';
+import logger from '../utils/logger';
 
 const OpenLibrarySearch = ({ onImport, onClose, defaultCategory = 'roman' }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,7 +30,7 @@ const OpenLibrarySearch = ({ onImport, onClose, defaultCategory = 'roman' }) => 
         toast.success(`${raw.length} livre${raw.length > 1 ? 's' : ''} trouvé${raw.length > 1 ? 's' : ''}`);
       }
     } catch (error) {
-      console.error('Erreur de recherche:', error);
+      logger.error('Erreur de recherche:', error);
       toast.error('Erreur lors de la recherche sur Open Library');
     } finally {
       setSearching(false);
@@ -43,7 +44,7 @@ const OpenLibrarySearch = ({ onImport, onClose, defaultCategory = 'roman' }) => 
       toast.success(`"${displayBookTitleFrFirst(book)}" importé avec succès !`);
       onImport(importedBook);
     } catch (error) {
-      console.error('Erreur d\'import:', error);
+      logger.error('Erreur d\'import:', error);
       toast.error(error.message || 'Erreur lors de l\'import du livre');
     } finally {
       setImporting(prev => ({ ...prev, [book.ol_key]: false }));

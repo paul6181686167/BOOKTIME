@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import usePerformanceMonitoring from '../../hooks/usePerformanceMonitoring';
+import logger from '../../utils/logger';
 
 /**
  * PHASE 2.4 - MONITORING ET ANALYTICS
@@ -168,7 +169,7 @@ const PerformanceWidget = ({ position = 'bottom-right', isVisible = true }) => {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  console.log(getPerformanceReport());
+                  logger.debug(getPerformanceReport());
                 }}
                 className="flex-1 px-2 py-1 text-xs bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors duration-200"
               >

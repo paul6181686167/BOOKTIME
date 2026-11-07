@@ -4,6 +4,7 @@
 import { EXTENDED_SERIES_DATABASE } from './seriesDatabaseExtended.js';
 import { FuzzyMatcher } from './fuzzyMatcher.js';
 import { SeriesValidator } from './seriesValidator.js';
+import logger from './logger';
 
 // Le référentiel est un import statique immuable : à requête égale, le résultat est
 // identique. Ce cache évite de réexécuter le fuzzy matching sur les 123 séries à
@@ -166,7 +167,7 @@ export class SearchOptimizer {
 
   // Génération des cartes séries avec scoring prioritaire optimisé
   static generateSeriesCardsForSearch(query, userBooks = []) {
-    console.log(' Génération cartes séries pour:', query);
+    logger.debug(' Génération cartes séries pour:', query);
     
     // 1. DÉTECTION SÉRIES OFFICIELLES (Score 100000+)
     const officialSeries = this.detectSeriesWithAdvancedScoring(query);
@@ -193,7 +194,7 @@ export class SearchOptimizer {
       }
     });
     
-    console.log(` ${seriesCards.length} carte(s) série générée(s) avec scores prioritaires`);
+    logger.debug(` ${seriesCards.length} carte(s) série générée(s) avec scores prioritaires`);
     return seriesCards.slice(0, 5); // Limiter à 5 séries maximum
   }
 
@@ -412,7 +413,7 @@ export class SearchOptimizer {
       const validation = await SeriesValidator.validateWithWikipedia(seriesName, books);
       return validation;
     } catch (error) {
-      console.warn(`Validation Wikipedia échouée pour ${seriesName}:`, error);
+      logger.warn(`Validation Wikipedia échouée pour ${seriesName}:`, error);
       return {
         success: false,
         reason: 'validation_error',

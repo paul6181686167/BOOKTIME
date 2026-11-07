@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { toast, Toaster } from 'react-hot-toast';
+import logger from './utils/logger';
 
 // Context imports
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
@@ -614,7 +615,7 @@ function MainApp() {
       });
       
     } catch (error) {
-      console.error('Error adding book:', error);
+      logger.error('Error adding book:', error);
       toast.error(error.message || 'Erreur lors de l\'ajout du livre');
       performanceMonitoring.measureApiResponse('add_from_openlibrary', apiStartTime, false);
     }
@@ -656,7 +657,7 @@ function MainApp() {
         category: series.category,
       });
     } catch (error) {
-      console.error(' Erreur ajout série:', error);
+      logger.error(' Erreur ajout série:', error);
       if (!String(error?.message || '').includes('409')) {
         // toast déjà émis dans SeriesActions pour les cas connus
       }
@@ -1413,7 +1414,7 @@ function MainApp() {
                 retryDelay: 800
               });
             } catch (error) {
-              console.error('Erreur lors de l\'ajout du livre:', error);
+              logger.error('Erreur lors de l\'ajout du livre:', error);
               toast.error(error.message || 'Erreur lors de l\'ajout du livre');
             }
           }}
@@ -1437,7 +1438,7 @@ function MainApp() {
                 retryDelay: 800
               });
             } catch (error) {
-              console.error('Erreur lors de l\'ajout des livres:', error);
+              logger.error('Erreur lors de l\'ajout des livres:', error);
               toast.error(error.message || 'Erreur lors de l\'import des livres');
             }
           }}

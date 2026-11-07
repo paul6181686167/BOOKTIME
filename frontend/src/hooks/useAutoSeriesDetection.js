@@ -2,6 +2,7 @@
 // Intégration dans le processus d'ajout pour détecter automatiquement les séries
 
 import { API_BASE_URL } from '../config/environment';
+import logger from '../utils/logger';
 
 export class AutoSeriesDetector {
   constructor() {
@@ -16,12 +17,12 @@ export class AutoSeriesDetector {
       return bookData;
     }
 
-    console.log(' Détection automatique série pour:', bookData.title);
+    logger.debug(' Détection automatique série pour:', bookData.title);
 
     try {
       // 1. Vérifier si le livre a déjà une saga
       if (bookData.saga && bookData.saga.trim()) {
-        console.log(' Saga déjà définie:', bookData.saga);
+        logger.debug(' Saga déjà définie:', bookData.saga);
         return bookData;
       }
 
@@ -29,7 +30,7 @@ export class AutoSeriesDetector {
       const detection = await this.detectSeries(bookData);
       
       if (detection.found && detection.confidence >= this.minConfidence) {
-        console.log(` Série détectée: "${detection.series_name}" (confiance: ${detection.confidence})`);
+        logger.debug(` Série détectée: "${detection.series_name}" (confiance: ${detection.confidence})`);
         
         // 3. Enrichir les données du livre
         const enhancedBook = {
@@ -46,12 +47,12 @@ export class AutoSeriesDetector {
         
         return enhancedBook;
       } else {
-        console.log(` Livre standalone (confiance: ${detection.confidence})`);
+        logger.debug(` Livre standalone (confiance: ${detection.confidence})`);
         return bookData;
       }
 
     } catch (error) {
-      console.error(' Erreur détection automatique:', error);
+      logger.error(' Erreur détection automatique:', error);
       return bookData; // Retour aux données originales en cas d'erreur
     }
   }
@@ -102,13 +103,13 @@ export class AutoSeriesDetector {
     }
 
     // Console détaillée
-    console.log(' DÉTECTION AUTOMATIQUE RÉUSSIE:');
-    console.log(` Livre: "${book.title}"`);
-    console.log(` Série: "${detection.series_name}"`);
-    console.log(` Confiance: ${detection.confidence}`);
-    console.log(` Raisons: ${detection.match_reasons.join(', ')}`);
+    logger.debug(' DÉTECTION AUTOMATIQUE RÉUSSIE:');
+    logger.debug(` Livre: "${book.title}"`);
+    logger.debug(` Série: "${detection.series_name}"`);
+    logger.debug(` Confiance: ${detection.confidence}`);
+    logger.debug(` Raisons: ${detection.match_reasons.join(', ')}`);
     if (book.volume_number) {
-      console.log(` Volume: ${book.volume_number}`);
+      logger.debug(` Volume: ${book.volume_number}`);
     }
   }
 
@@ -124,7 +125,7 @@ export class AutoSeriesDetector {
     this.minConfidence = minConfidence;
     this.notifyUser = notifyUser;
 
-    console.log('Configuration détection automatique:', {
+    logger.debug('Configuration détection automatique:', {
       enabled: this.enabled,
       minConfidence: this.minConfidence,
       notifyUser: this.notifyUser

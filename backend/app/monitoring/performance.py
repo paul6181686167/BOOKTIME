@@ -13,6 +13,8 @@ from functools import wraps
 import os
 import sys
 
+logger = logging.getLogger(__name__)
+
 # Configuration du logging structuré
 logging.basicConfig(
     level=logging.INFO,
@@ -418,7 +420,7 @@ def ensure_log_directory():
     log_dir = '/app/backend/logs'
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
-        print(f"✅ Dossier de logs créé: {log_dir}")
+        logger.info(f"✅ Dossier de logs créé: {log_dir}")
 
 # Initialisation
 ensure_log_directory()

@@ -4,6 +4,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import socialService from '../../services/socialService';
+import logger from '../../utils/logger';
 
 const UserProfile = ({ userId, onClose }) => {
   const [profile, setProfile] = useState(null);
@@ -27,7 +28,7 @@ const UserProfile = ({ userId, onClose }) => {
       setError(null);
     } catch (err) {
       setError('Erreur lors du chargement du profil');
-      console.error('Erreur profil:', err);
+      logger.error('Erreur profil:', err);
     } finally {
       setLoading(false);
     }
@@ -55,7 +56,7 @@ const UserProfile = ({ userId, onClose }) => {
         }));
       }
     } catch (err) {
-      console.error('Erreur follow/unfollow:', err);
+      logger.error('Erreur follow/unfollow:', err);
       alert('Erreur lors de l\'opération');
     } finally {
       setFollowLoading(false);

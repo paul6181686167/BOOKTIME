@@ -38,6 +38,7 @@ import {
   normalizeSeriesVolumesField,
   mapStaticWikidataWorksToOlBooks,
 } from '../utils/seriesDetailHelpers';
+import logger from '../utils/logger';
 
 const SeriesDetailModal = ({ 
   series, 
@@ -198,7 +199,7 @@ const SeriesDetailModal = ({
         return {};
       }
     } catch (error) {
-      console.error(' Erreur lors du chargement des préférences:', error);
+      logger.error(' Erreur lors du chargement des préférences:', error);
       return {};
     }
   };
@@ -226,14 +227,14 @@ const SeriesDetailModal = ({
       
       if (response.ok) {
         const data = await response.json();
-        console.log(' Préférences sauvegardées:', data);
+        logger.debug(' Préférences sauvegardées:', data);
         return true;
       } else {
-        console.error(' Erreur lors de la sauvegarde:', response.status);
+        logger.error(' Erreur lors de la sauvegarde:', response.status);
         return false;
       }
     } catch (error) {
-      console.error(' Erreur lors de la sauvegarde des préférences:', error);
+      logger.error(' Erreur lors de la sauvegarde des préférences:', error);
       return false;
     }
   };
@@ -271,7 +272,7 @@ const SeriesDetailModal = ({
         setSeriesStatus(explicit);
       }
     } catch (error) {
-      console.error(' Erreur chargement préférences:', error);
+      logger.error(' Erreur chargement préférences:', error);
       setTomeStatuses({});
     }
   };
@@ -357,7 +358,7 @@ const SeriesDetailModal = ({
   //  NOUVELLE FONCTION : Calculer et mettre à jour automatiquement le statut de la série
   const calculateAndUpdateSeriesStatus = async (newReadTomes) => {
     if (!enrichedSeries?.name || !enrichedSeries?.volumes) {
-      console.log(' Calcul statut ignoré - série non valide ou données manquantes');
+      logger.debug(' Calcul statut ignoré - série non valide ou données manquantes');
       return;
     }
 
@@ -397,7 +398,7 @@ const SeriesDetailModal = ({
         });
         
       } catch (error) {
-        console.error(' Erreur lors de la mise à jour automatique du statut:', error);
+        logger.error(' Erreur lors de la mise à jour automatique du statut:', error);
       }
     } else if (!isSeriesOwned && newStatus !== seriesStatus) {
       
@@ -685,7 +686,7 @@ const SeriesDetailModal = ({
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
-      console.error('PUT series feedback failed', res.status, await res.text());
+      logger.error('PUT series feedback failed', res.status, await res.text());
       return false;
     }
     return true;
@@ -796,7 +797,7 @@ const SeriesDetailModal = ({
             body: JSON.stringify({ series_status: newStatus }),
           }).then(async (res) => {
             if (res.ok) anyOk = true;
-            else console.error('PUT series_status failed', res.status, await res.text());
+            else logger.error('PUT series_status failed', res.status, await res.text());
           })
         );
       }
@@ -863,7 +864,7 @@ const SeriesDetailModal = ({
         }, 400);
       }
     } catch (error) {
-      console.error(' Erreur changement statut:', error);
+      logger.error(' Erreur changement statut:', error);
       setSeriesStatus(previousStatus);
       setTomeStatuses(previousTomeStatuses);
       toast.error('Erreur lors du changement de statut');
@@ -1019,7 +1020,7 @@ const SeriesDetailModal = ({
         )
       );
     } catch (error) {
-      console.warn('Livres de saga indisponibles (timeout/réseau):', error?.message || error);
+      logger.warn('Livres de saga indisponibles (timeout/réseau):', error?.message || error);
       setBooks([]);
     } finally {
       setLoading(false);
@@ -1045,7 +1046,7 @@ const SeriesDetailModal = ({
       if (!signal?.aborted) setVerification(data);
     } catch (error) {
       if (error?.name !== 'AbortError') {
-        console.warn('Vérification des tomes indisponible:', error);
+        logger.warn('Vérification des tomes indisponible:', error);
       }
     } finally {
       if (!signal?.aborted) setVerifying(false);
@@ -1102,7 +1103,7 @@ const SeriesDetailModal = ({
           }))
         );
       } catch (e) {
-        console.warn('Series OL merge (static WD) failed:', e);
+        logger.warn('Series OL merge (static WD) failed:', e);
         setOlBooks(baseMapped);
       }
       return;
@@ -1169,7 +1170,7 @@ const SeriesDetailModal = ({
         }))
       );
     } catch (e) {
-      console.warn('Series books fetch failed:', e);
+      logger.warn('Series books fetch failed:', e);
     }
   };
 
@@ -1180,7 +1181,7 @@ const SeriesDetailModal = ({
       if (onUpdate) onUpdate();
       toast.success(`Tome ${book.volume_number} marqué comme ${isRead ? 'lu' : 'non lu'}`);
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du tome:', error);
+      logger.error('Erreur lors de la mise à jour du tome:', error);
       toast.error('Erreur lors de la mise à jour');
     }
   };

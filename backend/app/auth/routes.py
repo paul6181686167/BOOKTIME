@@ -22,6 +22,9 @@ from ..security.jwt import (
     REMEMBER_ME_EXPIRE_MINUTES,
     SESSION_EXPIRE_MINUTES,
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def _token_ttl_minutes(remember_me: bool = True) -> int:
@@ -257,7 +260,7 @@ async def forgot_password(data: ForgotPasswordRequest):
     try:
         _send_reset_email(email_lower, reset_token, frontend_url)
     except Exception as e:
-        print(f"[EMAIL] Erreur envoi email reset: {e}")
+        logger.error(f"[EMAIL] Erreur envoi email reset: {e}")
         raise HTTPException(
             status_code=500,
             detail=(

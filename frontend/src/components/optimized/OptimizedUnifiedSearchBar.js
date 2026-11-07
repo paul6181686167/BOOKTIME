@@ -2,6 +2,7 @@
 import React, { memo, useCallback, useMemo } from 'react';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { useDebounce, useDebouncedCallback } from '../../hooks/useDebounce';
+import logger from '../../utils/logger';
 
 /**
  * Barre de recherche optimisée avec debouncing et memoization
@@ -160,7 +161,7 @@ export const useOptimizedSearch = (initialTerm = "") => {
       await new Promise(resolve => setTimeout(resolve, 500));
       setResults([]);
     } catch (error) {
-      console.error('Erreur de recherche:', error);
+      logger.error('Erreur de recherche:', error);
       setResults([]);
     } finally {
       setLoading(false);

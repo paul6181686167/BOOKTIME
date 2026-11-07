@@ -15,6 +15,7 @@ import { API_BASE_URL } from '../config/environment';
 import { addSeriesToLibrary as saveSeriesToLibrary, generateVolumesList } from '../services/seriesLibraryService';
 import { EXTENDED_SERIES_DATABASE } from '../utils/seriesDatabaseExtended';
 import { enrichSeriesMetadata } from '../components/series/SeriesActions';
+import logger from '../utils/logger';
 
 const SeriesDetailPage = () => {
   const { seriesName } = useParams();
@@ -147,7 +148,7 @@ const SeriesDetailPage = () => {
         }
       }
     } catch (error) {
-      console.error('Erreur lors du chargement de la série:', error);
+      logger.error('Erreur lors du chargement de la série:', error);
       toast.error('Erreur lors du chargement de la série');
     } finally {
       setLoading(false);
@@ -193,7 +194,7 @@ const SeriesDetailPage = () => {
         toast.success(`Tome ${volume.volume_number} mis à jour !`);
       }
     } catch (error) {
-      console.error('Erreur lors de la mise à jour:', error);
+      logger.error('Erreur lors de la mise à jour:', error);
       toast.error('Erreur lors de la mise à jour');
     }
   };
@@ -257,7 +258,7 @@ const SeriesDetailPage = () => {
         toast.error(result.message || "Erreur lors de l'ajout de la série");
       }
     } catch (error) {
-      console.error('Erreur ajout série (page détail):', error);
+      logger.error('Erreur ajout série (page détail):', error);
       if (error.message && error.message.includes('409')) {
         toast.error('Cette série est déjà dans ta bibliothèque');
       } else if (error.message && error.message.includes('400')) {

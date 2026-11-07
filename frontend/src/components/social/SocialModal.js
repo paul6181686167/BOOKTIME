@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import socialService from '../../services/socialService';
 import SocialFeed from './SocialFeed';
 import UserProfile from './UserProfile';
+import logger from '../../utils/logger';
 
 const SocialModal = ({ isOpen, onClose, currentUser }) => {
   const [activeTab, setActiveTab] = useState('feed');
@@ -61,11 +62,11 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
           });
         } catch (err) {
           // Profil n'existe pas encore, utiliser les valeurs par défaut
-          console.log('Profil non trouvé, utilisation des valeurs par défaut');
+          logger.debug('Profil non trouvé, utilisation des valeurs par défaut');
         }
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des données sociales:', error);
+      logger.error('Erreur lors du chargement des données sociales:', error);
     }
   };
 
@@ -84,7 +85,7 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
       
       alert('Profil mis à jour avec succès !');
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du profil:', error);
+      logger.error('Erreur lors de la mise à jour du profil:', error);
       alert('Erreur lors de la mise à jour du profil');
     }
   };
@@ -108,7 +109,7 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
         setSelectedUserId(notification.data.follower_id);
       }
     } catch (error) {
-      console.error('Erreur lors du traitement de la notification:', error);
+      logger.error('Erreur lors du traitement de la notification:', error);
     }
   };
 

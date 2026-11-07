@@ -1,5 +1,6 @@
 import { createContext, useState, useContext, useEffect } from 'react';
 import AuthService from '../services/authService';
+import logger from '../utils/logger';
 
 // Auth Context
 const AuthContext = createContext();
@@ -35,7 +36,7 @@ export const AuthProvider = ({ children }) => {
       }
       return result;
     } catch (error) {
-      console.error('Login error:', error);
+      logger.error('Login error:', error);
       return { success: false, error: 'Erreur de connexion' };
     }
   };
@@ -49,7 +50,7 @@ export const AuthProvider = ({ children }) => {
       }
       return result;
     } catch (error) {
-      console.error('Register error:', error);
+      logger.error('Register error:', error);
       return { success: false, error: 'Erreur d\'inscription' };
     }
   };

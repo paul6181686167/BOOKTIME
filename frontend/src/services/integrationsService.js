@@ -4,6 +4,7 @@
  */
 import axios from 'axios';
 import { API_BASE_URL } from '../config/environment';
+import logger from '../utils/logger';
 
 // Configuration axios
 const api = axios.create({
@@ -37,7 +38,7 @@ api.interceptors.response.use(
       localStorage.removeItem('user');
       window.location.reload();
     }
-    console.error('Integrations API Error:', error);
+    logger.error('Integrations API Error:', error);
     return Promise.reject(error);
   }
 );
@@ -63,7 +64,7 @@ export const integrationsService = {
       
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de l\'import Goodreads:', error);
+      logger.error('Erreur lors de l\'import Goodreads:', error);
       throw new Error('Erreur lors de l\'import Goodreads');
     }
   },
@@ -117,7 +118,7 @@ export const integrationsService = {
         searched_at: new Date().toISOString(),
       };
     } catch (error) {
-      console.error('Erreur lors de la recherche Google Books:', error);
+      logger.error('Erreur lors de la recherche Google Books:', error);
       throw new Error('Erreur lors de la recherche Google Books');
     }
   },
@@ -163,7 +164,7 @@ export const integrationsService = {
         retrieved_at: new Date().toISOString(),
       };
     } catch (error) {
-      console.error('Erreur lors de la récupération des détails Google Books:', error);
+      logger.error('Erreur lors de la récupération des détails Google Books:', error);
       throw new Error('Erreur lors de la récupération des détails Google Books');
     }
   },
@@ -182,7 +183,7 @@ export const integrationsService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération des recommandations LibraryThing:', error);
+      logger.error('Erreur lors de la récupération des recommandations LibraryThing:', error);
       throw new Error('Erreur lors de la récupération des recommandations LibraryThing');
     }
   },
@@ -199,7 +200,7 @@ export const integrationsService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération des tags LibraryThing:', error);
+      logger.error('Erreur lors de la récupération des tags LibraryThing:', error);
       throw new Error('Erreur lors de la récupération des tags LibraryThing');
     }
   },
@@ -224,7 +225,7 @@ export const integrationsService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la recherche combinée:', error);
+      logger.error('Erreur lors de la recherche combinée:', error);
       throw new Error('Erreur lors de la recherche combinée');
     }
   },
@@ -240,7 +241,7 @@ export const integrationsService = {
       const response = await api.get('/api/integrations/stats');
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération des statistiques:', error);
+      logger.error('Erreur lors de la récupération des statistiques:', error);
       throw new Error('Erreur lors de la récupération des statistiques');
     }
   },

@@ -45,6 +45,7 @@ import SmartCover, {
 } from '../books/SmartCover';
 import BookDetailModal from '../BookDetailModal';
 import SeriesDetailModal from '../SeriesDetailModal';
+import logger from '../../utils/logger';
 
 // ── Cache (sessionStorage) ────────────────────────────────────────────────
 // Évite de recalculer les recommandations à chaque visite de la page.
@@ -708,7 +709,7 @@ const RecommendationPage = () => {
         setUserProfile(inlineProfile);
       }
     } else if (personalizedRes.status === 'rejected') {
-      console.error('Recos personnalisées en échec:', personalizedRes.reason);
+      logger.error('Recos personnalisées en échec:', personalizedRes.reason);
     }
 
     if (popularRes.status === 'fulfilled' && popularRes.value?.success) {
@@ -777,7 +778,7 @@ const RecommendationPage = () => {
       });
     } catch (err) {
       if (reqId !== similarReqId.current) return;
-      console.error('Erreur similaires:', err);
+      logger.error('Erreur similaires:', err);
       toast.error('Impossible de charger les similaires');
       setSections({});
     } finally {
@@ -835,7 +836,7 @@ const RecommendationPage = () => {
         writeCache(tab, booktime, null);
       }
     } catch (err) {
-      console.error('Erreur chargement recommandations:', err);
+      logger.error('Erreur chargement recommandations:', err);
       toast.error('Erreur lors du chargement');
     } finally {
       setIsLoading(false);

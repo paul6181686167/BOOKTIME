@@ -4,6 +4,7 @@
  */
 import axios from 'axios';
 import { API_BASE_URL } from '../config/environment';
+import logger from '../utils/logger';
 
 // Configuration axios
 const api = axios.create({
@@ -37,7 +38,7 @@ api.interceptors.response.use(
       localStorage.removeItem('user');
       window.location.reload();
     }
-    console.error('Advanced Recommendation API Error:', error);
+    logger.error('Advanced Recommendation API Error:', error);
     return Promise.reject(error);
   }
 );
@@ -68,7 +69,7 @@ export const advancedRecommendationService = {
       
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération des recommandations contextuelles:', error);
+      logger.error('Erreur lors de la récupération des recommandations contextuelles:', error);
       throw new Error('Erreur lors de la récupération des recommandations contextuelles');
     }
   },
@@ -85,7 +86,7 @@ export const advancedRecommendationService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération des recommandations sociales:', error);
+      logger.error('Erreur lors de la récupération des recommandations sociales:', error);
       throw new Error('Erreur lors de la récupération des recommandations sociales');
     }
   },
@@ -99,7 +100,7 @@ export const advancedRecommendationService = {
       const response = await api.get('/api/recommendations/advanced/user-profile/advanced');
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération du profil avancé:', error);
+      logger.error('Erreur lors de la récupération du profil avancé:', error);
       throw new Error('Erreur lors de la récupération du profil avancé');
     }
   },
@@ -116,7 +117,7 @@ export const advancedRecommendationService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la prédiction de rating:', error);
+      logger.error('Erreur lors de la prédiction de rating:', error);
       throw new Error('Erreur lors de la prédiction de rating');
     }
   },
@@ -133,7 +134,7 @@ export const advancedRecommendationService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de l\'entraînement du modèle:', error);
+      logger.error('Erreur lors de l\'entraînement du modèle:', error);
       throw new Error('Erreur lors de l\'entraînement du modèle');
     }
   },
@@ -155,7 +156,7 @@ export const advancedRecommendationService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de l\'envoi du feedback avancé:', error);
+      logger.error('Erreur lors de l\'envoi du feedback avancé:', error);
       throw new Error('Erreur lors de l\'envoi du feedback avancé');
     }
   },
@@ -169,7 +170,7 @@ export const advancedRecommendationService = {
       const response = await api.get('/api/recommendations/advanced/stats/ml');
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération des stats ML:', error);
+      logger.error('Erreur lors de la récupération des stats ML:', error);
       throw new Error('Erreur lors de la récupération des stats ML');
     }
   },

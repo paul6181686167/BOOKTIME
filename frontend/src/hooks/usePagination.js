@@ -1,5 +1,6 @@
 // Phase 2.2 - Hook de pagination pour BOOKTIME
 import { useState, useCallback, useEffect } from 'react';
+import logger from '../utils/logger';
 
 export const usePagination = (initialPage = 1, initialItemsPerPage = 20) => {
   const [currentPage, setCurrentPage] = useState(initialPage);
@@ -61,7 +62,7 @@ export const usePagination = (initialPage = 1, initialItemsPerPage = 20) => {
       
       throw new Error('Format de réponse invalide');
     } catch (err) {
-      console.error('Erreur lors de la récupération des données paginées:', err);
+      logger.error('Erreur lors de la récupération des données paginées:', err);
       setError(err.message || 'Erreur lors du chargement des données');
       return [];
     } finally {

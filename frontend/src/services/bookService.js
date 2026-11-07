@@ -4,6 +4,7 @@ import {
   saveLibraryCache,
   loadLibraryCache,
 } from '../utils/offlineLibraryCache';
+import logger from '../utils/logger';
 
 // Configuration axios
 const api = axios.create({
@@ -40,7 +41,7 @@ api.interceptors.response.use(
       localStorage.removeItem('user');
       window.location.reload();
     }
-    console.error('API Error:', error);
+    logger.error('API Error:', error);
     return Promise.reject(error);
   }
 );
@@ -73,10 +74,10 @@ export const bookService = {
     } catch (error) {
       const cached = loadLibraryCache(filters);
       if (cached?.books) {
-        console.warn('Bibliothèque servie depuis le cache offline');
+        logger.warn('Bibliothèque servie depuis le cache offline');
         return cached.books;
       }
-      console.error('Erreur lors de la récupération des livres:', error);
+      logger.error('Erreur lors de la récupération des livres:', error);
       throw new Error('Erreur lors de la récupération des livres');
     }
   },
@@ -87,7 +88,7 @@ export const bookService = {
       const response = await api.get(`/api/books/${id}`);
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération du livre:', error);
+      logger.error('Erreur lors de la récupération du livre:', error);
       throw new Error('Erreur lors de la récupération du livre');
     }
   },
@@ -98,7 +99,7 @@ export const bookService = {
       const response = await api.post('/api/books', bookData);
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la création du livre:', error);
+      logger.error('Erreur lors de la création du livre:', error);
       throw new Error('Erreur lors de la création du livre');
     }
   },
@@ -109,7 +110,7 @@ export const bookService = {
       const response = await api.put(`/api/books/${id}`, updateData);
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du livre:', error);
+      logger.error('Erreur lors de la mise à jour du livre:', error);
       throw new Error('Erreur lors de la mise à jour du livre');
     }
   },
@@ -120,7 +121,7 @@ export const bookService = {
       const response = await api.delete(`/api/books/${id}`);
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la suppression du livre:', error);
+      logger.error('Erreur lors de la suppression du livre:', error);
       throw new Error('Erreur lors de la suppression du livre');
     }
   },
@@ -131,7 +132,7 @@ export const bookService = {
       const response = await api.get('/api/stats');
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération des statistiques:', error);
+      logger.error('Erreur lors de la récupération des statistiques:', error);
       throw new Error('Erreur lors de la récupération des statistiques');
     }
   },
@@ -142,7 +143,7 @@ export const bookService = {
       const response = await api.get('/api/authors');
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération des auteurs:', error);
+      logger.error('Erreur lors de la récupération des auteurs:', error);
       throw new Error('Erreur lors de la récupération des auteurs');
     }
   },
@@ -153,7 +154,7 @@ export const bookService = {
       const response = await api.get(`/api/authors/${encodeURIComponent(authorName)}/books`);
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération des livres de l\'auteur:', error);
+      logger.error('Erreur lors de la récupération des livres de l\'auteur:', error);
       throw new Error('Erreur lors de la récupération des livres de l\'auteur');
     }
   },
@@ -164,7 +165,7 @@ export const bookService = {
       const response = await api.get('/api/sagas');
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération des sagas:', error);
+      logger.error('Erreur lors de la récupération des sagas:', error);
       throw new Error('Erreur lors de la récupération des sagas');
     }
   },
@@ -177,7 +178,7 @@ export const bookService = {
       });
       return response.data;
     } catch (error) {
-      console.warn('Erreur lors de la récupération des livres de la saga:', error?.message || error);
+      logger.warn('Erreur lors de la récupération des livres de la saga:', error?.message || error);
       throw new Error('Erreur lors de la récupération des livres de la saga');
     }
   },
@@ -188,7 +189,7 @@ export const bookService = {
       const response = await api.post(`/api/sagas/${encodeURIComponent(sagaName)}/auto-add`);
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de l\'ajout automatique:', error);
+      logger.error('Erreur lors de l\'ajout automatique:', error);
       throw new Error('Erreur lors de l\'ajout automatique du prochain tome');
     }
   },
@@ -202,7 +203,7 @@ export const bookService = {
       const response = await api.get('/api/books/search-grouped', { params });
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la recherche groupée:', error);
+      logger.error('Erreur lors de la recherche groupée:', error);
       throw new Error('Erreur lors de la recherche groupée');
     }
   },
@@ -215,7 +216,7 @@ export const bookService = {
       const response = await api.put(`/api/sagas/${encodeURIComponent(sagaName)}/bulk-status`, updateData);
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la mise à jour en lot:', error);
+      logger.error('Erreur lors de la mise à jour en lot:', error);
       throw new Error('Erreur lors de la mise à jour en lot');
     }
   },
@@ -229,7 +230,7 @@ export const bookService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Erreur lors du toggle du statut:', error);
+      logger.error('Erreur lors du toggle du statut:', error);
       throw new Error('Erreur lors de la mise à jour du statut du tome');
     }
   },
@@ -243,7 +244,7 @@ export const bookService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de l\'auto-complétion:', error);
+      logger.error('Erreur lors de l\'auto-complétion:', error);
       throw new Error('Erreur lors de l\'auto-complétion de la saga');
     }
   },
@@ -254,7 +255,7 @@ export const bookService = {
       const response = await api.get(`/api/sagas/${encodeURIComponent(sagaName)}/missing-analysis`);
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de l\'analyse des tomes manquants:', error);
+      logger.error('Erreur lors de l\'analyse des tomes manquants:', error);
       throw new Error('Erreur lors de l\'analyse des tomes manquants');
     }
   },
@@ -265,7 +266,7 @@ export const bookService = {
       const response = await api.get('/api/series/search', { params: { q: query } });
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la recherche de séries:', error);
+      logger.error('Erreur lors de la recherche de séries:', error);
       throw new Error('Erreur lors de la recherche de séries');
     }
   }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserIcon, BookOpenIcon, RectangleStackIcon } from '@heroicons/react/24/outline';
 import { bookService } from '../services/bookService';
+import logger from '../utils/logger';
 
 const AuthorsPanel = ({ onAuthorSelect }) => {
   const [authors, setAuthors] = useState([]);
@@ -17,7 +18,7 @@ const AuthorsPanel = ({ onAuthorSelect }) => {
       const data = await bookService.getAuthors();
       setAuthors(data);
     } catch (error) {
-      console.error('Erreur lors du chargement des auteurs:', error);
+      logger.error('Erreur lors du chargement des auteurs:', error);
     } finally {
       setLoading(false);
     }
@@ -30,7 +31,7 @@ const AuthorsPanel = ({ onAuthorSelect }) => {
         const books = await bookService.getBooksByAuthor(author.name);
         onAuthorSelect(books, author);
       } catch (error) {
-        console.error('Erreur lors du chargement des livres de l\'auteur:', error);
+        logger.error('Erreur lors du chargement des livres de l\'auteur:', error);
       }
     }
   };

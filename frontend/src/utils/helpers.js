@@ -1,6 +1,7 @@
 // Fonctions utilitaires pour l'application BOOKTIME
 
 import { CATEGORY_BADGES, STATUS_CONFIG, ERROR_MESSAGES } from './constants';
+import logger from './logger';
 
 /**
  * Obtient le badge de catégorie pour un livre
@@ -202,7 +203,7 @@ export const formatNumber = (number) => {
  * @returns {string} Message d'erreur formaté
  */
 export const handleError = (error, context = '') => {
-  console.error(`Error in ${context}:`, error);
+  logger.error(`Error in ${context}:`, error);
   
   if (error.message) {
     if (error.message.includes('Network') || error.message.includes('fetch')) {

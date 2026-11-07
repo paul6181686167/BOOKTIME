@@ -4,6 +4,7 @@ import BookGrid from './BookGrid';
 import Pagination from '../common/Pagination';
 import usePagination from '../../hooks/usePagination';
 import { paginationService } from '../../services/paginationService';
+import logger from '../../utils/logger';
 
 const PaginatedBookGrid = ({
   category,
@@ -55,7 +56,7 @@ const PaginatedBookGrid = ({
         pagination.setTotalItems(response.total);
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des livres:', error);
+      logger.error('Erreur lors du chargement des livres:', error);
       pagination.setError(error.message);
     }
   }, [

@@ -18,6 +18,7 @@ import {
   loadSeriesCache,
   saveSeriesCache,
 } from '../../utils/offlineLibraryCache';
+import logger from '../../utils/logger';
 
 /** Couverture déjà connue sur la carte / les tomes — sans rappeler Open Library. */
 const resolveSeriesCover = (seriesData) => {
@@ -47,14 +48,14 @@ export const loadUserSeriesLibrary = async (setSeriesLibraryLoading, setUserSeri
         : [];
     setUserSeriesLibrary((prev) => {
       if (series.length === 0 && Array.isArray(prev) && prev.length > 0) {
-        console.warn('[loadSeries] Réponse vide ignorée, conservation de l’état local');
+        logger.warn('[loadSeries] Réponse vide ignorée, conservation de l’état local');
         return prev;
       }
       return series;
     });
     if (series.length > 0) saveSeriesCache(series);
   } catch (error) {
-    console.error('Erreur chargement séries bibliothèque:', error);
+    logger.error('Erreur chargement séries bibliothèque:', error);
     const cached = loadSeriesCache();
     if (cached?.series?.length) {
       setUserSeriesLibrary(cached.series);
@@ -158,13 +159,13 @@ export const handleAddSeriesToLibrary = async (seriesData, {
       // Refresh hors chemin critique : l'UI peut fermer la modale tout de suite
       if (typeof loadUserSeriesLibrary === 'function') {
         Promise.resolve(loadUserSeriesLibrary()).catch((err) =>
-          console.warn('Refresh séries après ajout:', err)
+          logger.warn('Refresh séries après ajout:', err)
         );
       }
     }
     return result;
   } catch (error) {
-    console.error(' Erreur ajout série:', error);
+    logger.error(' Erreur ajout série:', error);
     const msg = error?.message || '';
     if (msg.includes('409')) {
       toast.error('Cette série est déjà dans votre bibliothèque');
@@ -207,7 +208,7 @@ export const handleUpdateVolumeStatus = async (seriesId, volumeNumber, isRead, s
       toast.success(`Tome ${volumeNumber} marqué comme ${isRead ? 'lu' : 'non lu'}`);
     }
   } catch (error) {
-    console.error('Erreur mise à jour tome:', error);
+    logger.error('Erreur mise à jour tome:', error);
     toast.error('Erreur lors de la mise à jour du tome');
   }
 };
@@ -236,7 +237,7 @@ export const handleUpdateSeriesStatus = async (seriesId, newStatus, setUserSerie
       toast.success(`Statut mis à jour : ${statusLabels[newStatus]}`);
     }
   } catch (error) {
-    console.error('Erreur mise à jour statut série:', error);
+    logger.error('Erreur mise à jour statut série:', error);
     toast.error('Erreur lors de la mise à jour du statut');
   }
 };
@@ -256,7 +257,7 @@ export const handleDeleteSeriesFromLibrary = async (seriesId, setUserSeriesLibra
       toast.success('Série supprimée de votre bibliothèque');
     }
   } catch (error) {
-    console.error('Erreur suppression série:', error);
+    logger.error('Erreur suppression série:', error);
     toast.error('Erreur lors de la suppression de la série');
   }
 };

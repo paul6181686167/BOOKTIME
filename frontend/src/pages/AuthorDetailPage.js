@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { 
 import { API_BASE_URL } from '../config/environment';
+import logger from '../utils/logger';
   ArrowLeftIcon, 
   UserIcon,
   BookOpenIcon,
@@ -60,7 +61,7 @@ const AuthorDetailPage = () => {
       setAuthor(authorData);
       setAuthorBooks(booksData);
     } catch (error) {
-      console.error('Erreur lors du chargement de l\'auteur:', error);
+      logger.error('Erreur lors du chargement de l\'auteur:', error);
       toast.error('Erreur lors du chargement de l\'auteur');
       navigate('/');
     } finally {
@@ -113,7 +114,7 @@ const AuthorDetailPage = () => {
       // Naviguer vers la fiche du livre
       navigate(`/livre/${newBook.id}`);
     } catch (error) {
-      console.error('Erreur lors de l\'ajout du livre:', error);
+      logger.error('Erreur lors de l\'ajout du livre:', error);
       toast.error('Erreur lors de l\'ajout du livre');
     }
   };

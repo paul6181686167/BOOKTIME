@@ -3,6 +3,7 @@ import { SparklesIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { coverImgSrc } from '../../utils/helpers';
 import { getStatusBadge, getStatusLabel, resolveVolumesCount } from '../../utils/seriesDetailHelpers';
+import logger from '../../utils/logger';
 
 /** En-tête de la fiche série : vignette, titre, auteur, statut, bouton d'ajout et JSON Wikidata. */
 const SeriesHeader = ({
@@ -141,7 +142,7 @@ const SeriesHeader = ({
                         setAddDone(false);
                       }, 1000);
                     } catch (error) {
-                      console.error('Erreur lors de l\'ajout de la série:', error);
+                      logger.error('Erreur lors de l\'ajout de la série:', error);
                       toast.error(error.message || 'Erreur lors de l\'ajout de la série');
                       setIsAdding(false);
                     }

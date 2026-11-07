@@ -8,6 +8,7 @@ import {
 import { isUsableSynopsis, looksEnglish } from '../../utils/synopsisQuality';
 import { normalizeForSearch } from '../../utils/helpers';
 import { API_BASE_URL } from '../../config/environment';
+import logger from '../../utils/logger';
 
 /** Clés de dédoublonnage titre (FR/EN) pour éviter livre + série rétrogradée du même ouvrage. */
 function workTitleKeys(book) {
@@ -63,21 +64,21 @@ const BookActions = {
       } else if (booksData && Array.isArray(booksData.items)) {
         next = booksData.items;
       } else {
-        console.warn(' Format de données inattendu pour les livres:', booksData);
+        logger.warn(' Format de données inattendu pour les livres:', booksData);
       }
 
       if (Array.isArray(next)) {
         // Ne pas remplacer une bibliothèque affichée par une liste vide (erreur réseau / cache SW)
         setBooks((prev) => {
           if (next.length === 0 && Array.isArray(prev) && prev.length > 0) {
-            console.warn('[loadBooks] Réponse vide ignorée, conservation de l’état local');
+            logger.warn('[loadBooks] Réponse vide ignorée, conservation de l’état local');
             return prev;
           }
           return next;
         });
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des livres:', error);
+      logger.error('Erreur lors du chargement des livres:', error);
       // Ne JAMAIS vider la bibliothèque affichée (cache local / session)
       setBooks((prev) => {
         if (Array.isArray(prev) && prev.length > 0) return prev;
@@ -96,7 +97,7 @@ const BookActions = {
       const stats = await bookService.getStats();
       setStats(stats);
     } catch (error) {
-      console.error('Erreur lors du chargement des statistiques:', error);
+      logger.error('Erreur lors du chargement des statistiques:', error);
       toast.error('Erreur lors du chargement des statistiques');
     }
   },
@@ -107,7 +108,7 @@ const BookActions = {
       const response = await bookService.searchSeries(query);
       return response.series || [];
     } catch (error) {
-      console.error('Erreur lors de la recherche de séries:', error);
+      logger.error('Erreur lors de la recherche de séries:', error);
       return [];
     }
   },
@@ -118,7 +119,7 @@ const BookActions = {
   createUnifiedDisplay(booksList, getCategoryBadgeFromBook, userSeriesLibrary = [], readingPreferences = {}) {
     // Vérification renforcée : s'assurer que booksList est toujours un array
     if (!booksList || !Array.isArray(booksList)) {
-      console.warn('createUnifiedDisplay: booksList n\'est pas un array:', booksList);
+      logger.warn('createUnifiedDisplay: booksList n\'est pas un array:', booksList);
       return [];
     }
 
@@ -471,7 +472,7 @@ const BookActions = {
         toast.success('Livre mis à jour avec succès !');
       }
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du livre:', error);
+      logger.error('Erreur lors de la mise à jour du livre:', error);
       toast.error('Erreur lors de la mise à jour du livre');
       throw error; // propager pour que les appelants gèrent l'état (ex. isLoading)
     }
@@ -493,7 +494,7 @@ const BookActions = {
       }
       return result;
     } catch (error) {
-      console.error('Erreur lors de l\'ajout du livre:', error);
+      logger.error('Erreur lors de l\'ajout du livre:', error);
       toast.error('Impossible d\'ajouter le livre. Réessaie dans un instant.');
       throw error;
     }

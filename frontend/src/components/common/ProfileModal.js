@@ -36,6 +36,7 @@ import ProfileIdentityCard, { UserAvatar } from './ProfileIdentityCard';
 import friendsService from '../../services/friendsService';
 import ProfileSettings from './ProfileSettings';
 import DeleteAccountDialog from '../user/DeleteAccountDialog';
+import logger from '../../utils/logger';
 
 // ─── Heatmap de lecture ──────────────────────────────────────────────────────
 function ReadingHeatmap({ completionDates }) {
@@ -142,7 +143,7 @@ function ProfileModal({
       const list = Array.isArray(data.authors) ? data.authors : [];
       setFollowedAuthors(list.filter(Boolean).sort((a, b) => a.localeCompare(b, 'fr')));
     } catch (err) {
-      console.error('Erreur chargement auteurs suivis:', err);
+      logger.error('Erreur chargement auteurs suivis:', err);
       setFollowedAuthors([]);
     } finally {
       setAuthorsLoading(false);
@@ -218,7 +219,7 @@ function ProfileModal({
         setCompletionDates(data.completion_dates);
       }
     } catch (error) {
-      console.error('Erreur chargement stats:', error);
+      logger.error('Erreur chargement stats:', error);
     } finally {
       setLoading(false);
     }

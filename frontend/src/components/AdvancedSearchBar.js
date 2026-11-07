@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { 
 import { API_BASE_URL } from '../config/environment';
+import logger from '../utils/logger';
   MagnifyingGlassIcon, 
   AdjustmentsHorizontalIcon,
   XMarkIcon,
@@ -64,7 +65,7 @@ const AdvancedSearchBar = React.memo(({
         setUniversalResults(data.books.slice(0, 5)); // Limiter à 5 pour l'affichage
       }
     } catch (error) {
-      console.error('Erreur recherche universelle:', error);
+      logger.error('Erreur recherche universelle:', error);
     } finally {
       setSearchingUniversal(false);
     }
@@ -123,7 +124,7 @@ const AdvancedSearchBar = React.memo(({
       try {
         setRecentSearches(JSON.parse(saved));
       } catch (error) {
-        console.error('Erreur lors du chargement des recherches récentes:', error);
+        logger.error('Erreur lors du chargement des recherches récentes:', error);
       }
     }
   }, []);

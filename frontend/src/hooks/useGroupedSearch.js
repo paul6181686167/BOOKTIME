@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { API_BASE_URL } from '../config/environment';
+import logger from '../utils/logger';
 
 export const useGroupedSearch = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,7 +60,7 @@ export const useGroupedSearch = () => {
         setSearchStats({ total_books: 0, total_sagas: 0, search_term: term });
       }
     } catch (error) {
-      console.error('Erreur lors de la recherche groupée:', error);
+      logger.error('Erreur lors de la recherche groupée:', error);
       setGroupedResults([]);
       setSearchStats({ total_books: 0, total_sagas: 0, search_term: term });
     } finally {

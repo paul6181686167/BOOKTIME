@@ -4,6 +4,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import socialService from '../../services/socialService';
+import logger from '../../utils/logger';
 
 const SocialFeed = () => {
   const [activities, setActivities] = useState([]);
@@ -34,7 +35,7 @@ const SocialFeed = () => {
       setError(null);
     } catch (err) {
       setError('Erreur lors du chargement du feed');
-      console.error('Erreur feed:', err);
+      logger.error('Erreur feed:', err);
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { toast } from 'react-hot-toast';
 import { API_BASE_URL } from '../../config/environment';
+import logger from '../../utils/logger';
 
 /**
  * PHASE 2.4 - MONITORING ET ANALYTICS
@@ -28,9 +29,9 @@ class ErrorBoundary extends React.Component {
     const errorId = `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     console.group(' ERROR BOUNDARY - Erreur capturée');
-    console.error('Error ID:', errorId);
-    console.error('Error:', error);
-    console.error('Error Info:', errorInfo);
+    logger.error('Error ID:', errorId);
+    logger.error('Error:', error);
+    logger.error('Error Info:', errorInfo);
     console.groupEnd();
 
     // Sauvegarde l'erreur dans l'état
@@ -73,7 +74,7 @@ class ErrorBoundary extends React.Component {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(errorData)
-      }).catch(err => console.error('Failed to log error:', err));
+      }).catch(err => logger.error('Failed to log error:', err));
     }
 
     // Log local pour développement

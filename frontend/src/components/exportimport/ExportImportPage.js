@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import ExportImportModal from '../export-import/ExportImportModal';
 import { API_BASE_URL } from '../../config/environment';
+import logger from '../../utils/logger';
 
 /**
  * Page principale Export/Import pour la bibliothèque BOOKTIME
@@ -24,7 +25,7 @@ const ExportImportPage = () => {
           toast.error('Backend indisponible');
         }
       } catch (error) {
-        console.error('Backend connection test failed:', error);
+        logger.error('Backend connection test failed:', error);
         toast.error('Erreur de connexion backend');
       }
     };

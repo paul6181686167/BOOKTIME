@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { API_BASE_URL } from '../../config/environment';
 import { wakeBackend, isBackendRemote } from '../../utils/backendWake';
 import TermsContent from '../legal/TermsContent';
+import logger from '../../utils/logger';
 
 // Login Page Component
 function LoginPage() {
@@ -81,21 +82,21 @@ function LoginPage() {
         result = await register(formData.email, formData.password, acceptTerms);
       }
 
-      console.log(' Résultat reçu:', result);
+      logger.debug(' Résultat reçu:', result);
 
       if (result.success) {
         toast.success(isLogin ? 'Connexion réussie !' : 'Inscription réussie !');
-        console.log(' Succès - rechargement dans 1s');
+        logger.debug(' Succès - rechargement dans 1s');
         // Force immediate navigation after successful auth
         setTimeout(() => {
           window.location.reload();
         }, 1000);
       } else {
-        console.log(' Erreur:', result.error);
+        logger.debug(' Erreur:', result.error);
         toast.error(result.error || 'Une erreur est survenue');
       }
     } catch (error) {
-      console.error('Exception:', error);
+      logger.error('Exception:', error);
       toast.error('Erreur de connexion');
     } finally {
       loadingStartRef.current = null;

@@ -7,6 +7,7 @@ import { EXTENDED_SERIES_DATABASE } from '../utils/seriesDatabaseExtended';
 import { buildMergedLibraryVolumeRowsFromOlBooks } from '../utils/openLibraryBookDisplay';
 import { useTheme } from '../contexts/ThemeContext';
 import { readAuthorProfile } from '../services/authorPrefetch';
+import logger from '../utils/logger';
 
 // Cherche une série dans la base statique par nom (insensible à la casse)
 const findSeriesInDB = (name) => {
@@ -70,7 +71,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
       }
     } catch (err) {
       setIsFollowing(!next); // rollback en cas d'échec
-      console.warn('Erreur suivi auteur:', err);
+      logger.warn('Erreur suivi auteur:', err);
     }
   };
 
@@ -109,7 +110,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
         ]);
       }
     } catch (err) {
-      console.warn('Chargement auteur partiel:', err);
+      logger.warn('Chargement auteur partiel:', err);
     } finally {
       setLoading(false);
     }
@@ -154,7 +155,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
       }
       return { ok: hasProfile || hasWorks, hasWorks };
     } catch (err) {
-      console.warn('Cache fiche auteur indisponible:', err);
+      logger.warn('Cache fiche auteur indisponible:', err);
       return { ok: false, hasWorks: false };
     }
   };
@@ -168,7 +169,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
       if (wikidataResponse.ok) {
         const wikidataData = await wikidataResponse.json();
         if (wikidataData.found) {
-          console.log(' Informations auteur récupérées depuis Wikidata:', wikidataData.author);
+          logger.debug(' Informations auteur récupérées depuis Wikidata:', wikidataData.author);
           setAuthorInfo({
             ...wikidataData.author,
             photo_url: wikidataData.author.image_url || wikidataData.author.photo_url || null,
@@ -178,7 +179,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
         }
       }
     } catch (error) {
-      console.warn(' Erreur Wikidata, passage au fallback Wikipedia:', error);
+      logger.warn(' Erreur Wikidata, passage au fallback Wikipedia:', error);
     }
     
     // 2. FALLBACK : Wikipedia (biographies + parsing)
@@ -188,7 +189,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
       if (wikipediaResponse.ok) {
         const wikipediaData = await wikipediaResponse.json();
         if (wikipediaData.found) {
-          console.log(' Informations auteur récupérées depuis Wikipedia:', wikipediaData.author);
+          logger.debug(' Informations auteur récupérées depuis Wikipedia:', wikipediaData.author);
           setAuthorInfo({
             ...wikipediaData.author,
             source: 'wikipedia'
@@ -197,7 +198,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
         }
       }
     } catch (error) {
-      console.warn(' Erreur Wikipedia, passage au fallback OpenLibrary:', error);
+      logger.warn(' Erreur Wikipedia, passage au fallback OpenLibrary:', error);
     }
     
     // 3. FALLBACK : OpenLibrary (données basiques)
@@ -212,7 +213,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
       if (openlibResponse.ok) {
         const openlibData = await openlibResponse.json();
         if (openlibData.found) {
-          console.log(' Informations auteur récupérées depuis OpenLibrary:', openlibData.author);
+          logger.debug(' Informations auteur récupérées depuis OpenLibrary:', openlibData.author);
           setAuthorInfo({
             ...openlibData.author,
             source: 'openlibrary'
@@ -221,11 +222,11 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
         }
       }
     } catch (error) {
-      console.warn(' Erreur OpenLibrary:', error);
+      logger.warn(' Erreur OpenLibrary:', error);
     }
     
     // Aucune source n'a fonctionné pour le profil
-    console.log(' Aucune information de profil trouvée pour l\'auteur');
+    logger.debug(' Aucune information de profil trouvée pour l\'auteur');
   };
 
   // Charger les œuvres de l'auteur (Wikidata → Wikipedia → Bibliothèque)
@@ -241,7 +242,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
       if (wikidataSeriesResponse.ok) {
         const wikidataSeriesData = await wikidataSeriesResponse.json();
         if (wikidataSeriesData.found && (wikidataSeriesData.series.length > 0 || wikidataSeriesData.individual_books.length > 0)) {
-          console.log(' Séries et livres récupérés depuis Wikidata:', wikidataSeriesData);
+          logger.debug(' Séries et livres récupérés depuis Wikidata:', wikidataSeriesData);
           setAuthorBooks({
             series: wikidataSeriesData.series,
             individual_books: wikidataSeriesData.individual_books || [],
@@ -266,7 +267,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
       if (wikipediaWorksResponse.ok) {
         const wikipediaWorksData = await wikipediaWorksResponse.json();
         if (wikipediaWorksData.found) {
-          console.log(' Œuvres récupérées depuis Wikipedia (optimisé):', wikipediaWorksData);
+          logger.debug(' Œuvres récupérées depuis Wikipedia (optimisé):', wikipediaWorksData);
           setAuthorBooks({
             series: wikipediaWorksData.series,
             individual_books: wikipediaWorksData.individual_books,
@@ -288,7 +289,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
       
       if (response.ok) {
         const booksData = await response.json();
-        console.log(' Œuvres de l\'auteur récupérées depuis la bibliothèque:', booksData);
+        logger.debug(' Œuvres de l\'auteur récupérées depuis la bibliothèque:', booksData);
         
         // Utiliser le format retourné par l'endpoint /api/authors/{author}/books
         setAuthorBooks({
@@ -301,7 +302,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
           fallback: true
         });
       } else {
-        console.log(' Aucune œuvre trouvée pour cet auteur');
+        logger.debug(' Aucune œuvre trouvée pour cet auteur');
         // Définir des valeurs par défaut
         setAuthorBooks({
           series: [],
@@ -314,7 +315,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
         });
       }
     } catch (err) {
-      console.error('Erreur lors du chargement des œuvres:', err);
+      logger.error('Erreur lors du chargement des œuvres:', err);
       // Définir des valeurs par défaut en cas d'erreur
       setAuthorBooks({
         series: [],

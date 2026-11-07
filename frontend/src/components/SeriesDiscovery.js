@@ -3,6 +3,7 @@ import ModalOverlay, { MODAL_Z } from './common/ModalOverlay';
 import { MagnifyingGlassIcon, BookOpenIcon, StarIcon, CheckIcon, PlusIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { API_BASE_URL } from '../config/environment';
+import logger from '../utils/logger';
 
 const SeriesDiscovery = ({ isOpen, onClose, initialSeries = '', initialAuthor = '' }) => {
   const [seriesName, setSeriesName] = useState(initialSeries);
@@ -43,7 +44,7 @@ const SeriesDiscovery = ({ isOpen, onClose, initialSeries = '', initialAuthor = 
         toast.error(error.detail || 'Erreur lors de la découverte');
       }
     } catch (error) {
-      console.error('Erreur découverte:', error);
+      logger.error('Erreur découverte:', error);
       toast.error('Erreur lors de la découverte de série');
     } finally {
       setLoading(false);
@@ -93,7 +94,7 @@ const SeriesDiscovery = ({ isOpen, onClose, initialSeries = '', initialAuthor = 
         }
       }
     } catch (error) {
-      console.error('Erreur import livre:', error);
+      logger.error('Erreur import livre:', error);
       toast.error('Erreur lors de l\'ajout du livre');
     } finally {
       setImportingBooks(prev => {
@@ -141,7 +142,7 @@ const SeriesDiscovery = ({ isOpen, onClose, initialSeries = '', initialAuthor = 
         toast.error(error.detail || 'Erreur lors de l\'import en lot');
       }
     } catch (error) {
-      console.error('Erreur import en lot:', error);
+      logger.error('Erreur import en lot:', error);
       toast.error('Erreur lors de l\'import en lot');
     }
   };

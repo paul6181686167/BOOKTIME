@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import SearchLogic from '../components/search/SearchLogic';
 import SearchOptimizer from '../utils/searchOptimizer';
+import logger from '../utils/logger';
 
 // Hook personnalisé pour gérer l'état de recherche
 export const useSearch = () => {
@@ -37,22 +38,22 @@ export const useSearch = () => {
 
   // Fonction pour générer les cartes séries avec algorithme avancé
   const generateSeriesCardsForSearch = (query, books) => {
-    console.log(' OPTIMISATION RECHERCHE - Génération cartes séries avec algorithme avancé');
+    logger.debug(' OPTIMISATION RECHERCHE - Génération cartes séries avec algorithme avancé');
     
     const startTime = performance.now();
     const seriesCards = SearchOptimizer.generateSeriesCardsForSearch(query, books);
     const detectionTime = performance.now() - startTime;
     
     const metrics = SearchOptimizer.getSearchMetrics(query, seriesCards, detectionTime);
-    console.log(' Métriques de recherche:', metrics);
+    logger.debug(' Métriques de recherche:', metrics);
     
     if (seriesCards.length > 0) {
-      console.log(` ${seriesCards.length} série(s) détectée(s) avec scores prioritaires 100000+`);
+      logger.debug(` ${seriesCards.length} série(s) détectée(s) avec scores prioritaires 100000+`);
       seriesCards.forEach(card => {
-        console.log(` ${card.name} - Score: ${card.confidence} - Type: ${card.matchType}`);
+        logger.debug(` ${card.name} - Score: ${card.confidence} - Type: ${card.matchType}`);
       });
     } else {
-      console.log('ℹ Aucune série officielle détectée pour cette recherche');
+      logger.debug('ℹ Aucune série officielle détectée pour cette recherche');
     }
     
     return seriesCards;

@@ -2,6 +2,7 @@
  * Service "À venir" — gestion des livres à paraître et des sorties attendues
  */
 import { API_BASE_URL } from '../config/environment';
+import logger from '../utils/logger';
 
 function authHeaders() {
   const token = localStorage.getItem('token');
@@ -33,7 +34,7 @@ export const upcomingService = {
     try {
       return await apiFetch(`/api/upcoming${refresh ? '?refresh=true' : ''}`);
     } catch (err) {
-      console.warn('upcomingService.getUpcoming error:', err);
+      logger.warn('upcomingService.getUpcoming error:', err);
       return {
         items: [],
         groups: { available: [], this_week: [], this_month: [], later: [], unknown: [] },
@@ -90,7 +91,7 @@ export const upcomingService = {
       const books = data.items || data.books || (Array.isArray(data) ? data : []);
       return books;
     } catch (err) {
-      console.warn('upcomingService.getUpcomingBooks error:', err);
+      logger.warn('upcomingService.getUpcomingBooks error:', err);
       return [];
     }
   },
@@ -163,7 +164,7 @@ export const upcomingService = {
 
       return migrated;
     } catch (err) {
-      console.warn('autoMigrateReleasedBooks error:', err);
+      logger.warn('autoMigrateReleasedBooks error:', err);
       return 0;
     }
   },

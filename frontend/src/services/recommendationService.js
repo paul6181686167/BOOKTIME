@@ -4,6 +4,7 @@
  */
 import axios from 'axios';
 import { API_BASE_URL } from '../config/environment';
+import logger from '../utils/logger';
 
 
 // Configuration axios
@@ -39,7 +40,7 @@ api.interceptors.response.use(
       localStorage.removeItem('user');
       window.location.reload();
     }
-    console.error('Recommendation API Error:', error);
+    logger.error('Recommendation API Error:', error);
     return Promise.reject(error);
   }
 );
@@ -63,7 +64,7 @@ export const recommendationService = {
       const response = await api.get('/api/recommendations/personalized', { params });
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération des recommandations personnalisées:', error);
+      logger.error('Erreur lors de la récupération des recommandations personnalisées:', error);
       throw new Error('Erreur lors de la récupération des recommandations personnalisées');
     }
   },
@@ -85,7 +86,7 @@ export const recommendationService = {
       const response = await api.get('/api/recommendations/popular', { params });
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération des recommandations populaires:', error);
+      logger.error('Erreur lors de la récupération des recommandations populaires:', error);
       throw new Error('Erreur lors de la récupération des recommandations populaires');
     }
   },
@@ -115,7 +116,7 @@ export const recommendationService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Erreur recommandations similaires:', error);
+      logger.error('Erreur recommandations similaires:', error);
       throw new Error('Erreur lors des recommandations similaires');
     }
   },
@@ -133,7 +134,7 @@ export const recommendationService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération des recommandations par auteur:', error);
+      logger.error('Erreur lors de la récupération des recommandations par auteur:', error);
       throw new Error('Erreur lors de la récupération des recommandations par auteur');
     }
   },
@@ -151,7 +152,7 @@ export const recommendationService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération des recommandations par catégorie:', error);
+      logger.error('Erreur lors de la récupération des recommandations par catégorie:', error);
       throw new Error('Erreur lors de la récupération des recommandations par catégorie');
     }
   },
@@ -165,7 +166,7 @@ export const recommendationService = {
       const response = await api.get('/api/recommendations/user-profile');
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération du profil utilisateur:', error);
+      logger.error('Erreur lors de la récupération du profil utilisateur:', error);
       throw new Error('Erreur lors de la récupération du profil utilisateur');
     }
   },
@@ -184,7 +185,7 @@ export const recommendationService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de l\'envoi du feedback:', error);
+      logger.error('Erreur lors de l\'envoi du feedback:', error);
       throw new Error('Erreur lors de l\'envoi du feedback');
     }
   },
@@ -198,7 +199,7 @@ export const recommendationService = {
       const response = await api.get('/api/recommendations/stats');
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération des statistiques:', error);
+      logger.error('Erreur lors de la récupération des statistiques:', error);
       throw new Error('Erreur lors de la récupération des statistiques');
     }
   },
@@ -243,7 +244,7 @@ export const recommendationService = {
       
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de l\'ajout du livre recommandé:', error);
+      logger.error('Erreur lors de l\'ajout du livre recommandé:', error);
       throw new Error('Erreur lors de l\'ajout du livre recommandé');
     }
   },
@@ -257,7 +258,7 @@ export const recommendationService = {
     try {
       return await this.submitFeedback(recommendationId, 'not_interested');
     } catch (error) {
-      console.error('Erreur lors du marquage "pas intéressé":', error);
+      logger.error('Erreur lors du marquage "pas intéressé":', error);
       throw new Error('Erreur lors du marquage "pas intéressé"');
     }
   },
@@ -271,7 +272,7 @@ export const recommendationService = {
     try {
       return await this.submitFeedback(recommendationId, 'like');
     } catch (error) {
-      console.error('Erreur lors du like:', error);
+      logger.error('Erreur lors du like:', error);
       throw new Error('Erreur lors du like');
     }
   },
@@ -285,7 +286,7 @@ export const recommendationService = {
     try {
       return await this.submitFeedback(recommendationId, 'dislike');
     } catch (error) {
-      console.error('Erreur lors du dislike:', error);
+      logger.error('Erreur lors du dislike:', error);
       throw new Error('Erreur lors du dislike');
     }
   }

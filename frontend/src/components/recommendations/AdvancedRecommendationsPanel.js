@@ -4,6 +4,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import logger from '../../utils/logger';
 
 const AdvancedRecommendationsPanel = ({ onRecommendationSelect, currentUser }) => {
   const [recommendations, setRecommendations] = useState([]);
@@ -39,7 +40,7 @@ const AdvancedRecommendationsPanel = ({ onRecommendationSelect, currentUser }) =
         setUserProfile(data.data);
       }
     } catch (error) {
-      console.error('Erreur chargement profil avancé:', error);
+      logger.error('Erreur chargement profil avancé:', error);
     }
   };
 
@@ -74,7 +75,7 @@ const AdvancedRecommendationsPanel = ({ onRecommendationSelect, currentUser }) =
         throw new Error('Erreur lors du chargement');
       }
     } catch (error) {
-      console.error('Erreur recommandations avancées:', error);
+      logger.error('Erreur recommandations avancées:', error);
       setError('Erreur lors du chargement des recommandations');
     } finally {
       setLoading(false);
@@ -113,10 +114,10 @@ const AdvancedRecommendationsPanel = ({ onRecommendationSelect, currentUser }) =
       });
 
       if (response.ok) {
-        console.log('Feedback envoyé avec succès');
+        logger.debug('Feedback envoyé avec succès');
       }
     } catch (error) {
-      console.error('Erreur envoi feedback:', error);
+      logger.error('Erreur envoi feedback:', error);
     }
   };
 
@@ -134,7 +135,7 @@ const AdvancedRecommendationsPanel = ({ onRecommendationSelect, currentUser }) =
         toast.success(`Rating prédit: ${data.data.predicted_rating}/5 (${Math.round(data.data.confidence * 100)}% confiance)`);
       }
     } catch (error) {
-      console.error('Erreur prédiction rating:', error);
+      logger.error('Erreur prédiction rating:', error);
     }
   };
 

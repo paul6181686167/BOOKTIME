@@ -14,6 +14,7 @@ import {
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import { API_BASE_URL } from '../config/environment';
+import logger from '../utils/logger';
 
 const OpenLibraryBookPage = () => {
   // Récupère la clé depuis le splat (* dans la route /catalogue/*)
@@ -48,7 +49,7 @@ const OpenLibraryBookPage = () => {
       const data = await response.json();
       setBook(data);
     } catch (error) {
-      console.error('Erreur lors du chargement du livre:', error);
+      logger.error('Erreur lors du chargement du livre:', error);
       toast.error('Erreur lors du chargement du livre');
       navigate('/');
     } finally {
@@ -94,7 +95,7 @@ const OpenLibraryBookPage = () => {
       
       navigate(`/livre/${newBook.id}`);
     } catch (error) {
-      console.error('Erreur lors de l\'ajout:', error);
+      logger.error('Erreur lors de l\'ajout:', error);
       toast.error('Erreur lors de l\'ajout du livre');
     } finally {
       setAdding(false);

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import logger from '../../utils/logger';
 
 /**
  * PHASE 2.4 - MONITORING ET ANALYTICS
@@ -113,7 +114,7 @@ export const ABTestingProvider = ({ children, enabledTests = Object.keys(DEFAULT
       try {
         existingVariants = JSON.parse(savedVariants);
       } catch (error) {
-        console.warn('Invalid saved A/B test variants:', error);
+        logger.warn('Invalid saved A/B test variants:', error);
       }
     }
 
@@ -126,7 +127,7 @@ export const ABTestingProvider = ({ children, enabledTests = Object.keys(DEFAULT
         const variant = existingVariants[testId] || assignVariant(testId, test.variants);
         variants[testId] = variant;
         
-        console.log(` A/B Test "${testId}": User assigned to variant "${variant}" - ${test.variants[variant]?.description}`);
+        logger.debug(` A/B Test "${testId}": User assigned to variant "${variant}" - ${test.variants[variant]?.description}`);
       }
     });
 
@@ -193,7 +194,7 @@ export const ABTestingProvider = ({ children, enabledTests = Object.keys(DEFAULT
     }));
 
     // Log pour debugging
-    console.log(` A/B Test Metric: ${testId}.${metricName} = ${value} (variant: ${variant})`);
+    logger.debug(` A/B Test Metric: ${testId}.${metricName} = ${value} (variant: ${variant})`);
 
     // Sauvegarde localStorage
     const metricsKey = `ab_test_metrics_${testId}`;
@@ -220,7 +221,7 @@ export const ABTestingProvider = ({ children, enabledTests = Object.keys(DEFAULT
       totalDataPoints: Object.values(metrics).reduce((sum, metricArray) => sum + metricArray.length, 0)
     };
 
-    console.log(` A/B Test Analysis for "${testId}":`, analysis);
+    logger.debug(` A/B Test Analysis for "${testId}":`, analysis);
     return analysis;
   }, [testMetrics, userVariants]);
 
@@ -245,7 +246,7 @@ export const ABTestingProvider = ({ children, enabledTests = Object.keys(DEFAULT
     linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
 
-    console.log(' A/B Test data exported');
+    logger.debug(' A/B Test data exported');
     return exportData;
   }, [getUserId, userVariants, testMetrics]);
 
@@ -268,7 +269,7 @@ export const ABTestingProvider = ({ children, enabledTests = Object.keys(DEFAULT
     savedVariants[testId] = newVariant;
     localStorage.setItem('ab_test_variants', JSON.stringify(savedVariants));
 
-    console.log(` A/B Test "${testId}" reassigned to variant "${newVariant}"`);
+    logger.debug(` A/B Test "${testId}" reassigned to variant "${newVariant}"`);
   }, [assignVariant]);
 
   const contextValue = {
@@ -286,7 +287,7 @@ export const ABTestingProvider = ({ children, enabledTests = Object.keys(DEFAULT
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       window.BookTimeABTesting = contextValue;
-      console.log(' A/B Testing API available at window.BookTimeABTesting');
+      logger.debug(' A/B Testing API available at window.BookTimeABTesting');
     }
   }, [contextValue]);
 

@@ -13,6 +13,9 @@ from datetime import datetime, timedelta
 import os
 from ..database import db
 from ..config import DEFAULT_LIMIT, MAX_LIMIT, DEFAULT_OFFSET
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Configuration Redis (optionnel)
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
@@ -48,9 +51,9 @@ class CacheManager:
             self.redis_client = redis.from_url(REDIS_URL)
             self.redis_client.ping()
             self.cache_enabled = True
-            print("[OK] Redis connecte - Cache active")
+            logger.info("[OK] Redis connecte - Cache active")
         except:
-            print("[INFO] Redis non disponible - Cache desactive")
+            logger.warning("[INFO] Redis non disponible - Cache desactive")
     
     def _generate_cache_key(self, prefix: str, **kwargs) -> str:
         """Génère une clé de cache unique avec user_id en clair pour permettre l'invalidation"""

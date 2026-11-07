@@ -1,3 +1,4 @@
+import logger from './logger';
 /**
  * Cache local de la bibliothèque pour consultation hors ligne.
  * Stockage : localStorage (simple, suffisant pour ~1000 livres).
@@ -28,7 +29,7 @@ export function saveLibraryCache(books, filters = {}) {
       existingCount > 0 &&
       (books.length === 0 || books.length < Math.max(3, Math.floor(existingCount * 0.5)))
     ) {
-      console.warn(
+      logger.warn(
         '[cache] Ignoré sauvegarde bibliothèque trop courte:',
         books.length,
         '<',
@@ -127,7 +128,7 @@ export function saveSeriesCache(series) {
       existingCount > 0 &&
       (series.length === 0 || series.length < Math.max(3, Math.floor(existingCount * 0.5)))
     ) {
-      console.warn(
+      logger.warn(
         '[cache] Ignoré sauvegarde séries trop courte:',
         series.length,
         '<',

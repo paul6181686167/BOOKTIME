@@ -1,6 +1,16 @@
 # Connexion MongoDB centralisée pour BOOKTIME
+import logging
+import re
+
 from pymongo import MongoClient
 from .config import MONGO_URL, DATABASE_NAME, COLLECTIONS
+
+logger = logging.getLogger(__name__)
+
+
+def _redact(url: str) -> str:
+    """Masque identifiants et mot de passe d'une URL de connexion avant de la journaliser."""
+    return re.sub(r"://[^@/]+@", "://***@", url or "")
 
 
 class _MockDb:
@@ -40,11 +50,11 @@ class Database:
         mongo_url = os.environ.get("MONGO_URL", "mongodb://localhost:27017/booktime")
         db_name = os.environ.get("DATABASE_NAME", DATABASE_NAME)
 
-        print(f"[DB] MONGO_URL utilisee: {mongo_url[:60]}...")
-        print(f"[DB] RAILWAY_MONGODB_MOCK={os.environ.get('RAILWAY_MONGODB_MOCK', 'non defini')}")
+        logger.info("[DB] MONGO_URL utilisee: %s", _redact(mongo_url)[:60])
+        logger.info("[DB] RAILWAY_MONGODB_MOCK=%s", os.environ.get("RAILWAY_MONGODB_MOCK", "non defini"))
 
         if os.environ.get("RAILWAY_MONGODB_MOCK", "").lower() == "true":
-            print("[MOCK] MODE MOCK ACTIVE - Pas de connexion MongoDB reelle")
+            logger.warning("[MOCK] MODE MOCK ACTIVE - Pas de connexion MongoDB reelle")
             self._client = _MockClient()
             self._db = _MockDb()
             return
@@ -59,10 +69,10 @@ class Database:
                 )
                 self._client.admin.command('ping')
                 self._db = self._client[db_name]
-                print(f"[OK] Connected to MongoDB: {db_name}")
+                logger.info("[OK] Connected to MongoDB: %s", db_name)
                 return
             except Exception as e1:
-                print(f"[WARN] Tentative 1 echouee: {e1}")
+                logger.warning("[WARN] Tentative 1 echouee: %s", _redact(str(e1)))
 
             # Tentative 2 : avec tlsAllowInvalidCertificates
             try:
@@ -74,16 +84,16 @@ class Database:
                 )
                 self._client.admin.command('ping')
                 self._db = self._client[db_name]
-                print(f"[OK] Connected to MongoDB (TLS relaxed): {db_name}")
+                logger.info("[OK] Connected to MongoDB (TLS relaxed): %s", db_name)
                 return
             except Exception as e2:
-                print(f"[WARN] Tentative 2 echouee: {e2}")
+                logger.warning("[WARN] Tentative 2 echouee: %s", _redact(str(e2)))
 
         except Exception as e:
-            print(f"[ERR] Erreur connexion MongoDB: {e}")
+            logger.error("[ERR] Erreur connexion MongoDB: %s", _redact(str(e)))
 
         # Fallback : mode mock
-        print("[MOCK] ACTIVATION MODE MOCK - impossible de joindre MongoDB")
+        logger.warning("[MOCK] ACTIVATION MODE MOCK - impossible de joindre MongoDB")
         os.environ["RAILWAY_MONGODB_MOCK"] = "true"
         self._client = _MockClient()
         self._db = _MockDb()

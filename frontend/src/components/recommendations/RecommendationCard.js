@@ -20,6 +20,7 @@ import {
 } from '@heroicons/react/24/solid';
 
 import { recommendationService } from '../../services/recommendationService';
+import logger from '../../utils/logger';
 
 const RecommendationCard = ({ recommendation, onAddToLibrary, onFeedback }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -37,7 +38,7 @@ const RecommendationCard = ({ recommendation, onAddToLibrary, onFeedback }) => {
       }
     } catch (error) {
       toast.error('Erreur lors de l\'ajout à la bibliothèque');
-      console.error('Erreur ajout:', error);
+      logger.error('Erreur ajout:', error);
     } finally {
       setIsAddingToLibrary(false);
     }
@@ -62,7 +63,7 @@ const RecommendationCard = ({ recommendation, onAddToLibrary, onFeedback }) => {
       }
     } catch (error) {
       toast.error('Erreur lors de l\'envoi du feedback');
-      console.error('Erreur feedback:', error);
+      logger.error('Erreur feedback:', error);
     } finally {
       setIsLoading(false);
     }

@@ -7,6 +7,9 @@ from .service import (
     ensure_authors_from_library,
     get_cached_author,
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/authors", tags=["authors"])
 
@@ -298,7 +301,7 @@ async def get_wikipedia_author_works(author_name: str):
             return works
             
     except Exception as e:
-        print(f"Erreur Wikipedia works: {e}")
+        logger.error(f"Erreur Wikipedia works: {e}")
         return []
 
 
@@ -339,7 +342,7 @@ async def get_openlibrary_author_works(author_name: str):
         return filtered_works
         
     except Exception as e:
-        print(f"Erreur OpenLibrary works: {e}")
+        logger.error(f"Erreur OpenLibrary works: {e}")
         return []
 
 
@@ -411,7 +414,7 @@ def extract_works_from_wikipedia_content(content_data, author_name):
         return unique_works
         
     except Exception as e:
-        print(f"Erreur extraction Wikipedia: {e}")
+        logger.error(f"Erreur extraction Wikipedia: {e}")
         return []
 
 
@@ -474,7 +477,7 @@ def filter_openlibrary_works(works_entries, author_name):
         return filtered_works
         
     except Exception as e:
-        print(f"Erreur filtrage OpenLibrary: {e}")
+        logger.error(f"Erreur filtrage OpenLibrary: {e}")
         return []
 
 

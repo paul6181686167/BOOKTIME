@@ -7,6 +7,7 @@
  */
 import { API_BASE_URL } from '../config/environment';
 import { isMobileClient } from '../utils/device';
+import logger from '../utils/logger';
 
 let running = false;
 let lastRunAt = 0;
@@ -29,12 +30,12 @@ async function runBatches(limit) {
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
     });
     if (!res.ok) {
-      console.warn('[authors] ensure-from-library', res.status);
+      logger.warn('[authors] ensure-from-library', res.status);
       return;
     }
     const data = await res.json().catch(() => ({}));
     if (data?.ensured_count) {
-      console.log(
+      logger.debug(
         `[authors] ${data.ensured_count} fiche(s) pré-créée(s) / ${data.total_library_authors || '?'} auteurs biblio`
       );
     }
@@ -72,7 +73,7 @@ export function scheduleLibraryAuthorEnrichment({ books = [], userSeriesLibrary 
     try {
       await runBatches(limit);
     } catch (err) {
-      console.warn('[authors] enrichissement:', err?.message || err);
+      logger.warn('[authors] enrichissement:', err?.message || err);
     } finally {
       running = false;
     }

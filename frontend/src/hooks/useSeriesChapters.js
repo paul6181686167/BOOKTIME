@@ -11,6 +11,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { API_BASE_URL } from '../config/environment';
+import logger from '../utils/logger';
 
 export const useSeriesChapters = (seriesName) => {
   const [chaptersData, setChaptersData] = useState(null);
@@ -35,7 +36,7 @@ export const useSeriesChapters = (seriesName) => {
         }
       }
     } catch (e) {
-      console.warn('Erreur lecture cache chapters:', e);
+      logger.warn('Erreur lecture cache chapters:', e);
     }
     return null;
   }, [getCacheKey]);
@@ -48,7 +49,7 @@ export const useSeriesChapters = (seriesName) => {
       };
       localStorage.setItem(getCacheKey(name), JSON.stringify(cacheData));
     } catch (e) {
-      console.warn('Erreur sauvegarde cache chapters:', e);
+      logger.warn('Erreur sauvegarde cache chapters:', e);
     }
   }, [getCacheKey]);
 
@@ -76,7 +77,7 @@ export const useSeriesChapters = (seriesName) => {
       const token = localStorage.getItem('token');
       const user = localStorage.getItem('user');
       
-      console.log(' DEBUG useSeriesChapters:', {
+      logger.debug(' DEBUG useSeriesChapters:', {
         seriesName,
         hasToken: !!token,
         hasUser: !!user,
@@ -91,7 +92,7 @@ export const useSeriesChapters = (seriesName) => {
       const url = `${API_BASE_URL}/api/chapters/series/${encodeURIComponent(seriesName)}`;
       const queryParams = forceFresh ? '?force_refresh=true' : '';
 
-      console.log(' Requête API Chapters:', `${url}${queryParams}`);
+      logger.debug(' Requête API Chapters:', `${url}${queryParams}`);
 
       const response = await fetch(`${url}${queryParams}`, {
         method: 'GET',
@@ -101,7 +102,7 @@ export const useSeriesChapters = (seriesName) => {
         },
       });
 
-      console.log(' Réponse API:', {
+      logger.debug(' Réponse API:', {
         status: response.status,
         statusText: response.statusText,
         ok: response.ok,
@@ -113,17 +114,17 @@ export const useSeriesChapters = (seriesName) => {
           throw new Error('Les chapitres sortis n’ont pas pu être chargés. Réessaie dans un instant.');
         } else if (response.status === 404) {
           const errorText = await response.text();
-          console.error(' 404 Error Details:', errorText);
+          logger.error(' 404 Error Details:', errorText);
           throw new Error('Aucune donnée chapitre disponible pour cette série');
         } else {
           const errorData = await response.text();
-          console.error(' Erreur serveur:', errorData);
+          logger.error(' Erreur serveur:', errorData);
           throw new Error(`Erreur serveur (${response.status}): ${errorData}`);
         }
       }
 
       const data = await response.json();
-      console.log(' Données reçues:', {
+      logger.debug(' Données reçues:', {
         success: data.success,
         hasData: !!data.data,
         totalChapters: data.data?.total_chapters_released,
@@ -148,7 +149,7 @@ export const useSeriesChapters = (seriesName) => {
       }
 
     } catch (err) {
-      console.error(' Erreur récupération chapitres:', err);
+      logger.error(' Erreur récupération chapitres:', err);
       setError(err.message);
       setChaptersData(null);
     } finally {
@@ -178,7 +179,7 @@ export const useSeriesChapters = (seriesName) => {
       await fetchChapters(true);
 
     } catch (err) {
-      console.error('Erreur actualisation chapitres:', err);
+      logger.error('Erreur actualisation chapitres:', err);
       setError(err.message);
     }
   }, [seriesName, fetchChapters]);

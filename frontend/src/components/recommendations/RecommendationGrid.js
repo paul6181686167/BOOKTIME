@@ -14,6 +14,7 @@ import {
 
 import RecommendationCard from './RecommendationCard';
 import { recommendationService } from '../../services/recommendationService';
+import logger from '../../utils/logger';
 
 const RecommendationGrid = ({ initialRecommendations = [], userProfile = null }) => {
   const [recommendations, setRecommendations] = useState(initialRecommendations);
@@ -42,7 +43,7 @@ const RecommendationGrid = ({ initialRecommendations = [], userProfile = null })
       }
     } catch (error) {
       toast.error('Erreur lors du rafraîchissement');
-      console.error('Erreur refresh:', error);
+      logger.error('Erreur refresh:', error);
     } finally {
       setIsLoading(false);
     }
@@ -68,7 +69,7 @@ const RecommendationGrid = ({ initialRecommendations = [], userProfile = null })
       }
     } catch (error) {
       toast.error('Erreur lors du filtrage');
-      console.error('Erreur filtre:', error);
+      logger.error('Erreur filtre:', error);
     } finally {
       setIsLoading(false);
     }
@@ -97,7 +98,7 @@ const RecommendationGrid = ({ initialRecommendations = [], userProfile = null })
         setStats(response.data);
       }
     } catch (error) {
-      console.error('Erreur chargement stats:', error);
+      logger.error('Erreur chargement stats:', error);
     }
   };
 

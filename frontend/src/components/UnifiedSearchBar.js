@@ -11,6 +11,7 @@ import {
   BookmarkIcon
 } from '@heroicons/react/24/outline';
 import { displayBookTitleFrFirst } from '../utils/openLibraryBookDisplay';
+import logger from '../utils/logger';
 
 const UnifiedSearchBar = React.memo(({ 
   searchTerm, 
@@ -48,7 +49,7 @@ const UnifiedSearchBar = React.memo(({
       try {
         setRecentSearches(JSON.parse(saved));
       } catch (e) {
-        console.error('Erreur lors du chargement des recherches récentes:', e);
+        logger.error('Erreur lors du chargement des recherches récentes:', e);
       }
     }
   }, []);

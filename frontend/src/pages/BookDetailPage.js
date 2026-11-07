@@ -16,6 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { API_BASE_URL } from '../config/environment';
+import logger from '../utils/logger';
 
 const BookDetailPage = () => {
   const { bookId } = useParams();
@@ -58,7 +59,7 @@ const BookDetailPage = () => {
         reading_end_date: data.reading_end_date || ''
       });
     } catch (error) {
-      console.error('Erreur lors du chargement du livre:', error);
+      logger.error('Erreur lors du chargement du livre:', error);
       toast.error('Erreur lors du chargement du livre');
       navigate('/');
     } finally {
@@ -87,7 +88,7 @@ const BookDetailPage = () => {
       setBook(updatedBook);
       toast.success('Livre mis à jour !');
     } catch (error) {
-      console.error('Erreur lors de la mise à jour:', error);
+      logger.error('Erreur lors de la mise à jour:', error);
       toast.error('Erreur lors de la mise à jour');
     } finally {
       setUpdating(false);
@@ -139,7 +140,7 @@ const BookDetailPage = () => {
       toast.success('Livre supprimé !');
       navigate('/');
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
+      logger.error('Erreur lors de la suppression:', error);
       toast.error('Erreur lors de la suppression');
     }
   };

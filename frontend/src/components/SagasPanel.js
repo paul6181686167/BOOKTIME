@@ -10,6 +10,7 @@ import {
 import { bookService } from '../services/bookService';
 import MissingVolumesDetector from './MissingVolumesDetector';
 import toast from 'react-hot-toast';
+import logger from '../utils/logger';
 
 const SagasPanel = ({ onSagaSelect }) => {
   const [sagas, setSagas] = useState([]);
@@ -28,7 +29,7 @@ const SagasPanel = ({ onSagaSelect }) => {
       const data = await bookService.getSagas();
       setSagas(data);
     } catch (error) {
-      console.error('Erreur lors du chargement des sagas:', error);
+      logger.error('Erreur lors du chargement des sagas:', error);
     } finally {
       setLoading(false);
     }
@@ -41,7 +42,7 @@ const SagasPanel = ({ onSagaSelect }) => {
         const books = await bookService.getBooksBySaga(saga.name);
         onSagaSelect(books, saga);
       } catch (error) {
-        console.error('Erreur lors du chargement des livres de la saga:', error);
+        logger.error('Erreur lors du chargement des livres de la saga:', error);
       }
     }
   };
@@ -61,7 +62,7 @@ const SagasPanel = ({ onSagaSelect }) => {
         onSagaSelect(books, selectedSaga);
       }
     } catch (error) {
-      console.error('Erreur lors de l\'ajout automatique:', error);
+      logger.error('Erreur lors de l\'ajout automatique:', error);
       toast.error('Erreur lors de l\'ajout automatique du prochain tome');
     } finally {
       setAutoAddingFor(null);
@@ -82,7 +83,7 @@ const SagasPanel = ({ onSagaSelect }) => {
         const books = await bookService.getBooksBySaga(selectedSaga.name);
         onSagaSelect(books, selectedSaga);
       } catch (error) {
-        console.error('Erreur lors du rechargement des livres de la saga:', error);
+        logger.error('Erreur lors du rechargement des livres de la saga:', error);
       }
     }
   };

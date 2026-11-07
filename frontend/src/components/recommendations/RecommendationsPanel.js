@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StarIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import { toast } from 'react-hot-toast';
 import { API_BASE_URL } from '../../config/environment';
+import logger from '../../utils/logger';
 
 /**
  * Panel de recommandations IA BOOKTIME
@@ -57,7 +58,7 @@ const RecommendationsPanel = ({
       }
 
     } catch (error) {
-      console.error('Erreur recommandations:', error);
+      logger.error('Erreur recommandations:', error);
       setError('Erreur lors du chargement des recommandations');
     } finally {
       setLoading(false);
@@ -100,7 +101,7 @@ const RecommendationsPanel = ({
       }
 
     } catch (error) {
-      console.error('Erreur ajout recommandation:', error);
+      logger.error('Erreur ajout recommandation:', error);
       toast.error('Erreur lors de l\'ajout du livre');
     } finally {
       setAddingBooks(prev => {

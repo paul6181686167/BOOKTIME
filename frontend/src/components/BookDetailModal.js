@@ -17,6 +17,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import BookHeaderSection from './book-detail/BookHeaderSection';
 import BookDetailsGrid from './book-detail/BookDetailsGrid';
 import BookActionBar from './book-detail/BookActionBar';
+import logger from '../utils/logger';
 
 // Déclenche les confettis de célébration
 const launchConfetti = () => {
@@ -580,7 +581,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
       setAddDone(true);
       setTimeout(() => onClose(), 800);
     } catch (error) {
-      console.error('Erreur ajout livre:', error);
+      logger.error('Erreur ajout livre:', error);
       toast.error(error.message || 'Erreur lors de l\'ajout du livre');
       setIsAdding(false);
     }

@@ -5,6 +5,7 @@ import ModalOverlay, { MODAL_Z } from '../common/ModalOverlay';
  */
 import React, { useState, useEffect } from 'react';
 import advancedRecommendationService from '../../services/advancedRecommendationService';
+import logger from '../../utils/logger';
 
 const AdvancedRecommendationsModal = ({ isOpen, onClose, onAddBook }) => {
   const [activeTab, setActiveTab] = useState('contextual');
@@ -36,7 +37,7 @@ const AdvancedRecommendationsModal = ({ isOpen, onClose, onAddBook }) => {
         loadMLStats()
       ]);
     } catch (error) {
-      console.error('Erreur lors du chargement des recommandations avancées:', error);
+      logger.error('Erreur lors du chargement des recommandations avancées:', error);
     } finally {
       setLoading(false);
     }
@@ -47,7 +48,7 @@ const AdvancedRecommendationsModal = ({ isOpen, onClose, onAddBook }) => {
       const response = await advancedRecommendationService.getContextualRecommendations(ctx, 10);
       setContextualRecs(response.data || []);
     } catch (error) {
-      console.error('Erreur recommandations contextuelles:', error);
+      logger.error('Erreur recommandations contextuelles:', error);
       setContextualRecs([]);
     }
   };
@@ -57,7 +58,7 @@ const AdvancedRecommendationsModal = ({ isOpen, onClose, onAddBook }) => {
       const response = await advancedRecommendationService.getSocialRecommendations(10);
       setSocialRecs(response.data || []);
     } catch (error) {
-      console.error('Erreur recommandations sociales:', error);
+      logger.error('Erreur recommandations sociales:', error);
       setSocialRecs([]);
     }
   };
@@ -67,7 +68,7 @@ const AdvancedRecommendationsModal = ({ isOpen, onClose, onAddBook }) => {
       const response = await advancedRecommendationService.getAdvancedUserProfile();
       setUserProfile(response.data);
     } catch (error) {
-      console.error('Erreur profil utilisateur:', error);
+      logger.error('Erreur profil utilisateur:', error);
       setUserProfile(null);
     }
   };
@@ -77,7 +78,7 @@ const AdvancedRecommendationsModal = ({ isOpen, onClose, onAddBook }) => {
       const response = await advancedRecommendationService.getMLStats();
       setMLStats(response.data);
     } catch (error) {
-      console.error('Erreur stats ML:', error);
+      logger.error('Erreur stats ML:', error);
       setMLStats(null);
     }
   };
@@ -105,7 +106,7 @@ const AdvancedRecommendationsModal = ({ isOpen, onClose, onAddBook }) => {
       // Recharger les recommandations
       await loadAdvancedRecommendations();
     } catch (error) {
-      console.error('Erreur lors de l\'ajout:', error);
+      logger.error('Erreur lors de l\'ajout:', error);
     }
   };
 
@@ -124,7 +125,7 @@ const AdvancedRecommendationsModal = ({ isOpen, onClose, onAddBook }) => {
         await loadSocialRecommendations();
       }
     } catch (error) {
-      console.error('Erreur lors du feedback:', error);
+      logger.error('Erreur lors du feedback:', error);
     }
   };
 
@@ -140,7 +141,7 @@ const AdvancedRecommendationsModal = ({ isOpen, onClose, onAddBook }) => {
       await loadMLStats();
       alert(`Modèle ${modelType} entraîné avec succès !`);
     } catch (error) {
-      console.error('Erreur entraînement modèle:', error);
+      logger.error('Erreur entraînement modèle:', error);
       alert('Erreur lors de l\'entraînement du modèle');
     } finally {
       setLoading(false);

@@ -8,6 +8,7 @@ import { useAdvancedSearch } from '../hooks/useAdvancedSearch';
 import AdvancedSearchBar from './AdvancedSearchBar';
 import { useAuth } from '../App';
 import { API_BASE_URL } from '../config/environment';
+import logger from '../utils/logger';
 
 // Service de livres (on récupère depuis App.js)
 class BookService {
@@ -189,7 +190,7 @@ function SearchResultsPage() {
       // Gérer le format paginé {items: [...]} ou tableau direct
       setBooks(Array.isArray(data) ? data : (data.items || data.books || []));
     } catch (error) {
-      console.error('Erreur lors du chargement des livres:', error);
+      logger.error('Erreur lors du chargement des livres:', error);
       toast.error('Erreur lors du chargement des livres');
     } finally {
       setLoading(false);

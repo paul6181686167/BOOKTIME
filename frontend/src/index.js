@@ -5,14 +5,7 @@ import App from './App';
 import ErrorBoundary from './components/monitoring/ErrorBoundary';
 import { registerServiceWorker } from './utils/registerServiceWorker';
 
-// Supprimer les logs en production
-if (process.env.NODE_ENV === 'production') {
-  console.log = () => {};
-  console.warn = () => {};
-  console.info = () => {};
-  console.debug = () => {};
-  // console.error conservé pour les vraies erreurs
-}
+// Les journaux sont gérés par utils/logger (silencieux en production, erreurs conservées)
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

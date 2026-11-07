@@ -5,6 +5,7 @@ import ModalOverlay, { MODAL_Z } from '../common/ModalOverlay';
  */
 import React, { useState, useEffect } from 'react';
 import integrationsService from '../../services/integrationsService';
+import logger from '../../utils/logger';
 
 const IntegrationsModal = ({ isOpen, onClose, onAddBooks }) => {
   const [activeTab, setActiveTab] = useState('goodreads');
@@ -27,7 +28,7 @@ const IntegrationsModal = ({ isOpen, onClose, onAddBooks }) => {
       const statsResponse = await integrationsService.getIntegrationsStats();
       setStats(statsResponse.data);
     } catch (error) {
-      console.error('Erreur lors du chargement des données d\'intégration:', error);
+      logger.error('Erreur lors du chargement des données d\'intégration:', error);
     }
   };
 
@@ -66,7 +67,7 @@ const IntegrationsModal = ({ isOpen, onClose, onAddBooks }) => {
 
       alert(`Import terminé ! ${formattedStats.convertedBooks} livres ajoutés.`);
     } catch (error) {
-      console.error('Erreur lors de l\'import Goodreads:', error);
+      logger.error('Erreur lors de l\'import Goodreads:', error);
       alert('Erreur lors de l\'import. Vérifiez le format du fichier.');
     } finally {
       setLoading(false);
@@ -83,7 +84,7 @@ const IntegrationsModal = ({ isOpen, onClose, onAddBooks }) => {
       const response = await integrationsService.searchGoogleBooks(searchQuery, 20);
       setGoogleResults(response.data.books || []);
     } catch (error) {
-      console.error('Erreur lors de la recherche Google Books:', error);
+      logger.error('Erreur lors de la recherche Google Books:', error);
       setGoogleResults([]);
     } finally {
       setLoading(false);
@@ -95,7 +96,7 @@ const IntegrationsModal = ({ isOpen, onClose, onAddBooks }) => {
       await onAddBooks([book]);
       alert('Livre ajouté avec succès !');
     } catch (error) {
-      console.error('Erreur lors de l\'ajout du livre:', error);
+      logger.error('Erreur lors de l\'ajout du livre:', error);
       alert('Erreur lors de l\'ajout du livre');
     }
   };
@@ -114,7 +115,7 @@ const IntegrationsModal = ({ isOpen, onClose, onAddBooks }) => {
       );
       setCombinedResults(response.data.books || []);
     } catch (error) {
-      console.error('Erreur lors de la recherche combinée:', error);
+      logger.error('Erreur lors de la recherche combinée:', error);
       setCombinedResults([]);
     } finally {
       setLoading(false);

@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '../config/environment';
 import { mapMergedVolumeRowsToLibraryVolumes } from '../utils/sourceMerge';
+import logger from '../utils/logger';
 // Service pour gérer les séries en bibliothèque
 
 const API_BASE = API_BASE_URL
@@ -163,7 +164,7 @@ export const generateVolumesList = (seriesData, extendedSeriesDatabase) => {
     const categoryKey = categoryMappings[seriesData.category] || seriesData.category;
     const seriesInfo = extendedSeriesDatabase[categoryKey]?.[seriesKey];
     
-    console.log(' [DEBUG] Recherche série:', { 
+    logger.debug(' [DEBUG] Recherche série:', { 
       originalName: seriesData.name, 
       normalizedKey: seriesKey, 
       originalCategory: seriesData.category,
@@ -176,7 +177,7 @@ export const generateVolumesList = (seriesData, extendedSeriesDatabase) => {
       const volumes = seriesInfo.volume_titles || seriesInfo.tomes_officiels;
       
       if (volumes) {
-        console.log(' [DEBUG] Volumes trouvés:', volumes);
+        logger.debug(' [DEBUG] Volumes trouvés:', volumes);
         
         // Si c'est un objet (volume_titles), convertir en array
         const volumeArray = Array.isArray(volumes) ? volumes : Object.values(volumes);
@@ -209,7 +210,7 @@ export const generateVolumesList = (seriesData, extendedSeriesDatabase) => {
         },
       ];
     }
-    console.log(' [DEBUG] Fallback génération:', volumeCount, 'volumes');
+    logger.debug(' [DEBUG] Fallback génération:', volumeCount, 'volumes');
 
     return Array.from({ length: volumeCount }, (_, i) => ({
       volume_number: i + 1,
@@ -218,7 +219,7 @@ export const generateVolumesList = (seriesData, extendedSeriesDatabase) => {
       date_read: null,
     }));
   } catch (error) {
-    console.error('Erreur génération volumes:', error);
+    logger.error('Erreur génération volumes:', error);
     const n = Number(
       (typeof seriesData.volumes === 'number' && seriesData.volumes) ||
         seriesData.total_volumes ||
@@ -265,7 +266,7 @@ export const enrichSeriesMetadata = async (seriesData) => {
       publisher: seriesData.publisher || ''
     };
   } catch (error) {
-    console.error('Erreur enrichissement métadonnées:', error);
+    logger.error('Erreur enrichissement métadonnées:', error);
     return {
       cover_image_url: '',
       description_fr: `Série ${seriesData.category} populaire.`,

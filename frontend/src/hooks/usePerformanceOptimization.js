@@ -1,5 +1,6 @@
 // Phase 2.3 - Hook pour optimisations performance avancées
 import { useCallback, useMemo, useRef, useEffect, useState } from 'react';
+import logger from '../utils/logger';
 
 /**
  * Hook pour optimiser les re-rendus avec useMemo et useCallback
@@ -95,7 +96,7 @@ export const usePerformanceMonitor = (componentName) => {
   // Logger les performances en mode développement
   useEffect(() => {
     if (process.env.NODE_ENV === 'development' && renderCount.current > 0) {
-      console.log(`[Performance] ${componentName}:`, {
+      logger.debug(`[Performance] ${componentName}:`, {
         renderCount: renderCount.current,
         lastRenderTime: lastRenderTime.current.toFixed(2) + 'ms',
         averageRenderTime: performanceData.averageRenderTime.toFixed(2) + 'ms'

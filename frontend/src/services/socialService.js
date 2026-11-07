@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../config/environment';
+import logger from '../utils/logger';
 /**
  * PHASE 3.3 - Service Social Frontend
  * Service pour les fonctionnalités sociales et communautaires
@@ -40,7 +41,7 @@ class SocialService {
 
       return await response.json();
     } catch (error) {
-      console.error('Erreur lors de la création du profil:', error);
+      logger.error('Erreur lors de la création du profil:', error);
       throw error;
     }
   }
@@ -58,7 +59,7 @@ class SocialService {
 
       return await response.json();
     } catch (error) {
-      console.error('Erreur lors de la récupération du profil:', error);
+      logger.error('Erreur lors de la récupération du profil:', error);
       throw error;
     }
   }
@@ -77,7 +78,7 @@ class SocialService {
 
       return await response.json();
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du profil:', error);
+      logger.error('Erreur lors de la mise à jour du profil:', error);
       throw error;
     }
   }
@@ -97,7 +98,7 @@ class SocialService {
 
       return await response.json();
     } catch (error) {
-      console.error('Erreur lors du follow:', error);
+      logger.error('Erreur lors du follow:', error);
       throw error;
     }
   }
@@ -115,7 +116,7 @@ class SocialService {
 
       return await response.json();
     } catch (error) {
-      console.error('Erreur lors de l\'unfollow:', error);
+      logger.error('Erreur lors de l\'unfollow:', error);
       throw error;
     }
   }
@@ -133,7 +134,7 @@ class SocialService {
 
       return await response.json();
     } catch (error) {
-      console.error('Erreur lors de la récupération des followers:', error);
+      logger.error('Erreur lors de la récupération des followers:', error);
       throw error;
     }
   }
@@ -151,7 +152,7 @@ class SocialService {
 
       return await response.json();
     } catch (error) {
-      console.error('Erreur lors de la récupération des following:', error);
+      logger.error('Erreur lors de la récupération des following:', error);
       throw error;
     }
   }
@@ -172,7 +173,7 @@ class SocialService {
 
       return await response.json();
     } catch (error) {
-      console.error('Erreur lors de la création de l\'activité:', error);
+      logger.error('Erreur lors de la création de l\'activité:', error);
       throw error;
     }
   }
@@ -190,7 +191,7 @@ class SocialService {
 
       return await response.json();
     } catch (error) {
-      console.error('Erreur lors de la récupération du feed:', error);
+      logger.error('Erreur lors de la récupération du feed:', error);
       throw error;
     }
   }
@@ -210,7 +211,7 @@ class SocialService {
 
       return await response.json();
     } catch (error) {
-      console.error('Erreur lors de la récupération des notifications:', error);
+      logger.error('Erreur lors de la récupération des notifications:', error);
       throw error;
     }
   }
@@ -228,7 +229,7 @@ class SocialService {
 
       return await response.json();
     } catch (error) {
-      console.error('Erreur lors du marquage de la notification:', error);
+      logger.error('Erreur lors du marquage de la notification:', error);
       throw error;
     }
   }
@@ -246,7 +247,7 @@ class SocialService {
 
       return await response.json();
     } catch (error) {
-      console.error('Erreur lors du marquage de toutes les notifications:', error);
+      logger.error('Erreur lors du marquage de toutes les notifications:', error);
       throw error;
     }
   }
@@ -266,7 +267,7 @@ class SocialService {
 
       return await response.json();
     } catch (error) {
-      console.error('Erreur lors de la recherche d\'utilisateurs:', error);
+      logger.error('Erreur lors de la recherche d\'utilisateurs:', error);
       throw error;
     }
   }
@@ -286,7 +287,7 @@ class SocialService {
 
       return await response.json();
     } catch (error) {
-      console.error('Erreur lors de la récupération des stats sociales:', error);
+      logger.error('Erreur lors de la récupération des stats sociales:', error);
       throw error;
     }
   }
@@ -306,7 +307,7 @@ class SocialService {
 
       return await response.json();
     } catch (error) {
-      console.error('Erreur lors du health check social:', error);
+      logger.error('Erreur lors du health check social:', error);
       throw error;
     }
   }

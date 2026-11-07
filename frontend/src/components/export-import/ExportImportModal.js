@@ -6,6 +6,7 @@ import ModalOverlay, { MODAL_Z } from '../common/ModalOverlay';
 import React, { useState } from 'react';
 import { X, Download, Upload, FileText, FileSpreadsheet, Archive, Eye, CheckCircle, AlertCircle } from 'lucide-react';
 import { saveBlobAsFile } from '../../utils/fileDownload';
+import logger from '../../utils/logger';
 
 const ExportImportModal = ({ isOpen, onClose, backendUrl, token }) => {
   const [activeTab, setActiveTab] = useState('export');
@@ -85,7 +86,7 @@ const ExportImportModal = ({ isOpen, onClose, backendUrl, token }) => {
         'success'
       );
     } catch (error) {
-      console.error('Erreur export:', error);
+      logger.error('Erreur export:', error);
       showMessage(`Erreur lors de l'export: ${error.message}`, 'error');
     } finally {
       setLoading(false);
@@ -117,7 +118,7 @@ const ExportImportModal = ({ isOpen, onClose, backendUrl, token }) => {
       setPreviewData(data);
       showMessage('Aperçu généré avec succès !', 'success');
     } catch (error) {
-      console.error('Erreur preview:', error);
+      logger.error('Erreur preview:', error);
       showMessage(`Erreur lors de l'aperçu: ${error.message}`, 'error');
     } finally {
       setLoading(false);
@@ -163,7 +164,7 @@ const ExportImportModal = ({ isOpen, onClose, backendUrl, token }) => {
         showMessage('Import échoué. Vérifiez les erreurs.', 'error');
       }
     } catch (error) {
-      console.error('Erreur import:', error);
+      logger.error('Erreur import:', error);
       showMessage(`Erreur lors de l'import: ${error.message}`, 'error');
     } finally {
       setLoading(false);
@@ -193,7 +194,7 @@ const ExportImportModal = ({ isOpen, onClose, backendUrl, token }) => {
         'success'
       );
     } catch (error) {
-      console.error('Erreur template:', error);
+      logger.error('Erreur template:', error);
       showMessage(`Erreur lors du téléchargement: ${error.message}`, 'error');
     }
   };

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { API_BASE_URL } from '../../config/environment';
+import logger from '../../utils/logger';
 
 function normalizeIsbn(raw) {
   return String(raw || '')
@@ -317,7 +318,7 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAdded
         applyBarcodeFocus(scanner);
       }, 900);
     } catch (err) {
-      console.warn('Camera scan error', err);
+      logger.warn('Camera scan error', err);
       setCameraError(
         "Caméra inaccessible. Autorise l'accès (HTTPS) ou saisis l'ISBN manuellement."
       );
