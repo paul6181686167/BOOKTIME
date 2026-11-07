@@ -4,6 +4,7 @@ import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import LanguageSelector from '../LanguageSelector';
 import { coverImgSrc } from '../../utils/helpers';
 import CommunityReviews from '../common/CommunityReviews';
+import ExternalRatings from '../common/ExternalRatings';
 
 /** Corps de la fiche : couverture, informations, progression, résumé, notes et avis. */
 const BookDetailsGrid = ({
@@ -244,6 +245,13 @@ const BookDetailsGrid = ({
                 </div>
               </>
             )}
+
+            <ExternalRatings
+              title={titleMain || book.title}
+              author={book.author || ''}
+              isbn={book.isbn || ''}
+              category={book.category || ''}
+            />
 
             <CommunityReviews
               book={book}

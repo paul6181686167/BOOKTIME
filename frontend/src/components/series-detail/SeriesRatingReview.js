@@ -2,6 +2,7 @@ import React from 'react';
 import { StarIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import CommunityReviews from '../common/CommunityReviews';
+import ExternalRatings from '../common/ExternalRatings';
 
 /** Note, avis personnel et avis de la communauté. */
 const SeriesRatingReview = ({
@@ -71,6 +72,13 @@ const SeriesRatingReview = ({
               Ajoutez la série pour noter et publier un avis.
             </p>
           )}
+
+          <ExternalRatings
+            title={seriesDisplayName}
+            author={series?.author || series?.authors?.[0] || ''}
+            kind="series"
+            category={series?.category || ''}
+          />
 
           <CommunityReviews
             book={{

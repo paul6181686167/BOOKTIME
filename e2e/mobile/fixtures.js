@@ -106,6 +106,15 @@ async function mockApi(page) {
     }
     if (p === '/api/auth/me') return json({ ...USER, settings: {} });
     if (p === '/api/collections') return json({ collections: [], version: 0 });
+    if (p === '/api/ratings/external') {
+      return json({
+        ratings: [
+          { source: 'openlibrary', label: 'Open Library', score: 4.2, count: 1234, url: 'https://openlibrary.org/works/OL1W', scope: 'book' },
+          { source: 'googlebooks', label: 'Google Books', score: 3.5, count: null, url: null, scope: 'book' },
+        ],
+        links: [{ label: 'Babelio', url: 'https://www.babelio.com/x' }, { label: 'Goodreads', url: 'https://www.goodreads.com/x' }],
+      });
+    }
     if (/^\/api\/books\/[^/]+\/synopsis$/.test(p)) {
       return json({ description: LONG_SYNOPSIS, source: 'isbn_back_cover', replaced: false });
     }

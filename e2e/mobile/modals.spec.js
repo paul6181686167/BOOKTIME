@@ -62,6 +62,16 @@ test.describe('Fiches sur mobile', () => {
     await expect(bookDialog(page)).toBeHidden();
   });
 
+  test('la fiche livre affiche les notes des autres sites', async ({ page }) => {
+    await openBook(page);
+    const ratings = bookDialog(page).getByTestId('external-ratings');
+    await expect(ratings).toContainText('4,2/5');
+    await expect(ratings).toContainText('Open Library');
+    await expect(ratings).toContainText('1 234 avis');
+    await expect(ratings).toContainText('Google Books');
+    await expect(ratings.getByRole('link', { name: /Babelio/ })).toBeVisible();
+  });
+
   test('la fiche livre est bien rendue hors du carrousel', async ({ page }) => {
     await openBook(page);
     const parentIsBody = await bookDialog(page).evaluate((el) => el.parentElement === document.body);
