@@ -5,6 +5,7 @@ import { API_BASE_URL } from '../config/environment';
 import { EXTENDED_SERIES_DATABASE } from '../utils/seriesDatabaseExtended';
 import { buildMergedLibraryVolumeRowsFromOlBooks } from '../utils/openLibraryBookDisplay';
 import { useTheme } from '../contexts/ThemeContext';
+import { readAuthorProfile } from '../services/authorPrefetch';
 
 // Cherche une série dans la base statique par nom (insensible à la casse)
 const findSeriesInDB = (name) => {
@@ -116,12 +117,8 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
   /** Fiche Mongo déjà enrichie pour les auteurs de la bibliothèque. */
   const loadAuthorFromCache = async (backendUrl, token) => {
     try {
-      const res = await fetch(
-        `${backendUrl}/api/authors/${encodeURIComponent(author)}/profile`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-      );
-      if (!res.ok) return { ok: false, hasWorks: false };
-      const data = await res.json();
+      // Fiche préchargée à l'ouverture de la fiche livre (ou lecture rapide du cache serveur)
+      const data = await readAuthorProfile(author);
       if (!data?.found || !data.author) return { ok: false, hasWorks: false };
 
       const series = Array.isArray(data.series) ? data.series : [];

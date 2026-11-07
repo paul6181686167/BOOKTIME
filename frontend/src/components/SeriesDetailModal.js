@@ -30,6 +30,7 @@ import { isVolumeUnreleased, countReleasedVolumes } from '../utils/volumeRelease
 import AddToCollectionMenu from './common/AddToCollectionMenu';
 import CommunityReviews from './common/CommunityReviews';
 import { coverImgSrc } from '../utils/helpers';
+import { prefetchAuthor } from '../services/authorPrefetch';
 import { preferFrenchSynopsis } from '../utils/synopsisQuality';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -959,6 +960,13 @@ const SeriesDetailModal = ({
       if (e?.name !== 'AbortError') setIsSeriesOwned(false);
     }
   };
+
+  // Fiche auteur chargée d'avance : elle s'ouvre sans attente au clic sur le nom
+  useEffect(() => {
+    if (!isOpen) return;
+    const seriesAuthor = series?.author || series?.authors?.[0];
+    if (seriesAuthor) prefetchAuthor(seriesAuthor);
+  }, [isOpen, series?.author, series?.authors]);
 
   useEffect(() => {
     if (!isOpen || !series) return;

@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 CACHE_TTL = timedelta(days=30)
 MAX_ENSURE_PER_CALL = 12
+ENSURE_CONCURRENCY = 3
 
 
 def normalize_author_name(name: str) -> str:
@@ -64,16 +65,41 @@ def is_fresh(doc: Optional[dict]) -> bool:
 
 
 def author_fiche_ready(doc: Optional[dict]) -> bool:
-    """Une fiche est « créée » si bio/photo ou œuvres sont présentes."""
+    """Une fiche est « créée » si bio/photo ou œuvres sont présentes.
+
+    Une fiche vide (aucune source n'a répondu) n'est pas prête : l'écran auteur la
+    complète alors en direct au lieu d'afficher une page vide.
+    """
     if not doc:
         return False
     if doc.get("bio") or doc.get("photo_url") or doc.get("image_url"):
         return True
     if doc.get("series") or doc.get("individual_books"):
         return True
-    if doc.get("wikidata_qid") or doc.get("wikipedia_url"):
+    return bool(doc.get("wikidata_qid") or doc.get("wikipedia_url"))
+
+
+# Une fiche vide est retentée au bout d'un jour (les sources étaient peut-être indisponibles)
+EMPTY_RETRY = timedelta(days=1)
+
+
+def needs_enrichment(doc: Optional[dict]) -> bool:
+    """True si la fiche doit être (re)construite : absente, périmée, ou vide depuis plus d'un jour."""
+    if not doc:
         return True
-    return bool(doc.get("enriched_at"))
+    if author_fiche_ready(doc):
+        return not is_fresh(doc)
+    enriched_at = doc.get("enriched_at")
+    if not enriched_at:
+        return True
+    try:
+        if isinstance(enriched_at, str):
+            enriched_at = datetime.fromisoformat(enriched_at.replace("Z", "+00:00")).replace(
+                tzinfo=None
+            )
+        return datetime.utcnow() - enriched_at >= EMPTY_RETRY
+    except Exception:
+        return True
 
 
 async def enrich_author_fiche(author_name: str, *, force: bool = False) -> dict:
@@ -86,8 +112,8 @@ async def enrich_author_fiche(author_name: str, *, force: bool = False) -> dict:
         return {"found": False, "name": display_name}
 
     existing = get_cached_author(display_name)
-    if existing and is_fresh(existing) and author_fiche_ready(existing) and not force:
-        return {**existing, "found": True, "from_cache": True}
+    if existing and not needs_enrichment(existing) and not force:
+        return {**existing, "found": author_fiche_ready(existing), "from_cache": True}
 
     from ..wikidata.service import wikidata_service
 
@@ -276,32 +302,37 @@ def list_library_author_names(user_id: str) -> list[str]:
 async def ensure_authors_from_library(
     user_id: str, *, limit: int = MAX_ENSURE_PER_CALL, force: bool = False
 ) -> dict:
+    import asyncio
+
     names = list_library_author_names(user_id)
-    created = []
-    skipped = []
-    errors = []
-    for name in names:
-        if len(created) >= limit:
-            skipped.extend(names[names.index(name) :])
-            break
-        cached = get_cached_author(name)
-        if cached and is_fresh(cached) and author_fiche_ready(cached) and not force:
-            skipped.append(name)
-            continue
-        try:
-            doc = await enrich_author_fiche(name, force=force)
-            if doc.get("found") or author_fiche_ready(doc):
-                created.append(name)
-            else:
-                skipped.append(name)
-        except Exception as exc:
-            logger.debug("ensure author fail %s: %s", name, exc)
-            errors.append(name)
+    pending = [
+        n for n in names if force or needs_enrichment(get_cached_author(n))
+    ]
+    batch = pending[:limit]
+    created: list[str] = []
+    errors: list[str] = []
+    gate = asyncio.Semaphore(ENSURE_CONCURRENCY)
+
+    async def _one(name: str) -> None:
+        async with gate:
+            try:
+                doc = await enrich_author_fiche(name, force=force)
+                if doc.get("found") or author_fiche_ready(doc):
+                    created.append(name)
+            except Exception as exc:
+                logger.debug("ensure author fail %s: %s", name, exc)
+                errors.append(name)
+
+    # Plusieurs auteurs en parallèle : les sources externes sont lentes, pas notre serveur
+    await asyncio.gather(*(_one(n) for n in batch))
+    done = set(batch)
     return {
         "ok": True,
         "total_library_authors": len(names),
         "ensured": created,
-        "skipped": skipped,
+        "skipped": [n for n in names if n not in done],
         "errors": errors,
         "ensured_count": len(created),
+        # Auteurs dont la fiche reste à construire : le client relance un lot tant qu'il en reste
+        "remaining": max(0, len(pending) - len(batch)),
     }

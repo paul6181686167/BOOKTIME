@@ -11,6 +11,11 @@ from .service import (
 router = APIRouter(prefix="/api/authors", tags=["authors"])
 
 
+def _primary_author(name: str) -> str:
+    """Premier auteur d'une liste « A, B »."""
+    return (name or "").split(",")[0].strip() or (name or "").strip()
+
+
 def _get_followed(user_id: str) -> list:
     """Liste des auteurs suivis (lecture tolérante aux docs sans le champ)."""
     user = users_collection.find_one({"id": user_id}, {"_id": 0, "followed_authors": 1})
@@ -159,6 +164,9 @@ async def get_author_profile(
     se fait via POST /ensure-from-library ou ?refresh=true.
     """
     cached = get_cached_author(author_name)
+    if not cached and "," in author_name:
+        # « A, B » : la fiche de la bibliothèque est enregistrée sous le premier auteur
+        cached = get_cached_author(_primary_author(author_name))
     if cached and author_fiche_ready(cached) and not refresh:
         payload = _profile_payload(cached, from_cache=True, source="cache")
         payload["author"]["name"] = cached.get("name") or author_name
@@ -185,6 +193,31 @@ async def get_author_profile(
             "individual_books": [],
         }
     payload = _profile_payload(doc, from_cache=False, source="enriched")
+    payload["author"]["name"] = doc.get("name") or author_name
+    return payload
+
+
+@router.post("/{author_name}/ensure")
+async def ensure_author_profile(
+    author_name: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Construit la fiche d'un auteur s'il n'en a pas encore (préchargement depuis une fiche livre).
+
+    Ne refait pas le travail si la fiche existe : renvoie alors le cache immédiatement.
+    """
+    author_name = _primary_author(author_name)
+    doc = await enrich_author_fiche(author_name, force=False)
+    if not author_fiche_ready(doc):
+        return {
+            "found": False,
+            "from_cache": bool(doc.get("from_cache")),
+            "message": "not_ready",
+            "author": None,
+            "series": [],
+            "individual_books": [],
+        }
+    payload = _profile_payload(doc, from_cache=bool(doc.get("from_cache")), source="enriched")
     payload["author"]["name"] = doc.get("name") or author_name
     return payload
 

@@ -21,6 +21,7 @@ import {
   sanitizeSynopsis,
 } from '../utils/synopsisQuality';
 import { coverImgSrc } from '../utils/helpers';
+import { prefetchAuthor } from '../services/authorPrefetch';
 import AddToCollectionMenu from './common/AddToCollectionMenu';
 import CommunityReviews from './common/CommunityReviews';
 import confetti from 'canvas-confetti';
@@ -89,6 +90,11 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
       book.description,
       { rejectEnglish: true }
     ) || '';
+
+  // Fiche auteur chargée d'avance : elle s'ouvre sans attente au clic sur le nom
+  useEffect(() => {
+    if (book.author && !book.isFromOpenLibrary) prefetchAuthor(book.author);
+  }, [book.author, book.isFromOpenLibrary]);
 
   useEffect(() => {
     setEditData({
