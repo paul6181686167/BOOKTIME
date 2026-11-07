@@ -1,8 +1,9 @@
 /* Booktime PWA Service Worker — bump force redeploy cache Vercel */
-const SW_VERSION = 'booktime-v18-graphic-discover';
+const SW_VERSION = 'booktime-v19-offline-details';
 const SHELL_CACHE = `${SW_VERSION}-shell`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const API_CACHE = `${SW_VERSION}-api`;
+const DETAIL_CACHE = `${SW_VERSION}-detail`;
 
 const SHELL_URLS = [
   '/',
@@ -75,6 +76,52 @@ function isApiLibraryRequest(url) {
   return false;
 }
 
+// Fiches et pages de découverte : réseau d'abord, dernière version connue hors ligne.
+// Les entrées sont propres à l'utilisateur : le cache `-detail` / `-api` est vidé à la
+// déconnexion (voir utils/offlineCaches.js côté application).
+const DETAIL_MAX_ENTRIES = 120;
+const DETAIL_NETWORK_TIMEOUT_MS = 8000;
+
+function isDetailRequest(url) {
+  const path = url.pathname;
+  return (
+    /\/api\/authors\/[^/]+\/profile$/.test(path) ||
+    /\/api\/books\/[^/]+\/synopsis$/.test(path) ||
+    path.includes('/api/recommendations') ||
+    path.includes('/api/catalog/popular') ||
+    path.includes('/api/upcoming') ||
+    path.includes('/api/authors/following')
+  );
+}
+
+async function trimCache(cacheName, maxEntries) {
+  const cache = await caches.open(cacheName);
+  const keys = await cache.keys();
+  if (keys.length <= maxEntries) return;
+  await Promise.all(keys.slice(0, keys.length - maxEntries).map((key) => cache.delete(key)));
+}
+
+async function networkFirstWithCache(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), DETAIL_NETWORK_TIMEOUT_MS);
+    const response = await fetch(request, { signal: controller.signal });
+    clearTimeout(timer);
+    if (response && response.ok) {
+      await cache.put(request, response.clone());
+      trimCache(cacheName, DETAIL_MAX_ENTRIES).catch(() => {});
+    }
+    return response;
+  } catch (_) {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    return new Response(JSON.stringify({ offline: true }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    });
+  }
+}
 function isNavigationRequest(request) {
   return request.mode === 'navigate';
 }
@@ -148,6 +195,12 @@ self.addEventListener('fetch', (event) => {
           );
         })
     );
+    return;
+  }
+
+  // Fiches (auteur, résumé) et pages de découverte → réseau d'abord, cache hors ligne
+  if (isDetailRequest(url)) {
+    event.respondWith(networkFirstWithCache(request, DETAIL_CACHE));
     return;
   }
 

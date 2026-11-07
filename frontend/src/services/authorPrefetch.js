@@ -34,6 +34,32 @@ async function getJson(url, options = {}) {
   return res.json().catch(() => null);
 }
 
+// Dernières fiches consultées, gardées pour le hors ligne (les plus récentes d'abord)
+const STORE_PREFIX = 'booktime_author_profile:';
+const STORE_INDEX = 'booktime_author_profile_index';
+const MAX_STORED = 40;
+
+function storeProfile(key, data) {
+  try {
+    const index = (JSON.parse(localStorage.getItem(STORE_INDEX)) || []).filter((k) => k !== key);
+    index.unshift(key);
+    index.splice(MAX_STORED).forEach((old) => localStorage.removeItem(STORE_PREFIX + old));
+    localStorage.setItem(STORE_PREFIX + key, JSON.stringify(data));
+    localStorage.setItem(STORE_INDEX, JSON.stringify(index.slice(0, MAX_STORED)));
+  } catch (_) {
+    /* quota plein ou stockage indisponible : le hors ligne est facultatif */
+  }
+}
+
+function readStoredProfile(key) {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORE_PREFIX + key));
+    return data?.found && data.author ? data : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 /** Fiche déjà construite côté serveur (lecture seule, rapide). Partagée entre appels simultanés. */
 export function readAuthorProfile(name) {
   if (!isRealAuthor(name)) return Promise.resolve(null);
@@ -41,12 +67,21 @@ export function readAuthorProfile(name) {
   if (profiles.has(key)) return profiles.get(key);
 
   const promise = getJson(`${API_BASE_URL}/api/authors/${encodeURIComponent(primaryAuthor(name))}/profile`)
-    .catch(() => null)
-    .then((data) => {
-      if (data?.found && data.author) return data;
+    .then(
+      (data) => ({ data, offline: false }),
+      () => ({ data: null, offline: true })
+    )
+    .then(({ data, offline }) => {
+      if (data?.found && data.author) {
+        storeProfile(key, data);
+        return data;
+      }
       // Pas de fiche : on ne mémorise pas l'échec, un nouvel appel pourra la trouver
       profiles.delete(key);
-      return null;
+      // Hors ligne : dernière version connue de la fiche (non mémorisée en session)
+      const noNetwork =
+        offline || (typeof navigator !== 'undefined' && navigator.onLine === false);
+      return noNetwork ? readStoredProfile(key) : null;
     });
   profiles.set(key, promise);
   return promise;

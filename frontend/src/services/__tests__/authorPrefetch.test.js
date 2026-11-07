@@ -63,4 +63,39 @@ describe('authorPrefetch', () => {
     expect(await readAuthorProfile('')).toBeNull();
     expect(calls).toHaveLength(0);
   });
+
+  describe('hors ligne', () => {
+    test('garde la dernière fiche lue et la ressert sans réseau', async () => {
+      localStorage.clear();
+      mockFetch(() => PROFILE);
+      await readAuthorProfile('Camus');
+      expect(JSON.parse(localStorage.getItem('booktime_author_profile:camus')).author.name).toBe('Camus');
+
+      clearAuthorPrefetch();
+      global.fetch = jest.fn(() => Promise.reject(new TypeError('Failed to fetch')));
+      expect(await readAuthorProfile('Camus')).toEqual(PROFILE);
+      // pas mémorisée : au retour du réseau, la vraie fiche est relue
+      mockFetch(() => ({ found: true, author: { name: 'Camus', bio: 'À jour' } }));
+      expect((await readAuthorProfile('Camus')).author.bio).toBe('À jour');
+    });
+
+    test('ne renvoie rien si la fiche n’a jamais été consultée', async () => {
+      localStorage.clear();
+      global.fetch = jest.fn(() => Promise.reject(new TypeError('Failed to fetch')));
+      expect(await readAuthorProfile('Inconnu Total')).toBeNull();
+    });
+
+    test('limite le nombre de fiches conservées', async () => {
+      localStorage.clear();
+      mockFetch(() => PROFILE);
+      for (let i = 0; i < 45; i += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        await readAuthorProfile(`Auteur ${i}`);
+      }
+      const stored = Object.keys(localStorage).filter((k) => k.startsWith('booktime_author_profile:'));
+      expect(stored).toHaveLength(40);
+      expect(localStorage.getItem('booktime_author_profile:auteur 0')).toBeNull();
+      expect(localStorage.getItem('booktime_author_profile:auteur 44')).not.toBeNull();
+    });
+  });
 });

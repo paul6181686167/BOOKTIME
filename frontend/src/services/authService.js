@@ -1,6 +1,7 @@
 // Service d'authentification multi-environnement
 import { API_BASE_URL } from '../config/environment';
 import { TERMS_VERSION } from '../legal/terms';
+import { clearUserCaches } from '../utils/offlineCaches';
 
 class AuthService {
   constructor() {
@@ -229,6 +230,8 @@ class AuthService {
   logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    // Bibliothèque et fiches gardées pour le hors ligne : propres au compte
+    clearUserCaches();
   }
 }
 
