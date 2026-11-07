@@ -54,7 +54,7 @@ const PerformanceWidget = ({ position = 'bottom-right', isVisible = true }) => {
 
   const getStatusColor = (value, thresholds) => {
     if (value <= thresholds.good) return 'text-green-600 dark:text-green-400';
-    if (value <= thresholds.warning) return 'text-yellow-600 dark:text-yellow-400';
+    if (value <= thresholds.warning) return 'text-yellow-700 dark:text-yellow-400';
     return 'text-red-600 dark:text-red-400';
   };
 

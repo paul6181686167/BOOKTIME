@@ -54,4 +54,32 @@ describe('ModalOverlay', () => {
     expect(top).toHaveBeenCalledTimes(1);
     expect(bottom).not.toHaveBeenCalled();
   });
+
+  it('place le focus dans la fenêtre à l’ouverture', () => {
+    render(
+      <ModalOverlay onClose={() => {}} ariaLabel="Focus">
+        <button>un</button>
+      </ModalOverlay>
+    );
+    expect(screen.getByRole('dialog')).toHaveFocus();
+  });
+
+  it('garde Tab et Maj+Tab dans la fenêtre', () => {
+    render(
+      <ModalOverlay onClose={() => {}} ariaLabel="Piège">
+        <button>premier</button>
+        <button>dernier</button>
+      </ModalOverlay>
+    );
+    const first = screen.getByText('premier');
+    const last = screen.getByText('dernier');
+
+    last.focus();
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(first).toHaveFocus();
+
+    first.focus();
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(last).toHaveFocus();
+  });
 });

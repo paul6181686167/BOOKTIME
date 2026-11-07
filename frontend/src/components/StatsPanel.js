@@ -70,7 +70,7 @@ const StatsPanel = ({ stats }) => {
             {[
               { title: 'Total',    value: stats.total_books || 0, bg: 'bg-blue-50 dark:bg-blue-900/20',    text: 'text-blue-600 dark:text-blue-400'    },
               { title: 'Terminés', value: stats.completed_books || 0, bg: 'bg-green-50 dark:bg-green-900/20',  text: 'text-green-600 dark:text-green-400'  },
-              { title: 'En cours', value: stats.reading_books || 0, bg: 'bg-yellow-50 dark:bg-yellow-900/20',text: 'text-yellow-600 dark:text-yellow-400'},
+              { title: 'En cours', value: stats.reading_books || 0, bg: 'bg-yellow-50 dark:bg-yellow-900/20',text: 'text-yellow-700 dark:text-yellow-400'},
               { title: 'À lire',   value: stats.to_read_books || 0, bg: 'bg-gray-50 dark:bg-gray-700',       text: 'text-gray-700 dark:text-gray-200'    },
             ].map((s, i) => (
               <div

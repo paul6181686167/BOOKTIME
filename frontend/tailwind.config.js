@@ -17,8 +17,9 @@ module.exports = {
           300: '#86efac',
           400: '#4ade80',
           500: '#22c55e',
-          600: '#16a34a',
-          700: '#15803d',
+          // 600/700 assombris pour que le texte blanc sur fond vert atteigne 4,5:1 (WCAG AA)
+          600: '#15803d',
+          700: '#166534',
           800: '#166534',
           900: '#14532d',
           // Fond de page : vert doux mais bien présent
@@ -29,6 +30,11 @@ module.exports = {
         // 900 = page, 800 = carte, 700 = relief / bordures.
         // Les teintes claires (50–500) restent celles de Tailwind.
         // 900 = fond page, 800 = vignettes (un cran plus clair pour contraster moins fort)
+        // Vert des boutons g-green-600 : même assombrissement que booktime-600
+        'green': {
+          600: '#15803d',
+          700: '#166534',
+        },
         'gray': {
           700: '#1e3a2c',
           800: '#163528',

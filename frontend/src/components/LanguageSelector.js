@@ -67,7 +67,7 @@ const LanguageSelector = ({
                   <span>{lang.flag}</span>
                   <span>{lang.name}</span>
                   {!single && (
-                    <button
+                    <button aria-label="Fermer"
                       onClick={(e) => removeLanguage(code, e)}
                       className="ml-1 hover:text-booktime-600 dark:hover:text-booktime-400"
                     >

@@ -181,7 +181,7 @@ const SagasPanel = ({ onSagaSelect }) => {
               {/* Boutons d'action */}
               <div className="flex space-x-2">
                 {/* Bouton d'analyse des tomes manquants */}
-                <button
+                <button aria-label="Analyser les tomes manquants"
                   onClick={(e) => handleAnalyzeMissingVolumes(saga.name, e)}
                   className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-full transition-colors"
                   title="Analyser les tomes manquants"

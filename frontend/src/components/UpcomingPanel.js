@@ -65,7 +65,7 @@ const TYPE_META = {
 const GROUP_META = [
   { key: 'available', title: 'Disponibles maintenant', header: 'text-green-600 dark:text-green-400', Icon: CheckIcon },
   { key: 'this_week', title: 'Cette semaine', header: 'text-amber-600 dark:text-amber-400', Icon: ClockIcon },
-  { key: 'this_month', title: 'Ce mois-ci', header: 'text-orange-600 dark:text-orange-400', Icon: CalendarDaysIcon },
+  { key: 'this_month', title: 'Ce mois-ci', header: 'text-orange-700 dark:text-orange-400', Icon: CalendarDaysIcon },
   { key: 'later', title: 'Plus tard', header: 'text-blue-600 dark:text-blue-400', Icon: CalendarDaysIcon },
   { key: 'unknown', title: 'Date à confirmer', header: 'text-gray-500 dark:text-gray-400', Icon: QuestionMarkCircleIcon },
 ];
@@ -176,7 +176,7 @@ const ItemCard = ({ item, onMigrate, onRemove, onWatch }) => {
           </button>
         )}
         {isWatchlist ? (
-          <button
+          <button aria-label="Retirer"
             onClick={handleRemove}
             title="Retirer"
             className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
@@ -189,7 +189,7 @@ const ItemCard = ({ item, onMigrate, onRemove, onWatch }) => {
               <CheckIcon className="h-4 w-4" />
             </div>
           ) : (
-            <button
+            <button aria-label="Surveiller ce tome"
               onClick={handleWatch}
               title="Surveiller ce tome"
               className="p-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white transition-colors"
@@ -360,7 +360,7 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
             </h2>
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <button aria-label="Rafraîchir"
               onClick={() => loadData(true)}
               disabled={isLoading}
               title="Rafraîchir"
@@ -369,7 +369,7 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
               <ArrowPathIcon className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
             {!isPage && (
-              <button
+              <button aria-label="Fermer"
                 onClick={onClose}
                 className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
@@ -420,7 +420,7 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
                     <p className="text-xs font-medium text-gray-900 dark:text-white line-clamp-1">{book.title}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{book.author}</p>
                   </div>
-                  <button
+                  <button aria-label="Ajouter"
                     onClick={() => handleAddFromSearch(book)}
                     className="p-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors flex-shrink-0"
                   >
@@ -436,7 +436,7 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
         <div className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2 flex-shrink-0">
           <BellIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
           <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Me prévenir :</span>
-          <select
+          <select aria-label="Mode de notification"
             value={notifMode}
             onChange={(e) => handleChangeNotifMode(e.target.value)}
             className="flex-1 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-booktime-500 dark:text-white"

@@ -78,7 +78,7 @@ const Pagination = ({
       {/* Contrôles de pagination */}
       <div className="flex items-center gap-2">
         {/* Première page */}
-        <button
+        <button aria-label="Première page"
           onClick={() => onPageChange(1)}
           disabled={!hasPrevious || loading}
           className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
@@ -88,7 +88,7 @@ const Pagination = ({
         </button>
         
         {/* Page précédente */}
-        <button
+        <button aria-label="Page précédente"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={!hasPrevious || loading}
           className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
@@ -118,7 +118,7 @@ const Pagination = ({
         </div>
         
         {/* Page suivante */}
-        <button
+        <button aria-label="Page suivante"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={!hasNext || loading}
           className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
@@ -128,7 +128,7 @@ const Pagination = ({
         </button>
         
         {/* Dernière page */}
-        <button
+        <button aria-label="Dernière page"
           onClick={() => onPageChange(totalPages)}
           disabled={!hasNext || loading}
           className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"

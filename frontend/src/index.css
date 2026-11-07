@@ -501,3 +501,23 @@ a:focus-visible,
 .category-manga {
   @apply border-l-4 border-book-manga;
 }
+
+/* ── Accessibilité ───────────────────────────────────────────────────────────
+   - touch-action: manipulation retire le zoom au double-tap tout en laissant le
+     pincement (le zoom n'est plus bloqué par la balise viewport).
+   - Zones tactiles : les boutons qui ne contiennent qu'une icône reçoivent une zone
+     de toucher élargie (~44 px) sans changer la mise en page. */
+html {
+  touch-action: manipulation;
+}
+
+@media (pointer: coarse) {
+  button:has(> svg:only-child):not(.absolute):not(.fixed):not(.sticky):not(.relative) {
+    position: relative;
+  }
+  button:has(> svg:only-child)::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+  }
+}

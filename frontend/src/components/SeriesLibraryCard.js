@@ -103,14 +103,14 @@ const SeriesLibraryCard = ({ series, onUpdateVolume, onUpdateStatus, onDelete })
 
         {/* Actions */}
         <div className="flex flex-col space-y-2">
-          <button
+          <button aria-label="Voir/masquer les tomes"
             onClick={() => setExpandedVolumes(!expandedVolumes)}
             className="p-2 text-gray-500 hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400 transition-colors"
             title="Voir/masquer les tomes"
           >
             <PencilIcon className="w-5 h-5" />
           </button>
-          <button
+          <button aria-label="Supprimer de la bibliothèque"
             onClick={() => onDelete(series.id)}
             className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
             title="Supprimer de la bibliothèque"

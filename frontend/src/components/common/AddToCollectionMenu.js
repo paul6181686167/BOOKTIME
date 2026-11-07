@@ -63,7 +63,7 @@ export default function AddToCollectionMenu({ item, onClose, onChanged }) {
           Ajouter à une collection
         </h4>
         {onClose && (
-          <button
+          <button aria-label="Fermer"
             type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-sm px-1"
@@ -124,7 +124,7 @@ export default function AddToCollectionMenu({ item, onClose, onChanged }) {
           >
             OK
           </button>
-          <button
+          <button aria-label="Fermer"
             type="button"
             onClick={() => { setCreating(false); setNewName(''); }}
             className="px-2 py-1.5 text-sm bg-gray-200 dark:bg-gray-600 rounded-lg"

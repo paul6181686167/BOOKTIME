@@ -42,10 +42,10 @@ const MobileBottomNav = ({ activeTab, onTabChange }) => {
             const Ic = isActive ? IconActive : Icon;
             const activeCls = isVoid
               ? 'text-[#4ade80]'
-              : 'text-booktime-600 dark:text-booktime-400';
+              : 'text-booktime-700 dark:text-booktime-400';
             const idleCls = isVoid
               ? 'text-white/35 active:text-white/70'
-              : 'text-gray-400 dark:text-gray-500 active:text-gray-600';
+              : 'text-gray-500 dark:text-gray-400 active:text-gray-700';
             return (
               <button
                 key={id}

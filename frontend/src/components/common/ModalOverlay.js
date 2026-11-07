@@ -18,6 +18,15 @@ export const MODAL_Z = {
   dialog: 1400, // confirmations
 };
 
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\"-1\"])';
+
+function isVisible(el) {
+  if (el.closest('[hidden]')) return false;
+  const s = window.getComputedStyle(el);
+  return s.display !== 'none' && s.visibility !== 'hidden';
+}
+
 // Pile des fenêtres ouvertes : Échap ne ferme que celle du dessus
 const stack = [];
 
@@ -31,6 +40,7 @@ export default function ModalOverlay({
   style,
 }) {
   const token = useRef({});
+  const dialogRef = useRef(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
@@ -40,11 +50,45 @@ export default function ModalOverlay({
       typeof document !== 'undefined' ? document.activeElement : null;
     stack.push(entry);
 
+    // Le focus entre dans la fenêtre (lecteurs d'écran, clavier) s'il n'y est pas déjà
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.contains(document.activeElement)) {
+      try {
+        dialog.focus({ preventScroll: true });
+      } catch {
+        /* ignore */
+      }
+    }
+
     const onKeyDown = (e) => {
-      if (e.key !== 'Escape') return;
       if (stack[stack.length - 1] !== entry) return;
-      e.stopPropagation();
-      onCloseRef.current?.();
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onCloseRef.current?.();
+        return;
+      }
+      // Piège à focus : Tab / Maj+Tab restent dans la fenêtre du dessus
+      if (e.key === 'Tab' && dialog) {
+        const focusable = [...dialog.querySelectorAll(FOCUSABLE)].filter(isVisible);
+        if (focusable.length === 0) {
+          e.preventDefault();
+          dialog.focus({ preventScroll: true });
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const active = document.activeElement;
+        if (e.shiftKey && (active === first || active === dialog)) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault();
+          first.focus();
+        } else if (!dialog.contains(active)) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     document.addEventListener('keydown', onKeyDown);
 
@@ -66,11 +110,13 @@ export default function ModalOverlay({
 
   return createPortal(
     <div
+      ref={dialogRef}
+      tabIndex={-1}
       className={className}
       role="dialog"
       aria-modal="true"
       aria-label={ariaLabel}
-      style={{ zIndex, ...style }}
+      style={{ zIndex, outline: 'none', ...style }}
       onClick={(e) => {
         if (closeOnBackdrop && e.target === e.currentTarget) onCloseRef.current?.(e);
       }}

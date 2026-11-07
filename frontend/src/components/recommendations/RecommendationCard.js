@@ -209,7 +209,7 @@ const RecommendationCard = ({ recommendation, onAddToLibrary, onFeedback }) => {
             )}
           </button>
           
-          <button
+          <button aria-label="Fermer"
             onClick={() => handleFeedback('not_interested')}
             disabled={isLoading || userFeedback}
             className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"

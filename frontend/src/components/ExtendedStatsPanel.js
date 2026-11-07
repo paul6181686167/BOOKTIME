@@ -32,7 +32,7 @@ const ExtendedStatsPanel = ({ stats }) => {
       value: stats.reading_books || 0,
       icon: ClockIcon,
       color: 'bg-yellow-500',
-      textColor: 'text-yellow-600 dark:text-yellow-400',
+      textColor: 'text-yellow-700 dark:text-yellow-400',
       bgColor: 'bg-yellow-50 dark:bg-yellow-900/30',
     },
     {
@@ -202,7 +202,7 @@ const ExtendedStatsPanel = ({ stats }) => {
                 </div>
               </div>
             </div>
-            <span className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
+            <span className="text-3xl font-bold text-yellow-700 dark:text-yellow-400">
               {categoryStats.manga || 0}
             </span>
           </div>

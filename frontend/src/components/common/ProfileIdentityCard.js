@@ -69,7 +69,7 @@ export default function ProfileIdentityCard() {
               {user.bio}
             </p>
           ) : (
-            <p className="mt-1.5 text-sm text-gray-400 dark:text-gray-500 italic">
+            <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400 italic">
               Aucune biographie pour le moment.
             </p>
           )}

@@ -276,7 +276,7 @@ const ChapterSection = ({ seriesName, onClose }) => {
             </span>
           )}
           
-          <button
+          <button aria-label="Actualiser les données"
             onClick={refreshChapters}
             disabled={loading}
             className={`

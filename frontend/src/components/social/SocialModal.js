@@ -140,7 +140,7 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
         <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">Social</h2>
-            <button
+            <button aria-label="Fermer"
               onClick={onClose}
               className="text-white hover:text-gray-200 text-2xl font-bold"
             >

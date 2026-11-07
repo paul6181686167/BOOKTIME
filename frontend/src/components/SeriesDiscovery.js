@@ -217,7 +217,7 @@ const SeriesDiscovery = ({ isOpen, onClose, initialSeries = '', initialAuthor = 
             </div>
             
             {book.relevance_score > 0 && (
-              <div className="flex items-center text-xs text-yellow-600 dark:text-yellow-400">
+              <div className="flex items-center text-xs text-yellow-700 dark:text-yellow-400">
                 <StarIcon className="w-3 h-3 mr-1" />
                 {book.relevance_score}
               </div>
@@ -324,7 +324,7 @@ const SeriesDiscovery = ({ isOpen, onClose, initialSeries = '', initialAuthor = 
                     <div className="text-gray-600 dark:text-gray-400">Complétion</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                    <div className="text-2xl font-bold text-orange-700 dark:text-orange-400">
                       {discoveryResult.statistics.missing_volumes.length}
                     </div>
                     <div className="text-gray-600 dark:text-gray-400">Tomes manquants</div>

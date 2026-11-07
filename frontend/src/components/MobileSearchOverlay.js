@@ -55,7 +55,7 @@ const MobileSearchOverlay = ({ isOpen, onClose, searchTerm, onSearchChange, onSe
           }`}
           enterKeyHint="search"
         />
-        <button
+        <button aria-label="Fermer"
           type="button"
           onClick={onClose}
           className={`p-1 ${isVoid ? 'text-white/40 hover:text-white/80' : 'text-gray-500 dark:text-gray-400'}`}

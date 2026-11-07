@@ -38,6 +38,16 @@ import ProfileSettings from './ProfileSettings';
 import DeleteAccountDialog from '../user/DeleteAccountDialog';
 import logger from '../../utils/logger';
 
+// ─── Teintes des statistiques ────────────────────────────────────────────────
+// Classes écrites en toutes lettres (Tailwind ne génère pas les noms assemblés dynamiquement).
+// Le texte est en 700 en mode clair pour garder un contraste suffisant (WCAG AA).
+const STAT_TONES = {
+  blue: { box: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-400' },
+  green: { box: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-400' },
+  yellow: { box: 'bg-yellow-50 dark:bg-yellow-900/20', text: 'text-yellow-700 dark:text-yellow-400' },
+  orange: { box: 'bg-orange-50 dark:bg-orange-900/20', text: 'text-orange-700 dark:text-orange-400' },
+};
+
 // ─── Heatmap de lecture ──────────────────────────────────────────────────────
 function ReadingHeatmap({ completionDates }) {
   const today = new Date();
@@ -396,7 +406,7 @@ function ProfileModal({
                 <Cog6ToothIcon className="h-5 w-5" />
               </button>
               {!isPage && (
-                <button
+                <button aria-label="Fermer"
                   onClick={onClose}
                   className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >✕</button>
@@ -469,9 +479,9 @@ function ProfileModal({
                       { v: stats.reading_books || 0,   label: 'En cours',    color: 'yellow' },
                       { v: stats.to_read_books || 0,   label: 'À lire',      color: 'orange' },
                     ].map(s => (
-                      <div key={s.label} className={`bg-${s.color}-50 dark:bg-${s.color}-900/20 rounded-xl p-4 text-center`}>
-                        <div className={`text-2xl font-bold text-${s.color}-600 dark:text-${s.color}-400`}>{s.v}</div>
-                        <div className={`text-xs text-${s.color}-600 dark:text-${s.color}-400`}>{s.label}</div>
+                      <div key={s.label} className={`${STAT_TONES[s.color].box} rounded-xl p-4 text-center`}>
+                        <div className={`text-2xl font-bold ${STAT_TONES[s.color].text}`}>{s.v}</div>
+                        <div className={`text-xs ${STAT_TONES[s.color].text}`}>{s.label}</div>
                       </div>
                     ))}
                   </div>
@@ -593,7 +603,7 @@ function ProfileModal({
                     autoFocus
                   />
                   <button onClick={handleSaveGoal} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">✓</button>
-                  <button onClick={() => setEditingGoal(false)} className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors">✕</button>
+                  <button aria-label="Fermer" onClick={() => setEditingGoal(false)} className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors">✕</button>
                 </div>
               ) : (
                 <button
@@ -776,7 +786,7 @@ function ProfileModal({
                               {items.length} élément{items.length !== 1 ? 's' : ''}
                             </span>
                           </button>
-                          <button
+                          <button aria-label="Supprimer la collection"
                             type="button"
                             onClick={() => handleDeleteCollection(c.id)}
                             className="text-red-400 hover:text-red-600 text-xs px-2 py-1"

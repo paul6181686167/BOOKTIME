@@ -427,7 +427,7 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAdded
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">
             Scanner un ISBN
           </h2>
-          <button
+          <button aria-label="Fermer"
             type="button"
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg"

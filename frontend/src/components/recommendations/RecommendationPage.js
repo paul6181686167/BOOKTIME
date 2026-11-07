@@ -368,7 +368,7 @@ const BookCard = ({
             </div>
           )}
 
-          <button
+          <button aria-label="Pas intéressé"
             type="button"
             onClick={handleDismiss}
             className="absolute top-1 right-1 sm:top-2 sm:right-2 z-10 p-1 rounded-full bg-black/40 hover:bg-red-600/90 text-white transition-colors"

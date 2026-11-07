@@ -146,7 +146,7 @@ const UserProfile = ({ userId, onClose }) => {
               )}
             </div>
           </div>
-          <button
+          <button aria-label="Fermer"
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
           >

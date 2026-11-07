@@ -135,7 +135,7 @@ const RecommendationsPanel = ({
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
              Recommandations IA
           </h3>
-          <button
+          <button aria-label="Fermer"
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
@@ -160,7 +160,7 @@ const RecommendationsPanel = ({
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
              Recommandations IA
           </h3>
-          <button
+          <button aria-label="Fermer"
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
@@ -187,7 +187,7 @@ const RecommendationsPanel = ({
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
            Recommandations IA
         </h3>
-        <button
+        <button aria-label="Fermer"
           onClick={onClose}
           className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
         >
