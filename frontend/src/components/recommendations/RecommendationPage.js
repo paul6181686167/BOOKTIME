@@ -1173,7 +1173,7 @@ const RecommendationPage = () => {
         <div className="flex items-center gap-3">
           <SparklesIcon className="h-8 w-8 text-blue-600" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Recommandations</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Découvrir</h1>
             {userProfile?.has_books && (
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Basé sur tes {userProfile.total_books} livres

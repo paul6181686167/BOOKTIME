@@ -921,7 +921,7 @@ function MainApp() {
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800'
                 }`}
               >
-                <span>Recommandations</span>
+                <span>Découvrir</span>
               </button>
               
               <button

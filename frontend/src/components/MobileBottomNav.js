@@ -16,7 +16,7 @@ import { useTheme } from '../contexts/ThemeContext';
 const NAV_ITEMS = [
   { id: 'home',            label: 'Biblio',      Icon: HomeIcon,          IconActive: HomeIconSolid },
   { id: 'upcoming',        label: 'À venir',     Icon: CalendarDaysIcon,  IconActive: CalendarIconSolid },
-  { id: 'recommendations', label: 'Pour toi',    Icon: BookOpenIcon,      IconActive: BookIconSolid },
+  { id: 'recommendations', label: 'Découvrir',   Icon: BookOpenIcon,      IconActive: BookIconSolid },
   { id: 'profile',         label: 'Profil',      Icon: UserCircleIcon,    IconActive: UserIconSolid },
 ];
 

@@ -157,7 +157,7 @@ html.cinema .dark\:border-booktime-800\/50 {
   border-color: rgba(255, 255, 255, 0.06) !important;
 }
 
-/* ─── Carrousel diapositives mobile (Biblio ↔ À venir ↔ Pour toi ↔ Profil) ─ */
+/* ─── Carrousel diapositives mobile (Biblio ↔ À venir ↔ Découvrir ↔ Profil) ─ */
 /* Verrouille le scroll du document : seul .mobile-slideshow-slide défile. */
 html.mobile-tabs-scroll,
 html.mobile-tabs-scroll body {
