@@ -5,11 +5,42 @@ import { API_BASE_URL } from '../config/environment';
 import logger from '../utils/logger';
 import { getToken } from './apiClient';
 
+const LOCAL_CACHE_KEY = 'booktime_upcoming_local_v1';
+
 function authHeaders() {
   const token = getToken();
   return token
     ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
     : { 'Content-Type': 'application/json' };
+}
+
+export function readUpcomingLocalCache() {
+  try {
+    const raw = localStorage.getItem(LOCAL_CACHE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== 'object' || !data.groups) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+export function writeUpcomingLocalCache(data) {
+  if (!data || data.error) return;
+  try {
+    localStorage.setItem(
+      LOCAL_CACHE_KEY,
+      JSON.stringify({
+        groups: data.groups || {},
+        suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
+        counts: data.counts || {},
+        savedAt: Date.now(),
+      })
+    );
+  } catch {
+    /* quota */
+  }
 }
 
 async function apiFetch(path, options = {}) {
@@ -33,13 +64,16 @@ export const upcomingService = {
    */
   async getUpcoming(refresh = false) {
     try {
-      return await apiFetch(`/api/upcoming${refresh ? '?refresh=true' : ''}`);
+      const data = await apiFetch(`/api/upcoming${refresh ? '?refresh=true' : ''}`);
+      writeUpcomingLocalCache(data);
+      return data;
     } catch (err) {
       logger.warn('upcomingService.getUpcoming error:', err);
       return {
         items: [],
         groups: { available: [], this_week: [], this_month: [], later: [], unknown: [] },
         counts: { total: 0 },
+        error: true,
       };
     }
   },

@@ -35,7 +35,7 @@ class AuthService {
       }
     } catch (error) {
       if (error.name === 'AbortError') {
-        return { success: false, error: 'Serveur inaccessible. Verifiez que le backend est demarre sur ' + this.backendUrl };
+        return { success: false, error: 'Le serveur met trop de temps à démarrer. Réessaie dans une minute.' };
       }
       return { success: false, error: 'Erreur : ' + (error.message || 'Serveur inaccessible') };
     }
@@ -74,7 +74,7 @@ class AuthService {
       }
     } catch (error) {
       if (error.name === 'AbortError') {
-        return { success: false, error: 'Serveur inaccessible. Verifiez que le backend tourne sur ' + this.backendUrl };
+        return { success: false, error: 'Le serveur met trop de temps à démarrer. Réessaie dans une minute.' };
       }
       return { success: false, error: 'Erreur : ' + (error.message || 'Serveur inaccessible') };
     }

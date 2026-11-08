@@ -8,7 +8,7 @@ import { getToken } from '../services/apiClient';
  * Un sondage partagé : au démarrage, toutes les 20 s, et au retour dans l'app.
  */
 export const FRIENDS_UNREAD_CHANGED_EVENT = 'booktime:friends-unread-changed';
-const POLL_MS = 20 * 1000;
+const POLL_MS = 30 * 1000;
 
 let unread = 0;
 let messages = 0;

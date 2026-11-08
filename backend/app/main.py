@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Précharge l'index Wikidata statique au démarrage (évite 10–15 s au 1er clic)."""
-    def _warm_wikidata():
+    """Ping immédiat au cold start ; Wikidata + catalogue 50k se préchargent ensuite."""
+    def _warm_indexes():
         try:
             from .static_wikidata import service
 
@@ -30,9 +30,22 @@ async def lifespan(app: FastAPI):
             )
         except Exception as exc:
             logger.warning("Préchargement Wikidata ignoré : %s", exc)
+        try:
+            from .catalog import expanded as expanded_fiches
+            from .series_verification import curated as curated_mod
+
+            st = expanded_fiches.stats()
+            curated_mod.ensure_loaded()
+            logger.info(
+                "Catalogue 50k prêt : %s séries, %s tomes",
+                st.get("series"),
+                st.get("books"),
+            )
+        except Exception as exc:
+            logger.warning("Préchargement catalogue ignoré : %s", exc)
 
     loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, _warm_wikidata)
+    loop.run_in_executor(None, _warm_indexes)
 
     # Index MongoDB (idempotent, en tâche de fond) : sans eux chaque requête par user_id
     # parcourt toute la collection.

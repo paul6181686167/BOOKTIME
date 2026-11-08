@@ -13,12 +13,14 @@ jest.mock('../../../hooks/useAuth', () => ({
 jest.mock('../../../utils/backendWake', () => ({
   wakeBackend: () => Promise.resolve({ ok: true }),
   isBackendRemote: () => false,
+  WAKE_HINT_DELAY_MS: 2800,
 }));
 jest.mock('react-hot-toast', () => ({
   toast: Object.assign(jest.fn(), {
     success: jest.fn(),
     error: jest.fn(),
     loading: jest.fn(),
+    dismiss: jest.fn(),
   }),
 }));
 

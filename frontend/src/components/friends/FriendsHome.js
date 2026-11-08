@@ -8,7 +8,7 @@ import ShareProfileModal from './ShareProfileModal';
 import MyQrModal from './MyQrModal';
 import QrScanModal from './QrScanModal';
 
-const REFRESH_MS = 15000;
+const REFRESH_MS = 30000;
 
 function preview(last) {
   if (!last) return 'Aucun message pour le moment';

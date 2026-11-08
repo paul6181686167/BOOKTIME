@@ -1,5 +1,8 @@
 """Tests du niveau "référence/officiel" (référentiel curé) et de son appariement."""
 
+import json
+
+from app.catalog import expanded
 from app.series_verification import curated
 
 
@@ -54,3 +57,49 @@ def test_overlay_riche_reste_prioritaire_sur_le_noyau():
     assert entry is not None
     assert entry.get("source") == "curated_overlay"
     assert entry["volumes"] == 7
+
+
+def test_curated_reutilise_le_json_expanded_sans_le_relire(tmp_path, monkeypatch):
+    path = tmp_path / "expanded_fiches_catalog.json"
+    path.write_text(
+        json.dumps(
+            {
+                "meta": {},
+                "series": [
+                    {
+                        "name": "Serie Unique Test XYZ",
+                        "authors": ["Auteur"],
+                        "volumes": 2,
+                        "volume_titles": {"1": "Tome un"},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(expanded, "_PATH", path)
+    expanded.clear_cache()
+    curated.clear_cache()
+
+    opens = {"n": 0}
+    builtin_open = open
+
+    def counting_open(file, *args, **kwargs):
+        if str(file) == str(path):
+            opens["n"] += 1
+        return builtin_open(file, *args, **kwargs)
+
+    monkeypatch.setattr("builtins.open", counting_open)
+    try:
+        entry = curated.match_curated("Serie Unique Test XYZ")
+        assert entry is not None
+        assert entry.get("source") == "curated_core"
+        assert opens["n"] == 1
+
+        curated.clear_cache()
+        again = curated.match_curated("Serie Unique Test XYZ")
+        assert again is not None
+        assert opens["n"] == 1
+    finally:
+        expanded.clear_cache()
+        curated.clear_cache()

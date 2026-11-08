@@ -25,10 +25,10 @@ function enrichmentLimits() {
   const mobile = isMobileClient();
   return {
     concurrency: 1,
-    startDelayMs: mobile ? 3000 : 1500,
-    betweenMs: mobile ? 800 : 500,
-    maxPerRun: mobile ? 20 : 60,
-    maxRounds: mobile ? 3 : 5,
+    startDelayMs: mobile ? 5000 : 2500,
+    betweenMs: mobile ? 1200 : 700,
+    maxPerRun: mobile ? 8 : 20,
+    maxRounds: mobile ? 2 : 3,
   };
 }
 
@@ -38,6 +38,15 @@ const FAIL_COOLDOWN_MS = 90 * 1000;
 let running = false;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function waitIfHidden() {
+  if (typeof document === 'undefined') return;
+  while (document.visibilityState === 'hidden') {
+    await new Promise((resolve) => {
+      document.addEventListener('visibilitychange', resolve, { once: true });
+    });
+  }
+}
 
 function authHeaders() {
   const token = getToken();
@@ -456,6 +465,7 @@ async function runQueue(candidates, workerFn, limits) {
       cursor += 1;
       const item = candidates[idx];
       try {
+        await waitIfHidden();
         const ok = await workerFn(item);
         if (ok) markSuccess(item.key);
         else markFail(item.key);
@@ -473,20 +483,22 @@ async function runQueue(candidates, workerFn, limits) {
   );
 }
 
-export async function enrichLibraryMetadata({
-  books,
-  userSeriesLibrary,
-  setBooks,
-  setUserSeriesLibrary,
-} = {}) {
+export async function enrichLibraryMetadata(args = {}) {
   if (running) return;
   if (!getToken()) return;
+
+  const resolve = typeof args === 'function' ? args : () => args;
+  const snapshot = resolve() || {};
+  const books = snapshot.books;
+  const userSeriesLibrary = snapshot.userSeriesLibrary;
+  const setBooks = snapshot.setBooks;
+  const setUserSeriesLibrary = snapshot.setUserSeriesLibrary;
 
   const limits = enrichmentLimits();
   running = true;
   try {
     // 1) Résumés FR en priorité (avant les couvertures)
-    const metaLimit = Math.max(limits.maxPerRun, 40);
+    const metaLimit = Math.max(limits.maxPerRun, 16);
     const meta = collectMetaCandidates(books, userSeriesLibrary).slice(0, metaLimit);
     await runQueue(
       meta,
@@ -499,9 +511,10 @@ export async function enrichLibraryMetadata({
       { ...limits, concurrency: 1, betweenMs: Math.max(limits.betweenMs, 600) }
     );
 
-    // 2) Couvertures ensuite
+    // 2) Couvertures ensuite (liste à jour : les jaquettes déjà trouvées sont sautées)
     for (let round = 0; round < limits.maxRounds; round += 1) {
-      const covers = collectCoverCandidates(books, userSeriesLibrary).slice(
+      const latest = resolve() || {};
+      const covers = collectCoverCandidates(latest.books, latest.userSeriesLibrary).slice(
         0,
         limits.maxPerRun
       );

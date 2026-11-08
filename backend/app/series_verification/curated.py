@@ -21,7 +21,6 @@ from .consensus import normalize_title_key
 logger = logging.getLogger("booktime.series_verification")
 
 _CURATED_PATH = Path(__file__).with_name("curated_series.json")
-_CORE_PATH = Path(__file__).resolve().parents[2] / "data" / "expanded_fiches_catalog.json"
 
 _loaded = False
 _series: list[dict[str, Any]] = []
@@ -157,6 +156,13 @@ def _load_json(path: Path) -> dict[str, Any] | list | None:
         return None
 
 
+def _core_source_label(raw: dict[str, Any]) -> str:
+    src = str(raw.get("source") or "").lower()
+    if src in ("daily", "curated_daily"):
+        return "curated_daily"
+    return "curated_core"
+
+
 def ensure_loaded() -> None:
     global _loaded
     if _loaded:
@@ -167,14 +173,21 @@ def ensure_loaded() -> None:
     _keyword_index.clear()
     _by_canon.clear()
 
-    core = _load_json(_CORE_PATH)
-    if isinstance(core, dict):
-        for raw in core.get("series") or []:
-            if not isinstance(raw, dict):
-                continue
-            entry = _normalize_entry(raw, "curated_core")
-            if entry:
-                _register(entry, overwrite=False)
+    # Le JSON 23 Mo est déjà parsé par catalog.expanded : on réindexe, on ne relit pas.
+    try:
+        from ..catalog.expanded import all_series as expanded_all_series
+
+        core_rows = expanded_all_series()
+    except Exception as exc:
+        logger.warning("Noyau 50k illisible via catalogue étendu : %s", exc)
+        core_rows = []
+
+    for raw in core_rows:
+        if not isinstance(raw, dict):
+            continue
+        entry = _normalize_entry(raw, _core_source_label(raw))
+        if entry:
+            _register(entry, overwrite=False)
 
     overlay = _load_json(_CURATED_PATH)
     if isinstance(overlay, dict):
@@ -184,16 +197,6 @@ def ensure_loaded() -> None:
             entry = _normalize_entry(raw, "curated_overlay")
             if entry:
                 _register(entry, overwrite=True)
-
-    try:
-        from ..catalog import daily_store
-
-        for raw in daily_store.all_series():
-            entry = _normalize_entry(raw, "curated_daily")
-            if entry:
-                _register(entry, overwrite=False)
-    except Exception as exc:
-        logger.warning("Noyau quotidien illisible : %s", exc)
 
     for entry in _series:
         _index_volume_titles(entry)

@@ -6,6 +6,7 @@
 import { API_BASE_URL, API_ENDPOINTS } from '../config/environment';
 
 const RENDER_HOST_HINTS = ['onrender.com', 'railway.app'];
+export const WAKE_HINT_DELAY_MS = 2800;
 
 function isRemoteHostedBackend() {
   try {
@@ -36,7 +37,7 @@ export async function wakeBackend(opts = {}) {
     if (onProgress && i > 1) {
       onProgress(
         remote
-          ? `Réveil du serveur… (${i}/${attempts})`
+          ? `Le serveur démarre… encore un instant (${i}/${attempts})`
           : `Connexion au backend… (${i}/${attempts})`
       );
     }

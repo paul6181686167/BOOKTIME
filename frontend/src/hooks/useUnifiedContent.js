@@ -159,27 +159,24 @@ export const useUnifiedContent = () => {
     return () => window.removeEventListener(LIBRARY_CHANGED_EVENT, onLocalChange);
   }, []);
 
-  // Résumés FR préchargés dès que la biblio est dispo (avant ouverture des fiches)
-  useEffect(() => {
-    if (loading) return;
-    if (!books.length && !userSeriesLibrary.length) return;
-    return scheduleLibraryMetaEnrichment(
-      {
-        books,
-        userSeriesLibrary,
-        setBooks,
-        setUserSeriesLibrary,
-      },
-      600
-    );
-  }, [loading, books, userSeriesLibrary]);
+  // Enrichissement en fond : une seule fois, avec la biblio à jour via ref
+  // (sinon chaque jaquette relance une file de 60 requêtes).
+  const enrichArgsRef = useRef({ books, userSeriesLibrary, setBooks, setUserSeriesLibrary });
+  enrichArgsRef.current = { books, userSeriesLibrary, setBooks, setUserSeriesLibrary };
+  const enrichStartedRef = useRef(false);
 
-  // Fiches auteurs de la biblio pré-créées en arrière-plan
   useEffect(() => {
     if (loading) return;
     if (!books.length && !userSeriesLibrary.length) return;
-    return scheduleLibraryAuthorEnrichment({ books, userSeriesLibrary });
-  }, [loading, books, userSeriesLibrary]);
+    if (enrichStartedRef.current) return;
+    enrichStartedRef.current = true;
+    const cancelMeta = scheduleLibraryMetaEnrichment(() => enrichArgsRef.current);
+    const cancelAuthors = scheduleLibraryAuthorEnrichment(enrichArgsRef.current);
+    return () => {
+      cancelMeta();
+      cancelAuthors();
+    };
+  }, [loading, books.length, userSeriesLibrary.length]);
 
   return {
     books,

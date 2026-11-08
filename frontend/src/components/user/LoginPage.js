@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
 import { API_BASE_URL } from '../../config/environment';
-import { wakeBackend, isBackendRemote } from '../../utils/backendWake';
+import { wakeBackend, isBackendRemote, WAKE_HINT_DELAY_MS } from '../../utils/backendWake';
 import TermsContent from '../legal/TermsContent';
 import logger from '../../utils/logger';
 import ModalOverlay, { MODAL_Z } from '../common/ModalOverlay';
@@ -26,24 +26,39 @@ function LoginPage() {
   const loadingStartRef = useRef(null);
 
   const [backendReady, setBackendReady] = useState(!isBackendRemote());
+  const [showWakeHint, setShowWakeHint] = useState(false);
 
-  // Réveil Render (plan gratuit) ou vérif backend local
+  // Réveil Render : on n'affiche le message que si le ping traîne vraiment.
   useEffect(() => {
     let cancelled = false;
     const toastId = isBackendRemote() ? 'backend-wake' : null;
-    if (toastId) {
-      toast.loading('Réveil du serveur (30–60 s la 1ère fois)…', { id: toastId });
-    }
+    const hintTimer = isBackendRemote()
+      ? setTimeout(() => {
+          if (cancelled) return;
+          setShowWakeHint(true);
+          if (toastId) {
+            toast.loading('Le serveur démarre. S’il a dormi, compte 15 à 60 secondes.', {
+              id: toastId,
+            });
+          }
+        }, WAKE_HINT_DELAY_MS)
+      : null;
     wakeBackend({
       onProgress: (msg) => {
         if (toastId) toast.loading(msg, { id: toastId });
       },
     }).then((result) => {
       if (cancelled) return;
+      setBackendReady(result.ok);
+      setShowWakeHint(false);
+      if (!toastId) return;
       if (result.ok) {
-        setBackendReady(true);
-        if (toastId) toast.success('Serveur prêt', { id: toastId, duration: 2500 });
-      } else if (toastId) {
+        if (result.attempts > 1) {
+          toast.success('Serveur prêt', { id: toastId, duration: 2500 });
+        } else {
+          toast.dismiss(toastId);
+        }
+      } else {
         toast.error(
           'Serveur distant lent ou indisponible. Lance le backend en local (voir TESTER_LOCAL.md).',
           { id: toastId, duration: 8000 }
@@ -52,6 +67,7 @@ function LoginPage() {
     });
     return () => {
       cancelled = true;
+      if (hintTimer) clearTimeout(hintTimer);
     };
   }, []);
 
@@ -171,9 +187,9 @@ function LoginPage() {
           <p className="text-gray-600 dark:text-gray-400">
             Votre bibliothèque personnelle
           </p>
-          {!backendReady && isBackendRemote() && (
+          {showWakeHint && !backendReady && isBackendRemote() && (
             <p role="status" className="text-sm text-gray-700 dark:text-gray-300 mt-2">
-              Réveil du serveur en cours…
+              Le serveur démarre — s&apos;il a dormi, compte 15 à 60 secondes.
             </p>
           )}
         </div>

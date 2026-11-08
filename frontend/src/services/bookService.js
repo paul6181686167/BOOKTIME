@@ -13,6 +13,7 @@ import {
 } from '../utils/offlineWriteQueue';
 import logger from '../utils/logger';
 import { getToken, notifyUnauthorized } from './apiClient';
+import { attachAxiosSlowInterceptor } from '../utils/slowBackendNotice';
 
 // Configuration axios
 const api = axios.create({
@@ -24,6 +25,8 @@ const api = axios.create({
 });
 
 // Intercepteur pour ajouter le token d'authentification
+attachAxiosSlowInterceptor(api);
+
 api.interceptors.request.use(
   (config) => {
     const token = getToken();

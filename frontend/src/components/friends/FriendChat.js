@@ -4,7 +4,7 @@ import friendsService, { bookRefToBookLike, toBookRef } from '../../services/fri
 import { refreshFriendsUnread } from '../../hooks/useFriendsUnread';
 import BookRefCard, { MiniCover } from './BookRefCard';
 
-const POLL_MS = 4000;
+const POLL_MS = 8000;
 
 function formatTime(iso) {
   if (!iso) return '';

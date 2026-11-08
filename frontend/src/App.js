@@ -35,6 +35,7 @@ import FriendInvitePage from './pages/FriendInvitePage';
 import useCollectionsSync from './hooks/useCollectionsSync';
 import useOfflineWriteQueue from './hooks/useOfflineWriteQueue';
 import OfflineBanner from './components/OfflineBanner';
+import SlowBackendBanner from './components/common/SlowBackendBanner';
 
 import './App.css';
 import './styles/optimized.css';
@@ -104,6 +105,7 @@ function App() {
             <NativeAppShell />
             <UpdateBanner />
             <OfflineBanner />
+            <SlowBackendBanner />
             <ConfirmHost />
             <Suspense fallback={<RouteFallback />}>
               <Routes>

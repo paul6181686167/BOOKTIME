@@ -85,8 +85,8 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
   const loadAuthorInfo = async () => {
     if (!author) return;
     
-    setLoading(true);
     setError(null);
+    if (!authorInfo && !authorBooks) setLoading(true);
     
     const backendUrl = API_BASE_URL;
     const token = getToken();
@@ -100,6 +100,8 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
       const cached = await withTimeout(loadAuthorFromCache(backendUrl, token), 4000).catch(
         () => ({ ok: false, hasWorks: false })
       );
+
+      if (cached?.ok) setLoading(false);
 
       const needProfile = !cached?.ok;
       const needWorks = !cached?.hasWorks;
@@ -441,11 +443,18 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
           </div>
         </div>
 
-        {loading && (
+        {loading && !authorInfo && !authorBooks && (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
-            <span className="ml-3 text-gray-600 dark:text-gray-400">Chargement des informations...</span>
+            <span className="ml-3 text-gray-600 dark:text-gray-400">
+              Recherche des infos auteur (Wikidata)…
+            </span>
           </div>
+        )}
+        {loading && (authorInfo || authorBooks) && (
+          <p role="status" className="text-xs text-gray-500 dark:text-gray-400 px-1">
+            Mise à jour en arrière-plan…
+          </p>
         )}
 
         {error && (
@@ -465,7 +474,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
           </div>
         )}
 
-        {!loading && (
+        {(!loading || authorInfo || authorBooks) && (
           <div className="space-y-6">
             {/* Informations auteur */}
             {authorInfo && (

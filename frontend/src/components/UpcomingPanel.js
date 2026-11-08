@@ -19,7 +19,7 @@ import {
   QuestionMarkCircleIcon,
   BellIcon,
 } from '@heroicons/react/24/outline';
-import { upcomingService } from '../services/upcomingService';
+import { upcomingService, readUpcomingLocalCache } from '../services/upcomingService';
 import { NOTIFICATIONS_CHANGED_EVENT } from '../hooks/useUnreadNotifications';
 import ModalOverlay, { MODAL_Z } from './common/ModalOverlay';
 
@@ -215,32 +215,50 @@ const NOTIF_MODES = [
   { value: 'push', label: 'Notifications navigateur' },
 ];
 
+function readInitialUpcoming() {
+  const cached = readUpcomingLocalCache();
+  if (!cached) {
+    return { groups: EMPTY_GROUPS, suggestions: [], total: 0, hasCache: false };
+  }
+  return {
+    groups: { ...EMPTY_GROUPS, ...(cached.groups || {}) },
+    suggestions: Array.isArray(cached.suggestions) ? cached.suggestions : [],
+    total: cached.counts?.total || 0,
+    hasCache: true,
+  };
+}
+
 const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
   const isPage = variant === 'page';
-  const [groups, setGroups] = useState(EMPTY_GROUPS);
-  const [suggestions, setSuggestions] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const initialRef = useRef(null);
+  if (initialRef.current === null) initialRef.current = readInitialUpcoming();
+  const [groups, setGroups] = useState(initialRef.current.groups);
+  const [suggestions, setSuggestions] = useState(initialRef.current.suggestions);
+  const [total, setTotal] = useState(initialRef.current.total);
+  const [isLoading, setIsLoading] = useState(!initialRef.current.hasCache);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [notifMode, setNotifMode] = useState('in_app');
   const [notifications, setNotifications] = useState([]);
 
-  const hasLoadedRef = useRef(false);
+  const hasLoadedRef = useRef(initialRef.current.hasCache);
 
   const loadData = useCallback(
     async (refresh = false) => {
       if (!isOpen && !isPage) return;
-      // Réouverture : garder les données déjà chargées (pas de spinner bloquant)
-      const silent = hasLoadedRef.current && !refresh && total > 0;
-      if (!silent) setIsLoading(true);
+      // Cache local ou réouverture : on peint tout de suite, le réseau tourne en fond
+      const silent = hasLoadedRef.current;
+      if (silent) setIsRefreshing(true);
+      else setIsLoading(true);
       try {
         const [data, notifData, settings] = await Promise.all([
           upcomingService.getUpcoming(refresh),
           upcomingService.getNotifications(),
           upcomingService.getNotificationSettings().catch(() => null),
         ]);
+        if (data?.error && hasLoadedRef.current) return;
         setGroups({ ...EMPTY_GROUPS, ...(data.groups || {}) });
         setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
         setTotal(data.counts?.total || 0);
@@ -261,9 +279,10 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
         hasLoadedRef.current = true;
       } finally {
         setIsLoading(false);
+        setIsRefreshing(false);
       }
     },
-    [isOpen, isPage, total]
+    [isOpen, isPage]
   );
 
   useEffect(() => {
@@ -373,11 +392,11 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
           <div className="flex items-center gap-2">
             <button aria-label="Rafraîchir"
               onClick={() => loadData(true)}
-              disabled={isLoading}
+              disabled={isLoading || isRefreshing}
               title="Rafraîchir"
               className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
-              <ArrowPathIcon className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <ArrowPathIcon className={`h-4 w-4 ${isLoading || isRefreshing ? 'animate-spin' : ''}`} />
             </button>
             {!isPage && (
               <button aria-label="Fermer"
@@ -493,7 +512,9 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <div className="animate-spin rounded-full h-8 w-8 border-2 border-amber-500 border-t-transparent" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">Chargement...</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center px-4">
+                On cherche tes prochaines sorties. Le premier calcul peut prendre un moment.
+              </p>
             </div>
           ) : hasAny ? (
             <>

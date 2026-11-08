@@ -9,6 +9,7 @@
  *   l'utilisateur au lieu de laisser chaque écran échouer en silence.
  */
 import { API_BASE_URL } from '../config/environment';
+import { beginBackendRequest } from '../utils/slowBackendNotice';
 
 export const UNAUTHORIZED_EVENT = 'booktime:unauthorized';
 
@@ -93,15 +94,21 @@ export function installUnauthorizedWatcher() {
   installed = true;
   const originalFetch = window.fetch.bind(window);
   window.fetch = async (input, init) => {
-    const response = await originalFetch(input, init);
-    const isDeleteAccount =
-      String((init && init.method) || (input && input.method) || '').toUpperCase() === 'DELETE' &&
-      DELETE_ACCOUNT.test(typeof input === 'string' ? input : (input && input.url) || '');
-    if (response.status === 401 && !isDeleteAccount && targetsBackend(input)) {
-      const used = sentToken(input, init);
-      // Ignore les réponses tardives d'une ancienne session (reconnexion entre-temps)
-      if (used && used === getToken()) notifyUnauthorized();
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    const endSlow = beginBackendRequest(url);
+    try {
+      const response = await originalFetch(input, init);
+      const isDeleteAccount =
+        String((init && init.method) || (input && input.method) || '').toUpperCase() === 'DELETE' &&
+        DELETE_ACCOUNT.test(typeof input === 'string' ? input : (input && input.url) || '');
+      if (response.status === 401 && !isDeleteAccount && targetsBackend(input)) {
+        const used = sentToken(input, init);
+        // Ignore les réponses tardives d'une ancienne session (reconnexion entre-temps)
+        if (used && used === getToken()) notifyUnauthorized();
+      }
+      return response;
+    } finally {
+      endSlow();
     }
-    return response;
   };
 }
