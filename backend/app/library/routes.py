@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/library", tags=["library"])
 
 # Routes pour les séries en bibliothèque (nouvelle fonctionnalité)
 @router.post("/series")
-async def create_series_library(
+def create_series_library(
     series_data: SeriesLibraryCreate,
     current_user: dict = Depends(get_current_user)
 ):
@@ -60,7 +60,7 @@ async def create_series_library(
     }
 
 @router.get("/series")
-async def get_series_library(
+def get_series_library(
     category: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
@@ -75,7 +75,7 @@ async def get_series_library(
     return [normalize_series_library_doc(s) for s in series_list]
 
 @router.put("/series/{series_id}/volume/{volume_number}")
-async def update_volume_status(
+def update_volume_status(
     series_id: str,
     volume_number: int,
     volume_data: dict,
@@ -132,7 +132,7 @@ async def update_volume_status(
     }
 
 @router.put("/series/{series_id}")
-async def update_series_status(
+def update_series_status(
     series_id: str,
     series_data: dict,
     current_user: dict = Depends(get_current_user)
@@ -239,7 +239,7 @@ async def update_series_status(
     }
 
 @router.delete("/series/{series_id}")
-async def delete_series(
+def delete_series(
     series_id: str,
     current_user: dict = Depends(get_current_user)
 ):

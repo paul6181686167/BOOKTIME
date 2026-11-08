@@ -8,6 +8,8 @@ from datetime import datetime
 
 from ..security.jwt import get_current_user
 from .service import RecommendationService
+from app.utils.errors import public_error
+from app.utils.timeutils import utcnow
 
 router = APIRouter(prefix="/api/recommendations", tags=["recommendations"])
 
@@ -57,13 +59,13 @@ async def get_personalized_recommendations(
             "success": True,
             "data": recommendations,
             "count": len(recommendations.get('recommendations', [])),
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": utcnow().isoformat()
         }
         
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la génération des recommandations: {str(e)}"
+            detail=public_error(e, "Erreur lors de la génération des recommandations")
         )
 
 @router.get("/popular")
@@ -97,13 +99,13 @@ async def get_popular_recommendations(
             "success": True,
             "data": recommendations,
             "count": len(recommendations.get('recommendations', [])),
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": utcnow().isoformat()
         }
         
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la récupération des recommandations populaires: {str(e)}"
+            detail=public_error(e, "Erreur lors de la récupération des recommandations populaires")
         )
 
 @router.get("/similar")
@@ -143,14 +145,14 @@ async def get_similar_recommendations(
             "success": True,
             "data": data,
             "count": data.get("count") or len(data.get("recommendations") or []),
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utcnow().isoformat(),
         }
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors des recommandations similaires: {str(e)}",
+            detail=public_error(e, "Erreur lors des recommandations similaires"),
         )
 
 
@@ -200,13 +202,13 @@ async def get_recommendations_by_author(
                 "author": author_name,
                 "count": len(formatted_recs)
             },
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": utcnow().isoformat()
         }
         
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la récupération des recommandations par auteur: {str(e)}"
+            detail=public_error(e, "Erreur lors de la récupération des recommandations par auteur")
         )
 
 @router.get("/by-category/{category}")
@@ -255,13 +257,13 @@ async def get_recommendations_by_category(
                 "category": category,
                 "count": len(formatted_recs)
             },
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": utcnow().isoformat()
         }
         
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la récupération des recommandations par catégorie: {str(e)}"
+            detail=public_error(e, "Erreur lors de la récupération des recommandations par catégorie")
         )
 
 @router.get("/user-profile")
@@ -286,17 +288,17 @@ async def get_user_profile(
         return {
             "success": True,
             "data": recommendation_service._strip_internal(user_profile),
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": utcnow().isoformat()
         }
         
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la récupération du profil utilisateur: {str(e)}"
+            detail=public_error(e, "Erreur lors de la récupération du profil utilisateur")
         )
 
 @router.post("/feedback")
-async def submit_recommendation_feedback(
+def submit_recommendation_feedback(
     recommendation_id: str,
     feedback: str,  # 'like', 'dislike', 'added_to_library', 'not_interested'
     current_user: dict = Depends(get_current_user)
@@ -320,8 +322,8 @@ async def submit_recommendation_feedback(
             "user_id": user_id,
             "recommendation_id": recommendation_id,
             "feedback": feedback,
-            "timestamp": datetime.utcnow(),
-            "created_at": datetime.utcnow()
+            "timestamp": utcnow(),
+            "created_at": utcnow()
         }
         
         # Insérer dans la collection feedback
@@ -340,11 +342,11 @@ async def submit_recommendation_feedback(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de l'enregistrement du feedback: {str(e)}"
+            detail=public_error(e, "Erreur lors de l'enregistrement du feedback")
         )
 
 @router.get("/stats")
-async def get_recommendation_stats(
+def get_recommendation_stats(
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -384,11 +386,11 @@ async def get_recommendation_stats(
                 "total_recommendations": total_recommendations,
                 "engagement_rate": (total_feedback / total_recommendations * 100) if total_recommendations > 0 else 0
             },
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": utcnow().isoformat()
         }
         
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la récupération des statistiques: {str(e)}"
+            detail=public_error(e, "Erreur lors de la récupération des statistiques")
         )

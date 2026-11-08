@@ -3,17 +3,22 @@ Routes API Wikidata pour BOOKTIME
 Endpoints pour séries, livres et auteurs avec données structurées
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional
 import logging
 
 from .service import wikidata_service
 from .models import (
-    WikidataAuthorResponse, WikidataSeriesResponse, WikidataSeriesSearchResponse,
-    WikidataTestResponse
+    WikidataAuthorResponse, WikidataSeriesResponse, WikidataSeriesSearchResponse
 )
+from app.utils.errors import public_error
+from app.security.rate_limit import ip_rate_limit
 
-router = APIRouter(prefix="/api/wikidata", tags=["wikidata"])
+router = APIRouter(
+    prefix="/api/wikidata",
+    tags=["wikidata"],
+    dependencies=[Depends(ip_rate_limit("wikidata", 120, 60))],
+)
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +84,7 @@ async def get_author_series(author_name: str):
         logger.error(f"❌ Erreur lors de la récupération des œuvres pour {author_name}: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la récupération des œuvres: {str(e)}"
+            detail=public_error(e, "Erreur lors de la récupération des œuvres")
         )
 
 @router.get("/series/by-name/volumes")
@@ -174,7 +179,7 @@ async def get_series_books(series_id: str):
         logger.error(f"❌ Erreur lors de la récupération des livres pour série {series_id}: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la récupération des livres: {str(e)}"
+            detail=public_error(e, "Erreur lors de la récupération des livres")
         )
 
 @router.get("/series/{series_id}/info")
@@ -235,7 +240,7 @@ async def get_series_info(series_id: str):
         logger.error(f"❌ Erreur lors de la récupération des informations pour série {series_id}: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la récupération des informations: {str(e)}"
+            detail=public_error(e, "Erreur lors de la récupération des informations")
         )
 
 @router.get("/search/series", response_model=WikidataSeriesSearchResponse)
@@ -264,7 +269,7 @@ async def search_series(
         logger.error(f"❌ Erreur lors de la recherche de séries '{q}': {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la recherche: {str(e)}"
+            detail=public_error(e, "Erreur lors de la recherche")
         )
 
 @router.get("/author/{author_name}/info")
@@ -302,39 +307,7 @@ async def get_author_info(author_name: str):
         logger.error(f"❌ Erreur lors de la récupération des informations pour {author_name}: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la récupération des informations: {str(e)}"
-        )
-
-@router.get("/test/{author_name}", response_model=WikidataTestResponse)
-async def test_wikidata_connection(author_name: str = "rowling"):
-    """
-    Test de connexion et requête Wikidata
-    Endpoint de développement pour vérifier le service
-    """
-    try:
-        logger.info(f"🧪 Test connexion Wikidata avec: {author_name}")
-        
-        # Tester la connexion
-        test_result = await wikidata_service.test_connection(author_name)
-        
-        return WikidataTestResponse(
-            success=test_result.get("success", False),
-            query=test_result.get("query", ""),
-            results=test_result.get("results", []),
-            processed_results=test_result.get("processed_results", {}),
-            execution_time=test_result.get("execution_time", 0.0),
-            error=test_result.get("error")
-        )
-        
-    except Exception as e:
-        logger.error(f"❌ Erreur lors du test Wikidata: {str(e)}")
-        return WikidataTestResponse(
-            success=False,
-            query="",
-            results=[],
-            processed_results={},
-            execution_time=0.0,
-            error=str(e)
+            detail=public_error(e, "Erreur lors de la récupération des informations")
         )
 
 @router.get("/author/{author_name}/works")
@@ -345,50 +318,8 @@ async def get_author_works(author_name: str):
     """
     return await get_author_series(author_name)
 
-@router.get("/test-individual-books/{author_name}")
-async def test_individual_books(author_name: str):
-    """
-    Test spécifique pour les livres individuels d'un auteur
-    Endpoint de développement pour déboguer les livres non-série
-    """
-    try:
-        logger.info(f"🧪 Test livres individuels pour: {author_name}")
-        
-        # Test direct des livres individuels
-        individual_books = await wikidata_service.get_author_individual_books(author_name)
-        
-        return {
-            "success": True,
-            "author": author_name,
-            "individual_books_count": len(individual_books),
-            "individual_books": [
-                {
-                    "id": book.id,
-                    "title": book.title,
-                    "publication_date": book.publication_date,
-                    "genre": book.genre,
-                    "book_type": getattr(book, 'book_type', 'unknown'),
-                    "isbn": book.isbn,
-                    "publisher": book.publisher,
-                    "description": book.description
-                }
-                for book in individual_books
-            ],
-            "query_used": "GET_AUTHOR_INDIVIDUAL_BOOKS"
-        }
-        
-    except Exception as e:
-        logger.error(f"❌ Erreur lors du test livres individuels: {str(e)}")
-        return {
-            "success": False,
-            "author": author_name,
-            "individual_books_count": 0,
-            "individual_books": [],
-            "error": str(e)
-        }
-
 @router.get("/stats")
-async def get_wikidata_stats():
+def get_wikidata_stats():
     """
     Statistiques du service Wikidata
     Cache, performance et utilisation
@@ -418,5 +349,5 @@ async def get_wikidata_stats():
         logger.error(f"❌ Erreur lors de la récupération des statistiques: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la récupération des statistiques: {str(e)}"
+            detail=public_error(e, "Erreur lors de la récupération des statistiques")
         )

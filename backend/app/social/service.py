@@ -15,6 +15,7 @@ from .models import (
     ActivityType, NotificationType, PrivacyLevel,
     ProfileResponse, ActivityResponse, FeedResponse, CommentResponse, NotificationResponse
 )
+from app.utils.timeutils import utcnow
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
@@ -98,8 +99,8 @@ class SocialService:
                 "followers_count": 0,
                 "following_count": 0,
                 "books_count": 0,
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow()
+                "created_at": utcnow(),
+                "updated_at": utcnow()
             }
             
             result = self.profiles_collection.insert_one(profile_data)
@@ -114,7 +115,7 @@ class SocialService:
     async def update_profile(self, user_id: str, updates: Dict[str, Any]) -> UserProfile:
         """Met à jour le profil utilisateur"""
         try:
-            updates["updated_at"] = datetime.utcnow()
+            updates["updated_at"] = utcnow()
             
             result = self.profiles_collection.update_one(
                 {"user_id": user_id},
@@ -291,7 +292,7 @@ class SocialService:
                 "id": str(uuid.uuid4()),
                 "follower_id": follower_id,
                 "following_id": following_id,
-                "created_at": datetime.utcnow()
+                "created_at": utcnow()
             }
             
             self.follows_collection.insert_one(follow_data)
@@ -440,7 +441,7 @@ class SocialService:
                 "privacy_level": privacy_level,
                 "likes_count": 0,
                 "comments_count": 0,
-                "created_at": datetime.utcnow()
+                "created_at": utcnow()
             }
             
             self.activities_collection.insert_one(activity_data)
@@ -528,7 +529,7 @@ class SocialService:
                 "message": message,
                 "data": data or {},
                 "is_read": False,
-                "created_at": datetime.utcnow()
+                "created_at": utcnow()
             }
             
             self.notifications_collection.insert_one(notification_data)

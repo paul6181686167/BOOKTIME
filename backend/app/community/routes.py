@@ -217,7 +217,7 @@ def _collect_from_series_library(
 
 
 @router.get("/books/reviews")
-async def get_community_book_reviews(
+def get_community_book_reviews(
     ol_key: Optional[str] = Query(None),
     isbn: Optional[str] = Query(None),
     title: Optional[str] = Query(None),

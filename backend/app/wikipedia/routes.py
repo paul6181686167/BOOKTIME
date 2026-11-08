@@ -3,13 +3,20 @@ Routes pour l'API Wikipedia
 Récupération d'informations sur les auteurs avec données curées
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 import httpx
 import re
 from typing import Optional, List, Dict
 import logging
+from app.utils.errors import public_error
+from app.security.rate_limit import ip_rate_limit
+from app.admin.routes import require_admin
 
-router = APIRouter(prefix="/api/wikipedia", tags=["wikipedia"])
+router = APIRouter(
+    prefix="/api/wikipedia",
+    tags=["wikipedia"],
+    dependencies=[Depends(ip_rate_limit("wikipedia", 120, 60))],
+)
 
 logger = logging.getLogger(__name__)
 
@@ -552,7 +559,7 @@ async def get_wikipedia_author_info(author_name: str):
         logger.error(f"Erreur lors de la récupération des informations pour {author_name}: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la récupération des informations: {str(e)}"
+            detail=public_error(e, "Erreur lors de la récupération des informations")
         )
 
 @router.get("/author/{author_name}/works")
@@ -591,35 +598,14 @@ async def get_author_works(author_name: str, limit: int = 50):
         logger.error(f"Erreur lors de la récupération des œuvres pour {author_name}: {str(e)}")
         return {
             "found": False,
-            "message": f"Erreur lors de la récupération des œuvres: {str(e)}"
+            "message": "Erreur lors de la récupération des œuvres"
         }
-
-@router.get("/test/{author_name}")
-async def test_wikipedia_author(author_name: str):
-    """
-    Endpoint de test pour vérifier la récupération d'informations Wikipedia
-    """
-    try:
-        # Test avec données brutes
-        raw_data = await search_wikipedia_author(author_name)
-        
-        if not raw_data:
-            return {"found": False, "message": "Auteur non trouvé"}
-        
-        # Extraire les informations
-        extracted_info = extract_author_info(raw_data)
-        
-        return {
-            "found": True,
-            "raw_data": raw_data,
-            "extracted_info": extracted_info
-        }
-        
-    except Exception as e:
-        return {"error": str(e)}
 
 @router.post("/enrich-series")
-async def enrich_series_from_existing_authors(limit: int = 50):
+async def enrich_series_from_existing_authors(
+    limit: int = 50,
+    admin_user: dict = Depends(require_admin),
+):
     """
     🚀 Enrichissement automatique des séries via Wikipedia
     Analyse les auteurs existants et détecte leurs séries automatiquement
@@ -645,7 +631,7 @@ async def enrich_series_from_existing_authors(limit: int = 50):
         else:
             return {
                 "success": False,
-                "error": result.get('error', 'Unknown error'),
+                "error": "Enrichissement en échec",
                 "message": "Échec de l'enrichissement"
             }
             
@@ -653,11 +639,11 @@ async def enrich_series_from_existing_authors(limit: int = 50):
         logger.error(f"Erreur lors de l'enrichissement des séries: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de l'enrichissement: {str(e)}"
+            detail=public_error(e, "Erreur lors de l'enrichissement")
         )
 
 @router.get("/enrich-series/status")
-async def get_enrichment_status():
+def get_enrichment_status(admin_user: dict = Depends(require_admin)):
     """
     📊 Obtenir le statut de l'enrichissement Ultra Harvest
     """
@@ -695,5 +681,5 @@ async def get_enrichment_status():
                 "last_update": None
             },
             "enrichment_available": False,
-            "error": str(e)
+            "error": "Statut indisponible"
         }

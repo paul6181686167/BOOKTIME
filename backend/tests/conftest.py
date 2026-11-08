@@ -4,7 +4,13 @@ Fixtures pytest : client HTTP async (httpx) + utilisateur JWT pour l’API réel
 
 from __future__ import annotations
 
+import os
 import uuid
+
+# Avant tout import de l'application : pas de limitation de débit pendant les tests
+# (toutes les requêtes viennent de la même adresse) et environnement de test explicite.
+os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
+os.environ.setdefault("ENVIRONMENT", "test")
 
 import pytest
 import pytest_asyncio

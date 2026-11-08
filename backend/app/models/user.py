@@ -4,7 +4,7 @@ from datetime import datetime
 
 class UserAuth(BaseModel):
     email: EmailStr
-    password: str = Field(..., min_length=6)
+    password: str = Field(..., min_length=6, max_length=256)  # 6 : anciens comptes ; la règle des 8 s'applique à la création / au changement
     remember_me: bool = True
 
 class RegisterRequest(UserAuth):

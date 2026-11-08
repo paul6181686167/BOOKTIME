@@ -34,6 +34,7 @@ from .integrations.mangaupdates import MangaUpdatesService
 from .integrations.predictor import ChapterPredictor
 from .utils.chapter_grouper import ChapterGrouper
 from .utils.date_calculator import DateCalculator
+from app.utils.timeutils import utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -200,7 +201,7 @@ class ChapterService:
             collection = self.db[self.collection_name]
             
             update_data = {
-                "last_updated": datetime.utcnow()
+                "last_updated": utcnow()
             }
             
             if anilist_id:
@@ -232,7 +233,7 @@ class ChapterService:
         
         try:
             collection = self.db[self.collection_name]
-            now = datetime.utcnow()
+            now = utcnow()
             
             # Dates de référence
             end_of_week = now + timedelta(days=(6 - now.weekday()))
@@ -331,7 +332,7 @@ class ChapterService:
         """Vérifie si le cache est expiré"""
         if not series_data.cache_expires:
             return True
-        return datetime.utcnow() > series_data.cache_expires
+        return utcnow() > series_data.cache_expires
     
     async def _fetch_from_external_apis(self, series_name: str) -> Optional[SeriesChapters]:
         """Récupère données depuis APIs externes"""
@@ -396,7 +397,7 @@ class ChapterService:
                 source_format=SourceFormat.MANGA,
                 enable_predictions=True,
                 auto_volume_grouping=True,
-                cache_expires=datetime.utcnow() + self.cache_duration
+                cache_expires=utcnow() + self.cache_duration
             )
 
             logger.info(f"Données récupérées pour {series_name}: {len(chapters)} chapitres, {series_data.total_volumes_released} volumes")
@@ -490,14 +491,14 @@ class ChapterService:
     async def _test_anilist_connection(self) -> Dict[str, Any]:
         """Test de connexion AniList"""
         try:
-            start_time = datetime.utcnow()
+            start_time = utcnow()
             result = await self.anilist.health_check()
-            response_time = (datetime.utcnow() - start_time).total_seconds() * 1000
+            response_time = (utcnow() - start_time).total_seconds() * 1000
             
             return {
                 "status": "ok" if result else "error",
                 "response_time": int(response_time),
-                "last_success": datetime.utcnow() if result else None
+                "last_success": utcnow() if result else None
             }
         except Exception as e:
             return {
@@ -509,14 +510,14 @@ class ChapterService:
     async def _test_mangaupdates_connection(self) -> Dict[str, Any]:
         """Test de connexion MangaUpdates"""
         try:
-            start_time = datetime.utcnow()
+            start_time = utcnow()
             result = await self.mangaupdates.health_check()
-            response_time = (datetime.utcnow() - start_time).total_seconds() * 1000
+            response_time = (utcnow() - start_time).total_seconds() * 1000
             
             return {
                 "status": "ok" if result else "error", 
                 "response_time": int(response_time),
-                "last_success": datetime.utcnow() if result else None
+                "last_success": utcnow() if result else None
             }
         except Exception as e:
             return {

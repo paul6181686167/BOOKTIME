@@ -19,7 +19,7 @@ _LEVEL_LABELS = {
 
 
 @router.get("/verify-volumes")
-async def verify_volumes(
+def verify_volumes(
     name: str = Query(..., min_length=1, max_length=200),
     author: str | None = Query(None, max_length=200),
     qid: str | None = Query(None, max_length=20),

@@ -5,6 +5,7 @@ import logging
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from datetime import datetime, timezone
@@ -32,6 +33,15 @@ async def lifespan(app: FastAPI):
 
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, _warm_wikidata)
+
+    # Index MongoDB (idempotent, en tâche de fond) : sans eux chaque requête par user_id
+    # parcourt toute la collection.
+    try:
+        from .database.indexes import ensure_indexes
+
+        loop.run_in_executor(None, ensure_indexes)
+    except Exception as exc:
+        logger.warning("Création des index ignorée : %s", exc)
 
     # Démarrage du job planifié "prochaines sorties" (rafraîchissement + notifications).
     try:
@@ -65,10 +75,6 @@ from .library.routes import router as library_router
 from .stats.routes import router as stats_router
 from .authors.routes import router as authors_router
 
-# Import du router optimisé
-from .routers.optimized_books import router as optimized_books_router
-# Import du router pagination (Phase 2.2)
-from .routers.pagination import router as pagination_router
 # Import du router monitoring (Phase 2.4)
 from .monitoring.routes import router as monitoring_router
 # Import du router recommendations (Phase 3.1)
@@ -109,100 +115,54 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Configuration CORS Production
+# CORS : liste d'origines explicite + prévisualisations de ton compte Vercel (voir security/cors.py)
 import os
-from typing import List
-
-# URLs autorisées pour CORS - Configuration Production
-def get_cors_origins() -> List[str]:
-    """Configuration CORS dynamique selon environnement"""
-    cors_origins = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        # Accès LAN (autre PC sur le même Wi-Fi)
-        "http://192.168.1.167:3000",
-        # Application Android (Capacitor) : la WebView sert le bundle depuis
-        # https://localhost et envoie cette origine sur chaque requête.
-        "https://localhost",
-        "http://localhost",
-        "capacitor://localhost",
-        # Vercel deployments
-        "https://booktime-sg59.vercel.app",
-        "https://booktime-sg59-git-main-paul6181686167s-projects.vercel.app",
-        "https://booktime-paul6181686167s-projects.vercel.app",
-        "https://booktime-git-main-paul6181686167s-projects.vercel.app",
-        "https://booktime.vercel.app",
-        "https://1571571761761571.vercel.app",
-        "https://1571571761761571-git-main-paul6181686167s-projects.vercel.app",
-        "https://changelog-reader-9.preview.emergentagent.com",
-    ]
-
-    # CORS_ORIGINS (Render) + origines Vercel du projet
-    env_origins = os.environ.get("CORS_ORIGINS", "")
-    if env_origins:
-        cors_origins.extend([origin.strip() for origin in env_origins.split(",") if origin.strip()])
-
-    return list(dict.fromkeys(cors_origins))
+from .config import is_development
+from .security.cors import (
+    ALLOWED_HEADERS,
+    ALLOWED_METHODS,
+    cors_headers_for,
+    get_cors_origins,
+    get_origin_regex,
+)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_cors_origins(),
-    # Preview / prod Vercel (booktime-*, *-paul6181686167s-projects)
-    allow_origin_regex=r"https://([a-z0-9-]+\.)*vercel\.app",
+    allow_origin_regex=get_origin_regex(),
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
+    allow_methods=ALLOWED_METHODS,
+    allow_headers=ALLOWED_HEADERS,
 )
 
-def _cors_headers(origin: str = None) -> dict:
-    """Headers CORS pour les reponses d'erreur - ne renvoie pas d'origine si non autorisée"""
-    import re
-
-    origins = get_cors_origins()
-    vercel_re = re.compile(r"^https://([a-z0-9-]+\.)*vercel\.app$", re.I)
-    if origin and (origin in origins or vercel_re.match(origin)):
-        allow_origin = origin
-    elif not origin:
-        allow_origin = origins[0] if origins else "http://localhost:3000"
-    else:
-        # Origine non autorisée : ne pas exposer un header CORS permissif
-        return {}
-    return {
-        "Access-Control-Allow-Origin": allow_origin,
-        "Access-Control-Allow-Credentials": "true",
-        "Access-Control-Allow-Methods": "*",
-        "Access-Control-Allow-Headers": "*",
-    }
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
         status_code=422,
-        content={"detail": exc.errors()},
-        headers=_cors_headers(request.headers.get("origin")),
+        content={"detail": jsonable_encoder(exc.errors())},
+        headers=cors_headers_for(request.headers.get("origin")),
     )
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    headers = cors_headers_for(request.headers.get("origin"))
+    headers.update(getattr(exc, "headers", None) or {})
     return JSONResponse(
         status_code=exc.status_code,
-        content={"detail": exc.detail} if isinstance(exc.detail, str) else {"detail": exc.detail},
-        headers=_cors_headers(request.headers.get("origin")),
+        content={"detail": exc.detail},
+        headers=headers,
     )
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    import traceback, logging
-    logging.getLogger("booktime").error(f"Unhandled error: {exc}\n{traceback.format_exc()}")
-    is_dev = os.environ.get("ENVIRONMENT", "development") == "development"
-    detail = str(exc) if is_dev else "Une erreur interne est survenue. Réessaie dans un instant."
+    logging.getLogger("booktime").error("Unhandled error: %s", exc, exc_info=exc)
+    # Détail de l'exception montré seulement en développement explicite (ENVIRONMENT=development)
+    detail = str(exc) if is_development() else "Une erreur interne est survenue. Réessaie dans un instant."
     return JSONResponse(
         status_code=500,
         content={"detail": detail},
-        headers=_cors_headers(request.headers.get("origin")),
+        headers=cors_headers_for(request.headers.get("origin")),
     )
 
 # Routes de base
@@ -227,32 +187,35 @@ async def ping():
 async def health():
     """Health check complet (MongoDB) — pour diagnostics, pas pour ping fréquent.
     Accepte GET et HEAD (UptimeRobot utilise HEAD par défaut, sinon 405)."""
-    import os
-    
-    # Vérifier mode mock Railway
-    if os.environ.get("RAILWAY_MONGODB_MOCK") == "true":
+    now = datetime.now(timezone.utc).isoformat()
+    environment = os.environ.get("ENVIRONMENT", "development")
+
+    if database.is_mock_mode():
+        # Base en mémoire : les données ne survivent pas à un redémarrage. En production ce
+        # mode est refusé au démarrage ; ailleurs on le signale clairement (statut 200 conservé
+        # pour les tests et le développement local).
         return {
-            "status": "ok", 
-            "database": "mock_mode_railway", 
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "environment": os.environ.get("ENVIRONMENT", "production"),
+            "status": "ok",
+            "database": "mock_in_memory",
+            "timestamp": now,
+            "environment": environment,
             "version": "1.0.0",
-            "warning": "Running in Railway Mock Mode - No real database connection"
+            "warning": "Base MongoDB simulée en mémoire : données non persistantes",
         }
-    
+
     try:
         # ping Mongo hors de la boucle : un ping sync bloquait autrement toute l'API
-        import asyncio
         await asyncio.to_thread(client.admin.command, "ping")
         return {
-            "status": "ok", 
-            "database": "connected", 
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "environment": os.environ.get("ENVIRONMENT", "development"),
-            "version": "1.0.0"
+            "status": "ok",
+            "database": "connected",
+            "timestamp": now,
+            "environment": environment,
+            "version": "1.0.0",
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database connection error: {str(e)}")
+        logger.error("Health check : MongoDB injoignable : %s", e)
+        raise HTTPException(status_code=503, detail="Base de données indisponible")
 
 
 # Enregistrement des routers
@@ -264,8 +227,6 @@ app.include_router(openlibrary_router)
 app.include_router(library_router)
 app.include_router(stats_router)
 app.include_router(authors_router)
-app.include_router(optimized_books_router)
-app.include_router(pagination_router)
 app.include_router(monitoring_router)
 app.include_router(recommendations_router)  # Phase 3.1
 app.include_router(export_import_router)  # Phase 3.2

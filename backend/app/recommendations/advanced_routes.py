@@ -10,6 +10,8 @@ from pydantic import BaseModel
 from ..security.jwt import get_current_user
 from .advanced_service import advanced_recommendation_service
 from .ml_models import ml_models
+from app.utils.errors import public_error
+from app.utils.timeutils import utcnow
 
 router = APIRouter(prefix="/api/recommendations/advanced", tags=["advanced_recommendations"])
 
@@ -71,7 +73,7 @@ async def get_contextual_recommendations(
         formatted_recs = []
         for rec in contextual_recs:
             formatted_rec = {
-                'recommendation_id': f"ctx_{rec.base_recommendation.book_id}_{int(datetime.utcnow().timestamp())}",
+                'recommendation_id': f"ctx_{rec.base_recommendation.book_id}_{int(utcnow().timestamp())}",
                 'book': {
                     'book_id': rec.base_recommendation.book_id,
                     'title': rec.base_recommendation.title,
@@ -112,13 +114,13 @@ async def get_contextual_recommendations(
                 }
             },
             "count": len(formatted_recs),
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": utcnow().isoformat()
         }
         
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la génération des recommandations contextuelles: {str(e)}"
+            detail=public_error(e, "Erreur lors de la génération des recommandations contextuelles")
         )
 
 @router.get("/social")
@@ -151,7 +153,7 @@ async def get_social_recommendations(
         formatted_recs = []
         for rec in social_recs:
             formatted_rec = {
-                'recommendation_id': f"social_{rec.base_recommendation.book_id}_{int(datetime.utcnow().timestamp())}",
+                'recommendation_id': f"social_{rec.base_recommendation.book_id}_{int(utcnow().timestamp())}",
                 'book': {
                     'book_id': rec.base_recommendation.book_id,
                     'title': rec.base_recommendation.title,
@@ -186,13 +188,13 @@ async def get_social_recommendations(
                 }
             },
             "count": len(formatted_recs),
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": utcnow().isoformat()
         }
         
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la génération des recommandations sociales: {str(e)}"
+            detail=public_error(e, "Erreur lors de la génération des recommandations sociales")
         )
 
 # === ROUTES MACHINE LEARNING ===
@@ -297,7 +299,7 @@ async def train_ml_models(
                 "feature_importance": result.feature_importance,
                 "algorithm": result.model_type
             },
-            "trained_at": datetime.utcnow().isoformat()
+            "trained_at": utcnow().isoformat()
         }
         
     except HTTPException:
@@ -305,7 +307,7 @@ async def train_ml_models(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de l'entraînement ML: {str(e)}"
+            detail=public_error(e, "Erreur lors de l'entraînement ML")
         )
 
 @router.get("/ml/predict-rating")
@@ -349,7 +351,7 @@ async def predict_book_rating(
                     "max": min(5.0, predicted_rating + (1 - confidence) * 2)
                 }
             },
-            "predicted_at": datetime.utcnow().isoformat()
+            "predicted_at": utcnow().isoformat()
         }
         
     except HTTPException:
@@ -357,7 +359,7 @@ async def predict_book_rating(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la prédiction: {str(e)}"
+            detail=public_error(e, "Erreur lors de la prédiction")
         )
 
 # === ROUTES PROFIL AVANCÉ ===
@@ -405,19 +407,19 @@ async def get_advanced_user_profile(
                     "recommendation_potential": "excellent" if len(advanced_profile.genre_preferences) > 2 else "good"
                 }
             },
-            "analyzed_at": datetime.utcnow().isoformat()
+            "analyzed_at": utcnow().isoformat()
         }
         
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de l'analyse du profil avancé: {str(e)}"
+            detail=public_error(e, "Erreur lors de l'analyse du profil avancé")
         )
 
 # === ROUTES FEEDBACK ET APPRENTISSAGE ===
 
 @router.post("/feedback")
-async def submit_advanced_feedback(
+def submit_advanced_feedback(
     feedback: FeedbackRequest,
     current_user: dict = Depends(get_current_user)
 ):
@@ -441,7 +443,7 @@ async def submit_advanced_feedback(
             "feedback_type": feedback.feedback_type,
             "rating": feedback.rating,
             "context": feedback.context or {},
-            "timestamp": datetime.utcnow(),
+            "timestamp": utcnow(),
             "session_info": {
                 "user_agent": "unknown",  # À récupérer des headers
                 "platform": "web"
@@ -469,7 +471,7 @@ async def submit_advanced_feedback(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de l'enregistrement du feedback: {str(e)}"
+            detail=public_error(e, "Erreur lors de l'enregistrement du feedback")
         )
 
 # === ROUTES STATISTIQUES ===
@@ -519,17 +521,17 @@ async def get_ml_stats():
         return {
             "success": True,
             "data": stats,
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": utcnow().isoformat()
         }
         
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la récupération des stats ML: {str(e)}"
+            detail=public_error(e, "Erreur lors de la récupération des stats ML")
         )
 
 @router.get("/health")
-async def advanced_recommendations_health():
+def advanced_recommendations_health():
     """Vérification de santé du module recommandations avancées"""
     try:
         health_status = {
@@ -562,5 +564,5 @@ async def advanced_recommendations_health():
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur module recommandations avancées: {str(e)}"
+            detail=public_error(e, "Erreur module recommandations avancées")
         )

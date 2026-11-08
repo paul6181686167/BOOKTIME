@@ -135,10 +135,19 @@ class AuthService {
   }
 
   async changePassword(currentPassword, newPassword) {
-    return this._send('POST', '/api/auth/change-password', {
+    const res = await this._send('POST', '/api/auth/change-password', {
       current_password: currentPassword,
       new_password: newPassword,
     });
+    // Les autres sessions sont révoquées par le serveur : on garde celle-ci avec le nouveau jeton
+    if (res.success && res.access_token) {
+      try {
+        localStorage.setItem('token', res.access_token);
+      } catch (_) {
+        /* stockage indisponible */
+      }
+    }
+    return res;
   }
 
   async _send(method, path, body) {

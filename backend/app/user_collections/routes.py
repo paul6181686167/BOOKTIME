@@ -117,12 +117,12 @@ def _read(user_id: str) -> Dict[str, Any]:
 
 
 @router.get("")
-async def get_collections(current_user: dict = Depends(get_current_user)):
+def get_collections(current_user: dict = Depends(get_current_user)):
     return _read(current_user["id"])
 
 
 @router.put("")
-async def put_collections(
+def put_collections(
     payload: dict = Body(...),
     current_user: dict = Depends(get_current_user),
 ):

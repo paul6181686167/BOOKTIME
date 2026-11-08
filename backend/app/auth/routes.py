@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, Depends, Response
-from pydantic import BaseModel
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends, Request, Response
+from pydantic import BaseModel, Field
 from datetime import datetime, timedelta
 import uuid
+import hashlib
 import secrets
 import re
 import base64
@@ -23,6 +24,8 @@ from ..security.jwt import (
     REMEMBER_ME_EXPIRE_MINUTES,
     SESSION_EXPIRE_MINUTES,
 )
+from ..security.rate_limit import RateLimiter, client_ip, ip_rate_limit, rate_limiting_enabled
+from ..utils.timeutils import utcnow
 import logging
 
 logger = logging.getLogger(__name__)
@@ -38,12 +41,12 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 class ForgotPasswordRequest(BaseModel):
-    email: str
+    email: str = Field(..., max_length=254)
 
 
 class ResetPasswordRequest(BaseModel):
-    token: str
-    new_password: str
+    token: str = Field(..., max_length=200)
+    new_password: str = Field(..., max_length=256)
 
 
 def _frontend_base_url() -> str:
@@ -153,6 +156,25 @@ def _send_reset_email(to_email: str, reset_token: str, frontend_url: str):
     )
 
 
+MIN_PASSWORD_LENGTH = 8
+MAX_PASSWORD_BYTES = 72  # limite de bcrypt : au-delà, la bibliothèque lève une erreur
+
+
+def _password_problem(password: str) -> Optional[str]:
+    """Message d'erreur si le mot de passe ne respecte pas les règles, sinon None."""
+    if len(password or "") < MIN_PASSWORD_LENGTH:
+        return f"Le mot de passe doit contenir au moins {MIN_PASSWORD_LENGTH} caractères."
+    if len((password or "").encode("utf-8")) > MAX_PASSWORD_BYTES:
+        return "Le mot de passe est trop long (72 octets maximum)."
+    return None
+
+
+def _require_valid_password(password: str) -> None:
+    problem = _password_problem(password)
+    if problem:
+        raise HTTPException(status_code=400, detail=problem)
+
+
 def _hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
@@ -160,17 +182,43 @@ def _hash_password(password: str) -> str:
 def _verify_password(plain: str, hashed: str) -> bool:
     if not hashed:
         return False
-    return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
+    data = (plain or "").encode("utf-8")
+    if len(data) > MAX_PASSWORD_BYTES:
+        return False  # bcrypt 5 lève une erreur au-delà de 72 octets : ce ne peut pas être le bon mot de passe
+    return bcrypt.checkpw(data, hashed.encode("utf-8"))
 
 
-@router.post("/register")
-async def register(user_data: RegisterRequest, response: Response):
+# Hash factice : on fait toujours un calcul bcrypt, même si le compte n'existe pas, pour que le
+# temps de réponse ne révèle pas quelles adresses sont inscrites.
+_DUMMY_HASH = bcrypt.hashpw(b"not-a-real-password", bcrypt.gensalt()).decode("utf-8")
+
+
+def _hash_reset_token(token: str) -> str:
+    """Seule l'empreinte du jeton est stockée : une fuite de la base ne donne pas de liens valides."""
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+# --- limitation de débit -----------------------------------------------------
+_login_ip_limit = ip_rate_limit("login", 40, 900)
+_register_ip_limit = ip_rate_limit("register", 10, 3600, "Trop d'inscriptions depuis cette connexion. Réessaie plus tard.")
+_forgot_ip_limit = ip_rate_limit("forgot", 8, 3600, "Trop de demandes. Réessaie plus tard.")
+_reset_ip_limit = ip_rate_limit("reset", 20, 3600)
+# Échecs de connexion par adresse e-mail : bloque le brute-force d'un compte précis
+_login_failures = RateLimiter(8, 900, "Trop d'échecs de connexion. Réessaie dans quelques minutes.")
+_forgot_by_email = RateLimiter(3, 3600)
+# Échecs de vérification du mot de passe actuel (changement / suppression) par utilisateur
+_password_failures = RateLimiter(6, 900, "Trop de tentatives. Réessaie dans quelques minutes.")
+
+
+@router.post("/register", dependencies=[Depends(_register_ip_limit)])
+def register(user_data: RegisterRequest, response: Response):
     """Enregistrer un nouvel utilisateur (email + mot de passe + acceptation des CGU)"""
     if not user_data.accept_terms:
         raise HTTPException(
             status_code=400,
             detail="Tu dois accepter les conditions générales d'utilisation pour créer un compte.",
         )
+    _require_valid_password(user_data.password)
     email_lower = user_data.email.lower().strip()
     existing_user = users_collection.find_one({"email": email_lower})
 
@@ -183,8 +231,8 @@ async def register(user_data: RegisterRequest, response: Response):
         "id": user_id,
         "email": email_lower,
         "password_hash": password_hash,
-        "created_at": datetime.utcnow(),
-        "terms_accepted_at": datetime.utcnow(),
+        "created_at": utcnow(),
+        "terms_accepted_at": utcnow(),
         "terms_version": (user_data.terms_version or "").strip() or None,
     }
 
@@ -201,20 +249,27 @@ async def register(user_data: RegisterRequest, response: Response):
     }
 
 
-@router.post("/login")
-async def login(user_data: UserAuth, response: Response):
+@router.post("/login", dependencies=[Depends(_login_ip_limit)])
+def login(user_data: UserAuth, response: Response):
     """Connexion (email + mot de passe)"""
     email_lower = user_data.email.lower().strip()
+    limits_on = rate_limiting_enabled()
+    if limits_on:
+        _login_failures.raise_if_blocked(email_lower)
     user = users_collection.find_one({"email": email_lower}, {"_id": 0})
 
-    if not user:
-        raise HTTPException(status_code=400, detail="Email ou mot de passe incorrect")
-
-    if not _verify_password(user_data.password, user.get("password_hash", "")):
+    stored_hash = (user or {}).get("password_hash", "")
+    password_ok = _verify_password(user_data.password, stored_hash or _DUMMY_HASH) and bool(user and stored_hash)
+    if not password_ok:
+        if limits_on:
+            _login_failures.hit(email_lower)
         raise HTTPException(status_code=400, detail="Email ou mot de passe incorrect")
 
     if user.get("banned"):
         raise HTTPException(status_code=403, detail="Ce compte a été suspendu.")
+
+    if limits_on:
+        _login_failures.reset(email_lower)
 
     access_token_expires = timedelta(
         minutes=_token_ttl_minutes(bool(user_data.remember_me))
@@ -229,69 +284,68 @@ async def login(user_data: UserAuth, response: Response):
     }
 
 @router.post("/logout")
-async def logout(response: Response):
+def logout(response: Response):
     """Déconnexion : supprime le cookie de session httpOnly (le jeton localStorage est effacé côté appli)."""
     clear_auth_cookie(response)
     return {"success": True}
 
 
-@router.post("/forgot-password")
-async def forgot_password(data: ForgotPasswordRequest):
-    """Envoie un e-mail de réinitialisation (Resend ou SMTP requis)."""
+def _send_reset_email_safely(to_email: str, reset_token: str, frontend_url: str) -> None:
+    """Envoi en tâche de fond : un échec est journalisé mais n'est jamais montré au client
+    (réponse et délai identiques que le compte existe ou non)."""
+    try:
+        _send_reset_email(to_email, reset_token, frontend_url)
+    except Exception as e:
+        logger.error("[EMAIL] Erreur envoi email reset: %s", e)
+
+
+_FORGOT_RESPONSE = {
+    "message": "Si cet email existe, un lien de réinitialisation a été envoyé.",
+    "delivery": "email",
+}
+
+
+@router.post("/forgot-password", dependencies=[Depends(_forgot_ip_limit)])
+def forgot_password(data: ForgotPasswordRequest, background_tasks: BackgroundTasks):
+    """Envoie un e-mail de réinitialisation (Resend ou SMTP requis).
+
+    La réponse est identique que le compte existe ou non (pas d'énumération d'adresses)."""
     email_lower = data.email.lower().strip()
-    user = users_collection.find_one({"email": email_lower}, {"_id": 0})
 
-    # Message générique si le compte n'existe pas (pas d'énumération d'emails)
-    if not user:
-        return {
-            "message": "Si cet email existe, un lien de réinitialisation a été envoyé.",
-            "delivery": "none",
-        }
-
+    # Configuration serveur : même réponse pour tout le monde, donc sans fuite sur les comptes
     if not _email_configured():
         raise HTTPException(
             status_code=503,
-            detail=(
-                "Envoi d'e-mail non configuré sur le serveur. "
-                "Ajoute RESEND_API_KEY (recommandé) ou SMTP_USER + SMTP_PASSWORD sur Render."
-            ),
+            detail="Envoi d'e-mail indisponible pour le moment. Réessaie plus tard.",
         )
+    if rate_limiting_enabled():
+        if _forgot_by_email.blocked(email_lower):
+            return dict(_FORGOT_RESPONSE)  # silencieux : ne pas révéler le blocage
+        _forgot_by_email.hit(email_lower)
+
+    user = users_collection.find_one({"email": email_lower}, {"_id": 0})
+    if not user:
+        return dict(_FORGOT_RESPONSE)
 
     reset_token = secrets.token_urlsafe(32)
-    expires_at = datetime.utcnow() + timedelta(hours=1)
+    expires_at = utcnow() + timedelta(hours=1)
 
     users_collection.update_one(
         {"email": email_lower},
-        {"$set": {"reset_token": reset_token, "reset_token_expires": expires_at}}
+        {"$set": {"reset_token": _hash_reset_token(reset_token), "reset_token_expires": expires_at}}
     )
 
-    frontend_url = _frontend_base_url()
-
-    try:
-        _send_reset_email(email_lower, reset_token, frontend_url)
-    except Exception as e:
-        logger.error(f"[EMAIL] Erreur envoi email reset: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                "Impossible d'envoyer l'e-mail. Vérifie RESEND_API_KEY ou "
-                "SMTP_USER / SMTP_PASSWORD (mot de passe d'application Gmail) sur Render."
-            ),
-        )
-
-    return {
-        "message": "Si cet email existe, un lien de réinitialisation a été envoyé.",
-        "delivery": "email",
-    }
+    background_tasks.add_task(_send_reset_email_safely, email_lower, reset_token, _frontend_base_url())
+    return dict(_FORGOT_RESPONSE)
 
 
-@router.post("/reset-password")
-async def reset_password(data: ResetPasswordRequest):
+@router.post("/reset-password", dependencies=[Depends(_reset_ip_limit)])
+def reset_password(data: ResetPasswordRequest):
     """Réinitialiser le mot de passe avec le token reçu par email."""
-    if len(data.new_password) < 6:
-        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 6 caractères.")
+    _require_valid_password(data.new_password)
 
-    user = users_collection.find_one({"reset_token": data.token}, {"_id": 0})
+    token_hash = _hash_reset_token(data.token)
+    user = users_collection.find_one({"reset_token": token_hash}, {"_id": 0})
 
     if not user:
         raise HTTPException(status_code=400, detail="Lien invalide ou expiré.")
@@ -299,13 +353,17 @@ async def reset_password(data: ResetPasswordRequest):
     expires_at = user.get("reset_token_expires")
     if expires_at is not None and getattr(expires_at, "tzinfo", None) is not None:
         expires_at = expires_at.replace(tzinfo=None)
-    if not expires_at or datetime.utcnow() > expires_at:
+    if not expires_at or utcnow() > expires_at:
         raise HTTPException(status_code=400, detail="Ce lien a expiré. Faites une nouvelle demande.")
 
     new_hash = _hash_password(data.new_password)
     users_collection.update_one(
-        {"reset_token": data.token},
-        {"$set": {"password_hash": new_hash}, "$unset": {"reset_token": "", "reset_token_expires": ""}}
+        {"reset_token": token_hash},
+        {
+            # password_changed_at révoque toutes les sessions ouvertes avant la réinitialisation
+            "$set": {"password_hash": new_hash, "password_changed_at": utcnow()},
+            "$unset": {"reset_token": "", "reset_token_expires": ""},
+        },
     )
 
     return {"message": "Mot de passe réinitialisé avec succès."}
@@ -373,8 +431,6 @@ SETTINGS_DEFAULTS = {
     "share_reviews": True,  # notes et avis visibles par les amis
     "share_reading": True,  # lectures en cours visibles par les amis
 }
-MIN_PASSWORD_LENGTH = 6
-
 
 def public_settings(doc: Optional[dict]) -> dict:
     """Réglages de l'utilisateur, complétés par les valeurs par défaut."""
@@ -402,8 +458,8 @@ class SettingsUpdateRequest(BaseModel):
 
 
 class ChangePasswordRequest(BaseModel):
-    current_password: str
-    new_password: str
+    current_password: str = Field(..., max_length=256)
+    new_password: str = Field(..., max_length=256)
 
 
 class ProfileUpdateRequest(BaseModel):
@@ -416,7 +472,7 @@ class ProfileUpdateRequest(BaseModel):
 
 
 @router.get("/me")
-async def get_me(current_user: dict = Depends(get_current_user)):
+def get_me(current_user: dict = Depends(get_current_user)):
     """Obtenir les informations de l'utilisateur actuel (profil et photo inclus)."""
     stored = users_collection.find_one(
         {"id": current_user.get("id")}, {"_id": 0, "password_hash": 0}
@@ -431,7 +487,7 @@ async def get_me(current_user: dict = Depends(get_current_user)):
 
 
 @router.put("/me/settings")
-async def update_my_settings(
+def update_my_settings(
     payload: SettingsUpdateRequest,
     current_user: dict = Depends(get_current_user),
 ):
@@ -448,32 +504,46 @@ async def update_my_settings(
 
 
 @router.post("/change-password")
-async def change_password(
+def change_password(
     payload: ChangePasswordRequest,
+    response: Response,
     current_user: dict = Depends(get_current_user),
 ):
-    """Change le mot de passe après vérification de l'ancien."""
-    stored = users_collection.find_one({"id": current_user.get("id")})
+    """Change le mot de passe après vérification de l'ancien.
+
+    Les sessions ouvertes avant le changement (autres appareils, jeton volé) sont révoquées ;
+    un nouveau jeton est renvoyé pour que l'appareil courant reste connecté."""
+    user_id = current_user.get("id")
+    limits_on = rate_limiting_enabled()
+    if limits_on:
+        _password_failures.raise_if_blocked(f"change:{user_id}")
+    stored = users_collection.find_one({"id": user_id})
     if not stored or not _verify_password(payload.current_password, stored.get("password_hash", "")):
+        if limits_on:
+            _password_failures.hit(f"change:{user_id}")
         raise HTTPException(status_code=401, detail="Mot de passe actuel incorrect.")
-    if len(payload.new_password) < MIN_PASSWORD_LENGTH:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Le nouveau mot de passe doit faire au moins {MIN_PASSWORD_LENGTH} caractères.",
-        )
+    problem = _password_problem(payload.new_password)
+    if problem:
+        raise HTTPException(status_code=400, detail=problem)
     if payload.new_password == payload.current_password:
         raise HTTPException(
             status_code=400, detail="Le nouveau mot de passe doit être différent de l'ancien."
         )
     users_collection.update_one(
-        {"id": current_user.get("id")},
-        {"$set": {"password_hash": _hash_password(payload.new_password)}},
+        {"id": user_id},
+        {"$set": {"password_hash": _hash_password(payload.new_password), "password_changed_at": utcnow()}},
     )
-    return {"success": True}
+    if limits_on:
+        _password_failures.reset(f"change:{user_id}")
+
+    ttl = timedelta(minutes=_token_ttl_minutes(True))
+    access_token = create_access_token(data={"sub": user_id}, expires_delta=ttl)
+    set_auth_cookie(response, access_token, int(ttl.total_seconds()))
+    return {"success": True, "access_token": access_token, "token_type": "bearer"}
 
 
 @router.put("/me/profile")
-async def update_my_profile(
+def update_my_profile(
     payload: ProfileUpdateRequest,
     current_user: dict = Depends(get_current_user),
 ):
@@ -526,11 +596,11 @@ _USER_DATA_COLLECTIONS = (
 
 
 class DeleteAccountRequest(BaseModel):
-    password: str
+    password: str = Field(..., max_length=256)
 
 
 @router.delete("/me")
-async def delete_account(
+def delete_account(
     data: DeleteAccountRequest,
     current_user: dict = Depends(get_current_user),
 ):
@@ -544,7 +614,12 @@ async def delete_account(
     if not stored:
         raise HTTPException(status_code=404, detail="Compte introuvable.")
 
+    limits_on = rate_limiting_enabled()
+    if limits_on:
+        _password_failures.raise_if_blocked(f"delete:{user_id}")
     if not _verify_password(data.password, stored.get("password_hash", "")):
+        if limits_on:
+            _password_failures.hit(f"delete:{user_id}")
         raise HTTPException(status_code=401, detail="Mot de passe incorrect.")
 
     deleted = {}

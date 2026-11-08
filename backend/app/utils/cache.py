@@ -86,7 +86,7 @@ class RedisCache:
         try:
             self._client.ping()
             return True
-        except:
+        except Exception:
             return False
     
     def _generate_key(self, prefix: str, *args, **kwargs) -> str:

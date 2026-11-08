@@ -23,6 +23,7 @@ from ..static_wikidata import service as wd
 from ..google_books import service as gb
 from ..chapters.service import ChapterService
 from ..series_verification.curated import match_curated
+from app.utils.timeutils import utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -1099,5 +1100,5 @@ async def get_upcoming_for_user(current_user: dict) -> dict[str, Any]:
         "groups": groups,
         "suggestions": suggestions,
         "counts": counts,
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": utcnow().isoformat(),
     }

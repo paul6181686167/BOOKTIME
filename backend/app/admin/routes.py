@@ -22,6 +22,7 @@ from ..database.connection import (
 from ..friends.helpers import iso
 from ..security.jwt import get_current_user
 from .helpers import bucket_by_day, clean_reason, is_admin, is_online
+from app.utils.timeutils import utcnow
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -48,9 +49,9 @@ def _dates_since(collection, field: str, since: datetime) -> list:
 
 
 @router.get("/stats")
-async def admin_stats(_: dict = Depends(require_admin)) -> Dict[str, Any]:
+def admin_stats(_: dict = Depends(require_admin)) -> Dict[str, Any]:
     """Chiffres globaux de l'application, calculés à chaque appel (donc « en direct »)."""
-    now = datetime.utcnow()
+    now = utcnow()
     day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = day_start - timedelta(days=6)
     chart_start = day_start - timedelta(days=SIGNUP_CHART_DAYS - 1)
@@ -123,7 +124,7 @@ def _user_row(doc: dict, now: datetime) -> Dict[str, Any]:
 
 
 @router.get("/users")
-async def admin_users(
+def admin_users(
     q: str = Query("", max_length=80),
     status: str = Query("all", pattern="^(all|banned)$"),
     skip: int = Query(0, ge=0),
@@ -139,7 +140,7 @@ async def admin_users(
     if status == "banned":
         query["banned"] = True
 
-    now = datetime.utcnow()
+    now = utcnow()
     projection = {"_id": 0, "password_hash": 0, "avatar_url": 0}
     docs = list(
         users_collection.find(query, projection).sort("created_at", -1).skip(skip).limit(limit)
@@ -151,7 +152,7 @@ async def admin_users(
 
 
 @router.post("/users/{user_id}/ban")
-async def ban_user(user_id: str, body: BanBody, admin: dict = Depends(require_admin)):
+def ban_user(user_id: str, body: BanBody, admin: dict = Depends(require_admin)):
     target = users_collection.find_one({"id": user_id}, {"_id": 0, "password_hash": 0, "avatar_url": 0})
     if not target:
         raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
@@ -164,7 +165,7 @@ async def ban_user(user_id: str, body: BanBody, admin: dict = Depends(require_ad
         {
             "$set": {
                 "banned": True,
-                "banned_at": datetime.utcnow(),
+                "banned_at": utcnow(),
                 "banned_reason": clean_reason(body.reason),
             }
         },
@@ -173,7 +174,7 @@ async def ban_user(user_id: str, body: BanBody, admin: dict = Depends(require_ad
 
 
 @router.post("/users/{user_id}/unban")
-async def unban_user(user_id: str, _: dict = Depends(require_admin)):
+def unban_user(user_id: str, _: dict = Depends(require_admin)):
     result = users_collection.update_one(
         {"id": user_id},
         {"$set": {"banned": False}, "$unset": {"banned_at": "", "banned_reason": ""}},

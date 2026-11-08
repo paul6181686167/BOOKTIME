@@ -29,6 +29,7 @@ from .helpers import (
     search_rank,
 )
 from .identity import normalize_friend_code, new_friend_code, safe_label
+from app.utils.timeutils import utcnow
 
 router = APIRouter(prefix="/api/friends", tags=["friends"])
 
@@ -145,7 +146,7 @@ def _book_summary(doc: dict) -> Dict[str, Any]:
 
 
 @router.get("/me/code")
-async def my_friend_code(current_user: dict = Depends(get_current_user)):
+def my_friend_code(current_user: dict = Depends(get_current_user)):
     """Code d'ami personnel, créé à la première demande. Sert au lien et au QR code."""
     me = _me(current_user)
     doc = (
@@ -172,7 +173,7 @@ async def my_friend_code(current_user: dict = Depends(get_current_user)):
 
 
 @router.get("/by-code/{code}")
-async def reader_by_code(code: str, current_user: dict = Depends(get_current_user)):
+def reader_by_code(code: str, current_user: dict = Depends(get_current_user)):
     """Retrouve un lecteur grâce à son code d'ami (lien partagé ou QR code scanné).
 
     Fonctionne même si le lecteur a désactivé l'apparition dans la recherche : il a
@@ -198,7 +199,7 @@ async def reader_by_code(code: str, current_user: dict = Depends(get_current_use
 
 
 @router.get("/search")
-async def search_readers(
+def search_readers(
     q: str = Query("", max_length=80),
     current_user: dict = Depends(get_current_user),
 ):
@@ -220,7 +221,7 @@ async def search_readers(
 
 
 @router.post("/requests")
-async def send_request(body: RequestBody, current_user: dict = Depends(get_current_user)):
+def send_request(body: RequestBody, current_user: dict = Depends(get_current_user)):
     """Envoie une demande d'ami (ou l'accepte si l'autre en avait déjà envoyé une)."""
     _ensure_indexes()
     me = _me(current_user)
@@ -231,7 +232,7 @@ async def send_request(body: RequestBody, current_user: dict = Depends(get_curre
         raise HTTPException(status_code=404, detail="Lecteur introuvable.")
 
     rel = _relation(me, target)
-    now = datetime.utcnow()
+    now = utcnow()
     if rel:
         if rel["status"] == "accepted":
             raise HTTPException(status_code=400, detail="Vous êtes déjà amis.")
@@ -256,7 +257,7 @@ async def send_request(body: RequestBody, current_user: dict = Depends(get_curre
 
 
 @router.get("/requests")
-async def list_requests(current_user: dict = Depends(get_current_user)):
+def list_requests(current_user: dict = Depends(get_current_user)):
     """Demandes reçues et envoyées en attente."""
     me = _me(current_user)
     incoming, outgoing = [], []
@@ -290,19 +291,19 @@ async def list_requests(current_user: dict = Depends(get_current_user)):
 
 
 @router.post("/requests/{request_id}/accept")
-async def accept_request(request_id: str, current_user: dict = Depends(get_current_user)):
+def accept_request(request_id: str, current_user: dict = Depends(get_current_user)):
     me = _me(current_user)
     rel = friendships.find_one({"id": request_id})
     if not rel or rel.get("addressee_id") != me or rel.get("status") != "pending":
         raise HTTPException(status_code=404, detail="Demande introuvable.")
     friendships.update_one(
-        {"id": request_id}, {"$set": {"status": "accepted", "updated_at": datetime.utcnow()}}
+        {"id": request_id}, {"$set": {"status": "accepted", "updated_at": utcnow()}}
     )
     return {"state": "friends"}
 
 
 @router.delete("/requests/{request_id}")
-async def cancel_or_decline_request(
+def cancel_or_decline_request(
     request_id: str, current_user: dict = Depends(get_current_user)
 ):
     """Refuse une demande reçue ou annule une demande envoyée."""
@@ -318,7 +319,7 @@ async def cancel_or_decline_request(
 
 
 @router.get("")
-async def list_friends(current_user: dict = Depends(get_current_user)):
+def list_friends(current_user: dict = Depends(get_current_user)):
     """Amis avec dernier message et nombre de messages non lus."""
     me = _me(current_user)
     rels = list(
@@ -365,7 +366,7 @@ async def list_friends(current_user: dict = Depends(get_current_user)):
 
 
 @router.get("/unread")
-async def unread_summary(current_user: dict = Depends(get_current_user)):
+def unread_summary(current_user: dict = Depends(get_current_user)):
     """Pastille de notification : messages non lus et demandes reçues."""
     me = _me(current_user)
     return {
@@ -377,7 +378,7 @@ async def unread_summary(current_user: dict = Depends(get_current_user)):
 
 
 @router.delete("/{user_id}")
-async def remove_friend(user_id: str, current_user: dict = Depends(get_current_user)):
+def remove_friend(user_id: str, current_user: dict = Depends(get_current_user)):
     me = _me(current_user)
     rel = _relation(me, user_id)
     if not rel or rel.get("status") != "accepted":
@@ -390,7 +391,7 @@ async def remove_friend(user_id: str, current_user: dict = Depends(get_current_u
 
 
 @router.get("/{user_id}/profile")
-async def friend_profile(user_id: str, current_user: dict = Depends(get_current_user)):
+def friend_profile(user_id: str, current_user: dict = Depends(get_current_user)):
     """Profil complet : bio, livres préférés, avis. Réservé aux amis (et à soi-même)."""
     me = _me(current_user)
     if user_id != me:
@@ -462,7 +463,7 @@ async def friend_profile(user_id: str, current_user: dict = Depends(get_current_
 
 
 @router.get("/{user_id}/messages")
-async def get_messages(
+def get_messages(
     user_id: str,
     after: Optional[str] = Query(None, description="Date ISO du dernier message déjà reçu"),
     current_user: dict = Depends(get_current_user),
@@ -480,13 +481,13 @@ async def get_messages(
 
     messages.update_many(
         {"sender_id": user_id, "recipient_id": me, "read_at": None},
-        {"$set": {"read_at": datetime.utcnow()}},
+        {"$set": {"read_at": utcnow()}},
     )
     return {"messages": [_message_out(d, me) for d in docs]}
 
 
 @router.post("/{user_id}/messages")
-async def send_message(
+def send_message(
     user_id: str, body: MessageBody, current_user: dict = Depends(get_current_user)
 ):
     """Envoie un texte et/ou une recommandation de livre."""
@@ -501,7 +502,7 @@ async def send_message(
         "recipient_id": user_id,
         "text": content["text"],
         "book": content["book"],
-        "created_at": datetime.utcnow(),
+        "created_at": utcnow(),
         "read_at": None,
     }
     messages.insert_one(doc)

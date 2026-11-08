@@ -3,6 +3,7 @@
 Implémentation de la pagination et du cache pour optimiser les performances
 """
 
+import re
 from fastapi import Query, HTTPException
 from typing import Dict, List, Any, Optional
 from pydantic import BaseModel
@@ -52,7 +53,7 @@ class CacheManager:
             self.redis_client.ping()
             self.cache_enabled = True
             logger.info("[OK] Redis connecte - Cache active")
-        except:
+        except Exception:
             logger.warning("[INFO] Redis non disponible - Cache desactive")
     
     def _generate_cache_key(self, prefix: str, **kwargs) -> str:
@@ -71,7 +72,7 @@ class CacheManager:
             cached_data = self.redis_client.get(key)
             if cached_data:
                 return json.loads(cached_data)
-        except:
+        except Exception:
             pass
         
         return None
@@ -83,7 +84,7 @@ class CacheManager:
         
         try:
             self.redis_client.setex(key, ttl, json.dumps(value, default=str))
-        except:
+        except Exception:
             pass
     
     def delete_pattern(self, pattern: str):
@@ -95,7 +96,7 @@ class CacheManager:
             keys = self.redis_client.keys(pattern)
             if keys:
                 self.redis_client.delete(*keys)
-        except:
+        except Exception:
             pass
 
 class PaginationService:
@@ -161,9 +162,9 @@ class PaginationService:
         if status:
             query["status"] = status
         if author:
-            query["author"] = {"$regex": author, "$options": "i"}
+            query["author"] = {"$regex": re.escape(author), "$options": "i"}
         if saga:
-            query["saga"] = {"$regex": saga, "$options": "i"}
+            query["saga"] = {"$regex": re.escape(saga), "$options": "i"}
 
         # Les livres "à surveiller" (sorties à venir) ne doivent pas polluer la
         # grille principale : ils vivent uniquement dans le panneau "À venir".
@@ -347,19 +348,19 @@ class PaginationService:
         # Recherche par titre
         title_suggestions = books_collection.distinct("title", {
             "user_id": user_id,
-            "title": {"$regex": query, "$options": "i"}
+            "title": {"$regex": re.escape(query), "$options": "i"}
         })[:limit]
         
         # Recherche par auteur
         author_suggestions = books_collection.distinct("author", {
             "user_id": user_id,
-            "author": {"$regex": query, "$options": "i"}
+            "author": {"$regex": re.escape(query), "$options": "i"}
         })[:limit]
         
         # Recherche par saga
         saga_suggestions = books_collection.distinct("saga", {
             "user_id": user_id,
-            "saga": {"$regex": query, "$options": "i"}
+            "saga": {"$regex": re.escape(query), "$options": "i"}
         })[:limit]
         
         # Combinaison et déduplication

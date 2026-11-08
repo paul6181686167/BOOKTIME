@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 from datetime import datetime, timedelta
 from typing import Any, Dict, Iterable, List, Optional, Set
+from app.utils.timeutils import utcnow
 
 ONLINE_WINDOW_MINUTES = 15
 MAX_BAN_REASON = 200
@@ -36,7 +37,7 @@ def to_naive_utc(value: Any) -> Optional[datetime]:
 
 def bucket_by_day(dates: Iterable[Any], days: int, today: Optional[datetime] = None) -> List[Dict[str, Any]]:
     """Compte des dates par jour sur les `days` derniers jours (aujourd'hui inclus), du plus ancien au plus récent."""
-    end = (today or datetime.utcnow()).date()
+    end = (today or utcnow()).date()
     counts = {end - timedelta(days=offset): 0 for offset in range(days)}
     for value in dates:
         dt = to_naive_utc(value)
@@ -50,7 +51,7 @@ def is_online(last_seen: Any, now: Optional[datetime] = None, window: int = ONLI
     dt = to_naive_utc(last_seen)
     if not dt:
         return False
-    return ((now or datetime.utcnow()) - dt) <= timedelta(minutes=window)
+    return ((now or utcnow()) - dt) <= timedelta(minutes=window)
 
 
 def clean_reason(value: Any) -> str:

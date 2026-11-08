@@ -5,11 +5,12 @@ import uuid
 import re
 from ..database.connection import books_collection
 from ..security.jwt import get_current_user
+from app.utils.timeutils import utcnow
 
 router = APIRouter(prefix="/api/sagas", tags=["sagas"])
 
 @router.get("")
-async def get_sagas(current_user: dict = Depends(get_current_user)):
+def get_sagas(current_user: dict = Depends(get_current_user)):
     """Obtenir la liste des sagas de l'utilisateur"""
     user_filter = {"user_id": current_user["id"]}
     
@@ -50,7 +51,7 @@ async def get_sagas(current_user: dict = Depends(get_current_user)):
     return sagas
 
 @router.get("/{saga_name}/books")
-async def get_saga_books(saga_name: str, current_user: dict = Depends(get_current_user)):
+def get_saga_books(saga_name: str, current_user: dict = Depends(get_current_user)):
     """
     Récupérer les livres d'une série spécifique avec filtrage strict.
     Ne retourne QUE les livres appartenant exactement à cette série.
@@ -119,7 +120,7 @@ async def get_saga_books(saga_name: str, current_user: dict = Depends(get_curren
     return filtered_books
 
 @router.post("/{saga_name}/auto-add")
-async def auto_add_next_volume(
+def auto_add_next_volume(
     saga_name: str,
     current_user: dict = Depends(get_current_user)
 ):
@@ -156,7 +157,7 @@ async def auto_add_next_volume(
         "genre": template_book.get("genre", ""),
         "publisher": template_book.get("publisher", ""),
         "auto_added": True,
-        "date_added": datetime.utcnow(),
+        "date_added": utcnow(),
         "description": f"Tome {next_volume} de la saga {saga_name}",
         "total_pages": None,
         "current_page": None,
@@ -167,7 +168,7 @@ async def auto_add_next_volume(
         "isbn": "",
         "date_started": None,
         "date_completed": None,
-        "updated_at": datetime.utcnow()
+        "updated_at": utcnow()
     }
     
     books_collection.insert_one(new_book)
@@ -179,7 +180,7 @@ async def auto_add_next_volume(
     }
 
 @router.put("/{saga_name}/bulk-status")
-async def bulk_update_saga_status(
+def bulk_update_saga_status(
     saga_name: str,
     status_data: dict,
     current_user: dict = Depends(get_current_user)
@@ -194,15 +195,15 @@ async def bulk_update_saga_status(
     # Mettre à jour tous les livres de la saga
     update_data = {
         "status": new_status,
-        "updated_at": datetime.utcnow()
+        "updated_at": utcnow()
     }
     
     # Ajouter les dates selon le statut
     if new_status == "reading":
-        update_data["date_started"] = datetime.utcnow()
+        update_data["date_started"] = utcnow()
     elif new_status == "completed":
-        update_data["date_started"] = datetime.utcnow()
-        update_data["date_completed"] = datetime.utcnow()
+        update_data["date_started"] = utcnow()
+        update_data["date_completed"] = utcnow()
     
     result = books_collection.update_many(
         {
@@ -219,7 +220,7 @@ async def bulk_update_saga_status(
     }
 
 @router.post("/{saga_name}/auto-complete")
-async def auto_complete_saga(
+def auto_complete_saga(
     saga_name: str,
     completion_data: dict,
     current_user: dict = Depends(get_current_user)
@@ -261,7 +262,7 @@ async def auto_complete_saga(
                 "genre": template_book.get("genre", ""),
                 "publisher": template_book.get("publisher", ""),
                 "auto_added": True,
-                "date_added": datetime.utcnow(),
+                "date_added": utcnow(),
                 "description": f"Tome {volume_num} de la saga {saga_name}",
                 "total_pages": None,
                 "current_page": None,
@@ -272,7 +273,7 @@ async def auto_complete_saga(
                 "isbn": "",
                 "date_started": None,
                 "date_completed": None,
-                "updated_at": datetime.utcnow()
+                "updated_at": utcnow()
             }
             
             books_collection.insert_one(new_book)
@@ -287,7 +288,7 @@ async def auto_complete_saga(
     }
 
 @router.get("/{saga_name}/missing-analysis")
-async def analyze_missing_volumes(
+def analyze_missing_volumes(
     saga_name: str,
     current_user: dict = Depends(get_current_user)
 ):

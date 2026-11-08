@@ -12,6 +12,8 @@ from ..security.jwt import get_current_user
 from ..utils.validation import validate_category
 from ..utils.category_detect import detect_category_from_subjects
 from ..utils.category_buffer import set_cached_category
+from app.utils.errors import public_error
+from app.utils.timeutils import utcnow
 
 logger = logging.getLogger("booktime.openlibrary")
 
@@ -407,7 +409,7 @@ async def get_series_books(
         async with _OL_SEARCH_SEM:
             return await asyncio.to_thread(_get_series_books_sync, name, author, limit)
     except requests.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Erreur OL: {str(e)}")
+        raise HTTPException(status_code=500, detail=public_error(e, "Erreur OL"))
 
 
 def _import_from_ol_sync(import_data: dict, user_id: str) -> dict:
@@ -534,10 +536,10 @@ def _import_from_ol_sync(import_data: dict, user_id: str) -> dict:
         "saga": saga_name,
         "volume_number": volume_number,
         "auto_added": False,
-        "date_added": datetime.utcnow(),
+        "date_added": utcnow(),
         "date_started": None,
         "date_completed": None,
-        "updated_at": datetime.utcnow(),
+        "updated_at": utcnow(),
     }
 
     books_collection.insert_one(book)
@@ -586,7 +588,7 @@ def _fill_synopsis_sync(book_id: str, user_id: str, title: str, author: str, isb
                     "$set": {
                         "description": cand,
                         "description_source": syn.get("source") or "fetch",
-                        "updated_at": datetime.utcnow(),
+                        "updated_at": utcnow(),
                     }
                 },
             )
@@ -612,7 +614,7 @@ async def import_from_open_library(
     except HTTPException:
         raise
     except requests.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de l'import: {str(e)}")
+        raise HTTPException(status_code=500, detail=public_error(e, "Erreur lors de l'import"))
 
     # Synopsis après coup, hors chemin critique
     if result.pop("_needs_synopsis", False):
@@ -632,7 +634,7 @@ async def import_from_open_library(
     return result
 
 @router.get("/search-advanced")
-async def search_open_library_advanced(
+def search_open_library_advanced(
     q: str,
     category: Optional[str] = None,
     limit: int = 20,
@@ -687,7 +689,7 @@ async def search_open_library_advanced(
         }
         
     except requests.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de la recherche: {str(e)}")
+        raise HTTPException(status_code=500, detail=public_error(e, "Erreur lors de la recherche"))
 
 @router.get("/search-isbn")
 async def search_by_isbn(
@@ -720,7 +722,7 @@ async def search_by_isbn(
 
 
 @router.get("/search-author")
-async def search_by_author(
+def search_by_author(
     author: str,
     limit: int = 20,
     current_user: dict = Depends(get_current_user)
@@ -760,10 +762,10 @@ async def search_by_author(
         }
         
     except requests.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de la recherche: {str(e)}")
+        raise HTTPException(status_code=500, detail=public_error(e, "Erreur lors de la recherche"))
 
 @router.get("/author/{author_name}")
-async def get_author_info(
+def get_author_info(
     author_name: str
 ):
     """Récupérer les informations d'un auteur depuis Open Library"""
@@ -830,10 +832,10 @@ async def get_author_info(
         return {"found": False, "message": "Détails de l'auteur non disponibles"}
         
     except requests.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération des informations de l'auteur: {str(e)}")
+        raise HTTPException(status_code=500, detail=public_error(e, "Erreur lors de la récupération des informations de l'auteur"))
 
 @router.get("/author/{author_name}/works")
-async def get_author_works(
+def get_author_works(
     author_name: str,
     limit: int = 50,
     current_user: dict = Depends(get_current_user)
@@ -844,7 +846,7 @@ async def get_author_works(
         user_books = list(books_collection.find(
             {
                 "user_id": current_user["id"],
-                "author": {"$regex": author_name, "$options": "i"}
+                "author": {"$regex": re.escape(author_name), "$options": "i"}
             }
         ))
         
@@ -931,10 +933,10 @@ async def get_author_works(
         }
         
     except requests.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de la recherche: {str(e)}")
+        raise HTTPException(status_code=500, detail=public_error(e, "Erreur lors de la recherche"))
 
 @router.get("/book/{work_key:path}")
-async def get_book_detail(
+def get_book_detail(
     work_key: str,
     current_user: dict = Depends(get_current_user)
 ):
@@ -1016,7 +1018,7 @@ async def get_book_detail(
     except HTTPException:
         raise
     except requests.RequestException as e:
-        raise HTTPException(status_code=503, detail=f"Open Library inaccessible: {str(e)}")
+        raise HTTPException(status_code=503, detail=public_error(e, "Open Library inaccessible"))
 
 
 @router.get("/recommendations")

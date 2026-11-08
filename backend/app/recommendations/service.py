@@ -5,6 +5,7 @@ Algorithme ML basique basé sur la bibliothèque utilisateur
 """
 import sys
 import os
+from app.utils.timeutils import utcnow
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from typing import List, Dict, Optional, Tuple
@@ -87,7 +88,7 @@ class RecommendationService:
                     'final_count': len(final_recommendations),
                     'min_confidence': self.min_confidence_score
                 },
-                'generated_at': datetime.utcnow().isoformat()
+                'generated_at': utcnow().isoformat()
             }
             
         except Exception as e:
@@ -95,7 +96,7 @@ class RecommendationService:
             return {
                 'recommendations': [],
                 'error': str(e),
-                'generated_at': datetime.utcnow().isoformat()
+                'generated_at': utcnow().isoformat()
             }
 
     def _infer_seed_category(
@@ -392,7 +393,7 @@ class RecommendationService:
                 "recommendations": [],
                 "seed": None,
                 "error": "title_or_series_required",
-                "generated_at": datetime.utcnow().isoformat(),
+                "generated_at": utcnow().isoformat(),
             }
 
         try:
@@ -692,7 +693,7 @@ class RecommendationService:
                     "peers": len(peer_books or []),
                 },
                 "count": len(out),
-                "generated_at": datetime.utcnow().isoformat(),
+                "generated_at": utcnow().isoformat(),
             }
         except Exception as e:
             logger.error("Erreur similarité seed: %s", e)
@@ -700,7 +701,7 @@ class RecommendationService:
                 "recommendations": [],
                 "seed": {"title": seed_title, "author": seed_author},
                 "error": str(e),
-                "generated_at": datetime.utcnow().isoformat(),
+                "generated_at": utcnow().isoformat(),
             }
 
     def _upsert_similar_into_catalog(self, items: List[RecommendationItem]) -> int:
@@ -744,7 +745,7 @@ class RecommendationService:
                     "description": (meta.get("description") or "")[:2000],
                     "source": "similar_reco",
                     "popularity_score": 0,
-                    "indexed_at": datetime.utcnow().isoformat(),
+                    "indexed_at": utcnow().isoformat(),
                 }
                 catalog.update_one(lookup, {"$setOnInsert": doc}, upsert=True)
                 created += 1
@@ -1444,7 +1445,7 @@ class RecommendationService:
                     'type': 'popular',
                     'count': len(recommendations)
                 },
-                'generated_at': datetime.utcnow().isoformat()
+                'generated_at': utcnow().isoformat()
             }
             
         except Exception as e:
@@ -1452,7 +1453,7 @@ class RecommendationService:
             return {
                 'recommendations': [],
                 'error': str(e),
-                'generated_at': datetime.utcnow().isoformat()
+                'generated_at': utcnow().isoformat()
             }
     
     # Clés internes de scoring à ne pas exposer au client

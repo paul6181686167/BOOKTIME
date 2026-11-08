@@ -14,7 +14,9 @@ export const UNAUTHORIZED_EVENT = 'booktime:unauthorized';
 
 const DEFAULT_TIMEOUT_MS = 30000;
 // Routes où un 401 signifie « identifiants refusés », pas « session expirée »
-const AUTH_ROUTES = /\/api\/auth\/(login|register|logout|forgot-password|reset-password)/;
+const AUTH_ROUTES = /\/api\/auth\/(login|register|logout|forgot-password|reset-password|change-password)/;
+// Suppression de compte : un 401 = mauvais mot de passe saisi, pas une session expirée
+const DELETE_ACCOUNT = /\/api\/auth\/me\/?$/;
 
 export function getToken() {
   try {
@@ -92,7 +94,10 @@ export function installUnauthorizedWatcher() {
   const originalFetch = window.fetch.bind(window);
   window.fetch = async (input, init) => {
     const response = await originalFetch(input, init);
-    if (response.status === 401 && targetsBackend(input)) {
+    const isDeleteAccount =
+      String((init && init.method) || (input && input.method) || '').toUpperCase() === 'DELETE' &&
+      DELETE_ACCOUNT.test(typeof input === 'string' ? input : (input && input.url) || '');
+    if (response.status === 401 && !isDeleteAccount && targetsBackend(input)) {
       const used = sentToken(input, init);
       // Ignore les réponses tardives d'une ancienne session (reconnexion entre-temps)
       if (used && used === getToken()) notifyUnauthorized();

@@ -13,6 +13,8 @@ from .models import (
     CreateCommentRequest, CreateListRequest, UpdateListRequest,
     CreateRecommendationRequest, ActivityType, PrivacyLevel
 )
+from app.utils.errors import public_error
+from app.utils.timeutils import utcnow
 
 router = APIRouter(prefix="/api/social", tags=["social"])
 
@@ -58,7 +60,7 @@ async def create_profile(
         return {"success": True, "profile": profile.dict()}
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=public_error(e))
 
 
 @router.get("/profile/{user_id}")
@@ -74,7 +76,7 @@ async def get_profile(
         return profile.dict()
         
     except Exception as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=public_error(e))
 
 
 @router.put("/profile")
@@ -100,7 +102,7 @@ async def update_profile(
         return {"success": True, "profile": profile.dict()}
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=public_error(e))
 
 
 # === ROUTES FOLLOWS ===
@@ -118,7 +120,7 @@ async def follow_user(
         return result
         
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=public_error(e))
 
 
 @router.delete("/follow/{user_id}")
@@ -134,7 +136,7 @@ async def unfollow_user(
         return result
         
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=public_error(e))
 
 
 @router.get("/followers/{user_id}")
@@ -156,7 +158,7 @@ async def get_followers(
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=public_error(e))
 
 
 @router.get("/following/{user_id}")
@@ -178,7 +180,7 @@ async def get_following(
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=public_error(e))
 
 
 # === ROUTES ACTIVITÉS ===
@@ -202,7 +204,7 @@ async def create_activity(
         return {"success": True, "activity": activity.dict()}
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=public_error(e))
 
 
 @router.get("/feed")
@@ -219,11 +221,11 @@ async def get_feed(
         return feed.dict()
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=public_error(e))
 
 
 @router.get("/activity/{activity_id}")
-async def get_activity(
+def get_activity(
     activity_id: str,
     current_user: dict = Depends(get_current_user)
 ):
@@ -233,7 +235,7 @@ async def get_activity(
         return {"message": "Fonctionnalité à implémenter"}
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=public_error(e))
 
 
 # === ROUTES NOTIFICATIONS ===
@@ -256,7 +258,7 @@ async def get_notifications(
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=public_error(e))
 
 
 @router.put("/notifications/{notification_id}/read")
@@ -272,11 +274,11 @@ async def mark_notification_read(
         return result
         
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=public_error(e))
 
 
 @router.put("/notifications/read-all")
-async def mark_all_notifications_read(
+def mark_all_notifications_read(
     current_user: dict = Depends(get_current_user)
 ):
     """Marque toutes les notifications comme lues"""
@@ -285,13 +287,13 @@ async def mark_all_notifications_read(
         return {"success": True, "message": "Toutes les notifications marquées comme lues"}
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=public_error(e))
 
 
 # === ROUTES RECHERCHE SOCIALE ===
 
 @router.get("/search/users")
-async def search_users(
+def search_users(
     q: str = Query(..., min_length=2, description="Terme de recherche"),
     limit: int = Query(20, ge=1, le=50),
     current_user: dict = Depends(get_current_user)
@@ -307,13 +309,13 @@ async def search_users(
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=public_error(e))
 
 
 # === ROUTES STATISTIQUES SOCIALES ===
 
 @router.get("/stats")
-async def get_social_stats(
+def get_social_stats(
     current_user: dict = Depends(get_current_user)
 ):
     """Récupère les statistiques sociales de l'utilisateur"""
@@ -334,13 +336,13 @@ async def get_social_stats(
         return stats
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=public_error(e))
 
 
 # === ROUTES D'ADMINISTRATION ===
 
 @router.get("/admin/users")
-async def get_all_users(
+def get_all_users(
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
     current_user: dict = Depends(get_current_user)
@@ -355,13 +357,13 @@ async def get_all_users(
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=public_error(e))
 
 
 # === ROUTES UTILITAIRES ===
 
 @router.get("/health")
-async def social_health_check():
+def social_health_check():
     """Vérification de santé du module social"""
     try:
         # Test de connexion à la base
@@ -377,8 +379,8 @@ async def social_health_check():
                 "notifications",
                 "feed"
             ],
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": utcnow().isoformat()
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur module social: {str(e)}")
+        raise HTTPException(status_code=500, detail=public_error(e, "Erreur module social"))

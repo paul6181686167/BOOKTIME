@@ -11,6 +11,8 @@ from ..utils.validation import validate_category
 from ..utils.category_buffer import get_cached_category, buffer_stats
 from ..utils.category_verify import reclassify_books
 from ..services.pagination import PaginatedResponse, pagination_service
+from app.utils.errors import public_error
+from app.utils.timeutils import utcnow
 
 router = APIRouter(prefix="/api/books", tags=["books"])
 _logger = logging.getLogger("booktime.books")
@@ -148,10 +150,10 @@ async def get_books(
         return result
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur récupération livres: {str(e)}")
+        raise HTTPException(status_code=500, detail=public_error(e, "Erreur récupération livres"))
 
 @router.get("/all")
-async def get_all_books(
+def get_all_books(
     category: Optional[str] = None,
     status: Optional[str] = None,
     author: Optional[str] = None,
@@ -215,7 +217,7 @@ async def get_all_books(
     except Exception as e:
         import traceback
         logger.error(f"Erreur get_all_books: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Erreur récupération livres: {str(e)}")
+        raise HTTPException(status_code=500, detail=public_error(e, "Erreur récupération livres"))
 
 
 def _auto_fix_series_categories(user_id: str, *, force: bool = False) -> dict:
@@ -262,7 +264,7 @@ def _auto_fix_series_categories(user_id: str, *, force: bool = False) -> dict:
 
 
 @router.post("/reclassify-categories")
-async def reclassify_categories(
+def reclassify_categories(
     force: bool = Query(False, description="Ignore le tampon et re-recherche Open Library"),
     current_user: dict = Depends(get_current_user),
 ):
@@ -279,7 +281,7 @@ async def reclassify_categories(
     return report
 
 @router.get("/search-grouped")
-async def search_books_grouped(
+def search_books_grouped(
     q: str,
     category: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
@@ -373,8 +375,8 @@ async def search_books_grouped(
             "reading_books": reading_books,
             "progress_percentage": round((completed_books / total_books) * 100) if total_books > 0 else 0,
             "books": saga_books_sorted,
-            "date_added": min(b.get("date_added", datetime.utcnow()) for b in saga_books),
-            "last_updated": max(b.get("updated_at", b.get("date_added", datetime.utcnow())) for b in saga_books)
+            "date_added": min(b.get("date_added", utcnow()) for b in saga_books),
+            "last_updated": max(b.get("updated_at", b.get("date_added", utcnow())) for b in saga_books)
         }
         
         results.append(series_entity)
@@ -382,7 +384,7 @@ async def search_books_grouped(
     # 🆕 2. Ajouter les groupes d'auteurs (si plus de 1 livre par auteur)
     for author_name, author_books in author_groups.items():
         if len(author_books) > 1:  # Seulement si plusieurs livres du même auteur
-            author_books_sorted = sorted(author_books, key=lambda b: b.get("date_added", datetime.utcnow()))
+            author_books_sorted = sorted(author_books, key=lambda b: b.get("date_added", utcnow()))
             
             # Calculer la progression par auteur
             total_books = len(author_books)
@@ -406,8 +408,8 @@ async def search_books_grouped(
                 "reading_books": reading_books,
                 "progress_percentage": round((completed_books / total_books) * 100) if total_books > 0 else 0,
                 "books": author_books_sorted,
-                "date_added": min(b.get("date_added", datetime.utcnow()) for b in author_books),
-                "last_updated": max(b.get("updated_at", b.get("date_added", datetime.utcnow())) for b in author_books)
+                "date_added": min(b.get("date_added", utcnow()) for b in author_books),
+                "last_updated": max(b.get("updated_at", b.get("date_added", utcnow())) for b in author_books)
             }
             
             results.append(author_series_entity)
@@ -421,7 +423,7 @@ async def search_books_grouped(
         results.append(book)
     
     # Trier les résultats par date de dernière mise à jour
-    results.sort(key=lambda x: x.get("last_updated", x.get("date_added", datetime.utcnow())), reverse=True)
+    results.sort(key=lambda x: x.get("last_updated", x.get("date_added", utcnow())), reverse=True)
     
     return {
         "results": results,
@@ -434,7 +436,7 @@ async def search_books_grouped(
     }
 
 @router.get("/resolve-pages")
-async def resolve_french_paperback_pages(
+def resolve_french_paperback_pages(
     title: str = Query(..., min_length=1),
     author: str = Query(""),
     isbn: str = Query(""),
@@ -492,7 +494,7 @@ async def resolve_cover_by_title(
 
 
 @router.post("/translate-synopsis")
-async def translate_synopsis_endpoint(
+def translate_synopsis_endpoint(
     payload: dict = Body(default={}),
     current_user: dict = Depends(get_current_user),
 ):
@@ -512,7 +514,7 @@ async def translate_synopsis_endpoint(
 
 
 @router.get("/resolve-synopsis")
-async def resolve_book_synopsis(
+def resolve_book_synopsis(
     title: str = Query(..., min_length=1),
     author: str = Query(""),
     isbn: str = Query(""),
@@ -641,7 +643,7 @@ async def resolve_book_synopsis(
 
 
 @router.get("/{book_id}")
-async def get_book(book_id: str, current_user: dict = Depends(get_current_user)):
+def get_book(book_id: str, current_user: dict = Depends(get_current_user)):
     """Obtenir un livre par son ID"""
     book = books_collection.find_one({
         "id": book_id, 
@@ -654,7 +656,7 @@ async def get_book(book_id: str, current_user: dict = Depends(get_current_user))
     return book
 
 @router.post("")
-async def create_book(book_data: BookCreate, current_user: dict = Depends(get_current_user)):
+def create_book(book_data: BookCreate, current_user: dict = Depends(get_current_user)):
     """Créer un nouveau livre"""
     # Valider la catégorie
     validated_category = validate_category(book_data.category)
@@ -665,27 +667,27 @@ async def create_book(book_data: BookCreate, current_user: dict = Depends(get_cu
         "user_id": current_user["id"],
         **book_data.model_dump(),
         "category": validated_category,
-        "date_added": datetime.utcnow(),
+        "date_added": utcnow(),
         "date_started": None,
         "date_completed": None
     }
     
     # Définir les dates selon le statut
     if book_data.status == "reading":
-        book["date_started"] = datetime.utcnow()
+        book["date_started"] = utcnow()
     elif book_data.status == "completed":
-        book["date_started"] = datetime.utcnow()
-        book["date_completed"] = datetime.utcnow()
+        book["date_started"] = utcnow()
+        book["date_completed"] = utcnow()
     
     try:
         books_collection.insert_one(book)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de la création du livre : {str(e)}")
+        raise HTTPException(status_code=500, detail=public_error(e, "Erreur lors de la création du livre"))
     book.pop("_id", None)
     return book
 
 @router.put("/{book_id}")
-async def update_book(
+def update_book(
     book_id: str, 
     book_update: BookUpdate, 
     current_user: dict = Depends(get_current_user)
@@ -700,7 +702,7 @@ async def update_book(
         raise HTTPException(status_code=404, detail="Livre non trouvé")
     
     update_data = book_update.model_dump(exclude_unset=True)
-    update_data["updated_at"] = datetime.utcnow()
+    update_data["updated_at"] = utcnow()
     history_entry = None
     
     # Gérer les changements de statut
@@ -719,16 +721,16 @@ async def update_book(
                     "date_completed": book.get("date_completed"),
                     "rating": book.get("rating"),
                 }
-            update_data["date_started"] = datetime.utcnow()
+            update_data["date_started"] = utcnow()
             update_data["date_completed"] = None
             if "current_page" not in update_data:
                 update_data["current_page"] = 0
         elif current_status != "reading" and new_status == "reading":
-            update_data["date_started"] = datetime.utcnow()
+            update_data["date_started"] = utcnow()
         elif current_status != "completed" and new_status == "completed":
             if not book.get("date_started"):
-                update_data["date_started"] = datetime.utcnow()
-            update_data["date_completed"] = datetime.utcnow()
+                update_data["date_started"] = utcnow()
+            update_data["date_completed"] = utcnow()
     
     mongo_ops = {"$set": update_data}
     if history_entry:
@@ -747,7 +749,7 @@ async def update_book(
     return updated_book
 
 @router.get("/{book_id}/synopsis")
-async def get_book_synopsis(
+def get_book_synopsis(
     book_id: str,
     persist: bool = Query(True, description="Sauvegarder le résumé sur le livre"),
     current_user: dict = Depends(get_current_user),
@@ -859,7 +861,7 @@ async def get_book_synopsis(
         if result.get("ol_key") and not book.get("ol_key"):
             patch["ol_key"] = result["ol_key"]
         if patch:
-            patch["updated_at"] = datetime.utcnow()
+            patch["updated_at"] = utcnow()
             books_collection.update_one(
                 {"id": book_id, "user_id": current_user["id"]},
                 {"$set": patch},
@@ -901,7 +903,7 @@ async def resolve_and_persist_book_cover(
         if existing != (book.get("cover_url") or "").strip():
             books_collection.update_one(
                 {"id": book_id, "user_id": current_user["id"]},
-                {"$set": {"cover_url": existing, "updated_at": datetime.utcnow()}},
+                {"$set": {"cover_url": existing, "updated_at": utcnow()}},
             )
         return {"cover_url": existing, "persisted": True, "source": "existing"}
 
@@ -921,7 +923,7 @@ async def resolve_and_persist_book_cover(
 
     books_collection.update_one(
         {"id": book_id, "user_id": current_user["id"]},
-        {"$set": {"cover_url": cover, "updated_at": datetime.utcnow()}},
+        {"$set": {"cover_url": cover, "updated_at": utcnow()}},
     )
     return {"cover_url": cover, "persisted": True, "source": "resolved"}
 
@@ -992,19 +994,19 @@ async def enrich_book(book_id: str, current_user: dict = Depends(get_current_use
                             enriched["genres"] = doc["subject"][:5]
 
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Erreur enrichissement : {str(e)}")
+        raise HTTPException(status_code=502, detail=public_error(e, "Erreur enrichissement"))
 
     if not enriched:
         return {"message": "Aucune donnée supplémentaire trouvée", "book": book}
 
-    enriched["updated_at"] = datetime.utcnow()
+    enriched["updated_at"] = utcnow()
     books_collection.update_one({"id": book_id, "user_id": current_user["id"]}, {"$set": enriched})
     updated = books_collection.find_one({"id": book_id, "user_id": current_user["id"]}, {"_id": 0})
     return {"message": "Livre enrichi avec succès", "book": updated}
 
 
 @router.delete("/{book_id}")
-async def delete_book(book_id: str, current_user: dict = Depends(get_current_user)):
+def delete_book(book_id: str, current_user: dict = Depends(get_current_user)):
     """Supprimer un livre - recherche par champ 'id' ou '_id' pour la compatibilité"""
     user_id = current_user["id"]
 

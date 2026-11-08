@@ -10,6 +10,8 @@ import json
 
 from ..security.jwt import get_current_user
 from .service import ExportImportService, ExportOptions, ImportResult
+from app.utils.errors import public_error
+from app.utils.timeutils import utcnow
 
 router = APIRouter(prefix="/api/export-import", tags=["export-import"])
 
@@ -76,7 +78,7 @@ async def export_user_data(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de l'export: {str(e)}"
+            detail=public_error(e, "Erreur lors de l'export")
         )
 
 @router.post("/import")
@@ -143,7 +145,7 @@ async def import_user_data(
                 ]
             },
             "options_used": import_options,
-            "import_date": datetime.utcnow().isoformat()
+            "import_date": utcnow().isoformat()
         }
         
         return response_data
@@ -151,7 +153,7 @@ async def import_user_data(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de l'import: {str(e)}"
+            detail=public_error(e, "Erreur lors de l'import")
         )
 
 @router.post("/import/preview")
@@ -230,11 +232,11 @@ async def preview_import(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la preview: {str(e)}"
+            detail=public_error(e, "Erreur lors de la preview")
         )
 
 @router.get("/export/formats")
-async def get_supported_formats(
+def get_supported_formats(
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -286,7 +288,7 @@ async def get_supported_formats(
     }
 
 @router.get("/import/formats")
-async def get_supported_import_formats(
+def get_supported_import_formats(
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -340,7 +342,7 @@ async def get_supported_import_formats(
     }
 
 @router.get("/user/export-history")
-async def get_export_history(
+def get_export_history(
     limit: int = Query(10, ge=1, le=50, description="Nombre d'exports à retourner"),
     current_user: dict = Depends(get_current_user)
 ):
@@ -369,11 +371,11 @@ async def get_export_history(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la récupération de l'historique: {str(e)}"
+            detail=public_error(e, "Erreur lors de la récupération de l'historique")
         )
 
 @router.post("/templates/generate")
-async def generate_import_template(
+def generate_import_template(
     format_type: str = Query("csv", description="Format du template (csv, excel)"),
     current_user: dict = Depends(get_current_user)
 ):
@@ -453,5 +455,5 @@ async def generate_import_template(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la génération du template: {str(e)}"
+            detail=public_error(e, "Erreur lors de la génération du template")
         )

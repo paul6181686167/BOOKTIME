@@ -109,8 +109,8 @@ function PasswordForm() {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (next.length < 6) {
-      toast.error('Le nouveau mot de passe doit faire au moins 6 caractères');
+    if (next.length < 8) {
+      toast.error('Le nouveau mot de passe doit faire au moins 8 caractères');
       return;
     }
     if (next !== confirm) {
@@ -158,7 +158,7 @@ function PasswordForm() {
         type="password"
         value={next}
         onChange={(e) => setNext(e.target.value)}
-        placeholder="Nouveau mot de passe (6 caractères minimum)"
+        placeholder="Nouveau mot de passe (8 caractères minimum)"
         aria-label="Nouveau mot de passe"
         autoComplete="new-password"
         className={inputClass}

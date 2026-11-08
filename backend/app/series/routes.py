@@ -11,13 +11,15 @@ from ..database.connection import books_collection, series_library_collection
 from ..security.jwt import get_current_user
 from ..models.series import VolumeData, SeriesLibraryCreate, SeriesReadingPreferences, SeriesReadingPreferencesUpdate
 from .image_service import image_service
+from app.utils.errors import public_error
+from app.utils.timeutils import utcnow
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/series", tags=["series"])
 
 @router.get("/popular")
-async def get_popular_series(
+def get_popular_series(
     category: Optional[str] = None,
     language: Optional[str] = "fr",
     limit: int = 50,
@@ -163,7 +165,7 @@ async def get_popular_series(
     }
 
 @router.get("/search")
-async def search_series(
+def search_series(
     q: str,
     category: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
@@ -175,7 +177,7 @@ async def search_series(
         return {"series": [], "total": 0, "search_term": q}
     
     # Récupérer les séries populaires
-    popular_response = await get_popular_series(category, "fr", 1000, current_user)
+    popular_response = get_popular_series(category, "fr", 1000, current_user)
     all_series = popular_response["series"]
     
     search_term = q.strip().lower()
@@ -209,7 +211,7 @@ async def search_series(
     }
 
 @router.get("/detect")
-async def detect_series(
+def detect_series(
     title: str,
     author: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
@@ -221,7 +223,7 @@ async def detect_series(
         return {"detected_series": [], "book_info": {"title": title, "author": author}}
     
     # Récupérer les séries populaires
-    popular_response = await get_popular_series(None, "fr", 1000, current_user)
+    popular_response = get_popular_series(None, "fr", 1000, current_user)
     all_series = popular_response["series"]
     
     detected_series = []
@@ -270,7 +272,7 @@ async def detect_series(
     }
 
 @router.post("/complete")
-async def auto_complete_series(
+def auto_complete_series(
     series_data: dict,
     current_user: dict = Depends(get_current_user)
 ):
@@ -390,7 +392,7 @@ async def auto_complete_series(
                 "genre": base_genre,
                 "publisher": base_publisher,
                 "auto_added": True,
-                "date_added": datetime.utcnow(),
+                "date_added": utcnow(),
                 "description": f"Tome {volume_num} de la série {series_name}",
                 "total_pages": None,
                 "current_page": None,
@@ -401,7 +403,7 @@ async def auto_complete_series(
                 "isbn": "",
                 "date_started": None,
                 "date_completed": None,
-                "updated_at": datetime.utcnow()
+                "updated_at": utcnow()
             }
             
             books_collection.insert_one(new_book)
@@ -417,7 +419,7 @@ async def auto_complete_series(
     }
 
 @router.get("/library")
-async def get_series_library_endpoint(
+def get_series_library_endpoint(
     category: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
@@ -426,10 +428,10 @@ async def get_series_library_endpoint(
     from app.library.routes import get_series_library
     
     # Déléguer l'appel à la fonction existante
-    return await get_series_library(category, current_user)
+    return get_series_library(category, current_user)
 
 @router.post("/library")
-async def add_series_to_library_endpoint(
+def add_series_to_library_endpoint(
     series_data: dict,
     current_user: dict = Depends(get_current_user)
 ):
@@ -442,10 +444,10 @@ async def add_series_to_library_endpoint(
     series_create = SeriesLibraryCreate(**series_data)
     
     # Déléguer l'appel à la fonction existante
-    return await create_series_library(series_create, current_user)
+    return create_series_library(series_create, current_user)
 
 @router.put("/library/{series_id}/volume/{volume_number}")
-async def update_volume_status_endpoint(
+def update_volume_status_endpoint(
     series_id: str,
     volume_number: int,
     volume_data: dict,
@@ -456,10 +458,10 @@ async def update_volume_status_endpoint(
     from app.library.routes import update_volume_status
     
     # Déléguer l'appel à la fonction existante
-    return await update_volume_status(series_id, volume_number, volume_data, current_user)
+    return update_volume_status(series_id, volume_number, volume_data, current_user)
 
 @router.put("/library/{series_id}")
-async def update_series_status_endpoint(
+def update_series_status_endpoint(
     series_id: str,
     series_data: dict,
     current_user: dict = Depends(get_current_user)
@@ -469,7 +471,7 @@ async def update_series_status_endpoint(
     from app.library.routes import update_series_status
     
     # Déléguer l'appel à la fonction existante
-    return await update_series_status(series_id, series_data, current_user)
+    return update_series_status(series_id, series_data, current_user)
 
 
 @router.post("/library/{series_id}/cover")
@@ -500,7 +502,7 @@ async def resolve_and_persist_series_cover(
                 {
                     "$set": {
                         "cover_image_url": existing,
-                        "updated_at": datetime.utcnow(),
+                        "updated_at": utcnow(),
                     }
                 },
             )
@@ -550,14 +552,14 @@ async def resolve_and_persist_series_cover(
         {
             "$set": {
                 "cover_image_url": cover,
-                "updated_at": datetime.utcnow(),
+                "updated_at": utcnow(),
             }
         },
     )
     return {"cover_url": cover, "persisted": True, "source": "resolved"}
 
 @router.delete("/library/{series_id}")
-async def delete_series_from_library_endpoint(
+def delete_series_from_library_endpoint(
     series_id: str,
     current_user: dict = Depends(get_current_user)
 ):
@@ -566,12 +568,12 @@ async def delete_series_from_library_endpoint(
     from app.library.routes import delete_series
     
     # Déléguer l'appel à la fonction existante
-    return await delete_series(series_id, current_user)
+    return delete_series(series_id, current_user)
 
 # ✅ NOUVEAUX ENDPOINTS : Gestion des préférences de lecture des tomes par série
 
 @router.get("/reading-preferences")
-async def get_all_reading_preferences(
+def get_all_reading_preferences(
     current_user: dict = Depends(get_current_user)
 ):
     """Récupérer toutes les préférences de lecture de l'utilisateur (pour progression des cartes série)"""
@@ -583,11 +585,11 @@ async def get_all_reading_preferences(
         items = list(cursor)
         return {"preferences": {doc["series_name"]: doc.get("read_tomes", []) for doc in items}}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=public_error(e))
 
 
 @router.get("/reading-preferences/{series_name}")
-async def get_series_reading_preferences(
+def get_series_reading_preferences(
     series_name: str,
     current_user: dict = Depends(get_current_user)
 ):
@@ -615,10 +617,10 @@ async def get_series_reading_preferences(
             }
             
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération des préférences: {str(e)}")
+        raise HTTPException(status_code=500, detail=public_error(e, "Erreur lors de la récupération des préférences"))
 
 @router.post("/reading-preferences")
-async def save_series_reading_preferences(
+def save_series_reading_preferences(
     preferences: SeriesReadingPreferences,
     current_user: dict = Depends(get_current_user)
 ):
@@ -643,7 +645,7 @@ async def save_series_reading_preferences(
             "series_name": preferences.series_name,
             "read_tomes": read_tomes,
             "tome_statuses": tome_statuses_raw,
-            "updated_at": datetime.utcnow().isoformat()
+            "updated_at": utcnow().isoformat()
         }
         
         # Upsert (créer ou mettre à jour) les préférences
@@ -656,7 +658,7 @@ async def save_series_reading_preferences(
                 "$set": preference_data,
                 "$setOnInsert": {
                     "id": str(uuid.uuid4()),
-                    "created_at": datetime.utcnow().isoformat()
+                    "created_at": utcnow().isoformat()
                 }
             },
             upsert=True
@@ -671,10 +673,10 @@ async def save_series_reading_preferences(
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de la sauvegarde des préférences: {str(e)}")
+        raise HTTPException(status_code=500, detail=public_error(e, "Erreur lors de la sauvegarde des préférences"))
 
 @router.put("/reading-preferences/{series_name}")
-async def update_series_reading_preferences(
+def update_series_reading_preferences(
     series_name: str,
     preferences: SeriesReadingPreferencesUpdate,
     current_user: dict = Depends(get_current_user)
@@ -692,7 +694,7 @@ async def update_series_reading_preferences(
             {
                 "$set": {
                     "read_tomes": preferences.read_tomes,
-                    "updated_at": datetime.utcnow().isoformat()
+                    "updated_at": utcnow().isoformat()
                 }
             }
         )
@@ -704,8 +706,8 @@ async def update_series_reading_preferences(
                 "user_id": current_user["id"],
                 "series_name": series_name,
                 "read_tomes": preferences.read_tomes,
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat()
+                "created_at": utcnow().isoformat(),
+                "updated_at": utcnow().isoformat()
             }
             
             series_library_collection.insert_one(preference_data)
@@ -725,10 +727,10 @@ async def update_series_reading_preferences(
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de la mise à jour des préférences: {str(e)}")
+        raise HTTPException(status_code=500, detail=public_error(e, "Erreur lors de la mise à jour des préférences"))
 
 @router.delete("/reading-preferences/{series_name}")
-async def delete_series_reading_preferences(
+def delete_series_reading_preferences(
     series_name: str,
     current_user: dict = Depends(get_current_user)
 ):
@@ -752,12 +754,12 @@ async def delete_series_reading_preferences(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de la suppression des préférences: {str(e)}")
+        raise HTTPException(status_code=500, detail=public_error(e, "Erreur lors de la suppression des préférences"))
 
 # ✅ NOUVELLES ROUTES : Enrichissement d'images pour les séries
 
 @router.post("/enrich/images")
-async def enrich_series_with_images(
+def enrich_series_with_images(
     request_data: Dict,
     background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user)
@@ -784,10 +786,10 @@ async def enrich_series_with_images(
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors du lancement de l'enrichissement: {str(e)}")
+        raise HTTPException(status_code=500, detail=public_error(e, "Erreur lors du lancement de l'enrichissement"))
 
 @router.get("/enrich/sample")
-async def enrich_sample_series(
+def enrich_sample_series(
     count: int = 10,
     current_user: dict = Depends(get_current_user)
 ):
@@ -796,7 +798,7 @@ async def enrich_sample_series(
     """
     try:
         # Pas d'appel Open Library ici : l'ancien batch_enrich gelait l'API au login.
-        popular_response = await get_popular_series(None, "fr", count, current_user)
+        popular_response = get_popular_series(None, "fr", count, current_user)
         series_list = popular_response.get("series") or []
         return {
             "message": f"Échantillon de {len(series_list)} séries (sans enrichissement OL)",
@@ -805,7 +807,7 @@ async def enrich_sample_series(
             "series": series_list,
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de l'enrichissement de l'échantillon: {str(e)}")
+        raise HTTPException(status_code=500, detail=public_error(e, "Erreur lors de l'enrichissement de l'échantillon"))
 
 @router.post("/enrich/single")
 async def enrich_single_series_image(
@@ -829,10 +831,10 @@ async def enrich_single_series_image(
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de l'enrichissement de la série: {str(e)}")
+        raise HTTPException(status_code=500, detail=public_error(e, "Erreur lors de l'enrichissement de la série"))
 
 @router.post("/enrich/database")
-async def enrich_database_with_images(
+def enrich_database_with_images(
     request_data: Dict,
     background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user)
@@ -862,10 +864,10 @@ async def enrich_database_with_images(
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors du lancement de l'enrichissement: {str(e)}")
+        raise HTTPException(status_code=500, detail=public_error(e, "Erreur lors du lancement de l'enrichissement"))
 
 @router.get("/images/status")
-async def get_image_enrichment_status(
+def get_image_enrichment_status(
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -892,7 +894,7 @@ async def get_image_enrichment_status(
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de la vérification du statut: {str(e)}")
+        raise HTTPException(status_code=500, detail=public_error(e, "Erreur lors de la vérification du statut"))
 
 # Fonctions utilitaires pour les tâches en arrière-plan
 

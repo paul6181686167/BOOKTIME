@@ -3,11 +3,12 @@ from datetime import datetime
 from collections import defaultdict
 from ..database.connection import books_collection
 from ..security.jwt import get_current_user
+from app.utils.timeutils import utcnow
 
 router = APIRouter(prefix="/api/stats", tags=["stats"])
 
 @router.get("")
-async def get_stats(current_user: dict = Depends(get_current_user)):
+def get_stats(current_user: dict = Depends(get_current_user)):
     """Obtenir les statistiques de l'utilisateur"""
     user_filter = {"user_id": current_user["id"]}
     
@@ -29,7 +30,7 @@ async def get_stats(current_user: dict = Depends(get_current_user)):
     auto_added_count = books_collection.count_documents({**user_filter, "auto_added": True})
 
     # Livres terminés cette année
-    current_year = datetime.utcnow().year
+    current_year = utcnow().year
     completed_all = list(books_collection.find({**user_filter, "status": "completed"}))
     completion_dates = defaultdict(int)
     total_pages_read = 0

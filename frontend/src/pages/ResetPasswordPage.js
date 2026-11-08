@@ -22,8 +22,8 @@ function ResetPasswordPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (password.length < 6) {
-      toast.error('Le mot de passe doit contenir au moins 6 caractères.');
+    if (password.length < 8) {
+      toast.error('Le mot de passe doit contenir au moins 8 caractères.');
       return;
     }
     if (password !== confirm) {
@@ -76,7 +76,7 @@ function ResetPasswordPage() {
           ) : (
             <>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Nouveau mot de passe</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm">Choisis un nouveau mot de passe (minimum 6 caractères).</p>
+              <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm">Choisis un nouveau mot de passe (minimum 8 caractères).</p>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nouveau mot de passe</label>
@@ -84,8 +84,8 @@ function ResetPasswordPage() {
                     type="password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    placeholder="Minimum 6 caractères"
-                    minLength={6}
+                    placeholder="Minimum 8 caractères"
+                    minLength={8}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     required
                     autoFocus

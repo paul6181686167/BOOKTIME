@@ -74,7 +74,7 @@ def _filter_json(books: List[Dict], category: Optional[str]) -> List[Dict]:
 
 
 @router.get("/popular")
-async def get_popular_books(
+def get_popular_books(
     category: Optional[str] = None,
     limit: int = Query(24, ge=1, le=100),
     offset: int = Query(0, ge=0),
@@ -104,7 +104,7 @@ async def get_popular_books(
 
 
 @router.get("/search")
-async def search_catalog(
+def search_catalog(
     q: str = Query(..., min_length=2),
     category: Optional[str] = None,
     limit: int = Query(20, ge=1, le=50),
@@ -143,7 +143,7 @@ async def search_catalog(
 
 
 @router.get("/stats")
-async def get_catalog_stats(current_user: dict = Depends(get_current_user)):
+def get_catalog_stats(current_user: dict = Depends(get_current_user)):
     """Statistiques du catalogue."""
     if _catalog_has_data():
         try:

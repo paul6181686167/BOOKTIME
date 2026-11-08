@@ -4,6 +4,7 @@ Intelligence Artificielle et Machine Learning pour recommandations sophistiquée
 """
 import sys
 import os
+from app.utils.timeutils import utcnow
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
@@ -41,7 +42,7 @@ class AdvancedUserProfile:
     social_influence_factor: float  # Sensibilité aux recommendations sociales
     learning_trajectory: List[Dict]  # Évolution des goûts dans le temps
     behavioral_clusters: List[str]  # Clusters comportementaux
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utcnow)
 
 @dataclass
 class ContextualRecommendation:
@@ -86,7 +87,7 @@ class AdvancedRecommendationService:
             # Vérifier le cache
             if user_id in self._user_profiles_cache:
                 cached_profile = self._user_profiles_cache[user_id]
-                if (datetime.utcnow() - cached_profile.created_at).total_seconds() < 3600:  # Cache 1h
+                if (utcnow() - cached_profile.created_at).total_seconds() < 3600:  # Cache 1h
                     return cached_profile
             
             # Récupérer les données utilisateur
@@ -173,7 +174,7 @@ class AdvancedRecommendationService:
                 return 2.0  # Valeur par défaut
             
             # Calculer sur les 6 derniers mois
-            six_months_ago = datetime.utcnow() - timedelta(days=180)
+            six_months_ago = utcnow() - timedelta(days=180)
             recent_books = [b for b in completed_books 
                           if b.get('date_completed') and b['date_completed'] >= six_months_ago]
             
@@ -433,7 +434,7 @@ class AdvancedRecommendationService:
             social_influenced_books = 0
             
             for book in user_books:
-                book_date = book.get('date_added', datetime.utcnow())
+                book_date = book.get('date_added', utcnow())
                 
                 # Chercher des activités sociales similaires dans les 7 jours précédents
                 week_before = book_date - timedelta(days=7)
@@ -441,7 +442,7 @@ class AdvancedRecommendationService:
                     "user_id": {"$in": [f['following_id'] for f in follows]},
                     "created_at": {"$gte": week_before, "$lte": book_date},
                     "activity_type": "book_completed",
-                    "content.title": {"$regex": book.get('title', ''), "$options": "i"}
+                    "content.title": {"$regex": re.escape(book.get('title', '') or ''), "$options": "i"}
                 }))
                 
                 if similar_activities:
@@ -468,7 +469,7 @@ class AdvancedRecommendationService:
             quarterly_data = defaultdict(list)
             
             for book in books:
-                date_added = book.get('date_added', datetime.utcnow())
+                date_added = book.get('date_added', utcnow())
                 quarter_key = f"{date_added.year}-Q{(date_added.month-1)//3 + 1}"
                 quarterly_data[quarter_key].append(book)
             
@@ -695,7 +696,7 @@ class AdvancedRecommendationService:
             recent_activities = list(self.db.social_activities.find({
                 "user_id": {"$in": following_ids},
                 "activity_type": {"$in": ["book_completed", "book_rated"]},
-                "created_at": {"$gte": datetime.utcnow() - timedelta(days=30)}
+                "created_at": {"$gte": utcnow() - timedelta(days=30)}
             }).sort("created_at", -1).limit(50))
             
             # 3. Extraire les livres populaires dans le réseau
@@ -775,7 +776,7 @@ class AdvancedRecommendationService:
                 'recommendation_count': social_popularity,
                 'average_rating': avg_rating,
                 'recent_activity': len([d for d in social_data 
-                                     if (datetime.utcnow() - d['timestamp']).days <= 7]),
+                                     if (utcnow() - d['timestamp']).days <= 7]),
                 'recommenders': [d['user_id'] for d in social_data[:3]]  # Top 3
             }
             

@@ -27,13 +27,13 @@ def _get_followed(user_id: str) -> list:
 
 
 @router.get("/following")
-async def get_followed_authors(current_user: dict = Depends(get_current_user)):
+def get_followed_authors(current_user: dict = Depends(get_current_user)):
     """Auteurs suivis par l'utilisateur (persistés en base, multi-appareils)."""
     return {"authors": _get_followed(current_user["id"])}
 
 
 @router.post("/follow")
-async def follow_author(
+def follow_author(
     payload: dict = Body(...),
     current_user: dict = Depends(get_current_user),
 ):
@@ -54,7 +54,7 @@ async def follow_author(
 
 
 @router.delete("/follow/{author_name}")
-async def unfollow_author(
+def unfollow_author(
     author_name: str,
     current_user: dict = Depends(get_current_user),
 ):
@@ -69,7 +69,7 @@ async def unfollow_author(
     return {"success": True, "following": False, "author": author_name, "authors": updated}
 
 @router.get("")
-async def get_authors(current_user: dict = Depends(get_current_user)):
+def get_authors(current_user: dict = Depends(get_current_user)):
     """Obtenir la liste des auteurs avec leurs livres"""
     user_filter = {"user_id": current_user["id"]}
     

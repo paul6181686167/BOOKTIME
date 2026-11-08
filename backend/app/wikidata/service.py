@@ -102,7 +102,7 @@ class WikidataService:
                 date_str = date_str.split('T')[0]
             
             return date_str
-        except:
+        except Exception:
             return None
     
     async def get_author_series(self, author_name: str) -> WikidataAuthorResponse:

@@ -17,7 +17,7 @@ DEFAULT_MODE = "in_app"
 
 
 @router.get("/notifications")
-async def get_notification_settings(current_user: dict = Depends(get_current_user)):
+def get_notification_settings(current_user: dict = Depends(get_current_user)):
     user = users_collection.find_one(
         {"id": current_user["id"]}, {"_id": 0, "notif_upcoming": 1, "email": 1}
     ) or {}
@@ -28,7 +28,7 @@ async def get_notification_settings(current_user: dict = Depends(get_current_use
 
 
 @router.put("/notifications")
-async def update_notification_settings(
+def update_notification_settings(
     payload: dict = Body(...),
     current_user: dict = Depends(get_current_user),
 ):

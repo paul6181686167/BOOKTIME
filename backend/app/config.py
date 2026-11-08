@@ -15,16 +15,43 @@ load_dotenv()  # fallback cwd
 # Configuration MongoDB
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017/booktime")
 
+# Environnement d'exécution
+ENVIRONMENT = os.getenv("ENVIRONMENT", "").strip().lower()
+
+
+def is_production() -> bool:
+    """Vrai en production : ENVIRONMENT=production, ou plateforme Render (variable RENDER)."""
+    env = os.getenv("ENVIRONMENT", "").strip().lower()
+    return env == "production" or (env == "" and bool(os.getenv("RENDER")))
+
+
+def is_development() -> bool:
+    """Vrai seulement si l'environnement est explicitement un environnement de développement/test."""
+    return os.getenv("ENVIRONMENT", "").strip().lower() in {"development", "dev", "local", "test", "testing"}
+
+
 # Configuration JWT
+# Source unique de la clé de signature (security/jwt.py, dependencies.py, utils/security.py
+# l'importent d'ici). Sans SECRET_KEY : refus de démarrer en production, clé temporaire sinon.
 import secrets as _secrets
-_default_secret = _secrets.token_hex(32)  # généré aléatoirement si non défini
-SECRET_KEY = os.getenv("SECRET_KEY") or _default_secret
-if not os.getenv("SECRET_KEY"):
+
+_PLACEHOLDER_KEYS = {"", "your-secret-key-here-change-in-production", "changeme", "secret"}
+_configured_secret = (os.getenv("SECRET_KEY") or "").strip()
+if _configured_secret.lower() in _PLACEHOLDER_KEYS:
+    if is_production():
+        raise RuntimeError(
+            "SECRET_KEY manquante (ou valeur par défaut) : refus de démarrer en production. "
+            "Définis une clé secrète longue et aléatoire dans les variables d'environnement."
+        )
     import logging as _logging
+
     _logging.getLogger("booktime").warning(
-        "SECRET_KEY non définie dans .env — clé temporaire générée. "
-        "Définissez SECRET_KEY pour la production !"
+        "SECRET_KEY non définie : clé temporaire générée (les sessions sautent à chaque "
+        "redémarrage). Définis SECRET_KEY, obligatoire en production."
     )
+    SECRET_KEY = _secrets.token_hex(32)
+else:
+    SECRET_KEY = _configured_secret
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "86400"))  # 60 jours
 REMEMBER_ME_EXPIRE_MINUTES = int(os.getenv("REMEMBER_ME_EXPIRE_MINUTES", "129600"))  # 90 jours
@@ -35,11 +62,7 @@ API_TITLE = "BookTime API"
 API_DESCRIPTION = "Votre bibliothèque personnelle"
 API_VERSION = "1.0.0"
 
-# Configuration CORS
-CORS_ORIGINS = ["*"]
-CORS_CREDENTIALS = True
-CORS_METHODS = ["*"]
-CORS_HEADERS = ["*"]
+# CORS : voir app/security/cors.py
 
 # Configuration des bases de données
 DATABASE_NAME = "booktime"

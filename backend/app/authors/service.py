@@ -14,6 +14,7 @@ from ..database.connection import (
     books_collection,
     series_library_collection,
 )
+from app.utils.timeutils import utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +60,7 @@ def is_fresh(doc: Optional[dict]) -> bool:
             enriched_at = datetime.fromisoformat(enriched_at.replace("Z", "+00:00")).replace(
                 tzinfo=None
             )
-        return datetime.utcnow() - enriched_at < CACHE_TTL
+        return utcnow() - enriched_at < CACHE_TTL
     except Exception:
         return False
 
@@ -97,7 +98,7 @@ def needs_enrichment(doc: Optional[dict]) -> bool:
             enriched_at = datetime.fromisoformat(enriched_at.replace("Z", "+00:00")).replace(
                 tzinfo=None
             )
-        return datetime.utcnow() - enriched_at >= EMPTY_RETRY
+        return utcnow() - enriched_at >= EMPTY_RETRY
     except Exception:
         return True
 
@@ -233,7 +234,7 @@ async def enrich_author_fiche(author_name: str, *, force: bool = False) -> dict:
         except Exception as exc:
             logger.debug("author wikipedia fail %s: %s", display_name, exc)
 
-    now = datetime.utcnow()
+    now = utcnow()
     doc = {
         **profile,
         "id": (existing or {}).get("id") or str(uuid.uuid4()),

@@ -3,7 +3,7 @@ import logging
 import re
 
 from pymongo import MongoClient
-from .config import MONGO_URL, DATABASE_NAME, COLLECTIONS
+from .config import MONGO_URL, DATABASE_NAME, COLLECTIONS, is_production
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,14 @@ class Database:
         logger.info("[DB] MONGO_URL utilisee: %s", _redact(mongo_url)[:60])
         logger.info("[DB] RAILWAY_MONGODB_MOCK=%s", os.environ.get("RAILWAY_MONGODB_MOCK", "non defini"))
 
+        production = is_production()
+
         if os.environ.get("RAILWAY_MONGODB_MOCK", "").lower() == "true":
+            if production:
+                # Une base en mémoire en production = comptes et livres perdus au redémarrage.
+                raise RuntimeError(
+                    "RAILWAY_MONGODB_MOCK=true est interdit en production (données non persistantes)."
+                )
             logger.warning("[MOCK] MODE MOCK ACTIVE - Pas de connexion MongoDB reelle")
             self._client = _MockClient()
             self._db = _MockDb()
@@ -74,25 +81,36 @@ class Database:
             except Exception as e1:
                 logger.warning("[WARN] Tentative 1 echouee: %s", _redact(str(e1)))
 
-            # Tentative 2 : avec tlsAllowInvalidCertificates
-            try:
-                self._client = MongoClient(
-                    mongo_url,
-                    serverSelectionTimeoutMS=20000,
-                    connectTimeoutMS=20000,
-                    tlsAllowInvalidCertificates=True,
-                )
-                self._client.admin.command('ping')
-                self._db = self._client[db_name]
-                logger.info("[OK] Connected to MongoDB (TLS relaxed): %s", db_name)
-                return
-            except Exception as e2:
-                logger.warning("[WARN] Tentative 2 echouee: %s", _redact(str(e2)))
+            # Tentative 2 (désactivée par défaut) : sans vérification du certificat TLS.
+            # Elle expose la connexion à une attaque de type « homme du milieu » : à n'activer
+            # (MONGO_ALLOW_INSECURE_TLS=true) qu'en dépannage, jamais durablement.
+            if os.environ.get("MONGO_ALLOW_INSECURE_TLS", "").strip().lower() == "true":
+                try:
+                    self._client = MongoClient(
+                        mongo_url,
+                        serverSelectionTimeoutMS=20000,
+                        connectTimeoutMS=20000,
+                        tlsAllowInvalidCertificates=True,
+                    )
+                    self._client.admin.command('ping')
+                    self._db = self._client[db_name]
+                    logger.warning("[WARN] Connected to MongoDB SANS verification TLS: %s", db_name)
+                    return
+                except Exception as e2:
+                    logger.warning("[WARN] Tentative 2 echouee: %s", _redact(str(e2)))
 
         except Exception as e:
             logger.error("[ERR] Erreur connexion MongoDB: %s", _redact(str(e)))
 
-        # Fallback : mode mock
+        if production:
+            # Ne jamais continuer en silence sur une base factice : mieux vaut un démarrage
+            # en échec (l'ancienne version reste en ligne) que des données perdues.
+            raise RuntimeError(
+                "Impossible de joindre MongoDB en production : démarrage annulé "
+                "(pas de repli sur une base en mémoire)."
+            )
+
+        # Hors production (développement, tests) : repli sur la base en mémoire
         logger.warning("[MOCK] ACTIVATION MODE MOCK - impossible de joindre MongoDB")
         os.environ["RAILWAY_MONGODB_MOCK"] = "true"
         self._client = _MockClient()

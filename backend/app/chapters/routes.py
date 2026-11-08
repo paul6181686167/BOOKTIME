@@ -19,6 +19,7 @@ from typing import Optional, Dict, Any, List
 import logging
 
 from ..security.jwt import get_current_user
+from app.utils.errors import public_error
 
 
 def _user_id(user) -> str:
@@ -81,7 +82,7 @@ async def get_series_chapters(
         logger.error(f"Erreur récupération chapitres {series_name}: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur interne lors de la récupération des chapitres: {str(e)}"
+            detail=public_error(e, "Erreur interne lors de la récupération des chapitres")
         )
 
 
@@ -121,7 +122,7 @@ async def refresh_series_chapters(
         logger.error(f"Erreur rafraîchissement {series_name}: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors du rafraîchissement: {str(e)}"
+            detail=public_error(e, "Erreur lors du rafraîchissement")
         )
 
 
@@ -146,12 +147,12 @@ async def get_upcoming_releases(
         logger.error(f"Erreur récupération planning: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la récupération du planning: {str(e)}"
+            detail=public_error(e, "Erreur lors de la récupération du planning")
         )
 
 
 @router.get("/user/stats")
-async def get_user_chapter_stats(
+def get_user_chapter_stats(
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -182,7 +183,7 @@ async def get_user_chapter_stats(
         logger.error(f"Erreur récupération stats utilisateur: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la récupération des statistiques: {str(e)}"
+            detail=public_error(e, "Erreur lors de la récupération des statistiques")
         )
 
 
@@ -210,7 +211,7 @@ async def search_series_in_apis(
         logger.error(f"Erreur recherche série {series_name}: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la recherche: {str(e)}"
+            detail=public_error(e, "Erreur lors de la recherche")
         )
 
 
@@ -269,7 +270,7 @@ async def map_series_ids(
         logger.error(f"Erreur mapping IDs {series_name}: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors du mapping: {str(e)}"
+            detail=public_error(e, "Erreur lors du mapping")
         )
 
 
@@ -298,12 +299,12 @@ async def get_integrations_status(
         logger.error(f"Erreur vérification intégrations: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la vérification: {str(e)}"
+            detail=public_error(e, "Erreur lors de la vérification")
         )
 
 
 @router.put("/predictions/config")
-async def update_predictions_config(
+def update_predictions_config(
     config_data: dict = Body(..., description="Configuration des prédictions"),
     current_user: dict = Depends(get_current_user)
 ):
@@ -353,14 +354,14 @@ async def update_predictions_config(
         logger.error(f"Erreur mise à jour config: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la mise à jour: {str(e)}"
+            detail=public_error(e, "Erreur lors de la mise à jour")
         )
 
 
 # Routes utilitaires supplémentaires
 
 @router.get("/health")
-async def health_check():
+def health_check():
     """
     Vérification de santé du module chapitres
     
@@ -443,5 +444,5 @@ async def debug_series_data(
         logger.error(f"Erreur debug série {series_name}: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors du debug: {str(e)}"
+            detail=public_error(e, "Erreur lors du debug")
         )

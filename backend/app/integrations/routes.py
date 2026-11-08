@@ -18,6 +18,8 @@ from ..google_books.service import (
 )
 from .goodreads_service import goodreads_service
 from .librarything_service import librarything_service
+from app.utils.errors import public_error
+from app.utils.timeutils import utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +83,7 @@ async def import_goodreads_csv(
                 "statistics": stats,
                 "import_source": "goodreads_csv"
             },
-            "imported_at": datetime.utcnow().isoformat()
+            "imported_at": utcnow().isoformat()
         }
         
     except HTTPException:
@@ -90,7 +92,7 @@ async def import_goodreads_csv(
         logger.error(f"Error importing Goodreads CSV: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de l'import Goodreads: {str(e)}"
+            detail=public_error(e, "Erreur lors de l'import Goodreads")
         )
 
 # === GOOGLE BOOKS INTEGRATION ===
@@ -117,19 +119,19 @@ async def search_google_books(
                 "results_count": len(books),
                 "source": "google_books",
             },
-            "searched_at": datetime.utcnow().isoformat(),
+            "searched_at": utcnow().isoformat(),
         }
     except RuntimeError as e:
-        raise HTTPException(status_code=503, detail=str(e)) from e
+        raise HTTPException(status_code=503, detail=public_error(e)) from e
     except requests.HTTPError as e:
         code = e.response.status_code if e.response is not None else 502
         logger.error("Google Books HTTP %s: %s", code, e)
-        raise HTTPException(status_code=502, detail=f"Google Books: {e}") from e
+        raise HTTPException(status_code=502, detail=public_error(e, "Google Books")) from e
     except Exception as e:
         logger.error("Error searching Google Books: %s", e)
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la recherche Google Books: {str(e)}",
+            detail=public_error(e, "Erreur lors de la recherche Google Books"),
         ) from e
 
 
@@ -152,23 +154,23 @@ async def get_google_book_details(
                 "book": book,
                 "source": "google_books",
             },
-            "retrieved_at": datetime.utcnow().isoformat(),
+            "retrieved_at": utcnow().isoformat(),
         }
     except requests.HTTPError as e:
         code = e.response.status_code if e.response is not None else 502
         if code == 404:
             raise HTTPException(status_code=404, detail="Livre non trouvé sur Google Books") from e
         logger.error("Google Books HTTP %s: %s", code, e)
-        raise HTTPException(status_code=502, detail=f"Google Books: {e}") from e
+        raise HTTPException(status_code=502, detail=public_error(e, "Google Books")) from e
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        raise HTTPException(status_code=400, detail=public_error(e)) from e
     except RuntimeError as e:
-        raise HTTPException(status_code=503, detail=str(e)) from e
+        raise HTTPException(status_code=503, detail=public_error(e)) from e
     except Exception as e:
         logger.error("Error getting Google Books details: %s", e)
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la récupération des détails: {str(e)}",
+            detail=public_error(e, "Erreur lors de la récupération des détails"),
         ) from e
 
 # === LIBRARYTHING INTEGRATION ===
@@ -199,14 +201,14 @@ async def get_librarything_recommendations(
                 "source_isbn": isbn,
                 "source": "librarything"
             },
-            "retrieved_at": datetime.utcnow().isoformat()
+            "retrieved_at": utcnow().isoformat()
         }
         
     except Exception as e:
         logger.error(f"Error getting LibraryThing recommendations: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la récupération des recommandations: {str(e)}"
+            detail=public_error(e, "Erreur lors de la récupération des recommandations")
         )
 
 @router.get("/librarything/tags")
@@ -235,14 +237,14 @@ async def get_librarything_tags(
                 "source_isbn": isbn,
                 "source": "librarything"
             },
-            "retrieved_at": datetime.utcnow().isoformat()
+            "retrieved_at": utcnow().isoformat()
         }
         
     except Exception as e:
         logger.error(f"Error getting LibraryThing tags: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la récupération des tags: {str(e)}"
+            detail=public_error(e, "Erreur lors de la récupération des tags")
         )
 
 # === INTÉGRATIONS COMBINÉES ===
@@ -308,20 +310,20 @@ async def combined_external_search(
                 "unique_results": len(unique_results),
                 "deduplication_applied": len(combined_results) > len(unique_results)
             },
-            "searched_at": datetime.utcnow().isoformat()
+            "searched_at": utcnow().isoformat()
         }
         
     except Exception as e:
         logger.error(f"Error in combined search: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la recherche combinée: {str(e)}"
+            detail=public_error(e, "Erreur lors de la recherche combinée")
         )
 
 # === STATISTIQUES ET CONFIGURATION ===
 
 @router.get("/stats")
-async def get_integrations_stats(
+def get_integrations_stats(
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -369,18 +371,18 @@ async def get_integrations_stats(
         return {
             "success": True,
             "data": stats,
-            "retrieved_at": datetime.utcnow().isoformat()
+            "retrieved_at": utcnow().isoformat()
         }
         
     except Exception as e:
         logger.error(f"Error getting integrations stats: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur lors de la récupération des statistiques: {str(e)}"
+            detail=public_error(e, "Erreur lors de la récupération des statistiques")
         )
 
 @router.get("/health")
-async def integrations_health():
+def integrations_health():
     """Vérification de santé du module intégrations externes"""
     try:
         health_status = {
@@ -411,5 +413,5 @@ async def integrations_health():
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur module intégrations externes: {str(e)}"
+            detail=public_error(e, "Erreur module intégrations externes")
         )

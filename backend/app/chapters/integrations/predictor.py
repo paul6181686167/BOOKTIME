@@ -17,6 +17,7 @@ import math
 from dataclasses import dataclass
 
 from ..models import SeriesChapters, Chapter, ChapterPrediction, VolumePrediction, ReleaseSchedule
+from app.utils.timeutils import utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +157,7 @@ class ChapterPredictor:
             
             # Prédire date sortie volume (généralement 3-6 mois après début collecte)
             volume_delay_months = await self._estimate_volume_delay(series_data)
-            predicted_date = datetime.utcnow() + timedelta(days=volume_delay_months * 30)
+            predicted_date = utcnow() + timedelta(days=volume_delay_months * 30)
             
             # Confiance basée sur régularité volumes précédents
             confidence = await self._calculate_volume_confidence(series_data)
@@ -385,7 +386,7 @@ class ChapterPredictor:
                     start, end = volume.chapters_range.split('-')
                     count = int(end) - int(start) + 1
                     chapters_counts.append(count)
-                except:
+                except Exception:
                     continue
         
         return statistics.mean(chapters_counts) if chapters_counts else 10.0

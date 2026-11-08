@@ -4,6 +4,7 @@ Gestion complète export/import bibliothèque avec formats multiples
 """
 import sys
 import os
+from app.utils.timeutils import utcnow
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import json
@@ -87,7 +88,7 @@ class ExportImportService:
             export_result.update({
                 'export_metadata': {
                     'user_id': user_id,
-                    'export_date': datetime.utcnow().isoformat(),
+                    'export_date': utcnow().isoformat(),
                     'format': options.format_type,
                     'options': options.__dict__,
                     'total_books': len(user_data.get('books', [])),
@@ -292,7 +293,7 @@ class ExportImportService:
             
             # Métadonnées d'export
             metadata = {
-                'backup_date': datetime.utcnow().isoformat(),
+                'backup_date': utcnow().isoformat(),
                 'user_id': user_data['user_id'],
                 'total_books': len(user_data.get('books', [])),
                 'booktime_version': '1.0',
@@ -326,7 +327,7 @@ class ExportImportService:
                 if 'goodreads' in content_str.lower() or 'Book Id' in content_str:
                     return 'goodreads'
                 return 'csv'
-            except:
+            except Exception:
                 return 'csv'
         elif filename_lower.endswith(('.xlsx', '.xls')):
             return 'excel'
@@ -337,7 +338,7 @@ class ExportImportService:
             try:
                 json.loads(content.decode('utf-8'))
                 return 'json'
-            except:
+            except Exception:
                 return 'csv'  # Par défaut
     
     async def _parse_json_import(self, content: bytes) -> List[Dict]:
@@ -436,7 +437,7 @@ class ExportImportService:
                     'saga_name': str(book.get('saga_name', '')),
                     'volume_number': self._parse_int(book.get('volume_number', 0)),
                     'source': str(book.get('source', 'import')),
-                    'imported_at': datetime.utcnow()
+                    'imported_at': utcnow()
                 }
                 
                 validated_books.append(validated_book)
@@ -522,14 +523,14 @@ class ExportImportService:
         """Parse une note en float"""
         try:
             return float(rating)
-        except:
+        except Exception:
             return 0.0
     
     def _parse_int(self, value) -> int:
         """Parse un entier"""
         try:
             return int(float(value))
-        except:
+        except Exception:
             return 0
     
     def _parse_date(self, date_str) -> Optional[datetime]:
@@ -549,7 +550,7 @@ class ExportImportService:
         for fmt in date_formats:
             try:
                 return datetime.strptime(str(date_str), fmt)
-            except:
+            except Exception:
                 continue
         
         return None
@@ -719,7 +720,7 @@ class ExportImportService:
     def _generate_backup_readme(self, user_data: Dict) -> str:
         """Génère un README pour la sauvegarde"""
         total_books = len(user_data.get('books', []))
-        backup_date = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+        backup_date = utcnow().strftime('%Y-%m-%d %H:%M:%S')
         
         return f"""
 BOOKTIME - Sauvegarde Complète
