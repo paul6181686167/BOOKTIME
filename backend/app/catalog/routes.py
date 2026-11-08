@@ -3,21 +3,29 @@ Catalogue global de livres — endpoint de découverte.
 Sert les livres depuis MongoDB (books_catalog) ou depuis le fichier JSON local
 si MongoDB est vide ou inaccessible.
 """
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Query, Depends, HTTPException
 from typing import Optional, List, Dict
 import re
 import json
 from pathlib import Path
 from functools import lru_cache
 
-from ..database.connection import client
+import uuid
+from pydantic import BaseModel, Field
+
+from ..database.connection import client, books_collection
+from ..models.book import BookCreate
 from ..security.jwt import get_current_user
+from ..utils.errors import public_error
+from ..utils.timeutils import utcnow
+from ..utils.validation import validate_category
 
 router = APIRouter(prefix="/api/catalog", tags=["catalog"])
 
 _DATA_DIR         = Path(__file__).resolve().parent.parent.parent / "data"
 _JSON_CACHE_PATH  = _DATA_DIR / "catalog_cache.json"
 _MANGA_BD_PATH    = _DATA_DIR / "manga_bd_cache.json"
+_ONBOARDING_PATH  = _DATA_DIR / "onboarding_catalog.json"
 
 
 @lru_cache(maxsize=1)
@@ -101,6 +109,103 @@ def get_popular_books(
     filtered.sort(key=lambda b: b.get("popularity_score", 0), reverse=True)
     page = filtered[offset: offset + limit]
     return {"books": page, "total": len(filtered), "offset": offset, "limit": limit}
+
+
+@lru_cache(maxsize=1)
+def _load_onboarding() -> List[Dict]:
+    """Charge la sélection éditoriale d'oeuvres de l'écran d'accueil."""
+    if not _ONBOARDING_PATH.exists():
+        return []
+    try:
+        with open(_ONBOARDING_PATH, "r", encoding="utf-8") as f:
+            return json.load(f).get("works", [])
+    except Exception:
+        return []
+
+
+@router.get("/onboarding")
+def get_onboarding_works(
+    group: str = "roman",
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Oeuvres proposées à un nouvel utilisateur pour constituer sa bibliothèque
+    (« coche ce que tu as déjà lu »). `group` : « roman » ou « graphic_novel ».
+    """
+    if group not in ("roman", "graphic_novel"):
+        raise HTTPException(status_code=400, detail="Catégorie invalide")
+    works = [w for w in _load_onboarding() if w.get("group") == group]
+    genres: List[str] = []
+    for w in works:
+        if w.get("genre") and w["genre"] not in genres:
+            genres.append(w["genre"])
+    return {"works": works, "genres": genres, "total": len(works)}
+
+
+class OnboardingSelection(BaseModel):
+    ids: List[str] = Field(default_factory=list, max_length=500)
+
+
+@router.post("/onboarding")
+def add_onboarding_works(
+    selection: OnboardingSelection,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Ajoute à la bibliothèque les oeuvres cochées « déjà lues » sur l'écran d'accueil.
+
+    Seuls les identifiants du catalogue éditorial sont acceptés : titre, auteur et
+    couverture viennent du serveur. Les livres sont marqués « terminé » sans date
+    de fin (ils ont été lus avant l'inscription : objectifs et calendrier restent exacts).
+    """
+    by_id = {w["id"]: w for w in _load_onboarding() if w.get("id")}
+    wanted = [by_id[i] for i in dict.fromkeys(selection.ids) if i in by_id]
+    if not wanted:
+        return {"added": 0, "skipped": 0}
+
+    existing = {
+        (b.get("title") or "").strip().lower()
+        for b in books_collection.find({"user_id": current_user["id"]}, {"title": 1, "_id": 0})
+    }
+
+    added = 0
+    skipped = 0
+    for w in wanted:
+        key = w["title"].strip().lower()
+        if key in existing:
+            skipped += 1
+            continue
+        data = BookCreate(
+            title=w["title"],
+            author=w.get("author") or "",
+            category=w.get("category") or "roman",
+            status="completed",
+            cover_url=w.get("cover_url") or "",
+            genre=w.get("genre") or "",
+            ol_key=w.get("ol_key"),
+        ).model_dump()
+        book = {
+            "id": str(uuid.uuid4()),
+            "user_id": current_user["id"],
+            **data,
+            "category": validate_category(data["category"]),
+            "date_added": utcnow(),
+            "date_started": None,
+            "date_completed": None,
+            "added_via": "onboarding",
+            # catégorie fixée à la main dans le catalogue éditorial : pas de reclassification automatique
+            "category_verified": True,
+        }
+        try:
+            books_collection.insert_one(book)
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=public_error(e, "Erreur lors de l'ajout des livres"),
+            )
+        existing.add(key)
+        added += 1
+    return {"added": added, "skipped": skipped}
 
 
 @router.get("/search")

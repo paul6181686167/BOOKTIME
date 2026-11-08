@@ -1,0 +1,3215 @@
+{
+ "version": 1,
+ "works": [
+  {
+   "id": "roman-le-petit-prince",
+   "title": "Le Petit Prince",
+   "author": "Antoine de Saint-Exupéry",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10778405-M.jpg",
+   "ol_key": "/works/OL10263W"
+  },
+  {
+   "id": "roman-l-etranger",
+   "title": "L'Étranger",
+   "author": "Albert Camus",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15152916-M.jpg",
+   "ol_key": "/works/OL1230613W"
+  },
+  {
+   "id": "roman-la-peste",
+   "title": "La Peste",
+   "author": "Albert Camus",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14999187-M.jpg",
+   "ol_key": "/works/OL1230715W"
+  },
+  {
+   "id": "roman-les-miserables",
+   "title": "Les Misérables",
+   "author": "Victor Hugo",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15093456-M.jpg",
+   "ol_key": "/works/OL1063588W"
+  },
+  {
+   "id": "roman-notre-dame-de-paris",
+   "title": "Notre-Dame de Paris",
+   "author": "Victor Hugo",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/6048095-M.jpg",
+   "ol_key": "/works/OL15202030W"
+  },
+  {
+   "id": "roman-le-comte-de-monte-cristo",
+   "title": "Le Comte de Monte-Cristo",
+   "author": "Alexandre Dumas",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14565097-M.jpg",
+   "ol_key": "/works/OL36287W"
+  },
+  {
+   "id": "roman-les-trois-mousquetaires",
+   "title": "Les Trois Mousquetaires",
+   "author": "Alexandre Dumas",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14549556-M.jpg",
+   "ol_key": "/works/OL36861W"
+  },
+  {
+   "id": "roman-madame-bovary",
+   "title": "Madame Bovary",
+   "author": "Gustave Flaubert",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12993441-M.jpg",
+   "ol_key": "/works/OL893707W"
+  },
+  {
+   "id": "roman-germinal",
+   "title": "Germinal",
+   "author": "Émile Zola",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8236935-M.jpg",
+   "ol_key": "/works/OL118986W"
+  },
+  {
+   "id": "roman-le-rouge-et-le-noir",
+   "title": "Le Rouge et le Noir",
+   "author": "Stendhal",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/5661680-M.jpg",
+   "ol_key": "/works/OL733640W"
+  },
+  {
+   "id": "roman-le-pere-goriot",
+   "title": "Le Père Goriot",
+   "author": "Honoré de Balzac",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15156928-M.jpg",
+   "ol_key": "/works/OL43940272W"
+  },
+  {
+   "id": "roman-bel-ami",
+   "title": "Bel-Ami",
+   "author": "Guy de Maupassant",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8785006-M.jpg",
+   "ol_key": "/works/OL93842W"
+  },
+  {
+   "id": "roman-voyage-au-bout-de-la-nuit",
+   "title": "Voyage au bout de la nuit",
+   "author": "Louis-Ferdinand Céline",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14053864-M.jpg",
+   "ol_key": "/works/OL1287903W"
+  },
+  {
+   "id": "roman-candide",
+   "title": "Candide",
+   "author": "Voltaire",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12736040-M.jpg",
+   "ol_key": "/works/OL100672W"
+  },
+  {
+   "id": "roman-l-ecume-des-jours",
+   "title": "L'Écume des jours",
+   "author": "Boris Vian",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15255290-M.jpg",
+   "ol_key": "/works/OL708597W"
+  },
+  {
+   "id": "roman-le-grand-meaulnes",
+   "title": "Le Grand Meaulnes",
+   "author": "Alain-Fournier",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14895683-M.jpg",
+   "ol_key": "/works/OL2227893W"
+  },
+  {
+   "id": "roman-les-liaisons-dangereuses",
+   "title": "Les Liaisons dangereuses",
+   "author": "Pierre Choderlos de Laclos",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8240415-M.jpg",
+   "ol_key": "/works/OL1157252W"
+  },
+  {
+   "id": "roman-le-tour-du-monde-en-quatre-vingts-jours",
+   "title": "Le Tour du monde en quatre-vingts jours",
+   "author": "Jules Verne",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/7388217-M.jpg",
+   "ol_key": "/works/OL1100007W"
+  },
+  {
+   "id": "roman-vingt-mille-lieues-sous-les-mers",
+   "title": "Vingt mille lieues sous les mers",
+   "author": "Jules Verne",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8236368-M.jpg",
+   "ol_key": "/works/OL1099280W"
+  },
+  {
+   "id": "roman-voyage-au-centre-de-la-terre",
+   "title": "Voyage au centre de la Terre",
+   "author": "Jules Verne",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14615000-M.jpg",
+   "ol_key": "/works/OL1099513W"
+  },
+  {
+   "id": "roman-orgueil-et-prejuges",
+   "title": "Orgueil et Préjugés",
+   "author": "Jane Austen",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15092533-M.jpg",
+   "ol_key": "/works/OL40242671W"
+  },
+  {
+   "id": "roman-jane-eyre",
+   "title": "Jane Eyre",
+   "author": "Charlotte Brontë",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/11003229-M.jpg",
+   "ol_key": "/works/OL1095427W"
+  },
+  {
+   "id": "roman-les-hauts-de-hurlevent",
+   "title": "Les Hauts de Hurlevent",
+   "author": "Emily Brontë",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/11951277-M.jpg",
+   "ol_key": "/works/OL25056866W"
+  },
+  {
+   "id": "roman-1984",
+   "title": "1984",
+   "author": "George Orwell",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10541664-M.jpg",
+   "ol_key": "/works/OL24143668W"
+  },
+  {
+   "id": "roman-la-ferme-des-animaux",
+   "title": "La Ferme des animaux",
+   "author": "George Orwell",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12903015-M.jpg",
+   "ol_key": "/works/OL28775128W"
+  },
+  {
+   "id": "roman-le-meilleur-des-mondes",
+   "title": "Le Meilleur des mondes",
+   "author": "Aldous Huxley",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/9382676-M.jpg",
+   "ol_key": "/works/OL20705481W"
+  },
+  {
+   "id": "roman-fahrenheit-451",
+   "title": "Fahrenheit 451",
+   "author": "Ray Bradbury",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14415964-M.jpg",
+   "ol_key": "/works/OL103123W"
+  },
+  {
+   "id": "roman-crime-et-chatiment",
+   "title": "Crime et Châtiment",
+   "author": "Fiodor Dostoïevski",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/13643709-M.jpg",
+   "ol_key": "/works/OL29495654W"
+  },
+  {
+   "id": "roman-anna-karenine",
+   "title": "Anna Karénine",
+   "author": "Léon Tolstoï",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12327215-M.jpg",
+   "ol_key": "/works/OL26380516W"
+  },
+  {
+   "id": "roman-le-portrait-de-dorian-gray",
+   "title": "Le Portrait de Dorian Gray",
+   "author": "Oscar Wilde",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14314858-M.jpg",
+   "ol_key": "/works/OL8193416W"
+  },
+  {
+   "id": "roman-l-attrape-c-urs",
+   "title": "L'Attrape-cœurs",
+   "author": "J. D. Salinger",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/9273490-M.jpg",
+   "ol_key": "/works/OL3335245W"
+  },
+  {
+   "id": "roman-des-souris-et-des-hommes",
+   "title": "Des souris et des hommes",
+   "author": "John Steinbeck",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14319003-M.jpg",
+   "ol_key": "/works/OL23204W"
+  },
+  {
+   "id": "roman-le-vieil-homme-et-la-mer",
+   "title": "Le Vieil Homme et la Mer",
+   "author": "Ernest Hemingway",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10311982-M.jpg",
+   "ol_key": "/works/OL20943047W"
+  },
+  {
+   "id": "roman-gatsby-le-magnifique",
+   "title": "Gatsby le Magnifique",
+   "author": "F. Scott Fitzgerald",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/13310378-M.jpg",
+   "ol_key": "/works/OL34324022W"
+  },
+  {
+   "id": "roman-la-metamorphose",
+   "title": "La Métamorphose",
+   "author": "Franz Kafka",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12864952-M.jpg",
+   "ol_key": "/works/OL28757512W"
+  },
+  {
+   "id": "roman-le-proces",
+   "title": "Le Procès",
+   "author": "Franz Kafka",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14910748-M.jpg",
+   "ol_key": "/works/OL43043884W"
+  },
+  {
+   "id": "roman-les-aventures-de-tom-sawyer",
+   "title": "Les Aventures de Tom Sawyer",
+   "author": "Mark Twain",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12692050-M.jpg",
+   "ol_key": "/works/OL27702755W"
+  },
+  {
+   "id": "roman-robinson-crusoe",
+   "title": "Robinson Crusoé",
+   "author": "Daniel Defoe",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/9645194-M.jpg",
+   "ol_key": "/works/OL45089W"
+  },
+  {
+   "id": "roman-l-ile-au-tresor",
+   "title": "L'Île au trésor",
+   "author": "Robert Louis Stevenson",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12968453-M.jpg",
+   "ol_key": "/works/OL29236272W"
+  },
+  {
+   "id": "roman-docteur-jekyll-et-mister-hyde",
+   "title": "Docteur Jekyll et Mister Hyde",
+   "author": "Robert Louis Stevenson",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/295773-M.jpg",
+   "ol_key": "/works/OL24156W"
+  },
+  {
+   "id": "roman-sa-majeste-des-mouches",
+   "title": "Sa Majesté des mouches",
+   "author": "William Golding",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/967627-M.jpg",
+   "ol_key": "/works/OL2430183W"
+  },
+  {
+   "id": "roman-moby-dick",
+   "title": "Moby Dick",
+   "author": "Herman Melville",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/11023042-M.jpg",
+   "ol_key": "/works/OL102749W"
+  },
+  {
+   "id": "roman-cent-ans-de-solitude",
+   "title": "Cent ans de solitude",
+   "author": "Gabriel García Márquez",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10879677-M.jpg",
+   "ol_key": "/works/OL24354027W"
+  },
+  {
+   "id": "roman-le-nom-de-la-rose",
+   "title": "Le Nom de la rose",
+   "author": "Umberto Eco",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15215245-M.jpg",
+   "ol_key": "/works/OL45229099W"
+  },
+  {
+   "id": "roman-le-parfum",
+   "title": "Le Parfum",
+   "author": "Patrick Süskind",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/13701855-M.jpg",
+   "ol_key": "/works/OL34897149W"
+  },
+  {
+   "id": "roman-alice-au-pays-des-merveilles",
+   "title": "Alice au pays des merveilles",
+   "author": "Lewis Carroll",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10527843-M.jpg",
+   "ol_key": "/works/OL138052W"
+  },
+  {
+   "id": "roman-autant-en-emporte-le-vent",
+   "title": "Autant en emporte le vent",
+   "author": "Margaret Mitchell",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/2136332-M.jpg",
+   "ol_key": "/works/OL29247619W"
+  },
+  {
+   "id": "roman-rebecca",
+   "title": "Rebecca",
+   "author": "Daphné du Maurier",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15049587-M.jpg",
+   "ol_key": "/works/OL36633W"
+  },
+  {
+   "id": "roman-la-vie-devant-soi",
+   "title": "La Vie devant soi",
+   "author": "Romain Gary",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10374575-M.jpg",
+   "ol_key": "/works/OL1226059W"
+  },
+  {
+   "id": "roman-la-promesse-de-l-aube",
+   "title": "La Promesse de l'aube",
+   "author": "Romain Gary",
+   "genre": "Classiques",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15125969-M.jpg",
+   "ol_key": "/works/OL1226056W"
+  },
+  {
+   "id": "roman-le-seigneur-des-anneaux-la-communaute-de-l-anneau",
+   "title": "Le Seigneur des anneaux : La Communauté de l'anneau",
+   "author": "J. R. R. Tolkien",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14627060-M.jpg",
+   "ol_key": "/works/OL27513W"
+  },
+  {
+   "id": "roman-le-hobbit",
+   "title": "Le Hobbit",
+   "author": "J. R. R. Tolkien",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14627509-M.jpg",
+   "ol_key": "/works/OL27482W"
+  },
+  {
+   "id": "roman-harry-potter-a-l-ecole-des-sorciers",
+   "title": "Harry Potter à l'école des sorciers",
+   "author": "J. K. Rowling",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15155833-M.jpg",
+   "ol_key": "/works/OL82563W"
+  },
+  {
+   "id": "roman-harry-potter-et-la-chambre-des-secrets",
+   "title": "Harry Potter et la Chambre des secrets",
+   "author": "J. K. Rowling",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15158664-M.jpg",
+   "ol_key": "/works/OL82537W"
+  },
+  {
+   "id": "roman-harry-potter-et-le-prisonnier-d-azkaban",
+   "title": "Harry Potter et le Prisonnier d'Azkaban",
+   "author": "J. K. Rowling",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10580435-M.jpg",
+   "ol_key": "/works/OL82536W"
+  },
+  {
+   "id": "roman-harry-potter-et-la-coupe-de-feu",
+   "title": "Harry Potter et la Coupe de feu",
+   "author": "J. K. Rowling",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12059372-M.jpg",
+   "ol_key": "/works/OL82560W"
+  },
+  {
+   "id": "roman-harry-potter-et-l-ordre-du-phenix",
+   "title": "Harry Potter et l'Ordre du Phénix",
+   "author": "J. K. Rowling",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/13323683-M.jpg",
+   "ol_key": "/works/OL34523698W"
+  },
+  {
+   "id": "roman-harry-potter-et-le-prince-de-sang-mele",
+   "title": "Harry Potter et le Prince de sang-mêlé",
+   "author": "J. K. Rowling",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/13711863-M.jpg",
+   "ol_key": "/works/OL34904723W"
+  },
+  {
+   "id": "roman-harry-potter-et-les-reliques-de-la-mort",
+   "title": "Harry Potter et les Reliques de la Mort",
+   "author": "J. K. Rowling",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15151010-M.jpg",
+   "ol_key": "/works/OL44517892W"
+  },
+  {
+   "id": "roman-le-trone-de-fer",
+   "title": "Le Trône de fer",
+   "author": "George R. R. Martin",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/9134692-M.jpg",
+   "ol_key": "/works/OL17318167W"
+  },
+  {
+   "id": "roman-le-monde-de-narnia-le-lion-la-sorciere-blanche-et-l-armoire-magique",
+   "title": "Le Monde de Narnia : Le Lion, la Sorcière blanche et l'Armoire magique",
+   "author": "C. S. Lewis",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10083125-M.jpg",
+   "ol_key": "/works/OL20790314W"
+  },
+  {
+   "id": "roman-eragon",
+   "title": "Eragon",
+   "author": "Christopher Paolini",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15241670-M.jpg",
+   "ol_key": "/works/OL5819895W"
+  },
+  {
+   "id": "roman-percy-jackson-le-voleur-de-foudre",
+   "title": "Percy Jackson : Le Voleur de foudre",
+   "author": "Rick Riordan",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15088500-M.jpg",
+   "ol_key": "/works/OL24291333W"
+  },
+  {
+   "id": "roman-le-nom-du-vent",
+   "title": "Le Nom du vent",
+   "author": "Patrick Rothfuss",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/11480483-M.jpg",
+   "ol_key": "/works/OL8479867W"
+  },
+  {
+   "id": "roman-l-assassin-royal-l-apprenti-assassin",
+   "title": "L'Assassin royal : L'Apprenti assassin",
+   "author": "Robin Hobb",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8779073-M.jpg",
+   "ol_key": "/works/OL20126097W"
+  },
+  {
+   "id": "roman-l-empire-ultime",
+   "title": "L'Empire ultime",
+   "author": "Brandon Sanderson",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14658160-M.jpg",
+   "ol_key": "/works/OL5738148W"
+  },
+  {
+   "id": "roman-le-sorceleur-le-dernier-v-u",
+   "title": "Le Sorceleur : Le Dernier Vœu",
+   "author": "Andrzej Sapkowski",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12823722-M.jpg",
+   "ol_key": "/works/OL27681030W"
+  },
+  {
+   "id": "roman-c-ur-d-encre",
+   "title": "Cœur d'encre",
+   "author": "Cornelia Funke",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "",
+   "ol_key": null
+  },
+  {
+   "id": "roman-une-cour-de-ronces-et-de-roses",
+   "title": "Une cour de ronces et de roses",
+   "author": "Sarah J. Maas",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15254465-M.jpg",
+   "ol_key": "/works/OL17352669W"
+  },
+  {
+   "id": "roman-la-passe-miroir-les-fiances-de-l-hiver",
+   "title": "La Passe-miroir : Les Fiancés de l'hiver",
+   "author": "Christelle Dabos",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12521675-M.jpg",
+   "ol_key": "/works/OL27019491W"
+  },
+  {
+   "id": "roman-qadehar-le-sorcier",
+   "title": "Qadehar le sorcier",
+   "author": "Erik L'Homme",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14830222-M.jpg",
+   "ol_key": "/works/OL13659895W"
+  },
+  {
+   "id": "roman-artemis-fowl",
+   "title": "Artemis Fowl",
+   "author": "Eoin Colfer",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10730608-M.jpg",
+   "ol_key": "/works/OL5725956W"
+  },
+  {
+   "id": "roman-six-of-crows",
+   "title": "Six of Crows",
+   "author": "Leigh Bardugo",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/13284653-M.jpg",
+   "ol_key": "/works/OL17332479W"
+  },
+  {
+   "id": "roman-les-annales-du-disque-monde-la-huitieme-couleur",
+   "title": "Les Annales du Disque-monde : La Huitième Couleur",
+   "author": "Terry Pratchett",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8772288-M.jpg",
+   "ol_key": "/works/OL20113170W"
+  },
+  {
+   "id": "roman-la-roue-du-temps-l-il-du-monde",
+   "title": "La Roue du Temps : L'Œil du monde",
+   "author": "Robert Jordan",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/980232-M.jpg",
+   "ol_key": "/works/OL7924103W"
+  },
+  {
+   "id": "roman-la-compagnie-noire",
+   "title": "La Compagnie noire",
+   "author": "Glen Cook",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/6293466-M.jpg",
+   "ol_key": "/works/OL9022700W"
+  },
+  {
+   "id": "roman-wicked",
+   "title": "Wicked",
+   "author": "Gregory Maguire",
+   "genre": "Fantasy",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/38706-M.jpg",
+   "ol_key": "/works/OL66218W"
+  },
+  {
+   "id": "roman-dune",
+   "title": "Dune",
+   "author": "Frank Herbert",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10500426-M.jpg",
+   "ol_key": "/works/OL893414W"
+  },
+  {
+   "id": "roman-fondation",
+   "title": "Fondation",
+   "author": "Isaac Asimov",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/13110557-M.jpg",
+   "ol_key": "/works/OL32890850W"
+  },
+  {
+   "id": "roman-moi-robot",
+   "title": "Moi, Robot",
+   "author": "Isaac Asimov",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12385229-M.jpg",
+   "ol_key": "/works/OL46241W"
+  },
+  {
+   "id": "roman-la-strategie-ender",
+   "title": "La Stratégie Ender",
+   "author": "Orson Scott Card",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12996033-M.jpg",
+   "ol_key": "/works/OL49488W"
+  },
+  {
+   "id": "roman-le-guide-du-voyageur-galactique",
+   "title": "Le Guide du voyageur galactique",
+   "author": "Douglas Adams",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12986869-M.jpg",
+   "ol_key": "/works/OL2163649W"
+  },
+  {
+   "id": "roman-hunger-games",
+   "title": "Hunger Games",
+   "author": "Suzanne Collins",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12876269-M.jpg",
+   "ol_key": "/works/OL5735363W"
+  },
+  {
+   "id": "roman-divergente",
+   "title": "Divergente",
+   "author": "Veronica Roth",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14636359-M.jpg",
+   "ol_key": "/works/OL38087171W"
+  },
+  {
+   "id": "roman-le-labyrinthe",
+   "title": "Le Labyrinthe",
+   "author": "James Dashner",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14636291-M.jpg",
+   "ol_key": "/works/OL20000302W"
+  },
+  {
+   "id": "roman-seul-sur-mars",
+   "title": "Seul sur Mars",
+   "author": "Andy Weir",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/11447888-M.jpg",
+   "ol_key": "/works/OL17091839W"
+  },
+  {
+   "id": "roman-projet-derniere-chance",
+   "title": "Projet Dernière Chance",
+   "author": "Andy Weir",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/11200092-M.jpg",
+   "ol_key": "/works/OL21745884W"
+  },
+  {
+   "id": "roman-le-probleme-a-trois-corps",
+   "title": "Le Problème à trois corps",
+   "author": "Liu Cixin",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15241322-M.jpg",
+   "ol_key": "/works/OL45830158W"
+  },
+  {
+   "id": "roman-ready-player-one",
+   "title": "Ready Player One",
+   "author": "Ernest Cline",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8737626-M.jpg",
+   "ol_key": "/works/OL15936512W"
+  },
+  {
+   "id": "roman-ubik",
+   "title": "Ubik",
+   "author": "Philip K. Dick",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/978868-M.jpg",
+   "ol_key": "/works/OL2172454W"
+  },
+  {
+   "id": "roman-les-androides-revent-ils-de-moutons-electriques",
+   "title": "Les androïdes rêvent-ils de moutons électriques ?",
+   "author": "Philip K. Dick",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/207515-M.jpg",
+   "ol_key": "/works/OL2172356W"
+  },
+  {
+   "id": "roman-neuromancien",
+   "title": "Neuromancien",
+   "author": "William Gibson",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14596092-M.jpg",
+   "ol_key": "/works/OL37916390W"
+  },
+  {
+   "id": "roman-la-main-gauche-de-la-nuit",
+   "title": "La Main gauche de la nuit",
+   "author": "Ursula K. Le Guin",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10618463-M.jpg",
+   "ol_key": "/works/OL59800W"
+  },
+  {
+   "id": "roman-hyperion",
+   "title": "Hyperion",
+   "author": "Dan Simmons",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10338503-M.jpg",
+   "ol_key": "/works/OL1963268W"
+  },
+  {
+   "id": "roman-la-horde-du-contrevent",
+   "title": "La Horde du Contrevent",
+   "author": "Alain Damasio",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15250589-M.jpg",
+   "ol_key": "/works/OL15505243W"
+  },
+  {
+   "id": "roman-la-planete-des-singes",
+   "title": "La Planète des singes",
+   "author": "Pierre Boulle",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/3107947-M.jpg",
+   "ol_key": "/works/OL1319418W"
+  },
+  {
+   "id": "roman-le-passeur",
+   "title": "Le Passeur",
+   "author": "Lois Lowry",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8352502-M.jpg",
+   "ol_key": "/works/OL1846076W"
+  },
+  {
+   "id": "roman-station-eleven",
+   "title": "Station Eleven",
+   "author": "Emily St. John Mandel",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8572058-M.jpg",
+   "ol_key": "/works/OL17202418W"
+  },
+  {
+   "id": "roman-silo",
+   "title": "Silo",
+   "author": "Hugh Howey",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14416104-M.jpg",
+   "ol_key": "/works/OL29239029W"
+  },
+  {
+   "id": "roman-le-cycle-de-fondation-fondation-et-empire",
+   "title": "Le Cycle de Fondation : Fondation et Empire",
+   "author": "Isaac Asimov",
+   "genre": "Science-fiction",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/9300695-M.jpg",
+   "ol_key": "/works/OL46224W"
+  },
+  {
+   "id": "roman-le-da-vinci-code",
+   "title": "Le Da Vinci Code",
+   "author": "Dan Brown",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/9255229-M.jpg",
+   "ol_key": "/works/OL76837W"
+  },
+  {
+   "id": "roman-anges-et-demons",
+   "title": "Anges et Démons",
+   "author": "Dan Brown",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/11408459-M.jpg",
+   "ol_key": "/works/OL76833W"
+  },
+  {
+   "id": "roman-millenium-les-hommes-qui-n-aimaient-pas-les-femmes",
+   "title": "Millénium : Les hommes qui n'aimaient pas les femmes",
+   "author": "Stieg Larsson",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10518619-M.jpg",
+   "ol_key": "/works/OL23635020W"
+  },
+  {
+   "id": "roman-gone-girl",
+   "title": "Gone Girl",
+   "author": "Gillian Flynn",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8368314-M.jpg",
+   "ol_key": "/works/OL16239762W"
+  },
+  {
+   "id": "roman-la-fille-du-train",
+   "title": "La Fille du train",
+   "author": "Paula Hawkins",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/7350360-M.jpg",
+   "ol_key": "/works/OL17112428W"
+  },
+  {
+   "id": "roman-shutter-island",
+   "title": "Shutter Island",
+   "author": "Dennis Lehane",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/13518212-M.jpg",
+   "ol_key": "/works/OL17200W"
+  },
+  {
+   "id": "roman-le-silence-des-agneaux",
+   "title": "Le Silence des agneaux",
+   "author": "Thomas Harris",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8580475-M.jpg",
+   "ol_key": "/works/OL23481W"
+  },
+  {
+   "id": "roman-dix-petits-negres-ils-etaient-dix",
+   "title": "Dix petits nègres (Ils étaient dix)",
+   "author": "Agatha Christie",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/11172296-M.jpg",
+   "ol_key": "/works/OL471565W"
+  },
+  {
+   "id": "roman-le-crime-de-l-orient-express",
+   "title": "Le Crime de l'Orient-Express",
+   "author": "Agatha Christie",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/11100465-M.jpg",
+   "ol_key": "/works/OL471576W"
+  },
+  {
+   "id": "roman-mort-sur-le-nil",
+   "title": "Mort sur le Nil",
+   "author": "Agatha Christie",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14066646-M.jpg",
+   "ol_key": "/works/OL471724W"
+  },
+  {
+   "id": "roman-les-aventures-de-sherlock-holmes",
+   "title": "Les Aventures de Sherlock Holmes",
+   "author": "Arthur Conan Doyle",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12162438-M.jpg",
+   "ol_key": "/works/OL26188221W"
+  },
+  {
+   "id": "roman-le-chien-des-baskerville",
+   "title": "Le Chien des Baskerville",
+   "author": "Arthur Conan Doyle",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8063264-M.jpg",
+   "ol_key": "/works/OL262454W"
+  },
+  {
+   "id": "roman-arsene-lupin-gentleman-cambrioleur",
+   "title": "Arsène Lupin, gentleman cambrioleur",
+   "author": "Maurice Leblanc",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14657930-M.jpg",
+   "ol_key": "/works/OL1064277W"
+  },
+  {
+   "id": "roman-la-verite-sur-l-affaire-harry-quebert",
+   "title": "La Vérité sur l'affaire Harry Quebert",
+   "author": "Joël Dicker",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15264036-M.jpg",
+   "ol_key": "/works/OL16805041W"
+  },
+  {
+   "id": "roman-la-disparition-de-stephanie-mailer",
+   "title": "La Disparition de Stephanie Mailer",
+   "author": "Joël Dicker",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12717122-M.jpg",
+   "ol_key": "/works/OL17887580W"
+  },
+  {
+   "id": "roman-le-patient-silencieux",
+   "title": "Le Patient silencieux",
+   "author": "Alex Michaelides",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/9407338-M.jpg",
+   "ol_key": "/works/OL19096402W"
+  },
+  {
+   "id": "roman-la-servante",
+   "title": "La Servante",
+   "author": "Freida McFadden",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15105883-M.jpg",
+   "ol_key": "/works/OL27729743W"
+  },
+  {
+   "id": "roman-les-rivieres-pourpres",
+   "title": "Les Rivières pourpres",
+   "author": "Jean-Christophe Grangé",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/9657640-M.jpg",
+   "ol_key": "/works/OL8995201W"
+  },
+  {
+   "id": "roman-glace",
+   "title": "Glacé",
+   "author": "Bernard Minier",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "",
+   "ol_key": null
+  },
+  {
+   "id": "roman-le-syndrome-e",
+   "title": "Le Syndrome E",
+   "author": "Franck Thilliez",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/13913767-M.jpg",
+   "ol_key": "/works/OL31205296W"
+  },
+  {
+   "id": "roman-l-ame-du-mal",
+   "title": "L'Âme du mal",
+   "author": "Maxime Chattam",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/2172995-M.jpg",
+   "ol_key": "/works/OL8997704W"
+  },
+  {
+   "id": "roman-la-princesse-des-glaces",
+   "title": "La Princesse des glaces",
+   "author": "Camilla Läckberg",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14984951-M.jpg",
+   "ol_key": "/works/OL39096693W"
+  },
+  {
+   "id": "roman-le-bonhomme-de-neige",
+   "title": "Le Bonhomme de neige",
+   "author": "Jo Nesbø",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8313809-M.jpg",
+   "ol_key": "/works/OL18145952W"
+  },
+  {
+   "id": "roman-un-guide-de-la-mort-pour-une-bonne-fille",
+   "title": "Un guide de la mort pour une bonne fille",
+   "author": "Holly Jackson",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/13156188-M.jpg",
+   "ol_key": "/works/OL20646061W"
+  },
+  {
+   "id": "roman-nympheas-noirs",
+   "title": "Nymphéas noirs",
+   "author": "Michel Bussi",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10453520-M.jpg",
+   "ol_key": "/works/OL22325497W"
+  },
+  {
+   "id": "roman-les-chiens-de-riga",
+   "title": "Les Chiens de Riga",
+   "author": "Henning Mankell",
+   "genre": "Policier et thriller",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12610184-M.jpg",
+   "ol_key": "/works/OL27284438W"
+  },
+  {
+   "id": "roman-charlie-et-la-chocolaterie",
+   "title": "Charlie et la Chocolaterie",
+   "author": "Roald Dahl",
+   "genre": "Jeunesse",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12459564-M.jpg",
+   "ol_key": "/works/OL45790W"
+  },
+  {
+   "id": "roman-matilda",
+   "title": "Matilda",
+   "author": "Roald Dahl",
+   "genre": "Jeunesse",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/3078221-M.jpg",
+   "ol_key": "/works/OL45846W"
+  },
+  {
+   "id": "roman-le-petit-nicolas",
+   "title": "Le Petit Nicolas",
+   "author": "René Goscinny",
+   "genre": "Jeunesse",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15101859-M.jpg",
+   "ol_key": "/works/OL2383558W"
+  },
+  {
+   "id": "roman-journal-d-un-degonfle",
+   "title": "Journal d'un dégonflé",
+   "author": "Jeff Kinney",
+   "genre": "Jeunesse",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14376136-M.jpg",
+   "ol_key": "/works/OL8483260W"
+  },
+  {
+   "id": "roman-le-journal-d-anne-frank",
+   "title": "Le Journal d'Anne Frank",
+   "author": "Anne Frank",
+   "genre": "Jeunesse",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/13526331-M.jpg",
+   "ol_key": "/works/OL27294413W"
+  },
+  {
+   "id": "roman-le-garcon-en-pyjama-raye",
+   "title": "Le Garçon en pyjama rayé",
+   "author": "John Boyne",
+   "genre": "Jeunesse",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12720687-M.jpg",
+   "ol_key": "/works/OL5840870W"
+  },
+  {
+   "id": "roman-nos-etoiles-contraires",
+   "title": "Nos étoiles contraires",
+   "author": "John Green",
+   "genre": "Jeunesse",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/7418786-M.jpg",
+   "ol_key": "/works/OL16444438W"
+  },
+  {
+   "id": "roman-la-voleuse-de-livres",
+   "title": "La Voleuse de livres",
+   "author": "Markus Zusak",
+   "genre": "Jeunesse",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15267110-M.jpg",
+   "ol_key": "/works/OL5819456W"
+  },
+  {
+   "id": "roman-twilight-fascination",
+   "title": "Twilight : Fascination",
+   "author": "Stephenie Meyer",
+   "genre": "Jeunesse",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12641977-M.jpg",
+   "ol_key": "/works/OL5720023W"
+  },
+  {
+   "id": "roman-le-monde-de-sophie",
+   "title": "Le Monde de Sophie",
+   "author": "Jostein Gaarder",
+   "genre": "Jeunesse",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/3071559-M.jpg",
+   "ol_key": "/works/OL922392W"
+  },
+  {
+   "id": "roman-wonder",
+   "title": "Wonder",
+   "author": "R. J. Palacio",
+   "genre": "Jeunesse",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8135920-M.jpg",
+   "ol_key": "/works/OL16142094W"
+  },
+  {
+   "id": "roman-le-livre-de-la-jungle",
+   "title": "Le Livre de la jungle",
+   "author": "Rudyard Kipling",
+   "genre": "Jeunesse",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/3344204-M.jpg",
+   "ol_key": "/works/OL19870W"
+  },
+  {
+   "id": "roman-pinocchio",
+   "title": "Pinocchio",
+   "author": "Carlo Collodi",
+   "genre": "Jeunesse",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/3068646-M.jpg",
+   "ol_key": "/works/OL1527356W"
+  },
+  {
+   "id": "roman-le-magicien-d-oz",
+   "title": "Le Magicien d'Oz",
+   "author": "L. Frank Baum",
+   "genre": "Jeunesse",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14489134-M.jpg",
+   "ol_key": "/works/OL34599377W"
+  },
+  {
+   "id": "roman-peter-pan",
+   "title": "Peter Pan",
+   "author": "J. M. Barrie",
+   "genre": "Jeunesse",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/969304-M.jpg",
+   "ol_key": "/works/OL8137253W"
+  },
+  {
+   "id": "roman-les-quatre-filles-du-docteur-march",
+   "title": "Les Quatre Filles du docteur March",
+   "author": "Louisa May Alcott",
+   "genre": "Jeunesse",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8775559-M.jpg",
+   "ol_key": "/works/OL29983W"
+  },
+  {
+   "id": "roman-tara-duncan-les-sortceliers",
+   "title": "Tara Duncan : Les Sortceliers",
+   "author": "Sophie Audouin-Mamikonian",
+   "genre": "Jeunesse",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/964698-M.jpg",
+   "ol_key": "/works/OL8970082W"
+  },
+  {
+   "id": "roman-les-royaumes-de-feu",
+   "title": "Les Royaumes de feu",
+   "author": "Tui T. Sutherland",
+   "genre": "Jeunesse",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15195288-M.jpg",
+   "ol_key": "/works/OL45027919W"
+  },
+  {
+   "id": "roman-cinquante-nuances-de-grey",
+   "title": "Cinquante nuances de Grey",
+   "author": "E. L. James",
+   "genre": "Romance",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12648183-M.jpg",
+   "ol_key": "/works/OL16336633W"
+  },
+  {
+   "id": "roman-after",
+   "title": "After",
+   "author": "Anna Todd",
+   "genre": "Romance",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15144206-M.jpg",
+   "ol_key": "/works/OL17719508W"
+  },
+  {
+   "id": "roman-avant-toi",
+   "title": "Avant toi",
+   "author": "Jojo Moyes",
+   "genre": "Romance",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14419339-M.jpg",
+   "ol_key": "/works/OL28353073W"
+  },
+  {
+   "id": "roman-jamais-plus",
+   "title": "Jamais plus",
+   "author": "Colleen Hoover",
+   "genre": "Romance",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10473609-M.jpg",
+   "ol_key": "/works/OL18020194W"
+  },
+  {
+   "id": "roman-ugly-love",
+   "title": "Ugly Love",
+   "author": "Colleen Hoover",
+   "genre": "Romance",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12856728-M.jpg",
+   "ol_key": "/works/OL20577143W"
+  },
+  {
+   "id": "roman-verity",
+   "title": "Verity",
+   "author": "Colleen Hoover",
+   "genre": "Romance",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8747160-M.jpg",
+   "ol_key": "/works/OL20068530W"
+  },
+  {
+   "id": "roman-l-hypothese-de-l-amour",
+   "title": "L'Hypothèse de l'amour",
+   "author": "Ali Hazelwood",
+   "genre": "Romance",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10601402-M.jpg",
+   "ol_key": "/works/OL24178205W"
+  },
+  {
+   "id": "roman-rouge-blanc-et-sang-bleu",
+   "title": "Rouge, blanc et sang bleu",
+   "author": "Casey McQuiston",
+   "genre": "Romance",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/9171544-M.jpg",
+   "ol_key": "/works/OL20090688W"
+  },
+  {
+   "id": "roman-twisted-love",
+   "title": "Twisted Love",
+   "author": "Ana Huang",
+   "genre": "Romance",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15074705-M.jpg",
+   "ol_key": "/works/OL24390422W"
+  },
+  {
+   "id": "roman-les-sept-maris-d-evelyn-hugo",
+   "title": "Les Sept Maris d'Evelyn Hugo",
+   "author": "Taylor Jenkins Reid",
+   "genre": "Romance",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8354226-M.jpg",
+   "ol_key": "/works/OL18203673W"
+  },
+  {
+   "id": "roman-outlander-le-chardon-et-le-tartan",
+   "title": "Outlander : Le Chardon et le Tartan",
+   "author": "Diana Gabaldon",
+   "genre": "Romance",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14428230-M.jpg",
+   "ol_key": "/works/OL3261155W"
+  },
+  {
+   "id": "roman-le-journal-de-bridget-jones",
+   "title": "Le Journal de Bridget Jones",
+   "author": "Helen Fielding",
+   "genre": "Romance",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8578467-M.jpg",
+   "ol_key": "/works/OL547745W"
+  },
+  {
+   "id": "roman-un-jour",
+   "title": "Un jour",
+   "author": "David Nicholls",
+   "genre": "Romance",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10818779-M.jpg",
+   "ol_key": "/works/OL21717279W"
+  },
+  {
+   "id": "roman-beautiful-disaster",
+   "title": "Beautiful Disaster",
+   "author": "Jamie McGuire",
+   "genre": "Romance",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/7241922-M.jpg",
+   "ol_key": "/works/OL16310814W"
+  },
+  {
+   "id": "roman-le-cercle-litteraire-des-amateurs-d-epluchures-de-patates",
+   "title": "Le Cercle littéraire des amateurs d'épluchures de patates",
+   "author": "Mary Ann Shaffer",
+   "genre": "Romance",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14859218-M.jpg",
+   "ol_key": "/works/OL9334371W"
+  },
+  {
+   "id": "roman-et-si-c-etait-vrai",
+   "title": "Et si c'était vrai...",
+   "author": "Marc Levy",
+   "genre": "Romance",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/11817114-M.jpg",
+   "ol_key": "/works/OL24263689W"
+  },
+  {
+   "id": "roman-sur-la-route-de-madison",
+   "title": "Sur la route de Madison",
+   "author": "Robert James Waller",
+   "genre": "Romance",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10811326-M.jpg",
+   "ol_key": "/works/OL24301333W"
+  },
+  {
+   "id": "roman-n-oublie-jamais",
+   "title": "N'oublie jamais",
+   "author": "Nicholas Sparks",
+   "genre": "Romance",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/7382153-M.jpg",
+   "ol_key": "/works/OL54797W"
+  },
+  {
+   "id": "roman-l-elegance-du-herisson",
+   "title": "L'Élégance du hérisson",
+   "author": "Muriel Barbery",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10537618-M.jpg",
+   "ol_key": "/works/OL24140275W"
+  },
+  {
+   "id": "roman-le-liseur",
+   "title": "Le Liseur",
+   "author": "Bernhard Schlink",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "",
+   "ol_key": null
+  },
+  {
+   "id": "roman-l-amie-prodigieuse",
+   "title": "L'Amie prodigieuse",
+   "author": "Elena Ferrante",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/13772133-M.jpg",
+   "ol_key": "/works/OL34947113W"
+  },
+  {
+   "id": "roman-chanson-douce",
+   "title": "Chanson douce",
+   "author": "Leïla Slimani",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/13099687-M.jpg",
+   "ol_key": "/works/OL20051787W"
+  },
+  {
+   "id": "roman-l-anomalie",
+   "title": "L'Anomalie",
+   "author": "Hervé Le Tellier",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12947545-M.jpg",
+   "ol_key": "/works/OL24210931W"
+  },
+  {
+   "id": "roman-un-sac-de-billes",
+   "title": "Un sac de billes",
+   "author": "Joseph Joffo",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/7282292-M.jpg",
+   "ol_key": "/works/OL886244W"
+  },
+  {
+   "id": "roman-les-particules-elementaires",
+   "title": "Les Particules élémentaires",
+   "author": "Michel Houellebecq",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/981846-M.jpg",
+   "ol_key": "/works/OL2286729W"
+  },
+  {
+   "id": "roman-au-revoir-la-haut",
+   "title": "Au revoir là-haut",
+   "author": "Pierre Lemaitre",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8376020-M.jpg",
+   "ol_key": "/works/OL19304700W"
+  },
+  {
+   "id": "roman-les-yeux-jaunes-des-crocodiles",
+   "title": "Les Yeux jaunes des crocodiles",
+   "author": "Katherine Pancol",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10435446-M.jpg",
+   "ol_key": "/works/OL22071627W"
+  },
+  {
+   "id": "roman-la-fille-de-papier",
+   "title": "La Fille de papier",
+   "author": "Guillaume Musso",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8381280-M.jpg",
+   "ol_key": "/works/OL19067300W"
+  },
+  {
+   "id": "roman-tout-le-bleu-du-ciel",
+   "title": "Tout le bleu du ciel",
+   "author": "Mélissa Da Costa",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/11028652-M.jpg",
+   "ol_key": "/works/OL24441645W"
+  },
+  {
+   "id": "roman-meme-dans-les-orties",
+   "title": "Mémé dans les orties",
+   "author": "Aurélie Valognes",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/9366890-M.jpg",
+   "ol_key": "/works/OL20692406W"
+  },
+  {
+   "id": "roman-changer-l-eau-des-fleurs",
+   "title": "Changer l'eau des fleurs",
+   "author": "Valérie Perrin",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8647724-M.jpg",
+   "ol_key": "/works/OL19849088W"
+  },
+  {
+   "id": "roman-ne-d-aucune-femme",
+   "title": "Né d'aucune femme",
+   "author": "Franck Bouysse",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10869089-M.jpg",
+   "ol_key": "/works/OL24345647W"
+  },
+  {
+   "id": "roman-monsieur-ibrahim-et-les-fleurs-du-coran",
+   "title": "Monsieur Ibrahim et les fleurs du Coran",
+   "author": "Éric-Emmanuel Schmitt",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10048720-M.jpg",
+   "ol_key": "/works/OL13688399W"
+  },
+  {
+   "id": "roman-les-cerfs-volants-de-kaboul",
+   "title": "Les Cerfs-volants de Kaboul",
+   "author": "Khaled Hosseini",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14846827-M.jpg",
+   "ol_key": "/works/OL5781992W"
+  },
+  {
+   "id": "roman-l-histoire-de-pi",
+   "title": "L'Histoire de Pi",
+   "author": "Yann Martel",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12840573-M.jpg",
+   "ol_key": "/works/OL2827199W"
+  },
+  {
+   "id": "roman-le-bizarre-incident-du-chien-pendant-la-nuit",
+   "title": "Le Bizarre Incident du chien pendant la nuit",
+   "author": "Mark Haddon",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/7890719-M.jpg",
+   "ol_key": "/works/OL2965102W"
+  },
+  {
+   "id": "roman-les-piliers-de-la-terre",
+   "title": "Les Piliers de la Terre",
+   "author": "Ken Follett",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12565964-M.jpg",
+   "ol_key": "/works/OL27053374W"
+  },
+  {
+   "id": "roman-la-couleur-des-sentiments",
+   "title": "La Couleur des sentiments",
+   "author": "Kathryn Stockett",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8387264-M.jpg",
+   "ol_key": "/works/OL11999891W"
+  },
+  {
+   "id": "roman-la-ou-chantent-les-ecrevisses",
+   "title": "Là où chantent les écrevisses",
+   "author": "Delia Owens",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8362947-M.jpg",
+   "ol_key": "/works/OL18766691W"
+  },
+  {
+   "id": "roman-l-alchimiste",
+   "title": "L'Alchimiste",
+   "author": "Paulo Coelho",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/994197-M.jpg",
+   "ol_key": "/works/OL29249066W"
+  },
+  {
+   "id": "roman-le-hussard-sur-le-toit",
+   "title": "Le Hussard sur le toit",
+   "author": "Jean Giono",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10777637-M.jpg",
+   "ol_key": "/works/OL14861974W"
+  },
+  {
+   "id": "roman-le-livre-des-baltimore",
+   "title": "Le Livre des Baltimore",
+   "author": "Joël Dicker",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/13872344-M.jpg",
+   "ol_key": "/works/OL20024448W"
+  },
+  {
+   "id": "roman-la-bibliotheque-de-minuit",
+   "title": "La Bibliothèque de minuit",
+   "author": "Matt Haig",
+   "genre": "Contemporain",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10313767-M.jpg",
+   "ol_key": "/works/OL20965973W"
+  },
+  {
+   "id": "roman-ca",
+   "title": "Ça",
+   "author": "Stephen King",
+   "genre": "Horreur",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/981302-M.jpg",
+   "ol_key": "/works/OL14916786W"
+  },
+  {
+   "id": "roman-shining",
+   "title": "Shining",
+   "author": "Stephen King",
+   "genre": "Horreur",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12728122-M.jpg",
+   "ol_key": "/works/OL81633W"
+  },
+  {
+   "id": "roman-misery",
+   "title": "Misery",
+   "author": "Stephen King",
+   "genre": "Horreur",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/14652997-M.jpg",
+   "ol_key": "/works/OL81634W"
+  },
+  {
+   "id": "roman-carrie",
+   "title": "Carrie",
+   "author": "Stephen King",
+   "genre": "Horreur",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/15091654-M.jpg",
+   "ol_key": "/works/OL81626W"
+  },
+  {
+   "id": "roman-simetierre",
+   "title": "Simetierre",
+   "author": "Stephen King",
+   "genre": "Horreur",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12015500-M.jpg",
+   "ol_key": "/works/OL81631W"
+  },
+  {
+   "id": "roman-dracula",
+   "title": "Dracula",
+   "author": "Bram Stoker",
+   "genre": "Horreur",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10749906-M.jpg",
+   "ol_key": "/works/OL85892W"
+  },
+  {
+   "id": "roman-frankenstein",
+   "title": "Frankenstein",
+   "author": "Mary Shelley",
+   "genre": "Horreur",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/12154892-M.jpg",
+   "ol_key": "/works/OL450063W"
+  },
+  {
+   "id": "roman-l-appel-de-cthulhu",
+   "title": "L'Appel de Cthulhu",
+   "author": "H. P. Lovecraft",
+   "genre": "Horreur",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/10967284-M.jpg",
+   "ol_key": "/works/OL24419289W"
+  },
+  {
+   "id": "roman-entretien-avec-un-vampire",
+   "title": "Entretien avec un vampire",
+   "author": "Anne Rice",
+   "genre": "Horreur",
+   "category": "roman",
+   "group": "roman",
+   "cover_url": "https://covers.openlibrary.org/b/id/8401488-M.jpg",
+   "ol_key": "/works/OL77826W"
+  },
+  {
+   "id": "graphic_novel-one-piece",
+   "title": "One Piece",
+   "author": "Eiichirō Oda",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/2/253146.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-naruto",
+   "title": "Naruto",
+   "author": "Masashi Kishimoto",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/249658.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-dragon-ball",
+   "title": "Dragon Ball",
+   "author": "Akira Toriyama",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/1/267793.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-bleach",
+   "title": "Bleach",
+   "author": "Tite Kubo",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/180031.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-fairy-tail",
+   "title": "Fairy Tail",
+   "author": "Hiro Mashima",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/198604.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-hunter-x-hunter",
+   "title": "Hunter x Hunter",
+   "author": "Yoshihiro Togashi",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/2/253119.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-fullmetal-alchemist",
+   "title": "Fullmetal Alchemist",
+   "author": "Hiromu Arakawa",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/243675.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-death-note",
+   "title": "Death Note",
+   "author": "Tsugumi Ohba",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/1/258245.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-l-attaque-des-titans",
+   "title": "L'Attaque des Titans",
+   "author": "Hajime Isayama",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/2/37846.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-my-hero-academia",
+   "title": "My Hero Academia",
+   "author": "Kōhei Horikoshi",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/1/209370.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-demon-slayer",
+   "title": "Demon Slayer",
+   "author": "Koyoharu Gotōge",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/14562511-M.jpg",
+   "ol_key": "/works/OL31341755W"
+  },
+  {
+   "id": "graphic_novel-jujutsu-kaisen",
+   "title": "Jujutsu Kaisen",
+   "author": "Gege Akutami",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/210341.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-chainsaw-man",
+   "title": "Chainsaw Man",
+   "author": "Tatsuki Fujimoto",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/216464.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-dr-stone",
+   "title": "Dr. Stone",
+   "author": "Riichiro Inagaki",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/1/197883.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-black-clover",
+   "title": "Black Clover",
+   "author": "Yūki Tabata",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/2/166254.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-seven-deadly-sins",
+   "title": "Seven Deadly Sins",
+   "author": "Nakaba Suzuki",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/2/153111.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-one-punch-man",
+   "title": "One-Punch Man",
+   "author": "ONE",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/80661.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-soul-eater",
+   "title": "Soul Eater",
+   "author": "Atsushi Ōkubo",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/1/159808.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-assassination-classroom",
+   "title": "Assassination Classroom",
+   "author": "Yūsei Matsui",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/243932.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-fire-force",
+   "title": "Fire Force",
+   "author": "Atsushi Ōkubo",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/178996.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-blue-lock",
+   "title": "Blue Lock",
+   "author": "Muneyuki Kaneshiro",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/5/213340.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-haikyu",
+   "title": "Haikyu!!",
+   "author": "Haruichi Furudate",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/2/258225.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-slam-dunk",
+   "title": "Slam Dunk",
+   "author": "Takehiko Inoue",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/2/258749.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-kuroko-s-basket",
+   "title": "Kuroko's Basket",
+   "author": "Tadatoshi Fujimaki",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/13631184-M.jpg",
+   "ol_key": "/works/OL34848204W"
+  },
+  {
+   "id": "graphic_novel-detective-conan",
+   "title": "Détective Conan",
+   "author": "Gōshō Aoyama",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/1/337295.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-saint-seiya",
+   "title": "Saint Seiya",
+   "author": "Masami Kurumada",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/8792825-M.jpg",
+   "ol_key": "/works/OL20148631W"
+  },
+  {
+   "id": "graphic_novel-yu-gi-oh",
+   "title": "Yu-Gi-Oh!",
+   "author": "Kazuki Takahashi",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/2/262097.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-ranma-1-2",
+   "title": "Ranma ½",
+   "author": "Rumiko Takahashi",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/1/156534.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-inu-yasha",
+   "title": "Inu-Yasha",
+   "author": "Rumiko Takahashi",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/262295.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-city-hunter",
+   "title": "City Hunter",
+   "author": "Tsukasa Hōjō",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/5/272237.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-gintama",
+   "title": "Gintama",
+   "author": "Hideaki Sorachi",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-sakamoto-days",
+   "title": "Sakamoto Days",
+   "author": "Yūto Suzuki",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/1/242919.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-dandadan",
+   "title": "Dandadan",
+   "author": "Yukinobu Tatsu",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/2/248746.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-spy-x-family",
+   "title": "Spy x Family",
+   "author": "Tatsuya Endō",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/219741.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-kaiju-n-8",
+   "title": "Kaiju N° 8",
+   "author": "Naoya Matsumoto",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/252929.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-mashle",
+   "title": "Mashle",
+   "author": "Hajime Kōmoto",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/13326832-M.jpg",
+   "ol_key": "/works/OL26145910W"
+  },
+  {
+   "id": "graphic_novel-frieren",
+   "title": "Frieren",
+   "author": "Kanehito Yamada",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/15241067-M.jpg",
+   "ol_key": "/works/OL45824683W"
+  },
+  {
+   "id": "graphic_novel-hell-s-paradise",
+   "title": "Hell's Paradise",
+   "author": "Yuji Kaku",
+   "genre": "Shōnen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/10509811-M.jpg",
+   "ol_key": "/works/OL21656731W"
+  },
+  {
+   "id": "graphic_novel-berserk",
+   "title": "Berserk",
+   "author": "Kentarō Miura",
+   "genre": "Seinen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/1/157897.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-vagabond",
+   "title": "Vagabond",
+   "author": "Takehiko Inoue",
+   "genre": "Seinen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/1/259070.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-monster",
+   "title": "Monster",
+   "author": "Naoki Urasawa",
+   "genre": "Seinen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/258224.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-20th-century-boys",
+   "title": "20th Century Boys",
+   "author": "Naoki Urasawa",
+   "genre": "Seinen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/5/260006.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-pluto",
+   "title": "Pluto",
+   "author": "Naoki Urasawa",
+   "genre": "Seinen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/10911427-M.jpg",
+   "ol_key": "/works/OL17438123W"
+  },
+  {
+   "id": "graphic_novel-tokyo-ghoul",
+   "title": "Tokyo Ghoul",
+   "author": "Sui Ishida",
+   "genre": "Seinen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/114037.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-vinland-saga",
+   "title": "Vinland Saga",
+   "author": "Makoto Yukimura",
+   "genre": "Seinen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/2/188925.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-kingdom",
+   "title": "Kingdom",
+   "author": "Yasuhisa Hara",
+   "genre": "Seinen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/2/171872.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-akira",
+   "title": "Akira",
+   "author": "Katsuhiro Otomo",
+   "genre": "Seinen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/271629.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-ghost-in-the-shell",
+   "title": "Ghost in the Shell",
+   "author": "Masamune Shirow",
+   "genre": "Seinen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/14063565-M.jpg",
+   "ol_key": "/works/OL35084064W"
+  },
+  {
+   "id": "graphic_novel-gantz",
+   "title": "Gantz",
+   "author": "Hiroya Oku",
+   "genre": "Seinen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/1/278020.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-parasite",
+   "title": "Parasite",
+   "author": "Hitoshi Iwaaki",
+   "genre": "Seinen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/2/188928.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-bakuman",
+   "title": "Bakuman",
+   "author": "Tsugumi Ohba",
+   "genre": "Seinen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/1/208974.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-goodnight-punpun",
+   "title": "Goodnight Punpun",
+   "author": "Inio Asano",
+   "genre": "Seinen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/266834.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-l-habitant-de-l-infini",
+   "title": "L'Habitant de l'infini",
+   "author": "Hiroaki Samura",
+   "genre": "Seinen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/1/279869.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-les-gouttes-de-dieu",
+   "title": "Les Gouttes de Dieu",
+   "author": "Tadashi Agi",
+   "genre": "Seinen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/12981494-M.jpg",
+   "ol_key": "/works/OL24280787W"
+  },
+  {
+   "id": "graphic_novel-nausicaa-de-la-vallee-du-vent",
+   "title": "Nausicaä de la vallée du vent",
+   "author": "Hayao Miyazaki",
+   "genre": "Seinen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/259856.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-beastars",
+   "title": "Beastars",
+   "author": "Paru Itagaki",
+   "genre": "Seinen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/2/189832.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-oshi-no-ko",
+   "title": "Oshi no Ko",
+   "author": "Aka Akasaka",
+   "genre": "Seinen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/233991.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-kaguya-sama-love-is-war",
+   "title": "Kaguya-sama : Love Is War",
+   "author": "Aka Akasaka",
+   "genre": "Seinen",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/188896.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-fruits-basket",
+   "title": "Fruits Basket",
+   "author": "Natsuki Takaya",
+   "genre": "Shōjo",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/269697.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-nana",
+   "title": "Nana",
+   "author": "Ai Yazawa",
+   "genre": "Shōjo",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/1/262324.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-sailor-moon",
+   "title": "Sailor Moon",
+   "author": "Naoko Takeuchi",
+   "genre": "Shōjo",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/4/260613.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-card-captor-sakura",
+   "title": "Card Captor Sakura",
+   "author": "CLAMP",
+   "genre": "Shōjo",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/3/259289.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-orange",
+   "title": "Orange",
+   "author": "Ichigo Takano",
+   "genre": "Shōjo",
+   "category": "manga",
+   "group": "graphic_novel",
+   "cover_url": "https://myanimelist.net/images/manga/2/153742.jpg",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-asterix",
+   "title": "Astérix",
+   "author": "René Goscinny & Albert Uderzo",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/14377311-M.jpg",
+   "ol_key": "/works/OL267622W"
+  },
+  {
+   "id": "graphic_novel-tintin",
+   "title": "Tintin",
+   "author": "Hergé",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/2143241-M.jpg",
+   "ol_key": "/works/OL151089W"
+  },
+  {
+   "id": "graphic_novel-lucky-luke",
+   "title": "Lucky Luke",
+   "author": "Morris",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/973296-M.jpg",
+   "ol_key": "/works/OL9094371W"
+  },
+  {
+   "id": "graphic_novel-les-schtroumpfs",
+   "title": "Les Schtroumpfs",
+   "author": "Peyo",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/12185369-M.jpg",
+   "ol_key": "/works/OL26197488W"
+  },
+  {
+   "id": "graphic_novel-spirou-et-fantasio",
+   "title": "Spirou et Fantasio",
+   "author": "André Franquin",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/987023-M.jpg",
+   "ol_key": "/works/OL2888016W"
+  },
+  {
+   "id": "graphic_novel-gaston-lagaffe",
+   "title": "Gaston Lagaffe",
+   "author": "André Franquin",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/14842000-M.jpg",
+   "ol_key": "/works/OL42503333W"
+  },
+  {
+   "id": "graphic_novel-blake-et-mortimer",
+   "title": "Blake et Mortimer",
+   "author": "Edgar P. Jacobs",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/969225-M.jpg",
+   "ol_key": "/works/OL8973904W"
+  },
+  {
+   "id": "graphic_novel-boule-et-bill",
+   "title": "Boule et Bill",
+   "author": "Jean Roba",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/3152874-M.jpg",
+   "ol_key": "/works/OL5244559W"
+  },
+  {
+   "id": "graphic_novel-les-tuniques-bleues",
+   "title": "Les Tuniques bleues",
+   "author": "Raoul Cauvin & Louis Salvérius",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/3133512-M.jpg",
+   "ol_key": "/works/OL16957381W"
+  },
+  {
+   "id": "graphic_novel-thorgal",
+   "title": "Thorgal",
+   "author": "Jean Van Hamme & Grzegorz Rosiński",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/987380-M.jpg",
+   "ol_key": "/works/OL8548520W"
+  },
+  {
+   "id": "graphic_novel-xiii",
+   "title": "XIII",
+   "author": "Jean Van Hamme & William Vance",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/10476562-M.jpg",
+   "ol_key": "/works/OL22561514W"
+  },
+  {
+   "id": "graphic_novel-largo-winch",
+   "title": "Largo Winch",
+   "author": "Jean Van Hamme & Philippe Francq",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/14626201-M.jpg",
+   "ol_key": "/works/OL17492138W"
+  },
+  {
+   "id": "graphic_novel-blacksad",
+   "title": "Blacksad",
+   "author": "Juan Díaz Canales & Juanjo Guarnido",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/12553964-M.jpg",
+   "ol_key": "/works/OL27043401W"
+  },
+  {
+   "id": "graphic_novel-lanfeust-de-troy",
+   "title": "Lanfeust de Troy",
+   "author": "Christophe Arleston & Didier Tarquin",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/992548-M.jpg",
+   "ol_key": "/works/OL24228254W"
+  },
+  {
+   "id": "graphic_novel-yoko-tsuno",
+   "title": "Yoko Tsuno",
+   "author": "Roger Leloup",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/987154-M.jpg",
+   "ol_key": "/works/OL8705692W"
+  },
+  {
+   "id": "graphic_novel-michel-vaillant",
+   "title": "Michel Vaillant",
+   "author": "Jean Graton",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/3153643-M.jpg",
+   "ol_key": "/works/OL2861021W"
+  },
+  {
+   "id": "graphic_novel-achille-talon",
+   "title": "Achille Talon",
+   "author": "Greg",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/3091120-M.jpg",
+   "ol_key": "/works/OL8984675W"
+  },
+  {
+   "id": "graphic_novel-iznogoud",
+   "title": "Iznogoud",
+   "author": "René Goscinny & Jean Tabary",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/12144546-M.jpg",
+   "ol_key": "/works/OL26178104W"
+  },
+  {
+   "id": "graphic_novel-le-chat",
+   "title": "Le Chat",
+   "author": "Philippe Geluck",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/10777918-M.jpg",
+   "ol_key": "/works/OL24279522W"
+  },
+  {
+   "id": "graphic_novel-titeuf",
+   "title": "Titeuf",
+   "author": "Zep",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/2132227-M.jpg",
+   "ol_key": "/works/OL8967837W"
+  },
+  {
+   "id": "graphic_novel-les-profs",
+   "title": "Les Profs",
+   "author": "Erroc & Pica",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/8687773-M.jpg",
+   "ol_key": "/works/OL19883781W"
+  },
+  {
+   "id": "graphic_novel-cedric",
+   "title": "Cédric",
+   "author": "Laudec & Raoul Cauvin",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/3067215-M.jpg",
+   "ol_key": "/works/OL34592019W"
+  },
+  {
+   "id": "graphic_novel-les-sisters",
+   "title": "Les Sisters",
+   "author": "Christophe Cazenove & William",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/10523320-M.jpg",
+   "ol_key": "/works/OL23707559W"
+  },
+  {
+   "id": "graphic_novel-mortelle-adele",
+   "title": "Mortelle Adèle",
+   "author": "Mr Tan & Diane Le Feyer",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/14604053-M.jpg",
+   "ol_key": "/works/OL37998599W"
+  },
+  {
+   "id": "graphic_novel-l-arabe-du-futur",
+   "title": "L'Arabe du futur",
+   "author": "Riad Sattouf",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/10504773-M.jpg",
+   "ol_key": "/works/OL22983333W"
+  },
+  {
+   "id": "graphic_novel-persepolis",
+   "title": "Persepolis",
+   "author": "Marjane Satrapi",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/12909206-M.jpg",
+   "ol_key": "/works/OL5735175W"
+  },
+  {
+   "id": "graphic_novel-le-combat-ordinaire",
+   "title": "Le Combat ordinaire",
+   "author": "Manu Larcenet",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/15134071-M.jpg",
+   "ol_key": "/works/OL44262023W"
+  },
+  {
+   "id": "graphic_novel-les-vieux-fourneaux",
+   "title": "Les Vieux Fourneaux",
+   "author": "Wilfrid Lupano & Paul Cauuet",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/10868992-M.jpg",
+   "ol_key": "/works/OL24345565W"
+  },
+  {
+   "id": "graphic_novel-les-cites-obscures",
+   "title": "Les Cités obscures",
+   "author": "François Schuiten & Benoît Peeters",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/973106-M.jpg",
+   "ol_key": "/works/OL16940206W"
+  },
+  {
+   "id": "graphic_novel-l-incal",
+   "title": "L'Incal",
+   "author": "Alejandro Jodorowsky & Moebius",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/10043325-M.jpg",
+   "ol_key": "/works/OL16956930W"
+  },
+  {
+   "id": "graphic_novel-les-passagers-du-vent",
+   "title": "Les Passagers du vent",
+   "author": "François Bourgeon",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/973123-M.jpg",
+   "ol_key": "/works/OL8984357W"
+  },
+  {
+   "id": "graphic_novel-corto-maltese",
+   "title": "Corto Maltese",
+   "author": "Hugo Pratt",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/973008-M.jpg",
+   "ol_key": "/works/OL2499796W"
+  },
+  {
+   "id": "graphic_novel-valerian-et-laureline",
+   "title": "Valérian et Laureline",
+   "author": "Pierre Christin & Jean-Claude Mézières",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/10713668-M.jpg",
+   "ol_key": "/works/OL24235027W"
+  },
+  {
+   "id": "graphic_novel-les-legendaires",
+   "title": "Les Légendaires",
+   "author": "Patrick Sobral",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/10381512-M.jpg",
+   "ol_key": "/works/OL21540990W"
+  },
+  {
+   "id": "graphic_novel-quai-d-orsay",
+   "title": "Quai d'Orsay",
+   "author": "Christophe Blain & Abel Lanzac",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/10863139-M.jpg",
+   "ol_key": "/works/OL24340284W"
+  },
+  {
+   "id": "graphic_novel-le-petit-spirou",
+   "title": "Le Petit Spirou",
+   "author": "Tome & Janry",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/12934992-M.jpg",
+   "ol_key": "/works/OL28956208W"
+  },
+  {
+   "id": "graphic_novel-papyrus",
+   "title": "Papyrus",
+   "author": "Lucien De Gieter",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/3134043-M.jpg",
+   "ol_key": "/works/OL9021677W"
+  },
+  {
+   "id": "graphic_novel-cubitus",
+   "title": "Cubitus",
+   "author": "Dupa",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/987392-M.jpg",
+   "ol_key": "/works/OL9021862W"
+  },
+  {
+   "id": "graphic_novel-les-bidochon",
+   "title": "Les Bidochon",
+   "author": "Christian Binet",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/10778903-M.jpg",
+   "ol_key": "/works/OL24280362W"
+  },
+  {
+   "id": "graphic_novel-joe-bar-team",
+   "title": "Joe Bar Team",
+   "author": "Bar2",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/10513481-M.jpg",
+   "ol_key": "/works/OL23538598W"
+  },
+  {
+   "id": "graphic_novel-la-quete-de-l-oiseau-du-temps",
+   "title": "La Quête de l'oiseau du temps",
+   "author": "Serge Le Tendre & Régis Loisel",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/973386-M.jpg",
+   "ol_key": "/works/OL20808530W"
+  },
+  {
+   "id": "graphic_novel-sillage",
+   "title": "Sillage",
+   "author": "Jean-David Morvan & Philippe Buchet",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/987918-M.jpg",
+   "ol_key": "/works/OL8942338M"
+  },
+  {
+   "id": "graphic_novel-les-mondes-d-aldebaran",
+   "title": "Les Mondes d'Aldébaran",
+   "author": "Léo",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "",
+   "ol_key": null
+  },
+  {
+   "id": "graphic_novel-le-marsupilami",
+   "title": "Le Marsupilami",
+   "author": "André Franquin",
+   "genre": "BD franco-belge",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/12986579-M.jpg",
+   "ol_key": "/works/OL29256323W"
+  },
+  {
+   "id": "graphic_novel-watchmen",
+   "title": "Watchmen",
+   "author": "Alan Moore & Dave Gibbons",
+   "genre": "Comics",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/11528602-M.jpg",
+   "ol_key": "/works/OL2897798W"
+  },
+  {
+   "id": "graphic_novel-batman-the-dark-knight-returns",
+   "title": "Batman : The Dark Knight Returns",
+   "author": "Frank Miller",
+   "genre": "Comics",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/14409950-M.jpg",
+   "ol_key": "/works/OL253475W"
+  },
+  {
+   "id": "graphic_novel-batman-year-one",
+   "title": "Batman : Year One",
+   "author": "Frank Miller & David Mazzucchelli",
+   "genre": "Comics",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/14409950-M.jpg",
+   "ol_key": "/works/OL253475W"
+  },
+  {
+   "id": "graphic_novel-v-pour-vendetta",
+   "title": "V pour Vendetta",
+   "author": "Alan Moore & David Lloyd",
+   "genre": "Comics",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/12293384-M.jpg",
+   "ol_key": "/works/OL2897797W"
+  },
+  {
+   "id": "graphic_novel-sandman",
+   "title": "Sandman",
+   "author": "Neil Gaiman",
+   "genre": "Comics",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/9150699-M.jpg",
+   "ol_key": "/works/OL21213336W"
+  },
+  {
+   "id": "graphic_novel-saga",
+   "title": "Saga",
+   "author": "Brian K. Vaughan & Fiona Staples",
+   "genre": "Comics",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/15201820-M.jpg",
+   "ol_key": "/works/OL16809836W"
+  },
+  {
+   "id": "graphic_novel-the-walking-dead",
+   "title": "The Walking Dead",
+   "author": "Robert Kirkman",
+   "genre": "Comics",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/10820895-M.jpg",
+   "ol_key": "/works/OL24307092W"
+  },
+  {
+   "id": "graphic_novel-sin-city",
+   "title": "Sin City",
+   "author": "Frank Miller",
+   "genre": "Comics",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/992613-M.jpg",
+   "ol_key": "/works/OL15016283W"
+  },
+  {
+   "id": "graphic_novel-hellboy",
+   "title": "Hellboy",
+   "author": "Mike Mignola",
+   "genre": "Comics",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/15171881-M.jpg",
+   "ol_key": "/works/OL44966419W"
+  },
+  {
+   "id": "graphic_novel-maus",
+   "title": "Maus",
+   "author": "Art Spiegelman",
+   "genre": "Comics",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/9243286-M.jpg",
+   "ol_key": "/works/OL2056818W"
+  },
+  {
+   "id": "graphic_novel-preacher",
+   "title": "Preacher",
+   "author": "Garth Ennis & Steve Dillon",
+   "genre": "Comics",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/798084-M.jpg",
+   "ol_key": "/works/OL858565W"
+  },
+  {
+   "id": "graphic_novel-scott-pilgrim",
+   "title": "Scott Pilgrim",
+   "author": "Bryan Lee O'Malley",
+   "genre": "Comics",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/14850879-M.jpg",
+   "ol_key": "/works/OL20112530W"
+  },
+  {
+   "id": "graphic_novel-blankets",
+   "title": "Blankets",
+   "author": "Craig Thompson",
+   "genre": "Comics",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/13313654-M.jpg",
+   "ol_key": "/works/OL5754211W"
+  },
+  {
+   "id": "graphic_novel-heartstopper",
+   "title": "Heartstopper",
+   "author": "Alice Oseman",
+   "genre": "Comics",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/12750375-M.jpg",
+   "ol_key": "/works/OL20354498W"
+  },
+  {
+   "id": "graphic_novel-calvin-et-hobbes",
+   "title": "Calvin et Hobbes",
+   "author": "Bill Watterson",
+   "genre": "Comics",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/978051-M.jpg",
+   "ol_key": "/works/OL3004154W"
+  },
+  {
+   "id": "graphic_novel-garfield",
+   "title": "Garfield",
+   "author": "Jim Davis",
+   "genre": "Comics",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/3158713-M.jpg",
+   "ol_key": "/works/OL8069465W"
+  },
+  {
+   "id": "graphic_novel-spider-man-un-jour-de-plus",
+   "title": "Spider-Man : Un jour de plus",
+   "author": "J. Michael Straczynski",
+   "genre": "Comics",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/1464889-M.jpg",
+   "ol_key": "/works/OL803654W"
+  },
+  {
+   "id": "graphic_novel-joker",
+   "title": "Joker",
+   "author": "Brian Azzarello & Lee Bermejo",
+   "genre": "Comics",
+   "category": "bd",
+   "group": "graphic_novel",
+   "cover_url": "https://covers.openlibrary.org/b/id/10322478-M.jpg",
+   "ol_key": "/works/OL15101719W"
+  }
+ ]
+}

@@ -842,9 +842,21 @@ const RecommendationPage = () => {
         grouped.popular = bundle.popular;
       }
       const booktime = toBooktimeSections(grouped);
-      setSections(booktime);
-      if (Object.values(booktime).some((a) => a?.length)) {
+      const hasNew = Object.values(booktime).some((a) => a?.length);
+      if (hasNew) {
+        setSections(booktime);
         writeCache(tab, booktime, null);
+      } else if (force) {
+        // « Rafraîchir » sans résultat : on garde ce qui est déjà affiché plutôt que de vider la page.
+        setSections((prev) => {
+          if (Object.values(prev).some((a) => a?.length)) {
+            toast('Rien de nouveau pour le moment, réessaie dans un instant.');
+            return prev;
+          }
+          return booktime;
+        });
+      } else {
+        setSections(booktime);
       }
     } catch (err) {
       logger.error('Erreur chargement recommandations:', err);
@@ -1141,7 +1153,11 @@ const RecommendationPage = () => {
       !String(activeTab).startsWith('genre_') &&
       activeTab !== 'similaires'
     ) {
-      fetch(`${API_BASE_URL}/api/catalog/popular?limit=18`)
+      // La route catalogue exige d'être connecté : sans jeton, la réponse est 401 et rien ne s'affiche.
+      const token = getToken();
+      fetch(`${API_BASE_URL}/api/catalog/popular?limit=18`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
         .then((r) => (r.ok ? r.json() : { books: [] }))
         .then((d) => setColdStartBooks(d.books || []))
         .catch(() => {});
@@ -1353,6 +1369,16 @@ const RecommendationPage = () => {
                   : 'On te proposera des lectures proches de ton choix.'
                 : 'Ajoute des livres à ta bibliothèque pour recevoir des suggestions adaptées à tes goûts.'}
             </p>
+            {activeTab !== 'similaires' && (
+              <button
+                type="button"
+                onClick={handleRefresh}
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20"
+              >
+                <ArrowPathIcon className="h-4 w-4" />
+                Réessayer
+              </button>
+            )}
           </div>
           {activeTab !== 'similaires' && coldStartBooks.length > 0 && (
             <div className="mt-4">

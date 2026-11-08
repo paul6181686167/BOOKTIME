@@ -29,6 +29,7 @@ export default function ProfilePage() {
           const book = (unified.books || []).find((b) => b.id === bookId);
           if (book) setSelectedBook(book);
         }}
+        onOpenFriendBook={(bookLike) => setSelectedBook(bookLike)}
         onOpenSeries={(seriesId) => {
           const series = (unified.userSeriesLibrary || []).find((s) => s.id === seriesId);
           if (series) {

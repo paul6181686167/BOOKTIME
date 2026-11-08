@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import friendsService from '../../services/friendsService';
 import { UserAvatar } from '../common/ProfileIdentityCard';
-import ShareProfilePanel from './ShareProfilePanel';
+import ShareProfileModal from './ShareProfileModal';
+import MyQrModal from './MyQrModal';
 import QrScanModal from './QrScanModal';
 
 const REFRESH_MS = 15000;
@@ -23,6 +24,7 @@ export default function FriendsHome({
   onCountsChange,
 }) {
   const [showShare, setShowShare] = useState(false);
+  const [showQr, setShowQr] = useState(false);
   const [showScan, setShowScan] = useState(false);
   const [invite, setInvite] = useState(null);
   const [inviteError, setInviteError] = useState('');
@@ -231,22 +233,31 @@ export default function FriendsHome({
       <div className="flex gap-2">
         <button
           type="button"
-          onClick={() => setShowShare((open) => !open)}
-          aria-expanded={showShare}
+          onClick={() => setShowShare(true)}
           className="flex-1 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium"
         >
-          {showShare ? 'Masquer mon QR code' : 'Partager mon profil'}
+          Partager mon profil
         </button>
         <button
           type="button"
-          onClick={() => setShowScan(true)}
+          onClick={() => setShowQr(true)}
           className="flex-1 px-3 py-2 rounded-lg border border-green-600 text-green-700 dark:text-green-400 text-sm font-medium"
         >
-          Scanner un QR code
+          Afficher le QR code
         </button>
       </div>
 
-      {showShare && <ShareProfilePanel />}
+      {showShare && <ShareProfileModal onClose={() => setShowShare(false)} />}
+
+      {showQr && (
+        <MyQrModal
+          onClose={() => setShowQr(false)}
+          onScan={() => {
+            setShowQr(false);
+            setShowScan(true);
+          }}
+        />
+      )}
 
       {showScan && (
         <QrScanModal
@@ -274,7 +285,7 @@ export default function FriendsHome({
             ) : results.length === 0 ? (
               <p className="text-xs text-gray-500 dark:text-gray-400 px-1">
                 Aucun lecteur trouvé. Cherche par @pseudo, par nom affiché ou par adresse email
-                complète, ou scanne son QR code.
+                complète, ou ouvre le lien qu'il t'a envoyé.
               </p>
             ) : (
               results.map((u) => (

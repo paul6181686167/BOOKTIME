@@ -1,16 +1,33 @@
 import { API_BASE_URL } from '../config/environment';
 import { getToken } from './apiClient';
 
+const REQUEST_TIMEOUT_MS = 60000;
+
 async function request(method, path, body) {
   const token = getToken();
-  const res = await fetch(`${API_BASE_URL}/api/friends${path}`, {
-    method,
-    headers: {
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  // Le serveur gratuit peut mettre une minute à se réveiller : on abandonne ensuite proprement
+  // (au lieu d'un chargement sans fin) pour que l'écran puisse proposer « Réessayer ».
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS) : null;
+  let res;
+  try {
+    res = await fetch(`${API_BASE_URL}/api/friends${path}`, {
+      method,
+      headers: {
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller?.signal,
+    });
+  } catch (err) {
+    if (err?.name === 'AbortError') {
+      throw new Error('Le serveur met trop de temps à répondre. Réessaie dans un instant.');
+    }
+    throw new Error('Connexion impossible. Vérifie ton réseau et réessaie.');
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const detail =

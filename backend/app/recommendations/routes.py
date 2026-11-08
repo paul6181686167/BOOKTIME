@@ -8,6 +8,7 @@ from datetime import datetime
 
 from ..security.jwt import get_current_user
 from .service import RecommendationService
+from . import resilience
 from app.utils.errors import public_error
 from app.utils.timeutils import utcnow
 
@@ -41,10 +42,11 @@ async def get_personalized_recommendations(
             raise HTTPException(status_code=401, detail="Utilisateur non identifié")
         
         # Génération des recommandations
-        recommendations = await recommendation_service.get_personalized_recommendations(
-            user_id=user_id,
-            limit=limit
+        recommendations = await resilience.personalized(
+            recommendation_service, user_id, limit, refresh=refresh
         )
+        # copie : le filtre par catégorie ne doit pas modifier la liste mise en cache
+        recommendations = dict(recommendations)
         
         # Filtrage par catégorie si demandé
         if category:
@@ -84,7 +86,7 @@ async def get_popular_recommendations(
         Dict contenant les recommandations populaires
     """
     try:
-        recommendations = await recommendation_service._get_popular_recommendations(limit)
+        recommendations = dict(await resilience.popular(recommendation_service, limit))
         
         # Filtrage par catégorie si demandé
         if category:

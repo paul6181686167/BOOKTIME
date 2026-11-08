@@ -34,6 +34,7 @@ import {
 import IsbnScannerModal from './IsbnScannerModal';
 import ProfileIdentityCard, { UserAvatar } from './ProfileIdentityCard';
 import friendsService from '../../services/friendsService';
+import FriendsPanel from '../friends/FriendsPanel';
 import ProfileSettings from './ProfileSettings';
 import DeleteAccountDialog from '../user/DeleteAccountDialog';
 import logger from '../../utils/logger';
@@ -47,6 +48,7 @@ const STAT_TONES = {
   green: { box: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-400' },
   yellow: { box: 'bg-yellow-50 dark:bg-yellow-900/20', text: 'text-yellow-700 dark:text-yellow-400' },
   orange: { box: 'bg-orange-50 dark:bg-orange-900/20', text: 'text-orange-700 dark:text-orange-400' },
+  purple: { box: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-700 dark:text-purple-400' },
 };
 
 // ─── Heatmap de lecture ──────────────────────────────────────────────────────
@@ -107,6 +109,7 @@ function ProfileModal({
   libraryBooks = [],
   librarySeries = [],
   onOpenBook,
+  onOpenFriendBook,
   onOpenSeries,
   onBookImported,
   variant = 'modal',
@@ -116,7 +119,7 @@ function ProfileModal({
   const { theme, setTheme } = useTheme();
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('stats'); // 'stats' | 'goal' | 'heatmap' | 'collections' | 'authors' | 'settings'
+  const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'stats' | 'goal' | 'collections' | 'authors' | 'settings'
   const [showIsbnScanner, setShowIsbnScanner] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
@@ -350,15 +353,15 @@ function ProfileModal({
   };
 
   const currentGoal = profileData[`goal_${currentYear}`] || 0;
-  const booksThisYear = stats.completed_this_year || stats.completed_books || 0;
+  const booksThisYear = stats.completed_this_year ?? stats.completed_books ?? 0;
   const goalPercent = currentGoal > 0 ? Math.min(100, Math.round((booksThisYear / currentGoal) * 100)) : 0;
 
   if (!isOpen && !isPage) return null;
 
   const tabs = [
+    { key: 'profile',     label: 'Profil', badge: friendsBadge },
     { key: 'stats',       label: 'Stats' },
     { key: 'goal',        label: 'Objectif' },
-    { key: 'heatmap',     label: 'Calendrier' },
     { key: 'authors',     label: 'Auteurs suivis' },
     { key: 'collections', label: 'Collections' },
   ];
@@ -395,7 +398,7 @@ function ProfileModal({
             <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
-                onClick={() => setActiveTab((tab) => (tab === 'settings' ? 'stats' : 'settings'))}
+                onClick={() => setActiveTab((tab) => (tab === 'settings' ? 'profile' : 'settings'))}
                 aria-label={activeTab === 'settings' ? 'Fermer les paramètres' : 'Ouvrir les paramètres'}
                 aria-pressed={activeTab === 'settings'}
                 className={`p-2 rounded-lg transition-colors ${
@@ -430,7 +433,19 @@ function ProfileModal({
                     ? 'bg-green-600 text-white'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
-              >{t.label}</button>
+              >
+                {t.label}
+                {t.badge > 0 && (
+                  <span
+                    className={`ml-1 inline-flex min-w-[1rem] h-4 px-1 items-center justify-center rounded-full text-tiny font-bold align-middle ${
+                      activeTab === t.key ? 'bg-white text-green-700' : 'bg-green-600 text-white'
+                    }`}
+                    aria-label={`${t.badge} nouveauté${t.badge > 1 ? 's' : ''} dans les amis`}
+                  >
+                    {t.badge}
+                  </span>
+                )}
+              </button>
             ))}
           </div>
         </div>
@@ -438,26 +453,10 @@ function ProfileModal({
         {/* Contenu : scroll = diapositive parente en mode page */}
         <div className={isPage ? 'p-4' : 'flex-1 overflow-y-auto p-4'}>
 
-          {/* ─── STATS ─── */}
-          {activeTab === 'stats' && (
+          {/* ─── PROFIL (identité + amis) ─── */}
+          {activeTab === 'profile' && (
             <div className="space-y-4 animate-fadeIn">
               <ProfileIdentityCard />
-              <button
-                type="button"
-                onClick={() => {
-                  // La page profil mobile reste en arrière-plan ; la fenêtre modale se ferme
-                  if (!isPage) onClose();
-                  window.setTimeout(() => window.dispatchEvent(new CustomEvent('openFriends')), 80);
-                }}
-                className="w-full flex items-center justify-between gap-2 py-3 px-4 rounded-xl bg-white dark:bg-gray-800 border border-green-600 text-green-700 dark:text-green-400 font-medium text-sm hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
-              >
-                <span>Amis et messages</span>
-                {friendsBadge > 0 && (
-                  <span className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-green-600 text-white text-tiny font-bold flex items-center justify-center">
-                    {friendsBadge}
-                  </span>
-                )}
-              </button>
               <button
                 type="button"
                 onClick={() => setShowIsbnScanner(true)}
@@ -466,6 +465,25 @@ function ProfileModal({
                 <span aria-hidden></span>
                 Scanner un ISBN
               </button>
+              <section aria-labelledby="profile-friends-title" className="space-y-3">
+                <h3
+                  id="profile-friends-title"
+                  className="text-sm font-semibold text-gray-900 dark:text-white"
+                >
+                  Amis et messages
+                </h3>
+                <FriendsPanel
+                  embedded
+                  libraryBooks={libraryBooks}
+                  onOpenBook={onOpenFriendBook}
+                />
+              </section>
+            </div>
+          )}
+
+          {/* ─── STATS (chiffres + calendrier) ─── */}
+          {activeTab === 'stats' && (
+            <div className="space-y-4 animate-fadeIn">
 
               {loading ? (
                 <div className="space-y-2">{[...Array(4)].map((_, i) => (
@@ -479,19 +497,30 @@ function ProfileModal({
                       { v: stats.completed_books || 0, label: 'Terminés',    color: 'green'  },
                       { v: stats.reading_books || 0,   label: 'En cours',    color: 'yellow' },
                       { v: stats.to_read_books || 0,   label: 'À lire',      color: 'orange' },
-                    ].map(s => (
-                      <div key={s.label} className={`${STAT_TONES[s.color].box} rounded-xl p-4 text-center`}>
+                      // Les livres « à relire » ont leur propre case : le total est ainsi la somme des cases
+                      ...((stats.to_reread_books || 0) > 0
+                        ? [{ v: stats.to_reread_books, label: 'À relire', color: 'purple' }]
+                        : []),
+                    ].map((s, i, all) => (
+                      <div
+                        key={s.label}
+                        className={`${STAT_TONES[s.color].box} rounded-xl p-4 text-center ${
+                          i === all.length - 1 && all.length % 2 === 1 ? 'col-span-2' : ''
+                        }`}
+                      >
                         <div className={`text-2xl font-bold ${STAT_TONES[s.color].text}`}>{s.v}</div>
                         <div className={`text-xs ${STAT_TONES[s.color].text}`}>{s.label}</div>
                       </div>
                     ))}
                   </div>
-                  {stats.total_pages_read > 0 && (
+                  {Math.max(readingTime.totalPages, stats.total_pages_read || 0) > 0 && (
                     <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 text-center">
                       <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                        {stats.total_pages_read?.toLocaleString('fr-FR')}
+                        {Math.max(readingTime.totalPages, stats.total_pages_read || 0).toLocaleString('fr-FR')}
                       </div>
-                      <div className="text-xs text-purple-600 dark:text-purple-400">Pages lues</div>
+                      <div className="text-xs text-purple-600 dark:text-purple-400">
+                        Pages lues{readingTime.guessedBooks > 0 ? ' (estimées)' : ''}
+                      </div>
                     </div>
                   )}
                   {readingTime.totalMinutes > 0 && (
@@ -550,6 +579,27 @@ function ProfileModal({
                   )}
                 </>
               )}
+
+              {/* Calendrier de lecture */}
+              <section aria-labelledby="profile-heatmap-title" className="pt-2">
+                <div className="mb-3">
+                  <h3
+                    id="profile-heatmap-title"
+                    className="text-sm font-semibold text-gray-900 dark:text-white mb-1"
+                  >
+                    Calendrier · activité de lecture (12 derniers mois)
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Chaque case représente un jour. Plus la case est foncée, plus vous avez terminé de livres ce jour-là.
+                  </p>
+                </div>
+                <ReadingHeatmap completionDates={completionDates} />
+                {Object.keys(completionDates).length === 0 && (
+                  <div className="text-center mt-4 text-gray-500 dark:text-gray-400 text-sm">
+                    <p>Terminez des livres pour voir votre activité apparaître ici.</p>
+                  </div>
+                )}
+              </section>
             </div>
           )}
 
@@ -613,22 +663,6 @@ function ProfileModal({
                 >
                   {currentGoal ? 'Modifier l\'objectif' : '+ Définir un objectif'}
                 </button>
-              )}
-            </div>
-          )}
-
-          {/* ─── HEATMAP ─── */}
-          {activeTab === 'heatmap' && (
-            <div className="animate-fadeIn">
-              <div className="mb-4">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Activité de lecture (12 derniers mois)</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Chaque case représente un jour. Plus la case est foncée, plus vous avez terminé de livres ce jour-là.</p>
-              </div>
-              <ReadingHeatmap completionDates={completionDates} />
-              {Object.keys(completionDates).length === 0 && (
-                <div className="text-center mt-4 text-gray-500 dark:text-gray-400 text-sm">
-                  <p>Terminez des livres pour voir votre activité apparaître ici.</p>
-                </div>
               )}
             </div>
           )}

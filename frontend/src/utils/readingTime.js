@@ -64,14 +64,17 @@ export function minutesForPages(category, pages, wordsPerMinute = WORDS_PER_MINU
   return (pages * profile.minutesPerPage * WORDS_PER_MINUTE) / wordsPerMinute;
 }
 
-/** Pages lues d'un livre : tout si terminé, la page courante si en cours. */
+/**
+ * Pages lues d'un livre : tout si terminé (ou « à relire » : il a déjà été lu en entier),
+ * la page courante si en cours.
+ */
 export function pagesReadForBook(book) {
   if (!book) return { pages: 0, guessed: false };
   const category = toCategory(book.category);
   const defaultPages = READING_PROFILES[category].defaultPages;
   const total = toPositiveInt(book.total_pages);
 
-  if (book.status === 'completed') {
+  if (book.status === 'completed' || book.status === 'to_reread') {
     return total ? { pages: total, guessed: false } : { pages: defaultPages, guessed: true };
   }
   if (book.status === 'reading') {
@@ -99,7 +102,7 @@ export function summarizeReadingTime(books, wordsPerMinute = WORDS_PER_MINUTE) {
     if (!pages) return;
     const category = toCategory(book.category);
     const entry = byCategory[category];
-    entry.books += book.status === 'completed' ? 1 : 0;
+    entry.books += book.status === 'completed' || book.status === 'to_reread' ? 1 : 0;
     entry.pages += pages;
     entry.minutes += minutesForPages(category, pages, wordsPerMinute);
     if (READING_PROFILES[category].wordsPerPage) {
@@ -109,9 +112,11 @@ export function summarizeReadingTime(books, wordsPerMinute = WORDS_PER_MINUTE) {
   });
 
   const totalMinutes = READING_CATEGORIES.reduce((s, c) => s + byCategory[c].minutes, 0);
+  const totalPages = READING_CATEGORIES.reduce((s, c) => s + byCategory[c].pages, 0);
   return {
     byCategory,
     totalMinutes: Math.round(totalMinutes),
+    totalPages,
     guessedBooks,
   };
 }

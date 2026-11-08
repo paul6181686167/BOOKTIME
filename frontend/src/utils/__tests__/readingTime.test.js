@@ -41,6 +41,17 @@ describe('temps de lecture estimé', () => {
     expect(pagesReadForBook({ status: 'to_read', total_pages: 300 }).pages).toBe(0);
   });
 
+  it('un livre « à relire » a déjà été lu en entier : ses pages comptent', () => {
+    expect(pagesReadForBook({ status: 'to_reread', total_pages: 250 }).pages).toBe(250);
+    const s = summarizeReadingTime([
+      { status: 'completed', category: 'roman', total_pages: 300 },
+      { status: 'to_reread', category: 'roman', total_pages: 200 },
+      { status: 'reading', category: 'manga', total_pages: 180, current_page: 20 },
+    ]);
+    expect(s.byCategory.roman.books).toBe(2);
+    expect(s.totalPages).toBe(520);
+  });
+
   it('utilise une valeur moyenne quand le nombre de pages est inconnu', () => {
     const r = pagesReadForBook({ status: 'completed', category: 'manga' });
     expect(r.guessed).toBe(true);

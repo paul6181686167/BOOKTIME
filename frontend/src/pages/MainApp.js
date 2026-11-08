@@ -11,6 +11,7 @@ import { useAuth } from '../hooks/useAuth';
 // Component imports
 import UnifiedSearchBar from '../components/UnifiedSearchBar';
 import DiscoverSection from '../components/DiscoverSection';
+import OnboardingGate from '../components/onboarding/OnboardingGate';
 
 
 // PHASE 2.4 - Monitoring et Analytics
@@ -599,8 +600,20 @@ export default function MainApp() {
   const sortedToReread = useMemo(() => sortBooks(groupedBooks.to_reread || []), [sortBooks, groupedBooks.to_reread]);
   const sortedCompleted = useMemo(() => sortBooks(groupedBooks.completed || []), [sortBooks, groupedBooks.completed]);
 
+  // Bibliothèque entièrement vide (romans et romans graphiques) une fois le chargement terminé
+  const libraryEmpty =
+    !unifiedContent.loading &&
+    !unifiedContent.error &&
+    ['reading', 'to_read', 'to_reread', 'completed'].every((k) => !groupedBooks[k] || groupedBooks[k].length === 0);
+
   return (
     <div className="min-h-screen min-h-dvh bg-honeycomb transition-colors duration-200">
+      {/* Accueil d'un compte vide : « Qu'as-tu déjà lu ? » avant d'accéder à la bibliothèque */}
+      <OnboardingGate
+        userKey={user?.id ?? user?.email}
+        libraryEmpty={libraryEmpty}
+        onDone={() => unifiedContent.refreshAll()}
+      />
       {/* Mobile: overlay de recherche */}
       <MobileSearchOverlay
         isOpen={showMobileSearch}
@@ -1083,6 +1096,10 @@ export default function MainApp() {
           onBookImported={refreshLibraryAfterImport}
           libraryBooks={unifiedContent.books || []}
           librarySeries={unifiedContent.userSeriesLibrary || []}
+          onOpenFriendBook={(bookLike) => {
+            booksHook.setSelectedBook(bookLike);
+            booksHook.setShowBookModal(true);
+          }}
           onOpenBook={(bookId) => {
             const book = (unifiedContent.books || []).find((b) => b.id === bookId);
             if (book) {

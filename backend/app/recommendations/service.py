@@ -1099,9 +1099,17 @@ class RecommendationService:
         try:
             favorite_authors = user_profile.get('favorite_authors', [])
             
-            for author in favorite_authors[:3]:  # Top 3 auteurs
-                # Chercher d'autres livres de cet auteur via Open Library
-                author_books = await self.openlibrary_service.search_books_by_author(author, limit=5)
+            top_authors = favorite_authors[:3]  # Top 3 auteurs
+            # Recherches Open Library en parallèle (en série, 3 × 18 s de délai possible)
+            fetched = await asyncio.gather(
+                *(self.openlibrary_service.search_books_by_author(a, limit=5) for a in top_authors),
+                return_exceptions=True,
+            )
+
+            for author, author_books in zip(top_authors, fetched):
+                if isinstance(author_books, Exception):
+                    logger.warning(f"Recherche auteur {author} en échec: {author_books}")
+                    continue
                 
                 for book in author_books:
                     # Écarter les livres déjà possédés ou rejetés

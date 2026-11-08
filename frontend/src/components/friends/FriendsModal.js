@@ -1,12 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import ModalOverlay, { MODAL_Z } from '../common/ModalOverlay';
-import { UserAvatar } from '../common/ProfileIdentityCard';
-import FriendsHome from './FriendsHome';
-import FriendChat from './FriendChat';
-import FriendProfileView from './FriendProfileView';
+import FriendsPanel from './FriendsPanel';
 
 /**
- * Fenêtre des amis : liste et recherche, profil d'un ami, messagerie.
+ * Fenêtre des amis : ouverte par un lien d'ami (/ami/CODE) ou depuis une fiche livre pour
+ * recommander ce livre. Le reste du temps, les amis sont dans l'onglet Profil.
  * `recommendBook` : livre à recommander (ouvert depuis une fiche) — l'utilisateur choisit l'ami.
  */
 export default function FriendsModal({
@@ -17,32 +15,7 @@ export default function FriendsModal({
   recommendBook,
   inviteCode,
 }) {
-  const [view, setView] = useState({ name: 'home' });
-  const [pendingBook, setPendingBook] = useState(recommendBook || null);
-
-  useEffect(() => {
-    if (isOpen) {
-      setView({ name: 'home' });
-      setPendingBook(recommendBook || null);
-    }
-    // Réinitialise à chaque ouverture ou nouveau livre à recommander
-  }, [isOpen, recommendBook]);
-
   if (!isOpen) return null;
-
-  const goHome = () => setView({ name: 'home' });
-
-  const openChat = (friend) => {
-    setView({ name: 'chat', friend, book: pendingBook });
-    setPendingBook(null);
-  };
-
-  const title =
-    view.name === 'home'
-      ? 'Amis'
-      : view.name === 'chat'
-        ? view.friend.display_name
-        : `Profil de ${view.friend.display_name}`;
 
   return (
     <ModalOverlay onClose={onClose} zIndex={MODAL_Z.panel} ariaLabel="Amis" closeOnBackdrop className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center md:p-4"
@@ -56,29 +29,9 @@ export default function FriendsModal({
         </div>
 
         <div className="flex-shrink-0 flex items-center gap-2 px-3 py-3 border-b border-booktime-mist/55 dark:border-booktime-800/50 bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl">
-          {view.name !== 'home' && (
-            <button
-              type="button"
-              onClick={goHome}
-              aria-label="Retour à la liste d’amis"
-              className="px-2 py-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-            >
-              ←
-            </button>
-          )}
-          {view.name !== 'home' && <UserAvatar user={view.friend} size={32} />}
           <h2 className="flex-1 min-w-0 text-lg font-bold text-gray-900 dark:text-white truncate">
-            {title}
+            Amis
           </h2>
-          {view.name === 'chat' && (
-            <button
-              type="button"
-              onClick={() => setView({ name: 'profile', friend: view.friend })}
-              className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
-            >
-              Profil
-            </button>
-          )}
           <button
             type="button"
             onClick={onClose}
@@ -89,34 +42,14 @@ export default function FriendsModal({
           </button>
         </div>
 
-        {view.name === 'chat' ? (
-          <div className="flex-1 min-h-0 flex flex-col">
-            <FriendChat
-              friend={view.friend}
-              libraryBooks={libraryBooks}
-              initialBook={view.book}
-              onOpenBook={onOpenBook}
-            />
-          </div>
-        ) : (
-          <div className="flex-1 min-h-0 overflow-y-auto p-4">
-            {view.name === 'home' ? (
-              <FriendsHome
-                recommendBook={pendingBook}
-                inviteCode={inviteCode}
-                onOpenChat={openChat}
-                onOpenProfile={(friend) => setView({ name: 'profile', friend })}
-              />
-            ) : (
-              <FriendProfileView
-                friend={view.friend}
-                onOpenBook={onOpenBook}
-                onOpenChat={openChat}
-                onRemoved={goHome}
-              />
-            )}
-          </div>
-        )}
+        <FriendsPanel
+          // Nouvelle demande (autre livre à recommander, autre lien) : on repart de la liste
+          key={`${inviteCode || ''}|${recommendBook?.id || recommendBook?.title || ''}`}
+          libraryBooks={libraryBooks}
+          onOpenBook={onOpenBook}
+          recommendBook={recommendBook}
+          inviteCode={inviteCode}
+        />
       </div>
     </ModalOverlay>
   );
