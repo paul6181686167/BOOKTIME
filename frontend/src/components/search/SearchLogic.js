@@ -33,6 +33,7 @@ import {
 } from '../../utils/seriesAttribution';
 import logger from '../../utils/logger';
 import { getToken } from '../../services/apiClient';
+import { ensureExpandedCatalog } from '../../utils/expandedFichesCatalog';
 
 // Une réponse lente ne doit jamais écraser les résultats d'une recherche plus
 // récente : chaque appel prend un numéro de séquence et seul le dernier a le droit
@@ -105,14 +106,19 @@ async function fetchWikidataSpotlight(query, token, backendUrl, signal) {
           name,
           author: curated.author,
           category: curated.category || inferCategoryFromWikidataSearchEntry(entry),
-          cover_url: null,
+          cover_url: curated.cover_url || null,
+          volume_titles: curated.volume_titles || null,
+          volume_details: curated.volume_details || null,
+          publisher: curated.publisher || '',
+          genre: curated.genre || '',
+          first_published: curated.first_published || '',
           totalBooks,
           completedBooks: 0,
           progressPercent: 0,
           books: [],
-          description: fromSearch
+          description: curated.description || (fromSearch
             ? `Wikidata · ${entry.work_count ?? 0} œuvre(s) · pop. ${entry.popularity ?? '—'}/100`
-            : `Wikidata · tendances · pop. ${entry.popularity ?? '—'}/100`,
+            : `Wikidata · tendances · pop. ${entry.popularity ?? '—'}/100`),
           relevanceScore: fromSearch ? 45000 - i * 100 : 40000,
           fromOpenLibrary: false,
         };
@@ -150,6 +156,8 @@ export const searchOpenLibrary = async (query, {
   setSearchLoading(true);
   setIsSearchMode(true);
   setLastSearchTerm(query);
+
+  await ensureExpandedCatalog();
 
   // Cartes curées locales : disponibles même si le backend/OL est down
   const applyCuratedFallback = (extra = []) => {

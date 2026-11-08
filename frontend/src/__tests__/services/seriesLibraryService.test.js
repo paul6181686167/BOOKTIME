@@ -36,6 +36,28 @@ describe('generateVolumesList', () => {
     expect(v[0].wikidata_work_qid).toBeUndefined();
   });
 
+  it('utilise les titres curés Poudremages même si Wikidata n’a pas de numéros de tome', () => {
+    const v = generateVolumesList(
+      {
+        name: 'La trilogie des Poudremages',
+        fromStaticWikidata: true,
+        staticWikidataDetail: {
+          works: [
+            { title_fr: "La République d'automne", volume: '', publication_date: '2015' },
+            { title_fr: 'La Promesse du sang', volume: '', publication_date: '2013' },
+            { title_fr: 'La Campagne écarlate', volume: '', publication_date: '2014' },
+          ],
+        },
+      },
+      {}
+    );
+    expect(v.map((x) => x.volume_title)).toEqual([
+      'La Promesse du sang',
+      'La Campagne écarlate',
+      "La République d'automne",
+    ]);
+  });
+
   it('génère des tomes génériques pour une série populaire hors référentiel', () => {
     const v = generateVolumesList(
       {

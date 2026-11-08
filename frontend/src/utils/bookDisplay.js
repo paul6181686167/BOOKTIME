@@ -130,6 +130,59 @@ export function isDisplayableSubject(raw) {
   return true;
 }
 
+function isBlankField(v) {
+  if (v == null) return true;
+  if (typeof v === 'string') return !v.trim();
+  if (Array.isArray(v)) return v.filter(Boolean).length === 0;
+  return false;
+}
+
+/**
+ * Complète une fiche livre avec le référentiel curé (éditeur, année, ISBN, pages, résumé, couverture).
+ * N’écrase jamais une valeur déjà présente sur le livre.
+ */
+export function enrichBookFromCuratedSeries(book, attribution, volumeNumber) {
+  if (!book) return book;
+  const data = attribution?.seriesData;
+  if (!data) return book;
+  const details =
+    volumeNumber != null && data.volume_details
+      ? data.volume_details[volumeNumber] || data.volume_details[String(volumeNumber)] || {}
+      : {};
+  const out = { ...book };
+  if (isBlankField(out.publisher)) {
+    out.publisher = details.publisher || data.publisher || '';
+  }
+  if (isBlankField(out.publication_year) && isBlankField(out.first_publish_year)) {
+    const y = details.published_year || data.first_published;
+    if (y) out.publication_year = String(y).slice(0, 4);
+  }
+  if (isBlankField(out.isbn) && details.isbn) out.isbn = details.isbn;
+  if (!(Number(out.total_pages) > 0) && Number(details.pages) > 0) {
+    out.total_pages = Number(details.pages);
+  }
+  if (isBlankField(out.cover_url)) {
+    out.cover_url = details.cover_url || data.cover_url || '';
+  }
+  if (isBlankField(out.description)) {
+    out.description = details.description || data.description || '';
+  }
+  if (isBlankField(out.genre) && data.genre) out.genre = data.genre;
+  if (isBlankField(out.author) && Array.isArray(data.authors) && data.authors[0]) {
+    out.author = data.authors[0];
+  }
+  if (isBlankField(out.category) && data.category) out.category = data.category;
+  if (
+    isBlankField(out.reading_language) &&
+    isBlankField(out.original_language) &&
+    isBlankField(out.language) &&
+    data.language
+  ) {
+    out.language = data.language;
+  }
+  return out;
+}
+
 export function displayableSubjects(list, limit = 8) {
   const items = (list || [])
     .map((s) => (typeof s === 'string' ? s : s?.name || ''))

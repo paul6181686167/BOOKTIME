@@ -5,7 +5,7 @@
  * pour déterminer si un livre fait partie d'une série, même sans champ saga
  */
 
-import { EXTENDED_SERIES_DATABASE } from './seriesDatabaseExtended.js';
+import { EXTENDED_SERIES_DATABASE } from './seriesCatalogCompleteness.js';
 import { FuzzyMatcher } from './fuzzyMatcher.js';
 import logger from './logger';
 

@@ -53,7 +53,7 @@ export function mergeVolumeDisplay({ wdWork = null, olBook = null, gbItem = null
     parseVolumeNumber({ volume_number: wdWork?.volume, title: wdTitle }) ??
     parseVolumeNumber(olBook) ??
     parseVolumeNumber({ title: gbTitle, volume_number: gbItem?.volume_number }) ??
-    1;
+    null;
 
   const cover_url =
     (olBook && olBook.cover_url) ||
@@ -94,11 +94,43 @@ export function mergeVolumeDisplay({ wdWork = null, olBook = null, gbItem = null
 }
 
 /**
+ * Numérote les œuvres Wikidata : volume explicite, sinon date de parution.
+ * Évite que trois tomes sans P1545 deviennent tous « tome 1 ».
+ */
+export function orderWikidataWorks(works) {
+  const arr = Array.isArray(works) ? [...works] : [];
+  arr.sort((a, b) => {
+    const va = parseVolumeNumber({
+      volume_number: a?.volume,
+      title: a?.title_fr || a?.title_en,
+    });
+    const vb = parseVolumeNumber({
+      volume_number: b?.volume,
+      title: b?.title_fr || b?.title_en,
+    });
+    if (va != null && vb != null && va !== vb) return va - vb;
+    if (va != null && vb == null) return -1;
+    if (vb != null && va == null) return 1;
+    const da = String(a?.publication_date || '');
+    const db = String(b?.publication_date || '');
+    if (da && db && da !== db) return da.localeCompare(db);
+    return 0;
+  });
+  return arr.map((w, i) => {
+    const n = parseVolumeNumber({
+      volume_number: w?.volume,
+      title: w?.title_fr || w?.title_en,
+    });
+    return { ...w, volume: String(n != null ? n : i + 1) };
+  });
+}
+
+/**
  * Associe chaque œuvre Wikidata statique à au plus un livre OL (même tome ou titre proche),
  * fusionne les champs, puis ajoute les livres OL non appariés (OL seul).
  */
 export function mergeStaticWdWorksWithOpenLibrary(works, olBooks) {
-  const worksArr = Array.isArray(works) ? works : [];
+  const worksArr = orderWikidataWorks(works);
   const olArr = Array.isArray(olBooks) ? [...olBooks] : [];
   if (!worksArr.length) {
     return olArr.map((ob) => mergeVolumeDisplay({ olBook: ob }));

@@ -16,4 +16,28 @@ describe('couvertures de cartes série', () => {
     };
     expect(resolveCoverForGridItem(item)).toContain('/b/id/123-');
   });
+
+  it('privilégie la couverture du tome 1, pas d’un tome ultérieur', () => {
+    const item = {
+      isSeriesCard: true,
+      name: 'Série',
+      cover_url: 'https://covers.openlibrary.org/b/id/999-M.jpg',
+      books: [
+        { volume_number: 2, cover_url: 'https://covers.openlibrary.org/b/id/222-M.jpg' },
+        { volume_number: 1, cover_url: 'https://covers.openlibrary.org/b/id/111-M.jpg' },
+      ],
+    };
+    expect(resolveCoverForGridItem(item)).toContain('/b/id/111-');
+  });
+
+  it('utilise volume_details[1] du catalogue curé', () => {
+    const item = {
+      isSeriesCard: true,
+      name: 'Poudremages',
+      volume_details: {
+        1: { cover_url: 'https://covers.openlibrary.org/b/id/8402583-L.jpg' },
+      },
+    };
+    expect(resolveCoverForGridItem(item)).toContain('8402583');
+  });
 });

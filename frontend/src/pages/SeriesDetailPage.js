@@ -13,7 +13,7 @@ import {
 import toast from 'react-hot-toast';
 import { API_BASE_URL } from '../config/environment';
 import { addSeriesToLibrary as saveSeriesToLibrary, generateVolumesList } from '../services/seriesLibraryService';
-import { EXTENDED_SERIES_DATABASE } from '../utils/seriesDatabaseExtended';
+import { EXTENDED_SERIES_DATABASE } from '../utils/seriesCatalogCompleteness';
 import { enrichSeriesMetadata } from '../components/series/SeriesActions';
 import logger from '../utils/logger';
 import { getToken } from '../services/apiClient';

@@ -1,10 +1,12 @@
 import {
+  enrichBookFromCuratedSeries,
   formatBookMetaLine,
   getPagesRead,
   getProgressPercent,
   isDisplayableSubject,
   pickFirstPublisher,
 } from '../bookDisplay';
+import { attributeBookToSeries, resolveCuratedSeriesByName } from '../seriesAttribution';
 
 describe('getPagesRead', () => {
   test('completed book without current_page shows total pages', () => {
@@ -42,5 +44,36 @@ describe('formatBookMetaLine', () => {
         language: 'fr',
       })
     ).toBe('Science-fiction · Gallimard · 2021 · Français');
+  });
+});
+
+describe('enrichBookFromCuratedSeries', () => {
+  test('complète éditeur, genre et année depuis le catalogue pour un tome HP', () => {
+    const book = {
+      title: "Harry Potter à l'école des sorciers",
+      author: 'J.K. Rowling',
+      volume_number: 1,
+    };
+    const attr = attributeBookToSeries(book);
+    const filled = enrichBookFromCuratedSeries(book, attr, 1);
+    expect(filled.publisher).toBe('Gallimard Jeunesse');
+    expect(filled.genre).toBe('Fantasy');
+    expect(filled.isbn).toMatch(/978/);
+    expect(filled.total_pages).toBe(320);
+  });
+
+  test('n’écrase pas un éditeur déjà présent', () => {
+    const book = { title: 'Dune', author: 'Frank Herbert', publisher: 'Pocket' };
+    const attr = attributeBookToSeries(book);
+    const filled = enrichBookFromCuratedSeries(book, attr, 1);
+    expect(filled.publisher).toBe('Pocket');
+  });
+});
+
+describe('catalogue curé', () => {
+  test('Dune a un éditeur et un genre', () => {
+    const r = resolveCuratedSeriesByName('Dune');
+    expect(r.data.publisher).toBe('Robert Laffont');
+    expect(r.data.genre).toBe('Science-fiction');
   });
 });

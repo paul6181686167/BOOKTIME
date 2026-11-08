@@ -556,6 +556,49 @@ const seriesChildren = (entity) => {
   return [];
 };
 
+/** Tome 1 d’une série (liste de volumes, books[], ou volume_details curé). */
+export const pickFirstVolumeEntity = (entity) => {
+  if (!entity || typeof entity !== 'object') return null;
+  const kids = seriesChildren(entity).filter((k) => k && typeof k === 'object');
+  const vol1 = kids.find(
+    (k) => Number(k.volume_number) === 1 || Number(k.number) === 1
+  );
+  const firstKid = vol1 || null;
+  const details =
+    entity.volume_details ||
+    entity.seriesData?.volume_details ||
+    {};
+  const titles =
+    entity.volume_titles ||
+    entity.seriesData?.volume_titles ||
+    {};
+  const d1 = details[1] || details['1'] || {};
+  const title1 =
+    firstKid?.volume_title ||
+    firstKid?.title ||
+    firstKid?.display_title ||
+    titles[1] ||
+    titles['1'] ||
+    d1.title ||
+    '';
+  const merged = {
+    ...d1,
+    ...(firstKid || {}),
+    title: title1,
+    volume_title: title1,
+    cover_url:
+      firstKid?.cover_url ||
+      firstKid?.cover_image_url ||
+      d1.cover_url ||
+      '',
+    isbn: firstKid?.isbn || d1.isbn || '',
+  };
+  if (merged.cover_url || merged.isbn || merged.title || merged.ol_key || merged.cover_i) {
+    return merged;
+  }
+  return firstKid || null;
+};
+
 /** Chaîne de secours si la 1ʳᵉ URL échoue au chargement. */
 export const coverFallbackCandidates = (entity) => {
   if (!entity) return [];
@@ -569,6 +612,15 @@ export const coverFallbackCandidates = (entity) => {
       if (isGoogleBooksCoverUrl(raw) || /archive\.org/i.test(raw)) out.push(raw);
     }
   };
+  if (entity.isSeriesCard || entity.isOwnedSeries) {
+    const first = pickFirstVolumeEntity(entity);
+    if (first) {
+      push(first.cover_url);
+      push(first.cover_image_url);
+      const firstOl = resolveOpenLibraryCoverUrl(first);
+      if (firstOl) push(firstOl);
+    }
+  }
   push(entity.cover_url);
   push(entity.cover_image_url);
   const primary = resolveOpenLibraryCoverUrl(entity);
@@ -597,14 +649,23 @@ export const coverFallbackCandidates = (entity) => {
 /** Couverture pour une carte grille (livre ou série avec books[]). */
 export const resolveCoverForGridItem = (item) => {
   if (!item) return null;
-  if (item.isSeriesCard) {
+  if (item.isSeriesCard || item.isOwnedSeries) {
+    const first = pickFirstVolumeEntity(item);
+    if (first) {
+      const fromFirst = resolveOpenLibraryCoverUrl(first);
+      if (fromFirst) return fromFirst;
+    }
     const direct = resolveOpenLibraryCoverUrl({
       ...item,
       cover_url: item.cover_url || item.cover_image_url,
     });
     if (direct) return direct;
-    for (const b of seriesChildren(item)) {
-      if (typeof b !== 'object') continue;
+    const kids = seriesChildren(item)
+      .filter((b) => b && typeof b === 'object')
+      .sort(
+        (a, b) => (Number(a.volume_number) || 99) - (Number(b.volume_number) || 99)
+      );
+    for (const b of kids) {
       const c = resolveOpenLibraryCoverUrl(b);
       if (c) return c;
     }

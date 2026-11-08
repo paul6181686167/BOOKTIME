@@ -12,7 +12,12 @@ import {
   preferFrenchSynopsis,
   sanitizeSynopsis,
 } from '../utils/synopsisQuality';
-import { formatBookMetaLine, getProgressPercent, isCompletedStatus } from '../utils/bookDisplay';
+import {
+  enrichBookFromCuratedSeries,
+  formatBookMetaLine,
+  getProgressPercent,
+  isCompletedStatus,
+} from '../utils/bookDisplay';
 import { attributeBookToSeries, volumeNumberForBook } from '../utils/seriesAttribution';
 import { getUserSeriesLibrary, toggleVolumeStatus } from '../services/seriesLibraryService';
 import { prefetchAuthor } from '../services/authorPrefetch';
@@ -81,23 +86,25 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
 
-  const totalPages = resolvedTotalPages || book.total_pages || 0;
   const seriesAttribution = useMemo(() => attributeBookToSeries(book), [book]);
   const seriesVolume = useMemo(
     () => volumeNumberForBook(book, seriesAttribution),
     [book, seriesAttribution]
   );
   const bookForDisplay = useMemo(() => {
-    const metaLine = formatBookMetaLine(book);
+    const filled = enrichBookFromCuratedSeries(book, seriesAttribution, seriesVolume);
+    const metaLine = formatBookMetaLine(filled);
     const seriesLink = seriesAttribution?.seriesName
       ? { name: seriesAttribution.seriesName, volume: seriesVolume }
       : null;
-    return { ...book, metaLine, seriesLink };
+    return { ...filled, metaLine, seriesLink };
   }, [book, seriesAttribution, seriesVolume]);
+  const totalPages = resolvedTotalPages || bookForDisplay.total_pages || book.total_pages || 0;
   // Afficher uniquement un résumé FR (jamais l'anglais ni l'espagnol)
   const displaySynopsis =
     preferFrenchSynopsis(
       olDetails?.description,
+      bookForDisplay.description,
       book.description,
       { rejectEnglish: true }
     ) || '';

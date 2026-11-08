@@ -7,8 +7,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { bookService } from '../services/bookService';
 import { deleteSeriesFromLibrary, toggleVolumeStatus } from '../services/seriesLibraryService';
-import { attributeBookToSeries, volumeNumberForBook } from '../utils/seriesAttribution';
-import { EXTENDED_SERIES_DATABASE } from '../utils/seriesDatabaseExtended';
+import { attributeBookToSeries, volumeNumberForBook, resolveCuratedSeriesByName } from '../utils/seriesAttribution';
 import ChapterSection from './ChapterSection'; // ← NOUVEAU : Import du composant chapitres
 import toast from 'react-hot-toast';
 import { API_BASE_URL } from '../config/environment';
@@ -347,48 +346,50 @@ const SeriesDetailModal = ({
       return normalizeSeriesVolumesField(series);
     }
 
+    const resolved = resolveCuratedSeriesByName(
+      series?.name || series?.name_fr || series?.name_en || ''
+    );
+    if (resolved?.data) {
+      const referenceData = resolved.data;
+      const works = series.staticWikidataDetail?.works || [];
+      const authorFromWd = (works[0]?.authors_en || works[0]?.authors_fr || [])[0] || '';
+      return {
+        ...series,
+        volumes: referenceData.volumes,
+        volume_titles: referenceData.volume_titles || {},
+        volume_details: referenceData.volume_details,
+        description: referenceData.description || series.description,
+        first_published: referenceData.first_published || series.first_published,
+        status: referenceData.status || series.status,
+        publisher: referenceData.publisher || series.publisher,
+        genre: referenceData.genre || series.genre,
+        language: referenceData.language || series.language,
+        author:
+          series.author ||
+          (Array.isArray(referenceData.authors) && referenceData.authors[0]) ||
+          authorFromWd ||
+          '',
+        cover_url: series.cover_url || referenceData.cover_url || '',
+        referenceFound: true,
+        fromFallbackBooks: false,
+      };
+    }
+
     if (series.fromStaticWikidata && series.staticWikidataDetail) {
       const works = series.staticWikidataDetail.works || [];
       const nVol = works.length || series.staticWikidataDetail.work_count || 0;
+      const authorFromWd = (works[0]?.authors_en || works[0]?.authors_fr || [])[0] || '';
       return {
         ...series,
         volumes: nVol,
         volume_titles: {},
+        author: series.author || authorFromWd || '',
         referenceFound: false,
         fromFallbackBooks: true,
       };
     }
 
     if (!series?.name) return normalizeSeriesVolumesField(series);
-    
-    // Rechercher dans la base de données de référence
-    const seriesName = series.name.toLowerCase();
-    let referenceData = null;
-    
-    // Parcourir toutes les catégories de la base de données de référence
-    for (const category of Object.values(EXTENDED_SERIES_DATABASE)) {
-      for (const seriesData of Object.values(category)) {
-        if (seriesData.name.toLowerCase() === seriesName || 
-            seriesData.variations?.some(variation => variation.toLowerCase() === seriesName)) {
-          referenceData = seriesData;
-          break;
-        }
-      }
-      if (referenceData) break;
-    }
-    
-    if (referenceData) {
-      return {
-        ...series,
-        volumes: referenceData.volumes,
-        volume_titles: referenceData.volume_titles,
-        volume_details: referenceData.volume_details,
-        description: referenceData.description,
-        first_published: referenceData.first_published,
-        status: referenceData.status,
-        referenceFound: true
-      };
-    }
 
     // Série bibliothèque : volumes = [{ volume_number, volume_title, is_read, date_read }, ...]
     if (Array.isArray(series.volumes) && series.volumes.length > 0) {
@@ -1032,7 +1033,7 @@ const SeriesDetailModal = ({
       if (cancelled) return;
       await loadReadingPreferencesForSeries();
       if (cancelled) return;
-      if (!enrichedSeries?.referenceFound) {
+      if (!enrichedSeries?.referenceFound || series.fromStaticWikidata) {
         await loadOLSeriesBooks();
       }
       if (cancelled) return;
@@ -1305,6 +1306,7 @@ const SeriesDetailModal = ({
           checkIfSeriesOwned={checkIfSeriesOwned}
           onClose={onClose}
           seriesMetaLine={[
+            enrichedSeries?.genre || series?.genre || '',
             String(enrichedSeries?.first_published || series?.first_published || '').slice(0, 4),
             series?.publisher
               || enrichedSeries?.publisher

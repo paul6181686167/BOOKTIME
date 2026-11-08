@@ -1,5 +1,6 @@
 /** Fonctions pures de la fiche série (identifiants, volumes, libellés de statut). */
 import { displayBookTitleFrFirst } from './openLibraryBookDisplay';
+import { orderWikidataWorks } from './sourceMerge';
 
 export const isPersistedLibraryId = (id) =>
   id &&
@@ -46,7 +47,7 @@ export function normalizeSeriesVolumesField(seriesData) {
 }
 
 export function mapStaticWikidataWorksToOlBooks(works) {
-  return (works || []).map((w, i) => {
+  return orderWikidataWorks(works || []).map((w, i) => {
     const titleFr = w.title_fr || '';
     const titleEn = w.title_en || '';
     const primary = titleFr || titleEn || 'Œuvre';

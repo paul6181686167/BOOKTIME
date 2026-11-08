@@ -1,6 +1,7 @@
 import {
   mergeVolumeDisplay,
   mergeStaticWdWorksWithOpenLibrary,
+  orderWikidataWorks,
   normalizeTitleKey,
   enrichVolumeRowWithGoogleBooks,
   enrichVolumeRowsLimitedGoogleBooksByIsbn,
@@ -43,6 +44,23 @@ describe('mergeVolumeDisplay', () => {
     expect(out.title).toBe('GB Only');
     expect(out.first_publish_year).toBe(2010);
     expect(out.merged_sources).toEqual(['google_books']);
+    expect(out.volume_number).toBeNull();
+  });
+});
+
+describe('orderWikidataWorks', () => {
+  it('numérote par date si les volumes Wikidata sont vides (Poudremages)', () => {
+    const ordered = orderWikidataWorks([
+      { work_qid: 'Q3', title_fr: "La République d'automne", volume: '', publication_date: '2015' },
+      { work_qid: 'Q1', title_fr: 'La Promesse du sang', volume: '', publication_date: '2013' },
+      { work_qid: 'Q2', title_fr: 'La Campagne écarlate', volume: '', publication_date: '2014' },
+    ]);
+    expect(ordered.map((w) => w.title_fr)).toEqual([
+      'La Promesse du sang',
+      'La Campagne écarlate',
+      "La République d'automne",
+    ]);
+    expect(ordered.map((w) => w.volume)).toEqual(['1', '2', '3']);
   });
 });
 
@@ -80,6 +98,22 @@ describe('mergeStaticWdWorksWithOpenLibrary', () => {
     expect(merged).toHaveLength(1);
     expect(merged[0].title).toBe('Seul OL');
     expect(merged[0].volume_number).toBe(2);
+  });
+
+  it('ne fusionne pas trois œuvres sans numéro de tome en un seul tome 1', () => {
+    const works = [
+      { work_qid: 'Qa', title_fr: "La République d'automne", volume: '', publication_date: '2015-01-01' },
+      { work_qid: 'Qb', title_fr: 'La Promesse du sang', volume: '', publication_date: '2013-01-01' },
+      { work_qid: 'Qc', title_fr: 'La Campagne écarlate', volume: '', publication_date: '2014-01-01' },
+    ];
+    const merged = mergeStaticWdWorksWithOpenLibrary(works, []);
+    expect(merged).toHaveLength(3);
+    expect(merged.map((m) => m.volume_number)).toEqual([1, 2, 3]);
+    expect(merged.map((m) => m.title)).toEqual([
+      'La Promesse du sang',
+      'La Campagne écarlate',
+      "La République d'automne",
+    ]);
   });
 });
 

@@ -16,7 +16,7 @@ export function buildSeriesStateFromStaticDetail(item, detail) {
   return {
     ...item,
     name: detail.name_fr || detail.name || detail.name_en || item.name,
-    author: item.author || '',
+    author: item.author || (detail.works?.[0]?.authors_en || [])[0] || '',
     fromStaticWikidata: true,
     staticWikidataDetail: detail,
     totalBooks: detail.work_count ?? (detail.works || []).length,

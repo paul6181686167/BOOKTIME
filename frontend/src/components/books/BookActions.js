@@ -150,14 +150,22 @@ const BookActions = {
           title: name,
           author: (Array.isArray(series.authors) && series.authors[0])
             || series.author
+            || verdict.curated?.data?.authors?.[0]
             || '',
-          category: series.category || 'roman',
+          category: series.category || verdict.curated?.data?.category || 'roman',
           status: series.series_status || 'to_read',
-          cover_url: series.cover_image_url || series.cover_url || null,
+          cover_url:
+            series.cover_image_url ||
+            series.cover_url ||
+            verdict.curated?.data?.cover_url ||
+            verdict.curated?.data?.volume_details?.[1]?.cover_url ||
+            null,
+          publisher: series.publisher || verdict.curated?.data?.publisher || '',
+          genre: series.genre || verdict.curated?.data?.genre || '',
           // Ignorer les faux résumés Wikidata / compteurs de tomes
           description: isUsableSynopsis(series.description_fr)
             ? series.description_fr
-            : '',
+            : (verdict.curated?.data?.description || ''),
           date_added: series.created_at,
           updated_at: series.updated_at,
           saga: '',
@@ -196,8 +204,12 @@ const BookActions = {
         isSeriesCard: true,
         isOwnedSeries: true,
         name: verdict.curated?.data?.name || name,
-        author: series.authors?.[0] || 'Auteur inconnu',
-        category: series.category,
+        author:
+          series.authors?.[0] ||
+          series.author ||
+          verdict.curated?.data?.authors?.[0] ||
+          '',
+        category: series.category || verdict.curated?.data?.category,
         status: series.series_status || 'to_read',
         date_added: series.created_at,
         updated_at: series.updated_at,
@@ -208,11 +220,33 @@ const BookActions = {
         readingBooks: 0,
         toReadBooks: Math.max(0, total - completed),
         volumes,
-        cover_url: series.cover_image_url || series.cover_url || null,
-        cover_image_url: series.cover_image_url || series.cover_url || null,
+        volume_titles: verdict.curated?.data?.volume_titles || null,
+        volume_details: verdict.curated?.data?.volume_details || null,
+        seriesData: verdict.curated?.data || null,
+        cover_url:
+          (Array.isArray(volumes) &&
+            volumes.find((v) => Number(v.volume_number) === 1)?.cover_url) ||
+          verdict.curated?.data?.volume_details?.[1]?.cover_url ||
+          series.cover_image_url ||
+          series.cover_url ||
+          verdict.curated?.data?.cover_url ||
+          null,
+        cover_image_url:
+          (Array.isArray(volumes) &&
+            volumes.find((v) => Number(v.volume_number) === 1)?.cover_url) ||
+          verdict.curated?.data?.volume_details?.[1]?.cover_url ||
+          series.cover_image_url ||
+          series.cover_url ||
+          verdict.curated?.data?.cover_url ||
+          null,
+        publisher: series.publisher || verdict.curated?.data?.publisher || '',
+        genre: series.genre || verdict.curated?.data?.genre || '',
         title: verdict.curated?.data?.name || name,
         saga: verdict.curated?.data?.name || name,
-        description: series.description_fr || `Collection ${name}`,
+        description:
+          (isUsableSynopsis(series.description_fr) && series.description_fr) ||
+          verdict.curated?.data?.description ||
+          '',
         progressPercent:
           total > 0
             ? Math.round((completed / total) * 100)
@@ -266,7 +300,7 @@ const BookActions = {
             completedBooks: 0,
             readingBooks: 0,
             toReadBooks: 0,
-            cover_url: book.cover_url,
+            cover_url: Number(book.volume_number) === 1 ? book.cover_url : book.cover_url,
             progressPercent: 0,
             // SESSION 82.2 - NOUVEAUX CHAMPS : Informations de détection
             detectionMethod: book.detectionMethod,
@@ -277,9 +311,12 @@ const BookActions = {
         seriesGroups[seriesKey].books.push(book);
         seriesGroups[seriesKey].totalBooks += 1;
 
-        // Prendre la première couverture disponible parmi tous les livres du groupe
-        if (!seriesGroups[seriesKey].cover_url && book.cover_url) {
-          seriesGroups[seriesKey].cover_url = book.cover_url;
+        // Couverture = tome 1 en priorité (pas un tome ultérieur trouvé en premier)
+        if (book.cover_url) {
+          const isTome1 = Number(book.volume_number) === 1;
+          if (isTome1 || !seriesGroups[seriesKey].cover_url) {
+            seriesGroups[seriesKey].cover_url = book.cover_url;
+          }
         }
         
         //  NOUVEAU: Ajouter l'auteur à la liste si pas déjà présent
@@ -384,7 +421,7 @@ const BookActions = {
     // 🆕 Enrichir la progression avec reading-preferences (tomes lus dans le modal)
     const getRefVolumes = (seriesName) => {
       try {
-        const { EXTENDED_SERIES_DATABASE } = require('../../utils/seriesDatabaseExtended');
+        const { EXTENDED_SERIES_DATABASE } = require('../../utils/seriesCatalogCompleteness');
         const sn = (seriesName || '').toLowerCase();
         for (const category of Object.values(EXTENDED_SERIES_DATABASE)) {
           for (const s of Object.values(category)) {

@@ -14,7 +14,7 @@
 import { toast } from 'react-hot-toast';
 import { confirmAction } from '../../utils/confirmDialog';
 import * as seriesLibraryService from '../../services/seriesLibraryService';
-import { EXTENDED_SERIES_DATABASE } from '../../utils/seriesDatabaseExtended.js';
+import { EXTENDED_SERIES_DATABASE } from '../../utils/seriesCatalogCompleteness.js';
 import {
   loadSeriesCache,
   saveSeriesCache,

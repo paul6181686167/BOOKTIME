@@ -18,9 +18,13 @@
  * permettant de fusionner les sources (nom canonique + nombre de tomes curé).
  */
 
-import { EXTENDED_SERIES_DATABASE } from './seriesDatabaseExtended';
+import { EXTENDED_SERIES_DATABASE } from './seriesCatalogCompleteness';
 import { SeriesDetector } from './seriesDetector';
 import { FuzzyMatcher } from './fuzzyMatcher';
+import {
+  resolveExpandedSeriesByName,
+  resolveExpandedSeriesByVolumeTitle,
+} from './expandedFichesCatalog';
 
 // Index : nom/variation normalisé → { key, data } (résolution du nom canonique curé)
 const buildCuratedNameIndex = () => {
@@ -30,7 +34,16 @@ const buildCuratedNameIndex = () => {
       const names = [data.name, ...(data.variations || [])].filter(Boolean);
       for (const n of names) {
         const norm = FuzzyMatcher.normalizeString(n);
-        if (norm && !index.has(norm)) index.set(norm, { key, data });
+        if (!norm) continue;
+        const incoming = { key, data };
+        if (!index.has(norm)) {
+          index.set(norm, incoming);
+          continue;
+        }
+        const existing = index.get(norm);
+        const existingN = Object.keys(existing.data?.volume_titles || {}).length;
+        const incomingN = Object.keys(data?.volume_titles || {}).length;
+        if (incomingN > existingN) index.set(norm, incoming);
       }
     }
   }
@@ -205,6 +218,21 @@ export const attributeBookToSeries = (book, { wikidataMatcher } = {}) => {
   const curated = findCuratedSeriesForBook(book);
   if (curated) return curated;
 
+  // 1b. Catalogue étendu (10 000 tomes), si déjà chargé
+  for (const title of bookTitleCandidates(book)) {
+    const expanded =
+      resolveExpandedSeriesByVolumeTitle(title) || resolveExpandedSeriesByName(title);
+    if (expanded?.data) {
+      return {
+        seriesKey: expanded.key,
+        seriesName: expanded.data.name,
+        seriesData: expanded.data,
+        source: 'expanded',
+        wikidata_qid: expanded.data.wikidata_qid || expanded.data.qid,
+      };
+    }
+  }
+
   // 2. Index Wikidata (recherche uniquement)
   if (typeof wikidataMatcher === 'function') {
     const wd = wikidataMatcher(book);
@@ -293,6 +321,10 @@ export const findCuratedSeriesByQuery = (query) => {
     if (detection.belongsToSeries) {
       const resolved = resolveCuratedSeriesByName(detection.seriesName);
       if (resolved) return { seriesKey: resolved.key, seriesName: resolved.data.name, seriesData: resolved.data };
+    }
+    const expanded = resolveExpandedSeriesByName(q) || resolveExpandedSeriesByVolumeTitle(q);
+    if (expanded?.data) {
+      return { seriesKey: expanded.key, seriesName: expanded.data.name, seriesData: expanded.data };
     }
     return null;
   });
@@ -467,7 +499,8 @@ export const evaluateOwnedSeriesForDisplay = (series) => {
  * @returns {{ author: string, totalBooks: number, category?: string, seriesName?: string }}
  */
 export const enrichWikidataCardFromCurated = (wdName, fallback = {}) => {
-  const resolved = resolveCuratedSeriesByName(wdName);
+  const resolved =
+    resolveCuratedSeriesByName(wdName) || resolveExpandedSeriesByName(wdName);
   if (resolved && resolved.data) {
     const d = resolved.data;
     return {
@@ -475,6 +508,13 @@ export const enrichWikidataCardFromCurated = (wdName, fallback = {}) => {
       totalBooks: Number.isFinite(d.volumes) && d.volumes > 0 ? d.volumes : (fallback.totalBooks || 0),
       category: d.category || fallback.category,
       seriesName: d.name || fallback.seriesName,
+      publisher: d.publisher || fallback.publisher || '',
+      genre: d.genre || fallback.genre || '',
+      cover_url: d.volume_details?.[1]?.cover_url || d.cover_url || fallback.cover_url || '',
+      volume_titles: d.volume_titles || null,
+      volume_details: d.volume_details || null,
+      description: d.description || fallback.description || '',
+      first_published: d.first_published || fallback.first_published || '',
     };
   }
   return {
@@ -482,5 +522,12 @@ export const enrichWikidataCardFromCurated = (wdName, fallback = {}) => {
     totalBooks: fallback.totalBooks || 0,
     category: fallback.category,
     seriesName: fallback.seriesName,
+    publisher: fallback.publisher || '',
+    genre: fallback.genre || '',
+    cover_url: fallback.cover_url || '',
+    volume_titles: fallback.volume_titles || null,
+    volume_details: fallback.volume_details || null,
+    description: fallback.description || '',
+    first_published: fallback.first_published || '',
   };
 };

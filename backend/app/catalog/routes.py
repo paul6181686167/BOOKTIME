@@ -22,6 +22,7 @@ from ..security.jwt import get_current_user
 from ..utils.errors import public_error
 from ..utils.timeutils import utcnow
 from ..utils.validation import validate_category
+from . import expanded as expanded_fiches
 
 router = APIRouter(prefix="/api/catalog", tags=["catalog"])
 
@@ -365,6 +366,7 @@ def get_catalog_stats(current_user: dict = Depends(get_current_user)):
                 "bd":    catalog.count_documents({"category": "bd"}),
                 "ready": total > 0,
                 "source": "mongodb",
+                "expanded_fiches": expanded_fiches.stats(),
             }
         except Exception:
             pass
@@ -385,4 +387,21 @@ def get_catalog_stats(current_user: dict = Depends(get_current_user)):
             "catalog_cache": len(main_books),
             "manga_bd_cache": len(mb_books),
         },
+        "expanded_fiches": expanded_fiches.stats(),
     }
+
+
+@router.get("/expanded")
+def get_expanded_fiches(current_user: dict = Depends(get_current_user)):
+    """Catalogue étendu : 10 000 fiches tomes (hors overlay curé)."""
+    return expanded_fiches.catalog_payload()
+
+
+@router.get("/expanded/search")
+def search_expanded_fiches(
+    q: str = Query(..., min_length=2, max_length=200),
+    limit: int = Query(20, ge=1, le=50),
+    current_user: dict = Depends(get_current_user),
+):
+    """Recherche dans le catalogue étendu (nom de série ou titre de tome)."""
+    return {"results": expanded_fiches.search_series(q, limit=limit), "query": q}

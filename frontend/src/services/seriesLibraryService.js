@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '../config/environment';
-import { mapMergedVolumeRowsToLibraryVolumes } from '../utils/sourceMerge';
+import { mapMergedVolumeRowsToLibraryVolumes, orderWikidataWorks } from '../utils/sourceMerge';
+import { resolveCuratedSeriesByName } from '../utils/seriesAttribution';
 import logger from '../utils/logger';
 import {
   enqueueCreateSeries,
@@ -168,16 +169,26 @@ export const generateVolumesList = (seriesData, extendedSeriesDatabase) => {
     return mapMergedVolumeRowsToLibraryVolumes(seriesData.name || '', seriesData.mergedLibraryVolumes);
   }
 
+  const curatedTitles = resolveCuratedSeriesByName(seriesData.name)?.data?.volume_titles;
+  if (curatedTitles && Object.keys(curatedTitles).length > 0) {
+    return Object.keys(curatedTitles)
+      .map((k) => Number(k))
+      .filter((n) => Number.isFinite(n) && n > 0)
+      .sort((a, b) => a - b)
+      .map((volume_number) => ({
+        volume_number,
+        volume_title: curatedTitles[volume_number] || curatedTitles[String(volume_number)],
+        is_read: false,
+        date_read: null,
+      }));
+  }
+
   if (
     seriesData.fromStaticWikidata &&
     Array.isArray(seriesData.staticWikidataDetail?.works) &&
     seriesData.staticWikidataDetail.works.length > 0
   ) {
-    const sorted = [...seriesData.staticWikidataDetail.works].sort((a, b) => {
-      const na = parseVol(a.volume, 9999);
-      const nb = parseVol(b.volume, 9999);
-      return na - nb;
-    });
+    const sorted = orderWikidataWorks(seriesData.staticWikidataDetail.works);
     return sorted.map((w, i) => {
       const title = w.title_fr || w.title_en || `${seriesData.name} - Tome ${i + 1}`;
       const volume_number = parseVol(w.volume, i + 1);

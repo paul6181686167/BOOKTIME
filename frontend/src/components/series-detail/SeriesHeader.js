@@ -65,23 +65,34 @@ const SeriesHeader = ({
                   {series?.name}
                 </h2>
                 <p className="text-xs sm:text-base text-gray-600 dark:text-gray-400 mb-1.5">
-                  {series?.author ? (
-                    <>
-                      par{' '}
-                      <button 
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (onAuthorClick) onAuthorClick(series?.author);
-                        }}
-                        className="text-left text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors underline"
-                      >
-                        {series?.author}
-                      </button>
-                    </>
-                  ) : (
-                    <span className="text-gray-500 dark:text-gray-400">Référentiel Wikidata statique</span>
-                  )}
+                  {(() => {
+                    const authorName =
+                      series?.author ||
+                      enrichedSeries?.author ||
+                      (Array.isArray(enrichedSeries?.authors) && enrichedSeries.authors[0]) ||
+                      (series?.staticWikidataDetail?.works?.[0]?.authors_en || [])[0] ||
+                      '';
+                    if (authorName) {
+                      return (
+                        <>
+                          par{' '}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (onAuthorClick) onAuthorClick(authorName);
+                            }}
+                            className="text-left text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors underline"
+                          >
+                            {authorName}
+                          </button>
+                        </>
+                      );
+                    }
+                    return (
+                      <span className="text-gray-500 dark:text-gray-400">Référentiel Wikidata statique</span>
+                    );
+                  })()}
                 </p>
                 <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
                   <span className={`px-2 py-1 rounded-full font-medium ${getStatusBadge(seriesStatus)}`}>

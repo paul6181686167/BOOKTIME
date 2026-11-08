@@ -2,7 +2,7 @@
 // OPTIMISATION FILTRAGE STRICT - Validation basée référentiel Wikipedia
 
 import { FuzzyMatcher } from './fuzzyMatcher.js';
-import { EXTENDED_SERIES_DATABASE } from './seriesDatabaseExtended.js';
+import { EXTENDED_SERIES_DATABASE } from './seriesCatalogCompleteness.js';
 
 export class SeriesValidator {
   

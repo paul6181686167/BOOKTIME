@@ -46,8 +46,8 @@ const SeriesTomeList = ({
                       (b) => Number(b.volume_number) === tomeNumber
                     );
                     const tomeTitle =
-                      (fromOl && (fromOl.display_title || fromOl.title)) ||
                       enrichedSeries.volume_titles?.[tomeNumber] ||
+                      (fromOl && (fromOl.display_title || fromOl.title)) ||
                       `${enrichedSeries.name} - Tome ${tomeNumber}`;
                     return (
                       <TomeDropdown

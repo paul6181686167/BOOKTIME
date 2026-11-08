@@ -1,9 +1,10 @@
 // Optimiseur de recherche avec algorithme de priorisation et scoring avancé
 // OPTIMISATION ALGORITHME RECHERCHE - Priorisation fiches séries et tolérance orthographique universelle
 
-import { EXTENDED_SERIES_DATABASE } from './seriesDatabaseExtended.js';
+import { EXTENDED_SERIES_DATABASE } from './seriesCatalogCompleteness.js';
 import { FuzzyMatcher } from './fuzzyMatcher.js';
 import { SeriesValidator } from './seriesValidator.js';
+import { matchExpandedSeries } from './expandedFichesCatalog.js';
 import logger from './logger';
 
 // Le référentiel est un import statique immuable : à requête égale, le résultat est
@@ -182,6 +183,17 @@ export class SearchOptimizer {
     officialSeries.forEach(detected => {
       seriesCards.push(this.createSeriesCard(detected, 'official'));
     });
+
+    matchExpandedSeries(query, 5).forEach((detected) => {
+      const alreadyDetected = seriesCards.some(
+        (card) =>
+          FuzzyMatcher.normalizeString(card.name) ===
+          FuzzyMatcher.normalizeString(detected.series.name)
+      );
+      if (!alreadyDetected) {
+        seriesCards.push(this.createSeriesCard(detected, 'official'));
+      }
+    });
     
     // Ajouter séries utilisateur (si pas déjà détectées comme officielles)
     userSeries.forEach(detected => {
@@ -318,10 +330,17 @@ export class SearchOptimizer {
       // Données de base
       name: series.name,
       title: ` ${isOfficial ? 'SÉRIE' : 'MA SÉRIE'} : ${series.name}`,
-      author: series.authors.join(', '),
+      author: (series.authors || []).filter(Boolean).join(', '),
       category: series.category,
       description: this.formatSeriesDescription(series, detected, validationResults),
-      cover_url: '', // Pas de couverture pour les cartes séries
+      cover_url: series.volume_details?.[1]?.cover_url || series.volume_details?.['1']?.cover_url || series.cover_url || '',
+      volume_titles: series.volume_titles || null,
+      volume_details: series.volume_details || null,
+      publisher: series.publisher || '',
+      genre: series.genre || '',
+      first_published: series.first_published,
+      wikidata_qid: series.wikidata_qid || series.qid || null,
+      totalBooks: series.volumes,
       
       // Scoring et matching AMÉLIORÉ
       relevanceScore: detected.confidence, // Score 100000+ ou 90000+

@@ -4,6 +4,7 @@ import {
   buildWikidataSeriesMatcher,
   enrichWikidataCardFromCurated,
   findCuratedSeriesByQuery,
+  resolveCuratedSeriesByName,
   resolveSeriesTotalBooks,
 } from '../../utils/seriesAttribution';
 
@@ -93,5 +94,22 @@ describe('seriesAttribution', () => {
     expect(attr).not.toBeNull();
     expect(attr.source).toBe('wikidata');
     expect(attr.wikidata_qid).toBe('Q999');
+  });
+
+  test('Poudremages est curée avec 3 titres FR dans l’ordre', () => {
+    const r = resolveCuratedSeriesByName('La trilogie des Poudremages');
+    expect(r).not.toBeNull();
+    expect(r.data.authors[0]).toBe('Brian McClellan');
+    expect(r.data.volumes).toBe(3);
+    expect(r.data.volume_titles[1]).toBe('La Promesse du sang');
+    expect(r.data.volume_titles[2]).toBe('La Campagne écarlate');
+    expect(r.data.volume_titles[3]).toBe("La République d'automne");
+  });
+
+  test('Dune résout l’entrée avec les 6 titres FR, pas la copie vide', () => {
+    const r = resolveCuratedSeriesByName('Dune');
+    expect(r).not.toBeNull();
+    expect(r.data.volume_titles[2]).toBe('Le Messie de Dune');
+    expect(Object.keys(r.data.volume_titles)).toHaveLength(6);
   });
 });

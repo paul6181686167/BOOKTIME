@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "count": 110,
+  "count": 113,
   "series": [
     {
       "key": "acotar",
@@ -61,7 +61,20 @@
       ],
       "category": "roman",
       "volumes": 3,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Les Royaumes du Nord"
+        },
+        {
+          "volume_number": 2,
+          "title": "La Tour des anges"
+        },
+        {
+          "volume_number": 3,
+          "title": "Le Miroir d'ambre"
+        }
+      ],
       "keywords": [
         "croisée des mondes",
         "lyra",
@@ -92,7 +105,36 @@
       ],
       "category": "roman",
       "volumes": 7,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Du côté de chez Swann"
+        },
+        {
+          "volume_number": 2,
+          "title": "À l'ombre des jeunes filles en fleurs"
+        },
+        {
+          "volume_number": 3,
+          "title": "Le Côté de Guermantes"
+        },
+        {
+          "volume_number": 4,
+          "title": "Sodome et Gomorrhe"
+        },
+        {
+          "volume_number": 5,
+          "title": "La Prisonnière"
+        },
+        {
+          "volume_number": 6,
+          "title": "Albertine disparue"
+        },
+        {
+          "volume_number": 7,
+          "title": "Le Temps retrouvé"
+        }
+      ],
       "keywords": [
         "proust",
         "temps perdu",
@@ -198,7 +240,76 @@
       ],
       "category": "roman",
       "volumes": 17,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Arsène Lupin, gentleman-cambrioleur"
+        },
+        {
+          "volume_number": 2,
+          "title": "Arsène Lupin contre Herlock Sholmès"
+        },
+        {
+          "volume_number": 3,
+          "title": "L'Aiguille creuse"
+        },
+        {
+          "volume_number": 4,
+          "title": "813"
+        },
+        {
+          "volume_number": 5,
+          "title": "Le Bouchon de cristal"
+        },
+        {
+          "volume_number": 6,
+          "title": "Les Confidences d'Arsène Lupin"
+        },
+        {
+          "volume_number": 7,
+          "title": "Le Triangle d'or"
+        },
+        {
+          "volume_number": 8,
+          "title": "L'Île aux trente cercueils"
+        },
+        {
+          "volume_number": 9,
+          "title": "Les Dents du tigre"
+        },
+        {
+          "volume_number": 10,
+          "title": "Les Huit Coups de l'horloge"
+        },
+        {
+          "volume_number": 11,
+          "title": "La Comtesse de Cagliostro"
+        },
+        {
+          "volume_number": 12,
+          "title": "La Demoiselle aux yeux verts"
+        },
+        {
+          "volume_number": 13,
+          "title": "L'Agence Barnett et Cie"
+        },
+        {
+          "volume_number": 14,
+          "title": "La Demeure mystérieuse"
+        },
+        {
+          "volume_number": 15,
+          "title": "La Barre-y-va"
+        },
+        {
+          "volume_number": 16,
+          "title": "La Femme aux deux sourires"
+        },
+        {
+          "volume_number": 17,
+          "title": "Les Milliards d'Arsène Lupin"
+        }
+      ],
       "keywords": [
         "arsène lupin",
         "lupin",
@@ -443,17 +554,44 @@
       ],
       "category": "bd",
       "volumes": 6,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Quelque part entre les ombres"
+        },
+        {
+          "volume_number": 2,
+          "title": "Arctic-Nation"
+        },
+        {
+          "volume_number": 3,
+          "title": "Âme rouge"
+        },
+        {
+          "volume_number": 4,
+          "title": "L'Enfer, le silence"
+        },
+        {
+          "volume_number": 5,
+          "title": "Amarillo"
+        },
+        {
+          "volume_number": 6,
+          "title": "Alors, tout tombe"
+        }
+      ],
       "keywords": [
         "blacksad",
         "john blacksad",
         "chat noir",
         "polar",
-        "guarnido"
+        "guarnido",
+        "animaux"
       ],
       "variations": [
         "blacksad",
-        "black sad"
+        "black sad",
+        "black-sad"
       ],
       "exclusions": [
         "adaptations",
@@ -648,12 +786,16 @@
         "denji",
         "makima",
         "pochita",
-        "devil hunter"
+        "devil hunter",
+        "power",
+        "devils",
+        "fujimoto"
       ],
       "variations": [
         "chainsaw man",
         "csm",
-        "chainsaw"
+        "chainsaw",
+        "chainsawman"
       ],
       "exclusions": [
         "part 2",
@@ -768,7 +910,20 @@
       ],
       "category": "roman",
       "volumes": 3,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Le Nom du vent"
+        },
+        {
+          "volume_number": 2,
+          "title": "La Peur du sage"
+        },
+        {
+          "volume_number": 3,
+          "title": "Les Portes de pierre"
+        }
+      ],
       "keywords": [
         "kingkiller",
         "tueur de roi",
@@ -796,14 +951,16 @@
         "Hugo Pratt"
       ],
       "category": "bd",
-      "volumes": 12,
+      "volumes": 15,
       "volume_titles": [],
       "keywords": [
         "corto maltese",
         "hugo pratt",
         "marin",
         "aventure",
-        "ballad"
+        "ballad",
+        "aventurier",
+        "pratt"
       ],
       "variations": [
         "corto maltese",
@@ -826,14 +983,65 @@
       ],
       "category": "manga",
       "volumes": 12,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Ennui"
+        },
+        {
+          "volume_number": 2,
+          "title": "Confluence"
+        },
+        {
+          "volume_number": 3,
+          "title": "Dur labeur"
+        },
+        {
+          "volume_number": 4,
+          "title": "Amour"
+        },
+        {
+          "volume_number": 5,
+          "title": "Carnet blanc"
+        },
+        {
+          "volume_number": 6,
+          "title": "Bourse"
+        },
+        {
+          "volume_number": 7,
+          "title": "Zéro"
+        },
+        {
+          "volume_number": 8,
+          "title": "Cible"
+        },
+        {
+          "volume_number": 9,
+          "title": "Contact"
+        },
+        {
+          "volume_number": 10,
+          "title": "Doute"
+        },
+        {
+          "volume_number": 11,
+          "title": "Contexte"
+        },
+        {
+          "volume_number": 12,
+          "title": "Fini"
+        }
+      ],
       "keywords": [
         "death note",
         "light yagami",
         "l",
         "kira",
         "ryuk",
-        "shinigami"
+        "shinigami",
+        "light",
+        "yagami"
       ],
       "variations": [
         "death note",
@@ -862,12 +1070,15 @@
         "tanjiro",
         "nezuko",
         "kimetsu no yaiba",
-        "hashira"
+        "hashira",
+        "demons"
       ],
       "variations": [
         "demon slayer",
         "kimetsu no yaiba",
-        "kny"
+        "kny",
+        "kimetsu",
+        "demon slayers"
       ],
       "exclusions": [
         "spin-offs",
@@ -884,7 +1095,20 @@
       ],
       "category": "roman",
       "volumes": 3,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Divergente"
+        },
+        {
+          "volume_number": 2,
+          "title": "L'Insurrection"
+        },
+        {
+          "volume_number": 3,
+          "title": "Allégeance"
+        }
+      ],
       "keywords": [
         "divergent",
         "tris",
@@ -902,6 +1126,97 @@
         "prequel"
       ],
       "first_published": "2011",
+      "source": "curated_reference"
+    },
+    {
+      "key": "dog_man",
+      "name": "Dog Man",
+      "authors": [
+        "Dav Pilkey"
+      ],
+      "category": "bd",
+      "volumes": 14,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Dog Man"
+        },
+        {
+          "volume_number": 2,
+          "title": "Dog Man: Unleashed"
+        },
+        {
+          "volume_number": 3,
+          "title": "Dog Man: A Tale of Two Kitties"
+        },
+        {
+          "volume_number": 4,
+          "title": "Dog Man and Cat Kid"
+        },
+        {
+          "volume_number": 5,
+          "title": "Dog Man: Lord of the Fleas"
+        },
+        {
+          "volume_number": 6,
+          "title": "Dog Man: Brawl of the Wild"
+        },
+        {
+          "volume_number": 7,
+          "title": "Dog Man: For Whom the Ball Rolls"
+        },
+        {
+          "volume_number": 8,
+          "title": "Dog Man: Fetch-22"
+        },
+        {
+          "volume_number": 9,
+          "title": "Dog Man: Grime and Punishment"
+        },
+        {
+          "volume_number": 10,
+          "title": "Dog Man: Mothering Heights"
+        },
+        {
+          "volume_number": 11,
+          "title": "Dog Man: Twenty Thousand Fleas Under the Sea"
+        },
+        {
+          "volume_number": 12,
+          "title": "Dog Man: The Scarlet Shedder"
+        },
+        {
+          "volume_number": 13,
+          "title": "Dog Man: Big Jim Begins"
+        },
+        {
+          "volume_number": 14,
+          "title": "Dog Man: Big Jim Believes"
+        }
+      ],
+      "keywords": [
+        "dog man",
+        "super chien",
+        "dav pilkey",
+        "pilkey",
+        "petey",
+        "cat kid",
+        "homme chien"
+      ],
+      "variations": [
+        "dog man",
+        "dogman",
+        "super chien",
+        "superchien",
+        "dog man series",
+        "série dog man"
+      ],
+      "exclusions": [
+        "captain underpants",
+        "capitaine slip",
+        "cat kid comic club"
+      ],
+      "first_published": "2016",
       "source": "curated_reference"
     },
     {
@@ -1034,7 +1349,32 @@
       ],
       "category": "roman",
       "volumes": 6,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Dune"
+        },
+        {
+          "volume_number": 2,
+          "title": "Le Messie de Dune"
+        },
+        {
+          "volume_number": 3,
+          "title": "Les Enfants de Dune"
+        },
+        {
+          "volume_number": 4,
+          "title": "L'Empereur-Dieu de Dune"
+        },
+        {
+          "volume_number": 5,
+          "title": "Les Hérétiques de Dune"
+        },
+        {
+          "volume_number": 6,
+          "title": "La Maison des Mères"
+        }
+      ],
       "keywords": [
         "dune",
         "arrakis",
@@ -1042,11 +1382,17 @@
         "muad dib",
         "spice",
         "desert",
-        "herbert"
+        "herbert",
+        "épice",
+        "fremen"
       ],
       "variations": [
         "dune",
-        "dunes"
+        "dunes",
+        "dun",
+        "duune",
+        "cycles dune",
+        "cycle de dune"
       ],
       "exclusions": [
         "brian herbert",
@@ -1204,7 +1550,36 @@
       ],
       "category": "roman",
       "volumes": 7,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "L'Empire ultime"
+        },
+        {
+          "volume_number": 2,
+          "title": "Le Puits de l'ascension"
+        },
+        {
+          "volume_number": 3,
+          "title": "Le Héros des siècles"
+        },
+        {
+          "volume_number": 4,
+          "title": "Alliage de loi"
+        },
+        {
+          "volume_number": 5,
+          "title": "Ombre de soi"
+        },
+        {
+          "volume_number": 6,
+          "title": "Bracelets de deuil"
+        },
+        {
+          "volume_number": 7,
+          "title": "Le Métal perdu"
+        }
+      ],
       "keywords": [
         "mistborn",
         "fils des brumes",
@@ -1277,7 +1652,36 @@
       ],
       "category": "roman",
       "volumes": 7,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Fondation"
+        },
+        {
+          "volume_number": 2,
+          "title": "Fondation et Empire"
+        },
+        {
+          "volume_number": 3,
+          "title": "Seconde Fondation"
+        },
+        {
+          "volume_number": 4,
+          "title": "Fondation foudroyée"
+        },
+        {
+          "volume_number": 5,
+          "title": "Terre et Fondation"
+        },
+        {
+          "volume_number": 6,
+          "title": "Prélude à Fondation"
+        },
+        {
+          "volume_number": 7,
+          "title": "L'Aube de Fondation"
+        }
+      ],
       "keywords": [
         "fondation",
         "asimov",
@@ -1308,7 +1712,36 @@
       ],
       "category": "roman",
       "volumes": 7,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Fondation"
+        },
+        {
+          "volume_number": 2,
+          "title": "Fondation et Empire"
+        },
+        {
+          "volume_number": 3,
+          "title": "Seconde Fondation"
+        },
+        {
+          "volume_number": 4,
+          "title": "Fondation foudroyée"
+        },
+        {
+          "volume_number": 5,
+          "title": "Terre et Fondation"
+        },
+        {
+          "volume_number": 6,
+          "title": "Prélude à Fondation"
+        },
+        {
+          "volume_number": 7,
+          "title": "L'Aube de Fondation"
+        }
+      ],
       "keywords": [
         "fondation",
         "foundation",
@@ -1777,12 +2210,6 @@
           "title": "Red God"
         }
       ],
-      "volume_details": {
-        "1": { "pages": 624, "published_year": 2018, "released": true },
-        "2": { "pages": 800, "published_year": 2019, "released": true },
-        "3": { "pages": 688, "published_year": 2023, "released": true },
-        "4": { "pages": null, "published_year": null, "released": false }
-      },
       "keywords": [
         "iron gold",
         "pierce brown",
@@ -1805,7 +2232,6 @@
         "morning star"
       ],
       "first_published": "2018",
-      "status": "ongoing",
       "source": "curated_reference"
     },
     {
@@ -1852,7 +2278,9 @@
         "sukuna",
         "gojo",
         "megumi",
-        "nobara"
+        "nobara",
+        "fléaux",
+        "sorciers"
       ],
       "variations": [
         "jujutsu kaisen",
@@ -2148,7 +2576,64 @@
       ],
       "category": "roman",
       "volumes": 14,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "L'Œil du monde"
+        },
+        {
+          "volume_number": 2,
+          "title": "La Grande Quête"
+        },
+        {
+          "volume_number": 3,
+          "title": "Le Dragon réincarné"
+        },
+        {
+          "volume_number": 4,
+          "title": "Un lever de ténèbres"
+        },
+        {
+          "volume_number": 5,
+          "title": "Les Feux du ciel"
+        },
+        {
+          "volume_number": 6,
+          "title": "Le Seigneur du chaos"
+        },
+        {
+          "volume_number": 7,
+          "title": "La Couronne d'épées"
+        },
+        {
+          "volume_number": 8,
+          "title": "Le Chemin des dagues"
+        },
+        {
+          "volume_number": 9,
+          "title": "Le Cœur de l'hiver"
+        },
+        {
+          "volume_number": 10,
+          "title": "Carrefours du crépuscule"
+        },
+        {
+          "volume_number": 11,
+          "title": "Le Poignard des rêves"
+        },
+        {
+          "volume_number": 12,
+          "title": "La Tempête imminente"
+        },
+        {
+          "volume_number": 13,
+          "title": "Les Tours de minuit"
+        },
+        {
+          "volume_number": 14,
+          "title": "Un souvenir de lumière"
+        }
+      ],
       "keywords": [
         "roue du temps",
         "wheel of time",
@@ -2177,7 +2662,64 @@
       ],
       "category": "roman",
       "volumes": 14,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "L'Œil du monde"
+        },
+        {
+          "volume_number": 2,
+          "title": "La Grande Quête"
+        },
+        {
+          "volume_number": 3,
+          "title": "Le Dragon réincarné"
+        },
+        {
+          "volume_number": 4,
+          "title": "Un lever de ténèbres"
+        },
+        {
+          "volume_number": 5,
+          "title": "Les Feux du ciel"
+        },
+        {
+          "volume_number": 6,
+          "title": "Le Seigneur du chaos"
+        },
+        {
+          "volume_number": 7,
+          "title": "La Couronne d'épées"
+        },
+        {
+          "volume_number": 8,
+          "title": "Le Chemin des dagues"
+        },
+        {
+          "volume_number": 9,
+          "title": "Le Cœur de l'hiver"
+        },
+        {
+          "volume_number": 10,
+          "title": "Carrefours du crépuscule"
+        },
+        {
+          "volume_number": 11,
+          "title": "Le Poignard des rêves"
+        },
+        {
+          "volume_number": 12,
+          "title": "La Tempête imminente"
+        },
+        {
+          "volume_number": 13,
+          "title": "Les Tours de minuit"
+        },
+        {
+          "volume_number": 14,
+          "title": "Un souvenir de lumière"
+        }
+      ],
       "keywords": [
         "wheel of time",
         "roue du temps",
@@ -2207,7 +2749,40 @@
       ],
       "category": "roman",
       "volumes": 8,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Le Pistolero"
+        },
+        {
+          "volume_number": 2,
+          "title": "Les Trois Cartes"
+        },
+        {
+          "volume_number": 3,
+          "title": "Terres perdues"
+        },
+        {
+          "volume_number": 4,
+          "title": "Magie et cristal"
+        },
+        {
+          "volume_number": 5,
+          "title": "Les Loups du Calla"
+        },
+        {
+          "volume_number": 6,
+          "title": "Le Chant de Susannah"
+        },
+        {
+          "volume_number": 7,
+          "title": "La Tour Sombre"
+        },
+        {
+          "volume_number": 8,
+          "title": "Le Vent par le trou de la serrure"
+        }
+      ],
       "keywords": [
         "dark tower",
         "tour sombre",
@@ -2243,31 +2818,31 @@
         },
         {
           "volume_number": 2,
-          "title": "La Tour de Susannah"
+          "title": "Les Trois Cartes"
         },
         {
           "volume_number": 3,
-          "title": "Les Terres Perdues"
+          "title": "Terres perdues"
         },
         {
           "volume_number": 4,
-          "title": "L'Assistant du Mal"
+          "title": "Magie et cristal"
         },
         {
           "volume_number": 5,
-          "title": "Magie et Cristal"
+          "title": "Les Loups du Calla"
         },
         {
           "volume_number": 6,
-          "title": "Loups de Calla"
-        },
-        {
-          "volume_number": 7,
           "title": "Le Chant de Susannah"
         },
         {
-          "volume_number": 8,
+          "volume_number": 7,
           "title": "La Tour Sombre"
+        },
+        {
+          "volume_number": 8,
+          "title": "Le Vent par le trou de la serrure"
         }
       ],
       "keywords": [
@@ -2293,6 +2868,53 @@
       "source": "curated_reference"
     },
     {
+      "key": "poudremages",
+      "name": "La trilogie des Poudremages",
+      "authors": [
+        "Brian McClellan"
+      ],
+      "category": "roman",
+      "volumes": 3,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "La Promesse du sang"
+        },
+        {
+          "volume_number": 2,
+          "title": "La Campagne écarlate"
+        },
+        {
+          "volume_number": 3,
+          "title": "La République d'automne"
+        }
+      ],
+      "keywords": [
+        "poudremages",
+        "powder mage",
+        "mcClellan",
+        "adro",
+        "tamas",
+        "promesse du sang",
+        "campagne écarlate"
+      ],
+      "variations": [
+        "la trilogie des poudremages",
+        "trilogie des poudremages",
+        "les poudremages",
+        "poudremages",
+        "powder mage",
+        "the powder mage trilogy",
+        "powder mage trilogy"
+      ],
+      "exclusions": [
+        "gods of blood and powder",
+        "sins of empire"
+      ],
+      "first_published": "2013",
+      "source": "curated_reference"
+    },
+    {
       "key": "lanfeust",
       "name": "Lanfeust de Troy",
       "authors": [
@@ -2301,19 +2923,55 @@
       ],
       "category": "bd",
       "volumes": 8,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "L'Ivoire du Magohamoth"
+        },
+        {
+          "volume_number": 2,
+          "title": "Thanos l'incongru"
+        },
+        {
+          "volume_number": 3,
+          "title": "Castel Or-Azur"
+        },
+        {
+          "volume_number": 4,
+          "title": "Le Paladin d'Eckmül"
+        },
+        {
+          "volume_number": 5,
+          "title": "Le Frisson de l'haruspice"
+        },
+        {
+          "volume_number": 6,
+          "title": "Cixi impératrice"
+        },
+        {
+          "volume_number": 7,
+          "title": "Les Pétaures se cachent pour mourir"
+        },
+        {
+          "volume_number": 8,
+          "title": "La Bête fabuleuse"
+        }
+      ],
       "keywords": [
         "lanfeust",
         "troy",
         "cixi",
         "hébus",
         "fantasy",
-        "arleston"
+        "arleston",
+        "forgeron",
+        "tarquin"
       ],
       "variations": [
         "lanfeust de troy",
         "lanfeust",
-        "troy"
+        "troy",
+        "lanfeust troy"
       ],
       "exclusions": [
         "trolls de troy",
@@ -2330,14 +2988,16 @@
         "Philippe Francq"
       ],
       "category": "bd",
-      "volumes": 23,
+      "volumes": 24,
       "volume_titles": [],
       "keywords": [
         "largo winch",
         "group w",
         "milliardaire",
         "thriller",
-        "van hamme"
+        "van hamme",
+        "business",
+        "francq"
       ],
       "variations": [
         "largo winch",
@@ -2411,7 +3071,20 @@
       ],
       "category": "roman",
       "volumes": 3,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Le Labyrinthe"
+        },
+        {
+          "volume_number": 2,
+          "title": "La Terre brûlée"
+        },
+        {
+          "volume_number": 3,
+          "title": "Le Remède mortel"
+        }
+      ],
       "keywords": [
         "maze runner",
         "labyrinthe",
@@ -2584,7 +3257,28 @@
       ],
       "category": "roman",
       "volumes": 10,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Le Chemin des rois"
+        },
+        {
+          "volume_number": 2,
+          "title": "Les Mots radieux"
+        },
+        {
+          "volume_number": 3,
+          "title": "Jurevent"
+        },
+        {
+          "volume_number": 4,
+          "title": "Le Rythme de la guerre"
+        },
+        {
+          "volume_number": 5,
+          "title": "Vent et vérité"
+        }
+      ],
       "keywords": [
         "stormlight",
         "roshar",
@@ -2789,7 +3483,20 @@
       ],
       "category": "roman",
       "volumes": 3,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Les Fourmis"
+        },
+        {
+          "volume_number": 2,
+          "title": "Le Jour des fourmis"
+        },
+        {
+          "volume_number": 3,
+          "title": "La Révolution des fourmis"
+        }
+      ],
       "keywords": [
         "fourmis",
         "werber",
@@ -2911,7 +3618,88 @@
       ],
       "category": "roman",
       "volumes": 20,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "La Fortune des Rougon"
+        },
+        {
+          "volume_number": 2,
+          "title": "La Curée"
+        },
+        {
+          "volume_number": 3,
+          "title": "Le Ventre de Paris"
+        },
+        {
+          "volume_number": 4,
+          "title": "La Conquête de Plassans"
+        },
+        {
+          "volume_number": 5,
+          "title": "La Faute de l'abbé Mouret"
+        },
+        {
+          "volume_number": 6,
+          "title": "Son Excellence Eugène Rougon"
+        },
+        {
+          "volume_number": 7,
+          "title": "L'Assommoir"
+        },
+        {
+          "volume_number": 8,
+          "title": "Une page d'amour"
+        },
+        {
+          "volume_number": 9,
+          "title": "Nana"
+        },
+        {
+          "volume_number": 10,
+          "title": "Pot-Bouille"
+        },
+        {
+          "volume_number": 11,
+          "title": "Au Bonheur des Dames"
+        },
+        {
+          "volume_number": 12,
+          "title": "La Joie de vivre"
+        },
+        {
+          "volume_number": 13,
+          "title": "Germinal"
+        },
+        {
+          "volume_number": 14,
+          "title": "L'Œuvre"
+        },
+        {
+          "volume_number": 15,
+          "title": "La Terre"
+        },
+        {
+          "volume_number": 16,
+          "title": "Le Rêve"
+        },
+        {
+          "volume_number": 17,
+          "title": "La Bête humaine"
+        },
+        {
+          "volume_number": 18,
+          "title": "L'Argent"
+        },
+        {
+          "volume_number": 19,
+          "title": "La Débâcle"
+        },
+        {
+          "volume_number": 20,
+          "title": "Le Docteur Pascal"
+        }
+      ],
       "keywords": [
         "rougon macquart",
         "zola",
@@ -2941,15 +3729,15 @@
       "volume_titles": [
         {
           "volume_number": 1,
-          "title": "La République des voleurs"
-        },
-        {
-          "volume_number": 2,
           "title": "Les Mensonges de Locke Lamora"
         },
         {
+          "volume_number": 2,
+          "title": "Des horizons rouge sang"
+        },
+        {
           "volume_number": 3,
-          "title": "L'Océan Écarlate"
+          "title": "Une république de voleurs"
         }
       ],
       "keywords": [
@@ -3066,7 +3854,32 @@
       ],
       "category": "roman",
       "volumes": 6,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Au bonheur des ogres"
+        },
+        {
+          "volume_number": 2,
+          "title": "La Fée Carabine"
+        },
+        {
+          "volume_number": 3,
+          "title": "La Petite Marchande de prose"
+        },
+        {
+          "volume_number": 4,
+          "title": "Monsieur Malaussène"
+        },
+        {
+          "volume_number": 5,
+          "title": "Monsieur Malaussène au théâtre"
+        },
+        {
+          "volume_number": 6,
+          "title": "Aux fruits de la passion"
+        }
+      ],
       "keywords": [
         "malaussène",
         "pennac",
@@ -3180,7 +3993,7 @@
         "Kōhei Horikoshi"
       ],
       "category": "manga",
-      "volumes": 37,
+      "volumes": 38,
       "volume_titles": [],
       "keywords": [
         "my hero academia",
@@ -3188,12 +4001,15 @@
         "midoriya",
         "all might",
         "quirk",
-        "ua"
+        "ua",
+        "boku no hero"
       ],
       "variations": [
         "my hero academia",
         "mha",
-        "boku no hero academia"
+        "boku no hero academia",
+        "my hero",
+        "bnha"
       ],
       "exclusions": [
         "vigilantes",
@@ -3309,7 +4125,44 @@
       ],
       "category": "roman",
       "volumes": 9,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Le Chardon et le Tartan"
+        },
+        {
+          "volume_number": 2,
+          "title": "Le Talisman"
+        },
+        {
+          "volume_number": 3,
+          "title": "Le Voyage"
+        },
+        {
+          "volume_number": 4,
+          "title": "Les Tambours de l'automne"
+        },
+        {
+          "volume_number": 5,
+          "title": "La Croix de feu"
+        },
+        {
+          "volume_number": 6,
+          "title": "Un souffle de neige et de cendre"
+        },
+        {
+          "volume_number": 7,
+          "title": "L'Écho des cœurs lointains"
+        },
+        {
+          "volume_number": 8,
+          "title": "À l'encre de mon cœur"
+        },
+        {
+          "volume_number": 9,
+          "title": "Dites aux abeilles que je suis partie"
+        }
+      ],
       "keywords": [
         "outlander",
         "claire",
@@ -3368,14 +4221,18 @@
         "rick riordan",
         "demi-dieu",
         "olympe",
+        "olympian",
+        "olympians",
         "camp",
-        "mythology"
+        "mythology",
+        "lightning thief"
       ],
       "variations": [
         "percy jackson",
         "percy jakson",
         "percy",
-        "olympians"
+        "olympians",
+        "percy jackson and the olympians"
       ],
       "exclusions": [
         "heroes of olympus",
@@ -3779,7 +4636,32 @@
       ],
       "category": "roman",
       "volumes": 6,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Le Sorcier de Terremer"
+        },
+        {
+          "volume_number": 2,
+          "title": "Les Tombeaux d'Atuan"
+        },
+        {
+          "volume_number": 3,
+          "title": "L'Ultime Rivage"
+        },
+        {
+          "volume_number": 4,
+          "title": "Tehanu"
+        },
+        {
+          "volume_number": 5,
+          "title": "Contes de Terremer"
+        },
+        {
+          "volume_number": 6,
+          "title": "Le Vent d'ailleurs"
+        }
+      ],
       "keywords": [
         "earthsea",
         "terremer",
@@ -3877,20 +4759,55 @@
       ],
       "category": "roman",
       "volumes": 8,
-      "volume_titles": [],
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Le Dernier Vœu"
+        },
+        {
+          "volume_number": 2,
+          "title": "L'Épée de la providence"
+        },
+        {
+          "volume_number": 3,
+          "title": "Le Sang des elfes"
+        },
+        {
+          "volume_number": 4,
+          "title": "Le Temps du mépris"
+        },
+        {
+          "volume_number": 5,
+          "title": "Le Baptême du feu"
+        },
+        {
+          "volume_number": 6,
+          "title": "La Tour de l'Hirondelle"
+        },
+        {
+          "volume_number": 7,
+          "title": "La Dame du lac"
+        },
+        {
+          "volume_number": 8,
+          "title": "Saison des orages"
+        }
+      ],
       "keywords": [
         "witcher",
         "sorceleur",
         "geralt",
         "rivia",
         "ciri",
-        "yennefer"
+        "yennefer",
+        "sapkowski"
       ],
       "variations": [
         "witcher",
         "sorceleur",
         "geralt de rivia",
-        "wiedźmin"
+        "wiedźmin",
+        "geralt"
       ],
       "exclusions": [
         "netflix",
@@ -4055,6 +4972,68 @@
       "source": "curated_reference"
     },
     {
+      "key": "time_riders",
+      "name": "Time Riders",
+      "authors": [
+        "Alex Scarrow"
+      ],
+      "category": "roman",
+      "volumes": 9,
+      "volume_titles": [
+        {
+          "volume_number": 1,
+          "title": "Time Riders"
+        },
+        {
+          "volume_number": 2,
+          "title": "Jour du jugement"
+        },
+        {
+          "volume_number": 3,
+          "title": "Les portes du temps"
+        },
+        {
+          "volume_number": 4,
+          "title": "La guerre éternelle"
+        },
+        {
+          "volume_number": 5,
+          "title": "Les flammes de Rome"
+        },
+        {
+          "volume_number": 6,
+          "title": "Le piège de Mayan"
+        },
+        {
+          "volume_number": 7,
+          "title": "Les seigneurs de la guerre"
+        },
+        {
+          "volume_number": 8,
+          "title": "Le destin du Titanic"
+        },
+        {
+          "volume_number": 9,
+          "title": "La vengeance de l'horloge"
+        }
+      ],
+      "keywords": [
+        "time riders",
+        "timeriders",
+        "alex scarrow",
+        "voyage dans le temps"
+      ],
+      "variations": [
+        "time riders",
+        "time rider",
+        "timeriders",
+        "time-riders"
+      ],
+      "exclusions": [],
+      "first_published": "2010",
+      "source": "curated_reference"
+    },
+    {
       "key": "tokyo_ghoul",
       "name": "Tokyo Ghoul",
       "authors": [
@@ -4069,12 +5048,15 @@
         "goule",
         "ccg",
         "kagune",
-        "tokyo"
+        "tokyo",
+        "anteiku",
+        "ishida"
       ],
       "variations": [
         "tokyo ghoul",
         "tokyo goul",
-        "tg"
+        "tg",
+        "tokyoghoul"
       ],
       "exclusions": [
         "tokyo ghoul re",

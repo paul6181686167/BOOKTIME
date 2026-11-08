@@ -14,6 +14,7 @@ import {
   isGoogleBooksCoverUrl,
   isUsableCoverUrl,
   normalizeCoverUrl,
+  pickFirstVolumeEntity,
 } from '../utils/helpers';
 import { searchCoverInBrowser } from '../utils/coverClientSearch';
 import { bookService } from './bookService';
@@ -569,19 +570,30 @@ export async function resolveCoverForVisibleItem(item) {
     : `b:${item.id}`;
 
   return enqueueVisibleCover(cacheKey, async () => {
+    const firstVol = pickFirstVolumeEntity(item);
     const title =
-      item.name || item.title || item.display_title || item.series_name || '';
-    const author = item.author || '';
+      (item.isSeriesCard || item.isOwnedSeries
+        ? firstVol?.title || firstVol?.volume_title
+        : '') ||
+      item.name ||
+      item.title ||
+      item.display_title ||
+      item.series_name ||
+      '';
+    const author = firstVol?.author || item.author || '';
 
-    // 1) Recherche navigateur (OL work/ISBN puis GB, file anti-429)
+    // 1) Recherche navigateur — pour une série : titre du tome 1
     let cover = await searchCoverInBrowser(title, author, {
-      isbn: item.isbn,
-      ol_key: item.ol_key || item.open_library_key,
+      isbn: firstVol?.isbn || item.isbn,
+      ol_key: firstVol?.ol_key || item.ol_key || item.open_library_key,
     });
 
     // 2) Essai via un tome enfant (cartes série regroupées)
     if (!isUsableCoverUrl(cover) && Array.isArray(item.books)) {
-      for (const b of item.books.slice(0, 3)) {
+      const ordered = [...item.books].sort(
+        (a, b) => (Number(a?.volume_number) || 99) - (Number(b?.volume_number) || 99)
+      );
+      for (const b of ordered.slice(0, 3)) {
         if (!b?.title && !b?.volume_title) continue;
         cover = await searchCoverInBrowser(
           b.title || b.volume_title,

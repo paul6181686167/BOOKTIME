@@ -3,7 +3,7 @@ import ModalOverlay, { MODAL_Z } from './common/ModalOverlay';
 import { XMarkIcon, UserIcon, BookOpenIcon, CalendarIcon, QueueListIcon, ChevronDownIcon, ChevronUpIcon, StarIcon, TrophyIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { API_BASE_URL } from '../config/environment';
-import { EXTENDED_SERIES_DATABASE } from '../utils/seriesDatabaseExtended';
+import { EXTENDED_SERIES_DATABASE } from '../utils/seriesCatalogCompleteness';
 import { buildMergedLibraryVolumeRowsFromOlBooks } from '../utils/openLibraryBookDisplay';
 import { useTheme } from '../contexts/ThemeContext';
 import { readAuthorProfile } from '../services/authorPrefetch';
