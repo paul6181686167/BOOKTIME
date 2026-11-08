@@ -8,8 +8,25 @@ const OL_JUNK_SECTION =
 /**
  * Retire le bruit OL/Wiki (markdown, sections annexes, URLs).
  */
-export function sanitizeSynopsis(text) {
+function repairEncoding(text) {
   let t = String(text || '');
+  if (/Ã.|Â.|â€/.test(t)) {
+    try {
+      const repaired = decodeURIComponent(escape(t));
+      if (repaired && !repaired.includes('\uFFFD')) t = repaired;
+    } catch {
+      /* garder le texte d'origine */
+    }
+  }
+  t = t.replace(/\uFFFD/g, '');
+  t = t.replace(/fran[\uFFFD]?aise/gi, (m) => (m[0] === 'F' ? 'Française' : 'française'));
+  t = t.replace(/([dlLnNsS]|qu|Qu)''/g, "$1'");
+  t = t.replace(/''/g, "'");
+  return t;
+}
+
+export function sanitizeSynopsis(text) {
+  let t = repairEncoding(String(text || ''));
   if (!t.trim()) return '';
 
   t = t.replace(/<[^>]+>/g, ' ');
@@ -73,6 +90,24 @@ const EN_STOP = new Set([
   'be', 'or', 'which', 'who', 'into', 'has', 'have', 'its', 'about',
   'after', 'before', 'when', 'where', 'while', 'through', 'over', 'under',
 ]);
+const ES_STOP = new Set([
+  'el', 'los', 'las', 'una', 'unos', 'unas', 'es', 'son', 'del', 'al', 'se',
+  'su', 'sus', 'como', 'pero', 'este', 'esta', 'estos', 'estas', 'está', 'están',
+  'hay', 'muy', 'más', 'también', 'cuando', 'donde', 'sobre', 'hasta', 'desde',
+  'porque', 'sin', 'entre', 'tiene', 'tienen', 'solo', 'sólo', 'único', 'unico',
+]);
+/** Mots vraiment français (pas partagés avec l'espagnol : la, de, en, un, que, son, le). */
+const FR_UNIQUE = new Set([
+  'les', 'une', 'des', 'du', 'et', 'est', 'sont', 'cette', 'ces', 'aux',
+  'qui', 'dans', 'pour', 'par', 'avec', 'mais', 'leur', 'leurs',
+  'sa', 'ses', 'plus',
+]);
+/** Mots vraiment espagnols (pas partagés avec le français). */
+const ES_UNIQUE = new Set([
+  'el', 'los', 'las', 'una', 'unos', 'unas', 'es', 'son', 'del', 'al', 'se',
+  'su', 'sus', 'está', 'están', 'hay', 'más', 'también', 'pero', 'este', 'esta',
+  'tiene', 'tienen', 'porque',
+]);
 const EN_MARKERS = new Set([
   'novel', 'novella', 'story', 'stories', 'book', 'books', 'published', 'author',
   'series', 'character', 'characters', 'fiction', 'science', 'fantasy', 'thriller',
@@ -86,13 +121,16 @@ const FR_MARKERS = new Set([
 function langScores(text) {
   const t = String(text || '').trim();
   const accentN = (t.match(/[àâäéèêëïîôùûüçœæÀÂÄÉÈÊËÏÎÔÙÛÜÇŒÆ]/g) || []).length;
-  const tokens = t.toLowerCase().match(/[a-zàâäéèêëïîôùûüçœæ']+/gi) || [];
+  const tokens = t.toLowerCase().match(/[a-zàâäáéèêëïîíôóùûúüçœæñ']+/gi) || [];
   return {
     len: t.length,
     accentN,
     tokens,
     frHits: tokens.filter((w) => FR_STOP.has(w)).length,
     enHits: tokens.filter((w) => EN_STOP.has(w)).length,
+    esHits: tokens.filter((w) => ES_STOP.has(w)).length,
+    frUnique: tokens.filter((w) => FR_UNIQUE.has(w)).length,
+    esUnique: tokens.filter((w) => ES_UNIQUE.has(w)).length,
     frMark: tokens.filter((w) => FR_MARKERS.has(w)).length,
     enMark: tokens.filter((w) => EN_MARKERS.has(w)).length,
   };
@@ -103,11 +141,49 @@ function englishDominant({ enHits, frHits }) {
   return enHits >= 6 && enHits >= frHits * 2;
 }
 
+/** Espagnol dominant (ex. résumé Google Books non traduit, y compris texte mixte). */
+export function looksSpanish(text) {
+  const s = langScores(text);
+  if (s.len < 20 || !s.tokens.length) return false;
+  if (s.esUnique >= 3 && s.esUnique > s.frUnique) return true;
+  if (s.esUnique >= 2 && s.esUnique >= s.frUnique && s.frUnique <= 4) return true;
+  if (s.esHits >= 3 && s.esHits > s.frHits) return true;
+  // Ouverture espagnole d'un blurb concaténé ES + EN + FR
+  if (s.len > 350) {
+    const head = String(text).slice(0, 400);
+    const hs = langScores(head);
+    if (hs.esUnique >= 3 && hs.esUnique > hs.frUnique) return true;
+  }
+  return false;
+}
+
+/**
+ * Extrait les paragraphes français d'un résumé concaténé (ES/EN/FR).
+ * Ignore les blocs tronqués (commençant en minuscule).
+ */
+export function extractFrenchSynopsis(text) {
+  const cleaned = sanitizeSynopsis(text);
+  if (!cleaned) return '';
+  const chunks = cleaned
+    .split(/\bENGLISH DESCRIPTION\b[:\s]*/i)
+    .flatMap((block) => block.split(/\n\s*\n+/))
+    .map((p) => p.trim())
+    .filter((p) => p.length >= 40);
+  const french = chunks.filter((p) => {
+    if (/^[a-zàâäéèêëïîôùûüç]/.test(p)) return false;
+    return looksFrench(p) && !looksSpanish(p) && !looksEnglish(p);
+  });
+  if (!french.length) return '';
+  const joined = french.join('\n\n');
+  return isUsableSynopsis(joined) ? sanitizeSynopsis(joined) : '';
+}
+
 /** Heuristique : le texte ressemble davantage au français qu'à l'anglais. */
 export function looksFrench(text) {
   const s = langScores(text);
   if (s.len < 20 || !s.tokens.length) return false;
   if (englishDominant(s)) return false;
+  if (looksSpanish(text)) return false;
   if (s.accentN >= 3 && s.frHits + 1 >= s.enHits) return true;
   if (s.accentN >= 1 && s.frHits >= s.enHits) return true;
   if (s.frHits >= 3 && s.frHits > s.enHits) return true;
@@ -126,29 +202,34 @@ export function looksEnglish(text) {
 }
 
 /**
- * Choisit le meilleur résumé : français d'abord, sinon non-anglais.
- * Passer `{ rejectEnglish: true }` pour n'accepter aucun texte clairement anglais.
+ * Choisit le meilleur résumé : français d'abord.
+ * `{ rejectEnglish: true }` (alias `{ frenchOnly: true }`) n'accepte que du français.
  */
 export function preferFrenchSynopsis(...candidates) {
   let rejectEnglish = false;
   const rawList = [];
   for (const raw of candidates) {
-    if (raw && typeof raw === 'object' && !Array.isArray(raw) && 'rejectEnglish' in raw) {
-      rejectEnglish = !!raw.rejectEnglish;
+    if (raw && typeof raw === 'object' && !Array.isArray(raw) && ('rejectEnglish' in raw || 'frenchOnly' in raw)) {
+      rejectEnglish = !!(raw.rejectEnglish || raw.frenchOnly);
       continue;
     }
     rawList.push(raw);
   }
   const usable = [];
   for (const raw of rawList) {
+    const extracted = extractFrenchSynopsis(raw);
+    if (extracted) {
+      usable.push(extracted);
+      continue;
+    }
     const text = displaySynopsis(raw);
     if (text) usable.push(text);
   }
   if (!usable.length) return '';
-  const fr = usable.find(looksFrench);
+  const fr = usable.find((t) => looksFrench(t) && !looksSpanish(t) && !looksEnglish(t));
   if (fr) return fr;
-  const nonEn = usable.find((t) => !looksEnglish(t));
-  if (nonEn) return nonEn;
   if (rejectEnglish) return '';
+  const nonEn = usable.find((t) => !looksEnglish(t) && !looksSpanish(t));
+  if (nonEn) return nonEn;
   return usable[0];
 }

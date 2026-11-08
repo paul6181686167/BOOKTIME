@@ -81,6 +81,11 @@ const WorkTile = memo(function WorkTile({ work, selected, onToggle }) {
           <span className="mt-0.5 block text-tiny leading-tight text-gray-500 dark:text-gray-400 line-clamp-1">
             {work.author}
           </span>
+          {work.kind === 'series' && work.volumes ? (
+            <span className="mt-0.5 block text-tiny font-medium text-indigo-600 dark:text-indigo-400">
+              Série · {work.volumes} tomes
+            </span>
+          ) : null}
         </span>
       </button>
     </li>

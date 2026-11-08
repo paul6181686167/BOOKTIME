@@ -1785,7 +1785,7 @@ export const EXTENDED_SERIES_DATABASE = {
       name: 'One Piece',
       authors: ['Eiichiro Oda'],
       category: 'manga',
-      volumes: 105,
+      volumes: 112,
       description: 'Aventures de Monkey D. Luffy et son équipage de pirates dans le Grand Line.',
       first_published: '1997',
       status: 'ongoing',

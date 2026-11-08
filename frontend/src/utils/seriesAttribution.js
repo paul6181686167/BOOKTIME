@@ -256,6 +256,26 @@ export const attributeBookToSeries = (book, { wikidataMatcher } = {}) => {
 };
 
 /**
+ * Numéro de tome d'un livre dans sa série (champ volume_number, sinon titre curé).
+ */
+export const volumeNumberForBook = (book, attribution) => {
+  const direct = Number(book?.volume_number);
+  if (Number.isFinite(direct) && direct > 0) return direct;
+  const attr = attribution || attributeBookToSeries(book);
+  const titles = attr?.seriesData?.volume_titles;
+  if (!titles || typeof titles !== 'object') return null;
+  const candidates = bookTitleCandidates(book).map((t) => FuzzyMatcher.normalizeString(t));
+  for (const [num, title] of Object.entries(titles)) {
+    const nTitle = FuzzyMatcher.normalizeString(title);
+    if (candidates.some((c) => c && (c === nTitle || c.includes(nTitle) || nTitle.includes(c)))) {
+      const n = Number(num);
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+  }
+  return null;
+};
+
+/**
  * Résout la REQUÊTE utilisateur vers une série curée (nom / variations).
  * Sert au rattachement inter-langues : pour "seigneur des anneaux", tous les tomes de
  * Tolkien (y compris les titres anglais absents des `volume_titles` FR) sont rattachés.

@@ -5,7 +5,8 @@ import uuid
 import re
 import logging
 from ..models.book import BookCreate, BookUpdate
-from ..database.connection import books_collection
+from ..database.connection import books_collection, series_library_collection
+from ..library.series_library_helpers import series_library_duplicate_query
 from ..security.jwt import get_current_user
 from ..utils.validation import validate_category
 from ..utils.category_buffer import get_cached_category, buffer_stats
@@ -16,6 +17,142 @@ from app.utils.timeutils import utcnow
 
 router = APIRouter(prefix="/api/books", tags=["books"])
 _logger = logging.getLogger("booktime.books")
+
+
+_KNOWN_GRAPHIC_TITLES = {
+    "watchmen": "bd",
+    "berserk": "manga",
+    "asterix": "bd",
+    "asterix le gaulois": "bd",
+    "tintin": "bd",
+    "les aventures de tintin": "bd",
+    "one piece": "manga",
+    "lucky luke": "bd",
+}
+
+# Œuvres d'accueil enregistrées à tort comme un seul livre (couverture unique).
+_STANDALONE_SERIES_WORKS = {
+    "one piece": {
+        "volumes": 112,
+        "category": "manga",
+        "first_published": "1997",
+        "publisher": "Glénat",
+        "series_status": "ongoing",
+    },
+    "asterix": {
+        "volumes": 40,
+        "category": "bd",
+        "first_published": "1959",
+        "publisher": "Albert René",
+        "series_status": "ongoing",
+    },
+    "tintin": {
+        "volumes": 24,
+        "category": "bd",
+        "first_published": "1929",
+        "publisher": "Casterman",
+        "series_status": "completed",
+    },
+}
+
+
+def _norm_title_key(title: str) -> str:
+    s = (title or "").strip().lower()
+    s = re.sub(r"[éèêë]", "e", s)
+    s = re.sub(r"[àâä]", "a", s)
+    s = re.sub(r"[îï]", "i", s)
+    s = re.sub(r"[ôö]", "o", s)
+    s = re.sub(r"[ùûü]", "u", s)
+    s = s.replace("ç", "c")
+    return re.sub(r"\s+", " ", s).strip()
+
+
+def _repair_known_graphic_as_roman(user_id: str) -> int:
+    """Corrige les BD/mangas connus classés « roman » par l'ancien auto-fix OL.
+
+    Ne touche pas un livre dont la catégorie a été choisie à la main.
+    """
+    applied = 0
+    try:
+        for book in books_collection.find({"user_id": user_id, "category": "roman"}):
+            if book.get("category_user_set"):
+                continue
+            key = _norm_title_key(book.get("title") or "")
+            new_cat = _KNOWN_GRAPHIC_TITLES.get(key)
+            if not new_cat:
+                continue
+            result = books_collection.update_one(
+                {"id": book.get("id"), "user_id": user_id},
+                {
+                    "$set": {
+                        "category": new_cat,
+                        "category_verified": True,
+                    }
+                },
+            )
+            if getattr(result, "modified_count", 0) or getattr(result, "matched_count", 0):
+                applied += 1
+    except Exception as exc:
+        _logger.warning("Réparation catégories graphiques: %s", exc)
+    return applied
+
+
+def _promote_standalone_series_works(user_id: str) -> int:
+    """Convertit Tintin / Astérix / One Piece (livre unique) en série à tomes."""
+    applied = 0
+    try:
+        for book in list(books_collection.find({"user_id": user_id})):
+            title = book.get("title") or ""
+            if re.search(r"\btome\s*\d+", title, re.I):
+                continue
+            key = _norm_title_key(title)
+            meta = _STANDALONE_SERIES_WORKS.get(key)
+            if not meta:
+                continue
+            existing = series_library_collection.find_one(
+                series_library_duplicate_query(user_id, title)
+            )
+            all_read = book.get("status") in ("completed", "to_reread")
+            if existing:
+                books_collection.delete_one({"id": book.get("id"), "user_id": user_id})
+                applied += 1
+                continue
+            n_vol = int(meta["volumes"])
+            volumes = [
+                {
+                    "volume_number": i,
+                    "volume_title": f"{title} - Tome {i}",
+                    "is_read": all_read,
+                    "date_read": None,
+                }
+                for i in range(1, n_vol + 1)
+            ]
+            series_library_collection.insert_one(
+                {
+                    "id": str(uuid.uuid4()),
+                    "user_id": user_id,
+                    "series_name": title,
+                    "name": title,
+                    "authors": [book.get("author") or "Auteur inconnu"],
+                    "category": meta["category"],
+                    "volumes": volumes,
+                    "total_volumes": n_vol,
+                    "cover_image_url": book.get("cover_url") or "",
+                    "first_published": meta["first_published"],
+                    "publisher": meta["publisher"],
+                    "series_status": "completed" if all_read else meta["series_status"],
+                    "description_fr": book.get("description") or "",
+                    "added_via": book.get("added_via") or "promote_series",
+                    "category_verified": True,
+                    "created_at": utcnow(),
+                    "updated_at": utcnow(),
+                }
+            )
+            books_collection.delete_one({"id": book.get("id"), "user_id": user_id})
+            applied += 1
+    except Exception as exc:
+        _logger.warning("Promotion séries standalone: %s", exc)
+    return applied
 
 
 def _apply_category_updates(user_id: str, updates: list) -> int:
@@ -50,6 +187,7 @@ def _auto_fix_book_categories(
             b
             for b in all_books
             if b.get("category") in ("bd", "manga")
+            and not b.get("category_user_set")
             and (force or not b.get("category_verified"))
         ]
 
@@ -97,11 +235,6 @@ def _auto_fix_book_categories(
             if search_updates:
                 _apply_category_updates(user_id, search_updates)
                 report["updated"].extend(search_updates)
-            for book in need_search:
-                books_collection.update_one(
-                    {"id": book.get("id"), "user_id": user_id},
-                    {"$set": {"category_verified": True}},
-                )
         else:
             report["checked"] = len(buffer_updates) + len(need_search)
     except Exception as exc:
@@ -171,9 +304,10 @@ def get_all_books(
     logger = logging.getLogger(__name__)
     try:
         from ..db_config import database
-        # Reclassement prudent des bd/manga suspects (recherche OL + mémoire tampon)
-        _auto_fix_book_categories(current_user["id"], with_search=True)
-        _auto_fix_series_categories(current_user["id"], force=False)
+        # Ne plus relancer de reclassement OL à chaque chargement (verrouillait
+        # Watchmen / Berserk / Astérix en « roman »). Correction locale uniquement.
+        _repair_known_graphic_as_roman(current_user["id"])
+        _promote_standalone_series_works(current_user["id"])
 
         # Mode mock : requête directe en mémoire
         if database.is_mock_mode():
@@ -704,6 +838,10 @@ def update_book(
     update_data = book_update.model_dump(exclude_unset=True)
     update_data["updated_at"] = utcnow()
     history_entry = None
+
+    if "category" in update_data:
+        update_data["category_verified"] = True
+        update_data["category_user_set"] = True
     
     # Gérer les changements de statut
     if "status" in update_data:
@@ -731,6 +869,10 @@ def update_book(
             if not book.get("date_started"):
                 update_data["date_started"] = utcnow()
             update_data["date_completed"] = utcnow()
+            total = update_data.get("total_pages") or book.get("total_pages") or 0
+            current = update_data.get("current_page", book.get("current_page"))
+            if total and not (isinstance(current, int) and current > 0):
+                update_data["current_page"] = int(total)
     
     mongo_ops = {"$set": update_data}
     if history_entry:

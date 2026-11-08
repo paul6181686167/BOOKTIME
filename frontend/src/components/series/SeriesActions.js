@@ -154,7 +154,9 @@ export const handleAddSeriesToLibrary = async (seriesData, {
 
     if (result.success) {
       toast.success(
-        `Série « ${seriesData.name} » ajoutée (${volumes.length} tome${volumes.length > 1 ? 's' : ''})`,
+        result._pendingSync
+          ? `Série « ${seriesData.name} » ajoutée — en attente de synchronisation`
+          : `Série « ${seriesData.name} » ajoutée (${volumes.length} tome${volumes.length > 1 ? 's' : ''})`,
         { duration: 3000 }
       );
 
@@ -207,7 +209,11 @@ export const handleUpdateVolumeStatus = async (seriesId, volumeNumber, isRead, s
         )
       );
       
-      toast.success(`Tome ${volumeNumber} marqué comme ${isRead ? 'lu' : 'non lu'}`);
+      toast.success(
+        result._pendingSync
+          ? `Tome ${volumeNumber} ${isRead ? 'lu' : 'non lu'} — en attente de synchronisation`
+          : `Tome ${volumeNumber} marqué comme ${isRead ? 'lu' : 'non lu'}`
+      );
     }
   } catch (error) {
     logger.error('Erreur mise à jour tome:', error);
@@ -236,7 +242,11 @@ export const handleUpdateSeriesStatus = async (seriesId, newStatus, setUserSerie
         'reading': 'En cours',
         'completed': 'Terminé'
       };
-      toast.success(`Statut mis à jour : ${statusLabels[newStatus]}`);
+      toast.success(
+        result._pendingSync
+          ? `Statut enregistré — en attente de synchronisation`
+          : `Statut mis à jour : ${statusLabels[newStatus]}`
+      );
     }
   } catch (error) {
     logger.error('Erreur mise à jour statut série:', error);

@@ -8,9 +8,13 @@ import { displayBookTitleFrFirst } from '../utils/openLibraryBookDisplay';
 import {
   isUsableSynopsis,
   looksEnglish,
+  looksFrench,
   preferFrenchSynopsis,
   sanitizeSynopsis,
 } from '../utils/synopsisQuality';
+import { formatBookMetaLine, getProgressPercent, isCompletedStatus } from '../utils/bookDisplay';
+import { attributeBookToSeries, volumeNumberForBook } from '../utils/seriesAttribution';
+import { getUserSeriesLibrary, toggleVolumeStatus } from '../services/seriesLibraryService';
 import { prefetchAuthor } from '../services/authorPrefetch';
 import confetti from 'canvas-confetti';
 import { useTheme } from '../contexts/ThemeContext';
@@ -55,7 +59,9 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     reading_language: book.reading_language || 'français',
     saga: book.saga || '',
     volume_number: book.volume_number || '',
+    total_pages: book.total_pages || '',
   });
+  const [synopsisRetryNonce, setSynopsisRetryNonce] = useState(0);
   const [pageInput, setPageInput] = useState(book.current_page || 0);
   const [resolvedTotalPages, setResolvedTotalPages] = useState(
     book.total_pages > 0 ? book.total_pages : null
@@ -76,7 +82,19 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   onUpdateRef.current = onUpdate;
 
   const totalPages = resolvedTotalPages || book.total_pages || 0;
-  // Afficher uniquement un résumé FR (jamais l'anglais en UI)
+  const seriesAttribution = useMemo(() => attributeBookToSeries(book), [book]);
+  const seriesVolume = useMemo(
+    () => volumeNumberForBook(book, seriesAttribution),
+    [book, seriesAttribution]
+  );
+  const bookForDisplay = useMemo(() => {
+    const metaLine = formatBookMetaLine(book);
+    const seriesLink = seriesAttribution?.seriesName
+      ? { name: seriesAttribution.seriesName, volume: seriesVolume }
+      : null;
+    return { ...book, metaLine, seriesLink };
+  }, [book, seriesAttribution, seriesVolume]);
+  // Afficher uniquement un résumé FR (jamais l'anglais ni l'espagnol)
   const displaySynopsis =
     preferFrenchSynopsis(
       olDetails?.description,
@@ -100,16 +118,14 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
       reading_language: book.reading_language || 'français',
       saga: book.saga || '',
       volume_number: book.volume_number || '',
+      total_pages: book.total_pages || '',
     });
     setPageInput(book.current_page || 0);
     setIsFavorite(!!book.is_favorite);
     setResolvedTotalPages(book.total_pages > 0 ? book.total_pages : null);
     // Nouveau livre → reset résumé enrichi (sauf si déjà une vraie 4ᵉ en base)
-    setOlDetails(
-      isUsableSynopsis(book.description) && !looksEnglish(book.description)
-        ? { description: sanitizeSynopsis(book.description) }
-        : null
-    );
+    const initialFr = preferFrenchSynopsis(book.description, { rejectEnglish: true });
+    setOlDetails(initialFr ? { description: initialFr } : null);
     setOlLoading(false);
     setCoverProxy(false);
     pagesFetchDoneRef.current = null;
@@ -123,7 +139,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
   useEffect(() => {
     const storedDesc = (book.description || '').trim();
     // Relancer la résolution si résumé anglais (préférer une version FR)
-    const needsDesc = !isUsableSynopsis(storedDesc) || looksEnglish(storedDesc);
+    const needsDesc = !isUsableSynopsis(storedDesc) || !looksFrench(storedDesc);
     const needsPages = !(book.total_pages > 0);
     // Résumé présent : on le compare une fois à la 4ᵉ de couverture réelle de l'édition
     const needsVerify =
@@ -188,6 +204,9 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
       if (needsPages && n > 0) {
         setResolvedTotalPages(n);
         patch.total_pages = n;
+        if (isCompletedStatus(book.status) && !(book.current_page > 0)) {
+          patch.current_page = n;
+        }
       }
       if (
         Object.keys(patch).length &&
@@ -310,8 +329,8 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
             if (!r.ok) return null;
             const data = await r.json();
             const desc = data?.description;
-            // Ignorer les 4ᵉ OL clairement anglaises
-            if (!isUsableSynopsis(desc) || looksEnglish(desc)) return null;
+            // Ignorer les 4ᵉ OL qui ne sont pas du français
+            if (!isUsableSynopsis(desc) || !looksFrench(desc)) return null;
             return desc;
           };
 
@@ -340,7 +359,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
                 );
                 if (tr.ok) {
                   const data = await tr.json();
-                  if (isUsableSynopsis(data?.description) && !looksEnglish(data.description)) {
+                  if (isUsableSynopsis(data?.description) && looksFrench(data.description)) {
                     best = sanitizeSynopsis(data.description);
                   }
                 }
@@ -411,6 +430,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     book.total_pages,
     book.isFromOpenLibrary,
     book.isDemotedSeries,
+    synopsisRetryNonce,
     // volontairement sans book.description (persistance ne doit pas annuler l'affichage)
   ]);
 
@@ -449,22 +469,63 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     }
   };
 
-  // Changer rapidement le statut
+  const syncLinkedSeriesVolume = useCallback(async (newStatus) => {
+    if (!seriesAttribution?.seriesName) return;
+    const volume = seriesVolume || 1;
+    try {
+      const token = getToken();
+      const lib = await getUserSeriesLibrary(token);
+      const entry = (lib.series || []).find(
+        (s) =>
+          (s.series_name || s.name || '').toLowerCase().trim() ===
+          seriesAttribution.seriesName.toLowerCase().trim()
+      );
+      if (entry?.id) {
+        await toggleVolumeStatus(
+          entry.id,
+          volume,
+          newStatus === 'completed' || newStatus === 'to_reread',
+          token
+        );
+      }
+    } catch {
+      /* la fiche livre reste à jour même si la série n'est pas liée */
+    }
+  }, [seriesAttribution, seriesVolume]);
+
+  useEffect(() => {
+    if (!book?.id || book.isFromOpenLibrary) return;
+    if (!isCompletedStatus(book.status) || !seriesAttribution?.seriesName) return;
+    syncLinkedSeriesVolume(book.status);
+  }, [book.id, book.status, book.isFromOpenLibrary, seriesAttribution, syncLinkedSeriesVolume]);
+
   const handleQuickStatusChange = async (newStatus) => {
     if (!book?.id || newStatus === book.status) return;
     triggerBounce(`status-${newStatus}`);
     const previousStatus = book.status;
-    // Feedback immédiat dans le modal
-    setEditData((prev) => ({ ...prev, status: newStatus }));
+    const previousPage = book.current_page;
+    const payload = { status: newStatus };
+    if (newStatus === 'completed' && totalPages > 0 && !(book.current_page > 0)) {
+      payload.current_page = totalPages;
+    }
+    setEditData((prev) => ({
+      ...prev,
+      status: newStatus,
+      ...(payload.current_page != null ? { current_page: payload.current_page } : {}),
+    }));
     try {
-      // N'envoyer que le statut (évite champs hors BookUpdate / mauvais id série)
-      await onUpdate(book.id, { status: newStatus });
+      await onUpdate(book.id, payload);
+      await syncLinkedSeriesVolume(newStatus);
       if (newStatus === 'completed') {
         setTimeout(launchConfetti, 200);
         toast.success('Bravo, livre terminé !', { duration: 3000 });
       }
     } catch (error) {
-      setEditData((prev) => ({ ...prev, status: previousStatus }));
+      setEditData((prev) => ({
+        ...prev,
+        status: previousStatus,
+        current_page: previousPage || 0,
+      }));
       toast.error('Erreur lors de la mise à jour du statut');
     }
   };
@@ -533,14 +594,20 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     setIsLoading(true);
     triggerBounce('save');
     try {
+      const parsedTotal = parseInt(editData.total_pages, 10);
       const updates = {
         ...editData,
-        current_page: parseInt(editData.current_page) || 0,
+        current_page: parseInt(editData.current_page, 10) || 0,
+        total_pages: Number.isFinite(parsedTotal) && parsedTotal > 0 ? parsedTotal : undefined,
       };
       if (updates.status === 'completed' && book.status !== 'completed') {
+        if (updates.total_pages > 0 && !(updates.current_page > 0)) {
+          updates.current_page = updates.total_pages;
+        }
         setTimeout(launchConfetti, 300);
       }
       await onUpdate(book.id, updates);
+      await syncLinkedSeriesVolume(updates.status);
       setIsEditing(false);
       toast.success('Livre mis à jour !');
     } catch (error) {
@@ -668,10 +735,21 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     }
   };
 
+  const handleRetrySynopsis = () => {
+    if (book?.id) verifiedSynopsisBooks.delete(book.id);
+    pagesFetchDoneRef.current = null;
+    setOlDetails(null);
+    setOlLoading(true);
+    setSynopsisRetryNonce((n) => n + 1);
+  };
+
   const getProgressPercentage = () => {
-    if (!totalPages) return 0;
-    const currentPage = isEditing ? editData.current_page : book.current_page;
-    return Math.min(100, (currentPage / totalPages) * 100);
+    return getProgressPercent(
+      book,
+      totalPages,
+      displayStatus,
+      isEditing ? editData.current_page : undefined
+    );
   };
 
   const getCurrentStatus = () => {
@@ -701,7 +779,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
         </div>
         <div className="px-4 md:px-0 pt-2 md:pt-0">
         <BookHeaderSection
-          book={book}
+          book={bookForDisplay}
           onClose={onClose}
           onAuthorClick={onAuthorClick}
           navigate={navigate}
@@ -719,6 +797,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
           pageInputRef={pageInputRef}
           totalPages={totalPages}
           displaySynopsis={displaySynopsis}
+          onRetrySynopsis={handleRetrySynopsis}
           statusOptions={statusOptions}
           formatReadDate={formatReadDate}
           handleQuickStatusChange={handleQuickStatusChange}
@@ -735,7 +814,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
         />
 
         <BookDetailsGrid
-          book={book}
+          book={bookForDisplay}
           titleMain={titleMain}
           isEditing={isEditing}
           olDetails={olDetails}
@@ -752,8 +831,6 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
           displayStatus={displayStatus}
           handleRatingClick={handleRatingClick}
           handleReviewPublish={handleReviewPublish}
-          getProgressPercentage={getProgressPercentage}
-          getCurrentStatus={getCurrentStatus}
         />
 
         <BookActionBar

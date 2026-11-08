@@ -8,6 +8,7 @@ import {
   loadLibraryCache,
   loadSeriesCache,
 } from '../utils/offlineLibraryCache';
+import { LIBRARY_CHANGED_EVENT } from '../utils/offlineWriteQueue';
 import { getToken } from '../services/apiClient';
 
 function readLocalLibrarySnapshot() {
@@ -140,6 +141,23 @@ export const useUnifiedContent = () => {
     // Refresh réseau en silence si on a déjà hydraté depuis le cache
     loadUnifiedContent({ silent: localSnap.current.hasCache });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // File hors ligne : réinjecter le cache dès qu'une écriture locale (ou un flush) a eu lieu
+  useEffect(() => {
+    const onLocalChange = (event) => {
+      const kind = event?.detail?.kind;
+      if (kind === 'books' || kind === 'flush') {
+        const booksCached = loadLibraryCache({})?.books;
+        if (Array.isArray(booksCached)) setBooks(booksCached);
+      }
+      if (kind === 'series' || kind === 'flush') {
+        const seriesCached = loadSeriesCache()?.series;
+        if (Array.isArray(seriesCached)) setUserSeriesLibrary(seriesCached);
+      }
+    };
+    window.addEventListener(LIBRARY_CHANGED_EVENT, onLocalChange);
+    return () => window.removeEventListener(LIBRARY_CHANGED_EVENT, onLocalChange);
+  }, []);
 
   // Résumés FR préchargés dès que la biblio est dispo (avant ouverture des fiches)
   useEffect(() => {

@@ -4,7 +4,9 @@ import { openStaticWikidataSeriesModal } from '../../utils/openStaticWikidataSer
 import {
   attributeBookToSeries,
   evaluateOwnedSeriesForDisplay,
+  volumeNumberForBook,
 } from '../../utils/seriesAttribution';
+import { isCompletedStatus } from '../../utils/bookDisplay';
 import { isUsableSynopsis, looksEnglish } from '../../utils/synopsisQuality';
 import { normalizeForSearch } from '../../utils/helpers';
 import { API_BASE_URL } from '../../config/environment';
@@ -176,12 +178,16 @@ const BookActions = {
         typeof curatedTitles === 'object' &&
         verdict.distinctOwned <= 1
       ) {
-        volumes = Object.entries(curatedTitles).map(([num, title]) => ({
-          volume_number: Number(num) || 0,
-          volume_title: title,
-          is_read: false,
-          date_read: null,
-        }));
+        volumes = Object.entries(curatedTitles).map(([num, title]) => {
+          const n = Number(num) || 0;
+          const existing = volArr.find((v) => Number(v.volume_number) === n);
+          return {
+            volume_number: n,
+            volume_title: title,
+            is_read: !!existing?.is_read,
+            date_read: existing?.date_read || null,
+          };
+        });
       }
 
       seriesCards.push({
@@ -390,17 +396,46 @@ const BookActions = {
       } catch (e) {}
       return null;
     };
-    const applyReadingPreferences = (cards) => cards.map(card => {
-      const readTomes = readingPreferences[card.name] ?? readingPreferences[card.name?.trim()];
-      const refVolumes = getRefVolumes(card.name);
-      if (refVolumes && Array.isArray(readTomes)) {
-        const completed = readTomes.length;
-        return { ...card, totalBooks: refVolumes, completedBooks: completed, progressPercent: Math.round((completed / refVolumes) * 100), total_books: refVolumes };
+    const applyReadingPreferences = (cards) => cards.map((card) => {
+      const seriesName = card.name || card.title || '';
+      const readTomes = readingPreferences[seriesName] ?? readingPreferences[seriesName?.trim()];
+      const merged = new Set();
+      if (Array.isArray(readTomes)) {
+        readTomes.forEach((n) => {
+          const num = Number(n);
+          if (num > 0) merged.add(num);
+        });
       }
-      if (refVolumes) {
-        return { ...card, totalBooks: refVolumes, total_books: refVolumes };
-      }
-      return card;
+      (card.volumes || []).forEach((v) => {
+        if (v?.is_read) {
+          const num = Number(v.volume_number);
+          if (num > 0) merged.add(num);
+        }
+      });
+      booksList.forEach((book) => {
+        if (!isCompletedStatus(book.status)) return;
+        const attr = attributeBookToSeries(book);
+        if (!attr) return;
+        if ((attr.seriesName || '').toLowerCase().trim() !== seriesName.toLowerCase().trim()) return;
+        const num = Number(volumeNumberForBook(book, attr) || 1);
+        if (num > 0) merged.add(num);
+      });
+      const refVolumes = getRefVolumes(seriesName) || card.totalBooks || card.total_books;
+      const volumes = (card.volumes || []).map((v) => ({
+        ...v,
+        is_read: !!v.is_read || merged.has(Number(v.volume_number)),
+      }));
+      const completed = merged.size;
+      const total = Number(refVolumes) || card.totalBooks || volumes.length || 0;
+      return {
+        ...card,
+        volumes,
+        completedBooks: completed,
+        totalBooks: total,
+        total_books: total,
+        progressPercent: total ? Math.round((completed / total) * 100) : card.progressPercent || 0,
+        toReadBooks: Math.max(0, total - completed),
+      };
     });
 
     // Combiner + dédoublonner : garder la carte avec le plus de tomes
@@ -427,7 +462,15 @@ const BookActions = {
       return dateB - dateA;
     });
 
-    return [...allSeriesCards, ...sortedStandaloneBooks];
+    const seriesNameSet = new Set(
+      allSeriesCards.map((c) => (c.name || c.title || '').toLowerCase().trim()).filter(Boolean)
+    );
+    const withoutSeriesDuplicates = sortedStandaloneBooks.filter((b) => {
+      const t = (b.title || b.name || '').toLowerCase().trim();
+      return !t || !seriesNameSet.has(t);
+    });
+
+    return [...allSeriesCards, ...withoutSeriesDuplicates];
   },
 
   // Fonction pour gérer le clic sur un livre
@@ -469,6 +512,8 @@ const BookActions = {
       if (bookData.category) {
         const categoryLabels = { roman: 'Romans', bd: 'Romans Graphiques', manga: 'Mangas' };
         toast.success(`Livre déplacé vers : ${categoryLabels[bookData.category] || bookData.category}`);
+      } else if (updatedBook?._pendingSync) {
+        toast.success('Modification enregistrée — en attente de synchronisation');
       } else {
         toast.success('Livre mis à jour avec succès !');
       }
@@ -483,11 +528,15 @@ const BookActions = {
   async addBook(bookData) {
     try {
       const result = await bookService.createBook(bookData);
-      toast.success(`"${bookData.title || 'Livre'}" ajouté à la bibliothèque !`);
+      toast.success(
+        result?._pendingSync
+          ? `"${bookData.title || 'Livre'}" ajouté — en attente de synchronisation`
+          : `"${bookData.title || 'Livre'}" ajouté à la bibliothèque !`
+      );
       // Précharge le résumé FR immédiatement (ne bloque pas l'UI)
       const newId = result?.id || result?.book?.id;
       const desc = bookData?.description || result?.description || '';
-      if (newId && (!isUsableSynopsis(desc) || looksEnglish(desc))) {
+      if (newId && !result?._pendingSync && (!isUsableSynopsis(desc) || looksEnglish(desc))) {
         const token = getToken();
         fetch(`${API_BASE_URL}/api/books/${newId}/synopsis?persist=true`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},

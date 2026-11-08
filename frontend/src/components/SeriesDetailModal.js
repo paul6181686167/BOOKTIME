@@ -4,10 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import {
   BookOpenIcon,
   XMarkIcon,
-  SparklesIcon,
 } from '@heroicons/react/24/outline';
 import { bookService } from '../services/bookService';
-import { deleteSeriesFromLibrary } from '../services/seriesLibraryService';
+import { deleteSeriesFromLibrary, toggleVolumeStatus } from '../services/seriesLibraryService';
+import { attributeBookToSeries, volumeNumberForBook } from '../utils/seriesAttribution';
 import { EXTENDED_SERIES_DATABASE } from '../utils/seriesDatabaseExtended';
 import ChapterSection from './ChapterSection'; // ← NOUVEAU : Import du composant chapitres
 import toast from 'react-hot-toast';
@@ -241,8 +241,74 @@ const SeriesDetailModal = ({
   const loadReadingPreferencesForSeries = async () => {
     if (!enrichedSeries?.name) return;
     try {
-      const statuses = await loadReadingPreferences(enrichedSeries.name);
-      setTomeStatuses(statuses || {});
+      const statuses = { ...(await loadReadingPreferences(enrichedSeries.name) || {}) };
+      (Array.isArray(series?.volumes) ? series.volumes : []).forEach((v) => {
+        const n = String(v.volume_number || '');
+        if (!n) return;
+        if (v.is_read && statuses[n]?.status !== 'lu') {
+          statuses[n] = {
+            status: 'lu',
+            currentPage: statuses[n]?.currentPage ?? null,
+            rating: v.rating || statuses[n]?.rating || 0,
+            review: v.review || statuses[n]?.review || '',
+          };
+        }
+      });
+      (series?.books || []).forEach((b) => {
+        const n = String(b.volume_number || '');
+        if (!n) return;
+        if ((b.status === 'completed' || b.status === 'to_reread') && statuses[n]?.status !== 'lu') {
+          statuses[n] = {
+            status: 'lu',
+            currentPage: b.current_page || null,
+            rating: b.rating || 0,
+            review: b.review || '',
+          };
+        } else if (b.status === 'reading' && (!statuses[n] || statuses[n].status === 'non_lu')) {
+          statuses[n] = {
+            status: 'en_cours',
+            currentPage: b.current_page || null,
+            rating: b.rating || 0,
+            review: b.review || '',
+          };
+        }
+      });
+      try {
+        const token = getToken();
+        const r = await fetch(`${API_BASE_URL}/api/books/all?limit=400`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (r.ok) {
+          const data = await r.json();
+          const items = Array.isArray(data) ? data : data.items || [];
+          const seriesName = (enrichedSeries.name || '').toLowerCase();
+          items.forEach((b) => {
+            const attr = attributeBookToSeries(b);
+            if (!attr || (attr.seriesName || '').toLowerCase() !== seriesName) return;
+            const vol = volumeNumberForBook(b, attr);
+            if (!vol) return;
+            const n = String(vol);
+            if ((b.status === 'completed' || b.status === 'to_reread') && statuses[n]?.status !== 'lu') {
+              statuses[n] = {
+                status: 'lu',
+                currentPage: b.current_page || null,
+                rating: b.rating || 0,
+                review: b.review || '',
+              };
+            } else if (b.status === 'reading' && (!statuses[n] || statuses[n].status === 'non_lu')) {
+              statuses[n] = {
+                status: 'en_cours',
+                currentPage: b.current_page || null,
+                rating: b.rating || 0,
+                review: b.review || '',
+              };
+            }
+          });
+        }
+      } catch {
+        /* bibliothèque indisponible : on garde les préférences */
+      }
+      setTomeStatuses(statuses);
 
       // Calculer le statut à afficher depuis les données chargées, sans déclencher de toast
       const entries = Object.values(statuses || {});
@@ -534,6 +600,16 @@ const SeriesDetailModal = ({
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: bookStatus })
         }).catch(() => {});
+      }
+
+      const libEntry = (userSeriesLibrary || []).find(
+        (s) =>
+          (s.series_name || s.name || '').toLowerCase().trim() ===
+          (series.name || series.series_name || '').toLowerCase().trim()
+      );
+      const seriesId = libEntry?.id || series?.id;
+      if (seriesId && isPersistedLibraryId(seriesId)) {
+        await toggleVolumeStatus(seriesId, tomeNumber, newStatus === 'lu', token).catch(() => {});
       }
 
       // 2. Mettre à jour le statut agrégé de la série dans la library (séries possédées)
@@ -1228,6 +1304,29 @@ const SeriesDetailModal = ({
           setAddDone={setAddDone}
           checkIfSeriesOwned={checkIfSeriesOwned}
           onClose={onClose}
+          seriesMetaLine={[
+            String(enrichedSeries?.first_published || series?.first_published || '').slice(0, 4),
+            series?.publisher
+              || enrichedSeries?.publisher
+              || enrichedSeries?.volume_details?.[1]?.publisher
+              || '',
+            enrichedSeries?.status === 'ongoing' || series?.series_status === 'ongoing'
+              ? 'en cours'
+              : enrichedSeries?.status === 'completed' || series?.series_status === 'completed'
+                ? 'terminée'
+                : '',
+            (() => {
+              const total = resolveVolumesCount(
+                enrichedSeries?.volumes,
+                olBooks.length || books.length || (series?.books?.length) || 0
+              );
+              if (!total) return '';
+              const readCount = Object.values(tomeStatuses).filter((v) => v.status === 'lu').length;
+              return `${readCount}/${total}`;
+            })(),
+          ]
+            .filter(Boolean)
+            .join(' · ')}
         />
 
         {/* Section Résumé de la série — compact + FR prioritaire */}
@@ -1294,20 +1393,6 @@ const SeriesDetailModal = ({
             onClose={() => {/* Optionnel: logique fermeture section */}} 
           />
         )}
-
-        {/* Similaires — CTA bien visible */}
-        {seriesDisplayName ? (
-          <div className="px-4 sm:px-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <button
-              type="button"
-              onClick={goToSimilar}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 active:bg-purple-800 rounded-xl transition-colors shadow-sm"
-            >
-              <SparklesIcon className="h-5 w-5" />
-              Voir des séries / livres similaires
-            </button>
-          </div>
-        ) : null}
 
         <SeriesLibraryActions
           isSeriesOwned={isSeriesOwned}

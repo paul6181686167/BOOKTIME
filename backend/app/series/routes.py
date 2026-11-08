@@ -436,14 +436,60 @@ def add_series_to_library_endpoint(
     current_user: dict = Depends(get_current_user)
 ):
     """Endpoint de délégation pour ajouter une série à la bibliothèque"""
-    # Importer la fonction depuis library.routes
+    from pydantic import ValidationError
     from app.library.routes import create_series_library
     from app.models.series import SeriesLibraryCreate
-    
-    # Convertir les données en modèle Pydantic
-    series_create = SeriesLibraryCreate(**series_data)
-    
-    # Déléguer l'appel à la fonction existante
+
+    payload = dict(series_data or {})
+    name = (payload.get("series_name") or payload.get("name") or "").strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Le nom de la série est obligatoire.")
+    payload["series_name"] = name
+    if not payload.get("authors"):
+        author = payload.get("author")
+        if isinstance(author, str) and author.strip():
+            payload["authors"] = [author.strip()]
+        elif isinstance(author, list):
+            payload["authors"] = [str(a) for a in author if a]
+        else:
+            payload["authors"] = ["Auteur inconnu"]
+    if not payload.get("category"):
+        payload["category"] = "roman"
+    if not payload.get("volumes"):
+        try:
+            n = int(payload.get("total_volumes") or 0)
+        except (TypeError, ValueError):
+            n = 0
+        payload["volumes"] = [
+            {
+                "volume_number": i,
+                "volume_title": f"{name} - Tome {i}",
+                "is_read": False,
+            }
+            for i in range(1, max(n, 1) + 1)
+        ]
+        payload["total_volumes"] = len(payload["volumes"])
+    try:
+        series_create = SeriesLibraryCreate(**payload)
+    except ValidationError as exc:
+        labels = {
+            "series_name": "nom de la série",
+            "authors": "auteur",
+            "category": "catégorie",
+            "volumes": "tomes",
+        }
+        missing = []
+        for err in exc.errors():
+            loc = err.get("loc") or ()
+            field = str(loc[-1]) if loc else ""
+            missing.append(labels.get(field, field or "champ"))
+        detail = (
+            "Informations manquantes : " + ", ".join(dict.fromkeys(missing)) + "."
+            if missing
+            else "Données de série invalides."
+        )
+        raise HTTPException(status_code=422, detail=detail)
+
     return create_series_library(series_create, current_user)
 
 @router.put("/library/{series_id}/volume/{volume_number}")

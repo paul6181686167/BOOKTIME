@@ -1,26 +1,42 @@
 import { API_BASE_URL } from '../config/environment';
 import { mapMergedVolumeRowsToLibraryVolumes } from '../utils/sourceMerge';
 import logger from '../utils/logger';
+import {
+  enqueueCreateSeries,
+  enqueueUpdateSeries,
+  enqueueToggleVolume,
+  enqueueDeleteSeries,
+  shouldEnqueueWrite,
+  mergePendingSeries,
+} from '../utils/offlineWriteQueue';
 // Service pour gérer les séries en bibliothèque
 
 const API_BASE = API_BASE_URL
 
 // Ajouter une série complète à la bibliothèque
 export const addSeriesToLibrary = async (seriesData, token) => {
-  const response = await fetch(`${API_BASE}/api/series/library`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify(seriesData)
-  });
-
-  if (!response.ok) {
-    throw new Error(`Erreur ${response.status}: ${await response.text()}`);
+  if (shouldEnqueueWrite()) {
+    return enqueueCreateSeries(seriesData);
   }
+  try {
+    const response = await fetch(`${API_BASE}/api/series/library`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(seriesData)
+    });
 
-  return response.json();
+    if (!response.ok) {
+      throw new Error(`Erreur ${response.status}: ${await response.text()}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    if (shouldEnqueueWrite(error)) return enqueueCreateSeries(seriesData);
+    throw error;
+  }
 };
 
 // Récupérer toutes les séries de la bibliothèque
@@ -42,11 +58,13 @@ export const getUserSeriesLibrary = async (token, filters = {}) => {
   const result = await response.json();
 
   // API peut renvoyer un tableau ou { series: [...] }
-  const series = Array.isArray(result)
-    ? result
-    : Array.isArray(result?.series)
-      ? result.series
-      : [];
+  const series = mergePendingSeries(
+    Array.isArray(result)
+      ? result
+      : Array.isArray(result?.series)
+        ? result.series
+        : []
+  );
 
   return {
     series,
@@ -56,36 +74,52 @@ export const getUserSeriesLibrary = async (token, filters = {}) => {
 
 // Toggle statut lu/non lu d'un tome
 export const toggleVolumeStatus = async (seriesId, volumeNumber, isRead, token) => {
-  const response = await fetch(`${API_BASE}/api/series/library/${seriesId}/volume/${volumeNumber}?is_read=${isRead}`, {
-    method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error(`Erreur ${response.status}: ${await response.text()}`);
+  if (shouldEnqueueWrite()) {
+    return enqueueToggleVolume(seriesId, volumeNumber, isRead);
   }
+  try {
+    const response = await fetch(`${API_BASE}/api/series/library/${seriesId}/volume/${volumeNumber}?is_read=${isRead}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
 
-  return response.json();
+    if (!response.ok) {
+      throw new Error(`Erreur ${response.status}: ${await response.text()}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    if (shouldEnqueueWrite(error)) return enqueueToggleVolume(seriesId, volumeNumber, isRead);
+    throw error;
+  }
 };
 
 // Mettre à jour une entrée series_library (statut et/ou page courante)
 export const updateSeriesLibraryEntry = async (seriesId, data, token) => {
-  const response = await fetch(`${API_BASE}/api/series/library/${seriesId}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify(data)
-  });
-
-  if (!response.ok) {
-    throw new Error(`Erreur ${response.status}: ${await response.text()}`);
+  if (shouldEnqueueWrite()) {
+    return enqueueUpdateSeries(seriesId, data);
   }
+  try {
+    const response = await fetch(`${API_BASE}/api/series/library/${seriesId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data)
+    });
 
-  return response.json();
+    if (!response.ok) {
+      throw new Error(`Erreur ${response.status}: ${await response.text()}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    if (shouldEnqueueWrite(error)) return enqueueUpdateSeries(seriesId, data);
+    throw error;
+  }
 };
 
 // Mettre à jour le statut global d'une série
@@ -95,18 +129,26 @@ export const updateSeriesStatus = async (seriesId, newStatus, token) => {
 
 // Supprimer une série de la bibliothèque
 export const deleteSeriesFromLibrary = async (seriesId, token) => {
-  const response = await fetch(`${API_BASE}/api/series/library/${seriesId}`, {
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error(`Erreur ${response.status}: ${await response.text()}`);
+  if (shouldEnqueueWrite()) {
+    return enqueueDeleteSeries(seriesId);
   }
+  try {
+    const response = await fetch(`${API_BASE}/api/series/library/${seriesId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
 
-  return response.json();
+    if (!response.ok) {
+      throw new Error(`Erreur ${response.status}: ${await response.text()}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    if (shouldEnqueueWrite(error)) return enqueueDeleteSeries(seriesId);
+    throw error;
+  }
 };
 
 // Générer la liste des tomes avec titres depuis le référentiel

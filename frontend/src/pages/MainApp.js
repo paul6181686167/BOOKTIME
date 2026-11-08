@@ -45,7 +45,6 @@ import MobileSearchOverlay from '../components/MobileSearchOverlay';
 import NotificationBadge from '../components/common/NotificationBadge';
 import useUnreadNotifications from '../hooks/useUnreadNotifications';
 import PwaInstallPrompt from '../components/PwaInstallPrompt';
-import OfflineBanner from '../components/OfflineBanner';
 import { PENDING_FRIEND_CODE_KEY, normalizeFriendCode } from '../utils/friendLink';
 
 import '../App.css';
@@ -1215,7 +1214,6 @@ export default function MainApp() {
       )}
       
       <PwaInstallPrompt />
-      <OfflineBanner />
     </div>
   );
 }

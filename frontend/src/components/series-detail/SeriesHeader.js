@@ -1,5 +1,5 @@
 import React from 'react';
-import { SparklesIcon } from '@heroicons/react/24/outline';
+import { SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { coverImgSrc } from '../../utils/helpers';
 import { getStatusBadge, getStatusLabel, resolveVolumesCount } from '../../utils/seriesDetailHelpers';
@@ -28,6 +28,7 @@ const SeriesHeader = ({
   setAddDone,
   checkIfSeriesOwned,
   onClose,
+  seriesMetaLine,
 }) => (
   <>
         {/* Header */}
@@ -92,6 +93,11 @@ const SeriesHeader = ({
                       olBooks.length || books.length || (series?.books?.length) || 0
                     )} tome(s)
                   </span>
+                  {seriesMetaLine ? (
+                    <span className="text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                      {seriesMetaLine}
+                    </span>
+                  ) : null}
                   {seriesDisplayName ? (
                     <button
                       type="button"
@@ -185,7 +191,7 @@ const SeriesHeader = ({
                 className="hidden md:block p-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 aria-label="Fermer"
               >
-                <span className="text-xl leading-none">✕</span>
+                <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
           </div>

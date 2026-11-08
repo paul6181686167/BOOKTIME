@@ -13,7 +13,10 @@ from functools import lru_cache
 import uuid
 from pydantic import BaseModel, Field
 
-from ..database.connection import client, books_collection
+from datetime import datetime, timezone
+
+from ..database.connection import client, books_collection, series_library_collection
+from ..library.series_library_helpers import series_library_duplicate_query
 from ..models.book import BookCreate
 from ..security.jwt import get_current_user
 from ..utils.errors import public_error
@@ -26,6 +29,51 @@ _DATA_DIR         = Path(__file__).resolve().parent.parent.parent / "data"
 _JSON_CACHE_PATH  = _DATA_DIR / "catalog_cache.json"
 _MANGA_BD_PATH    = _DATA_DIR / "manga_bd_cache.json"
 _ONBOARDING_PATH  = _DATA_DIR / "onboarding_catalog.json"
+
+# Œuvres d'accueil qui sont des séries (pas un livre unique à la couverture unique)
+_ONBOARDING_SERIES = {
+    "one piece": {
+        "volumes": 112,
+        "first_published": "1997",
+        "publisher": "Glénat",
+        "series_status": "ongoing",
+    },
+    "asterix": {
+        "volumes": 40,
+        "first_published": "1959",
+        "publisher": "Albert René",
+        "series_status": "ongoing",
+    },
+    "tintin": {
+        "volumes": 24,
+        "first_published": "1929",
+        "publisher": "Casterman",
+        "series_status": "completed",
+    },
+}
+
+
+def _norm_onboarding_title(title: str) -> str:
+    s = (title or "").strip().lower()
+    for src, dst in (("é", "e"), ("è", "e"), ("ê", "e"), ("ë", "e")):
+        s = s.replace(src, dst)
+    return s
+
+
+def _onboarding_series_meta(work: dict) -> Optional[Dict]:
+    return _ONBOARDING_SERIES.get(_norm_onboarding_title(work.get("title") or ""))
+
+
+def _annotate_onboarding_work(work: dict) -> dict:
+    out = dict(work)
+    meta = _onboarding_series_meta(work)
+    if meta:
+        out["kind"] = "series"
+        out["volumes"] = meta["volumes"]
+        out["first_published"] = meta["first_published"]
+        out["publisher"] = meta["publisher"]
+        out["series_status"] = meta["series_status"]
+    return out
 
 
 @lru_cache(maxsize=1)
@@ -134,7 +182,7 @@ def get_onboarding_works(
     """
     if group not in ("roman", "graphic_novel"):
         raise HTTPException(status_code=400, detail="Catégorie invalide")
-    works = [w for w in _load_onboarding() if w.get("group") == group]
+    works = [_annotate_onboarding_work(w) for w in _load_onboarding() if w.get("group") == group]
     genres: List[str] = []
     for w in works:
         if w.get("genre") and w["genre"] not in genres:
@@ -167,11 +215,67 @@ def add_onboarding_works(
         (b.get("title") or "").strip().lower()
         for b in books_collection.find({"user_id": current_user["id"]}, {"title": 1, "_id": 0})
     }
+    existing_series = {
+        (s.get("series_name") or s.get("name") or "").strip().lower()
+        for s in series_library_collection.find(
+            {"user_id": current_user["id"]}, {"series_name": 1, "name": 1, "_id": 0}
+        )
+    }
 
     added = 0
     skipped = 0
     for w in wanted:
         key = w["title"].strip().lower()
+        series_meta = _onboarding_series_meta(w)
+        if series_meta:
+            if key in existing_series:
+                skipped += 1
+                continue
+            n_vol = int(series_meta["volumes"])
+            volumes = [
+                {
+                    "volume_number": i,
+                    "volume_title": f"{w['title']} - Tome {i}",
+                    "is_read": True,
+                    "date_read": None,
+                }
+                for i in range(1, n_vol + 1)
+            ]
+            series = {
+                "id": str(uuid.uuid4()),
+                "user_id": current_user["id"],
+                "series_name": w["title"],
+                "name": w["title"],
+                "authors": [w.get("author") or "Auteur inconnu"],
+                "category": validate_category(w.get("category") or "roman"),
+                "volumes": volumes,
+                "total_volumes": n_vol,
+                "cover_image_url": w.get("cover_url") or "",
+                "first_published": series_meta["first_published"],
+                "publisher": series_meta["publisher"],
+                "series_status": series_meta.get("series_status") or "completed",
+                "description_fr": "",
+                "added_via": "onboarding",
+                "category_verified": True,
+                "created_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc),
+            }
+            try:
+                if series_library_collection.find_one(
+                    series_library_duplicate_query(current_user["id"], w["title"])
+                ):
+                    skipped += 1
+                    existing_series.add(key)
+                    continue
+                series_library_collection.insert_one(series)
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=public_error(e, "Erreur lors de l'ajout des séries"),
+                )
+            existing_series.add(key)
+            added += 1
+            continue
         if key in existing:
             skipped += 1
             continue

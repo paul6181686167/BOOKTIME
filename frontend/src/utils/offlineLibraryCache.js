@@ -17,7 +17,7 @@ function safeParse(raw, fallback) {
   }
 }
 
-export function saveLibraryCache(books, filters = {}) {
+export function saveLibraryCache(books, filters = {}, { force = false } = {}) {
   if (typeof window === 'undefined' || !Array.isArray(books)) return;
   try {
     // Ne jamais écraser un cache plein avec une réponse vide / tronquée
@@ -25,6 +25,7 @@ export function saveLibraryCache(books, filters = {}) {
     const existingCount = Array.isArray(existing?.books) ? existing.books.length : 0;
     const isFullDump = !filters?.category && !filters?.status;
     if (
+      !force &&
       isFullDump &&
       existingCount > 0 &&
       (books.length === 0 || books.length < Math.max(3, Math.floor(existingCount * 0.5)))
@@ -119,12 +120,13 @@ export function clearLibraryCache() {
   localStorage.removeItem(SERIES_CACHE_KEY);
 }
 
-export function saveSeriesCache(series) {
+export function saveSeriesCache(series, { force = false } = {}) {
   if (typeof window === 'undefined' || !Array.isArray(series)) return;
   try {
     const existing = safeParse(localStorage.getItem(SERIES_CACHE_KEY), null);
     const existingCount = Array.isArray(existing?.series) ? existing.series.length : 0;
     if (
+      !force &&
       existingCount > 0 &&
       (series.length === 0 || series.length < Math.max(3, Math.floor(existingCount * 0.5)))
     ) {

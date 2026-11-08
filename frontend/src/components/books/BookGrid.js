@@ -95,6 +95,16 @@ const SeriesCardBody = ({ item, coverSrc, onCoverFound, priority, rimColors }) =
           </span>
         </div>
 
+        {item._pendingSync && (
+          <div className="absolute bottom-1.5 left-1.5">
+            <span
+              className={`inline-flex items-center rounded-md bg-amber-500/95 px-1.5 py-0.5 text-micro font-medium text-amber-950 ${PILL}`}
+              title="En attente de synchronisation"
+            >
+              En attente
+            </span>
+          </div>
+        )}
         {seriesStatus === 'completed' && (
           <div className="absolute top-1.5 right-1.5">
             <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#4ade80]/90 text-tiny font-bold text-black ${PILL}`}>
@@ -138,6 +148,16 @@ const BookCardBody = ({ item, coverSrc, onCoverFound, priority, rimColors }) => 
         />
         <CoverScrim />
 
+        {item._pendingSync && (
+          <div className="absolute bottom-1.5 left-1.5">
+            <span
+              className={`inline-flex items-center rounded-md bg-amber-500/95 px-1.5 py-0.5 text-micro font-medium text-amber-950 ${PILL}`}
+              title="En attente de synchronisation"
+            >
+              En attente
+            </span>
+          </div>
+        )}
         {isDone && (
           <div className="absolute top-1.5 right-1.5">
             <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#4ade80]/90 text-tiny font-bold text-black ${PILL}`}>

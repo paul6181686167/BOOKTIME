@@ -23,6 +23,7 @@ const BookHeaderSection = ({
   pageInputRef,
   totalPages,
   displaySynopsis,
+  onRetrySynopsis,
   statusOptions,
   formatReadDate,
   handleQuickStatusChange,
@@ -133,7 +134,18 @@ const BookHeaderSection = ({
               </div>
             </div>
 
-            {/* Résumé FR uniquement — jamais de message « Aucun résumé » */}
+            {book.metaLine ? (
+              <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                {book.metaLine}
+              </p>
+            ) : null}
+            {book.seriesLink?.name ? (
+              <p className="mb-2 text-xs text-indigo-700 dark:text-indigo-300">
+                {`Fait partie de ${book.seriesLink.name}${book.seriesLink.volume ? `, tome ${book.seriesLink.volume}` : ''}`}
+              </p>
+            ) : null}
+
+            {/* Résumé FR uniquement — sinon message + réessayer */}
             {displaySynopsis ? (
               <div className="mb-3">
                 <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -148,7 +160,21 @@ const BookHeaderSection = ({
                 <div className="h-3.5 w-3.5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
                 Chargement du résumé…
               </div>
-            ) : null}
+            ) : (
+              <div className="mb-3 flex items-center gap-2">
+                <p className="text-xs text-gray-500 dark:text-gray-400">Résumé indisponible</p>
+                {onRetrySynopsis ? (
+                  <button
+                    type="button"
+                    onClick={onRetrySynopsis}
+                    className="inline-flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-600 px-2 py-0.5 text-tiny font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    <ArrowPathIcon className="h-3 w-3" />
+                    Réessayer
+                  </button>
+                ) : null}
+              </div>
+            )}
 
             {/* Boutons rapides de changement de statut — une seule ligne compacte */}
             {inLibrary && !isEditing && (

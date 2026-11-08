@@ -47,6 +47,13 @@ class BookUpdate(BaseModel):
     date_confidence: Optional[str] = None
     watchlist: Optional[bool] = None
     is_favorite: Optional[bool] = None       # Livre préféré, visible par les amis
+    saga: Optional[str] = None
+    volume_number: Optional[int] = None
+    publisher: Optional[str] = None
+    genre: Optional[str] = None
+    publication_year: Optional[int] = None
+    original_language: Optional[str] = None
+    reading_language: Optional[str] = None
 
 class BookResponse(BaseModel):
     id: str

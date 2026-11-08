@@ -5,6 +5,14 @@ import LanguageSelector from '../LanguageSelector';
 import { coverImgSrc } from '../../utils/helpers';
 import CommunityReviews from '../common/CommunityReviews';
 import ExternalRatings from '../common/ExternalRatings';
+import {
+  displayableSubjects,
+  formatBookMetaLine,
+  formatLanguageLabel,
+  getPagesRead,
+  getProgressPercent,
+  pickFirstPublisher,
+} from '../../utils/bookDisplay';
 
 /** Corps de la fiche : couverture, informations, progression, résumé, notes et avis. */
 const BookDetailsGrid = ({
@@ -25,8 +33,6 @@ const BookDetailsGrid = ({
   displayStatus,
   handleRatingClick,
   handleReviewPublish,
-  getProgressPercentage,
-  getCurrentStatus,
 }) => (
   <>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -128,6 +134,14 @@ const BookDetailsGrid = ({
                   />
                 </div>
               </div>
+            ) : book.seriesLink ? (
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Série</h3>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 rounded-full text-sm font-medium">
+                  Fait partie de {book.seriesLink.name}
+                  {book.seriesLink.volume ? `, tome ${book.seriesLink.volume}` : ''}
+                </span>
+              </div>
             ) : book.saga ? (
               <div>
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Série</h3>
@@ -137,8 +151,8 @@ const BookDetailsGrid = ({
               </div>
             ) : null}
 
-            {/* Statut — uniquement si le livre est dans la bibliothèque */}
-            {inLibrary && (isEditing ? (
+            {/* Statut — uniquement en édition (le bandeau du haut affiche déjà le statut) */}
+            {inLibrary && isEditing && (
               <div>
                 <label htmlFor="book-edit-status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Statut
@@ -156,45 +170,55 @@ const BookDetailsGrid = ({
                   ))}
                 </select>
               </div>
-            ) : (
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Statut</h3>
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getCurrentStatus().color}`}>
-                  {getCurrentStatus().label}
-                </span>
-              </div>
-            ))}
+            )}
 
             {/* Progression — masquée en lecture : déjà affichée au-dessus */}
-            {totalPages > 0 && !(inLibrary && !isEditing && displayStatus === 'reading') && (
+            {(totalPages > 0 || isEditing) && !(inLibrary && !isEditing && displayStatus === 'reading') && (
               <div>
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Progression</h3>
                 {isEditing ? (
                   <div className="space-y-2">
-                    <input
-                      type="number"
-                      aria-label="Pages lues"
-                      value={editData.current_page}
-                      onChange={(e) => setEditData(prev => ({ ...prev, current_page: e.target.value }))}
-                      min="0"
-                      max={totalPages}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-booktime-500 transition-colors"
-                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label htmlFor="book-edit-current-page" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Pages lues</label>
+                        <input
+                          id="book-edit-current-page"
+                          type="number"
+                          aria-label="Pages lues"
+                          value={editData.current_page}
+                          onChange={(e) => setEditData(prev => ({ ...prev, current_page: e.target.value }))}
+                          min="0"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-booktime-500 transition-colors"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="book-edit-total-pages" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Pages total</label>
+                        <input
+                          id="book-edit-total-pages"
+                          type="number"
+                          aria-label="Nombre de pages"
+                          value={editData.total_pages ?? totalPages ?? ''}
+                          onChange={(e) => setEditData(prev => ({ ...prev, total_pages: e.target.value }))}
+                          min="0"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-booktime-500 transition-colors"
+                        />
+                      </div>
+                    </div>
                     <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-                      <span>{editData.current_page} pages lues</span>
-                      <span>{totalPages} pages total</span>
+                      <span>{editData.current_page || 0} pages lues</span>
+                      <span>{editData.total_pages || totalPages || 0} pages total</span>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-                      <span>{book.current_page || 0} pages lues</span>
+                      <span>{getPagesRead(book, totalPages, displayStatus)} pages lues</span>
                       <span>{totalPages} pages total</span>
                     </div>
-                    <div className="progress-bar bg-gray-200 dark:bg-gray-700" role="progressbar" aria-label="Progression de lecture" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(getProgressPercentage())}>
+                    <div className="progress-bar bg-gray-200 dark:bg-gray-700" role="progressbar" aria-label="Progression de lecture" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(getProgressPercent(book, totalPages, displayStatus))}>
                       <div 
                         className="progress-fill"
-                        style={{ width: `${getProgressPercentage()}%` }}
+                        style={{ width: `${getProgressPercent(book, totalPages, displayStatus)}%` }}
                       />
                     </div>
                   </div>
@@ -265,25 +289,12 @@ const BookDetailsGrid = ({
               refreshKey={communityRefreshKey}
             />
 
-            {/* Sujets / Genres — depuis OL enrichi */}
-            {(olDetails?.subjects?.length > 0 || book.subjects?.length > 0) && (
+            {/* Sujets / Genres — depuis OL enrichi (identifiants nyt: exclus) */}
+            {displayableSubjects(olDetails?.subjects || book.subjects || []).length > 0 && (
               <div>
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Genres & Sujets</h3>
                 <div className="flex flex-wrap gap-1">
-                  {(olDetails?.subjects || book.subjects || [])
-                    .map((s) => (typeof s === 'string' ? s : s?.name || ''))
-                    .filter(Boolean)
-                    // Préférer les sujets FR (accents / mots courants) ; sinon garder un échantillon
-                    .sort((a, b) => {
-                      const score = (t) =>
-                        (/[àâäéèêëïîôùûç]/i.test(t) ? 2 : 0) +
-                        (/\b(roman|policier|fantastique|aventure|jeunesse|bande|dessin)/i.test(t)
-                          ? 1
-                          : 0);
-                      return score(b) - score(a);
-                    })
-                    .slice(0, 8)
-                    .map((s, i) => (
+                  {displayableSubjects(olDetails?.subjects || book.subjects || []).map((s, i) => (
                     <span key={i} className="px-2 py-0.5 text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full border border-blue-100 dark:border-blue-800">
                       {s}
                     </span>
@@ -310,6 +321,11 @@ const BookDetailsGrid = ({
 
             {/* Informations supplémentaires */}
             <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+              {formatBookMetaLine(book) ? (
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  {formatBookMetaLine(book)}
+                </p>
+              ) : null}
               <div className="grid grid-cols-2 gap-4 text-sm">
                 {book.original_title && book.original_title !== titleMain && (
                   <div className="col-span-2">
@@ -317,6 +333,32 @@ const BookDetailsGrid = ({
                     <p className="text-gray-600 dark:text-gray-400 italic">{book.original_title}</p>
                   </div>
                 )}
+                {book.genre ? (
+                  <div>
+                    <h4 className="font-medium text-gray-700 dark:text-gray-300">Genre</h4>
+                    <p className="text-gray-600 dark:text-gray-400">{Array.isArray(book.genre) ? book.genre.filter(Boolean).join(', ') : book.genre}</p>
+                  </div>
+                ) : null}
+                {pickFirstPublisher(book.publisher) ? (
+                  <div>
+                    <h4 className="font-medium text-gray-700 dark:text-gray-300">Éditeur</h4>
+                    <p className="text-gray-600 dark:text-gray-400">{pickFirstPublisher(book.publisher)}</p>
+                  </div>
+                ) : null}
+                {(book.publication_year || book.first_publish_year) ? (
+                  <div>
+                    <h4 className="font-medium text-gray-700 dark:text-gray-300">Année de publication</h4>
+                    <p className="text-gray-600 dark:text-gray-400">{book.publication_year || book.first_publish_year}</p>
+                  </div>
+                ) : null}
+                {(book.reading_language || book.original_language || book.language) ? (
+                  <div>
+                    <h4 className="font-medium text-gray-700 dark:text-gray-300">Langue de l'édition</h4>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      {formatLanguageLabel(book.reading_language || book.original_language || book.language)}
+                    </p>
+                  </div>
+                ) : null}
                 <div>
                   <h4 className="font-medium text-gray-700 dark:text-gray-300">Date d'ajout</h4>
                   <p className="text-gray-600 dark:text-gray-400">

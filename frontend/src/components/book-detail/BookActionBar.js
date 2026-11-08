@@ -1,13 +1,11 @@
 import React from 'react';
-import { TrashIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { TrashIcon } from '@heroicons/react/24/outline';
 import AddToCollectionMenu from '../common/AddToCollectionMenu';
 
 /** Boutons d'action : enregistrer / annuler en édition, ajouter, modifier, supprimer. */
 const BookActionBar = ({
   book,
-  onClose,
   onDelete,
-  navigate,
   titleMain,
   isEditing,
   setIsEditing,
@@ -51,26 +49,8 @@ const BookActionBar = ({
             </button>
           </div>
         ) : (
-          /* Similaires + Collection + Retirer */
+          /* Collection + Retirer (Similaires est déjà dans l'en-tête) */
           <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
-            {titleMain ? (
-              <button
-                type="button"
-                onClick={() => {
-                  const params = new URLSearchParams({
-                    tab: 'similaires',
-                    title: titleMain,
-                  });
-                  if (book.author) params.set('author', book.author);
-                  onClose?.();
-                  navigate(`/recommendations?${params}`);
-                }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 active:bg-purple-800 rounded-xl transition-colors shadow-sm"
-              >
-                <SparklesIcon className="h-5 w-5" />
-                Voir des livres similaires
-              </button>
-            ) : null}
           {!book.isFromOpenLibrary && (
             <>
               {book.id && (

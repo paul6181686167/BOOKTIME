@@ -28,6 +28,90 @@ def _normalize_query(s: str) -> str:
 
 router = APIRouter(prefix="/api/openlibrary", tags=["openlibrary"])
 
+_JUNK_TITLE = _re_global.compile(
+    r"\b(summary|summaries|review|reviews|study\s*guide|cliff\s*notes|"
+    r"sparknotes|fiche de lecture|commentaire|analyse)\b",
+    _re_global.I,
+)
+_AUDIO_ISBN_HINT = _re_global.compile(
+    r"\b(audible|audiobook|audio\s*cd|mp3|brilliance\s*audio)\b",
+    _re_global.I,
+)
+_FR_PUBLISHER_HINTS = (
+    "gallimard", "albin", "pocket", "folio", "livre de poche", "flammarion",
+    "seuil", "actes sud", "casterman", "glénat", "glenat", "kana", "pika",
+    "kurokawa", "delcourt", "dargaud", "dupuis", "j'ai lu", "le lombard",
+    "albert rené", "hachette", "robert laffont",
+)
+
+
+def _is_junk_ol_title(title: str) -> bool:
+    t = (title or "").strip()
+    if not t:
+        return True
+    if _JUNK_TITLE.search(t):
+        return True
+    if t.lower().startswith("summary"):
+        return True
+    return False
+
+
+def _pick_publisher(publishers) -> str:
+    if isinstance(publishers, str):
+        parts = [p.strip() for p in publishers.split(",") if p.strip()]
+    else:
+        parts = [str(p).strip() for p in (publishers or []) if p]
+    if not parts:
+        return ""
+    for p in parts:
+        if _AUDIO_ISBN_HINT.search(p):
+            continue
+        if any(h in p.lower() for h in _FR_PUBLISHER_HINTS):
+            return p
+    non_audio = [p for p in parts if not _AUDIO_ISBN_HINT.search(p)]
+    return (non_audio or parts)[0]
+
+
+def _pick_paper_isbn(isbns, publishers=None) -> str:
+    pub_blob = " ".join(publishers or []) if isinstance(publishers, list) else str(publishers or "")
+    if _AUDIO_ISBN_HINT.search(pub_blob):
+        # ISBN souvent celui de l'audio : on essaie quand même un 978 papier plus loin
+        pass
+    raw = []
+    if isinstance(isbns, str):
+        raw = [isbns]
+    elif isbns:
+        raw = [str(x) for x in isbns if x]
+    cleaned = []
+    for isbn in raw:
+        digits = _re_global.sub(r"[^0-9Xx]", "", isbn)
+        if len(digits) in (10, 13):
+            cleaned.append(digits)
+    paper = [i for i in cleaned if i.startswith("978") or len(i) == 10]
+    return (paper[0] if paper else (cleaned[0] if cleaned else ""))
+
+
+def _displayable_subjects(subjects, limit=8) -> list:
+    out = []
+    for s in subjects or []:
+        t = s if isinstance(s, str) else (s.get("name") if isinstance(s, dict) else "")
+        t = (t or "").strip()
+        if not t:
+            continue
+        if ":" in t and "=" in t:
+            continue
+        if _re_global.match(r"^[a-z]{2,8}:", t) and " " not in t:
+            continue
+        if _re_global.match(r"^\d{4}-\d{2}-\d{2}$", t):
+            continue
+        if len(t) > 60:
+            continue
+        out.append(t)
+        if len(out) >= limit:
+            break
+    return out
+
+
 def extract_cover_url(cover_i):
     """Extraire l'URL de couverture depuis l'ID de couverture"""
     if cover_i:
@@ -148,10 +232,10 @@ def _doc_to_book(doc: dict) -> dict:
         "category": detect_category_from_subjects(doc.get("subject", [])),
         "cover_url": extract_cover_url(doc.get("cover_i")),
         "first_publish_year": doc.get("first_publish_year"),
-        "isbn": doc.get("isbn", [""])[0] if doc.get("isbn") else "",
-        "subjects": doc.get("subject", [])[:5],
+        "isbn": _pick_paper_isbn(doc.get("isbn") or [], doc.get("publisher") or []),
+        "subjects": _displayable_subjects(doc.get("subject", []), 5),
         "number_of_pages": doc.get("number_of_pages_median"),
-        "publisher": ", ".join(doc.get("publisher", [])) if doc.get("publisher") else "",
+        "publisher": _pick_publisher(doc.get("publisher") or []),
         "saga": series_name,
         "available_languages": langs[:5] if langs else [],
         "title_fr": display_title if display_title != ol_title or "fre" in langs_l else None,
@@ -236,6 +320,8 @@ def _search_open_library_sync(
             if min_pages and doc.get("number_of_pages_median", 0) < min_pages:
                 continue
             if max_pages and doc.get("number_of_pages_median", float("inf")) > max_pages:
+                continue
+            if _is_junk_ol_title(doc.get("title") or ""):
                 continue
             books.append(_doc_to_book(doc))
 
@@ -445,14 +531,17 @@ def _import_from_ol_sync(import_data: dict, user_id: str) -> dict:
     author_str = (import_data.get("author") or "").strip()
     original_title = (import_data.get("original_title") or "").strip() or None
     cover_url = (import_data.get("cover_url") or "").strip()
-    isbn = (import_data.get("isbn") or "").strip()
+    isbn = _pick_paper_isbn(import_data.get("isbn") or "", import_data.get("publisher"))
     saga_name = (import_data.get("saga") or "").strip()
     volume_number = import_data.get("volume_number")
     description = (import_data.get("description") or "").strip()
-    subjects: list = []
+    subjects: list = _displayable_subjects(import_data.get("subjects") or import_data.get("subject") or [], 8)
     total_pages = import_data.get("total_pages") or import_data.get("number_of_pages")
     publication_year = import_data.get("publication_year") or import_data.get("first_publish_year")
-    publisher = import_data.get("publisher") or ""
+    publisher = _pick_publisher(import_data.get("publisher") or "")
+    genre = import_data.get("genre") or ""
+    if isinstance(genre, list):
+        genre = ", ".join(str(g) for g in genre if g)
 
     # Repli OL uniquement si métadonnées essentielles manquantes (timeout court)
     work_data = {}
@@ -476,7 +565,7 @@ def _import_from_ol_sync(import_data: dict, user_id: str) -> dict:
                         )
                         if ar.ok:
                             author_str = ar.json().get("name", "") or ""
-                subjects = work_data.get("subjects") or []
+                subjects = _displayable_subjects(work_data.get("subjects") or [], 8)
         except requests.RequestException as exc:
             logger.warning("Import OL: work indisponible pour %s: %s", ol_key, exc)
 
@@ -522,11 +611,12 @@ def _import_from_ol_sync(import_data: dict, user_id: str) -> dict:
         "author": author_str,
         "category": validated_category,
         "description": description,
-        "genre": ", ".join(subjects[:3]) if subjects else "",
+        "genre": genre or (", ".join(subjects[:3]) if subjects else ""),
         "total_pages": total_pages,
         "publication_year": publication_year,
         "publisher": publisher if isinstance(publisher, str) else "",
         "isbn": isbn,
+        "language": "fr",
         "cover_url": cover_url,
         "ol_key": ol_key or None,
         "status": "to_read",
@@ -561,16 +651,16 @@ def _import_from_ol_sync(import_data: dict, user_id: str) -> dict:
         "message": "Livre importé avec succès",
         "book": book,
         "type": "book",
-        "_needs_synopsis": not bool(description),
+        "_needs_synopsis": True,
     }
 
 
 def _fill_synopsis_sync(book_id: str, user_id: str, title: str, author: str, isbn: str, ol_key: str):
     try:
         from ..utils.book_synopsis import (
+            ensure_french_synopsis,
             fetch_book_synopsis,
-            looks_english,
-            is_usable_synopsis,
+            looks_french,
         )
 
         syn = fetch_book_synopsis(
@@ -578,19 +668,30 @@ def _fill_synopsis_sync(book_id: str, user_id: str, title: str, author: str, isb
             author=author,
             isbn=isbn or "",
             ol_key=ol_key or "",
-            want_pages=False,
+            want_pages=True,
         )
         cand = (syn.get("description") or "").strip()
-        if is_usable_synopsis(cand) and not looks_english(cand):
+        fr_text, fr_src = ensure_french_synopsis(
+            cand, source=syn.get("source") or "fetch"
+        )
+        existing = books_collection.find_one({"id": book_id, "user_id": user_id}) or {}
+        patch = {}
+        if fr_text and looks_french(fr_text):
+            patch["description"] = fr_text
+            patch["description_source"] = fr_src
+        extra = syn if isinstance(syn, dict) else {}
+        if extra.get("pages") and not existing.get("total_pages"):
+            patch["total_pages"] = extra.get("pages")
+        if extra.get("publisher") and not existing.get("publisher"):
+            patch["publisher"] = _pick_publisher(extra.get("publisher"))
+        year = extra.get("publication_year") or extra.get("year")
+        if year and not existing.get("publication_year"):
+            patch["publication_year"] = year
+        if patch:
+            patch["updated_at"] = utcnow()
             books_collection.update_one(
                 {"id": book_id, "user_id": user_id},
-                {
-                    "$set": {
-                        "description": cand,
-                        "description_source": syn.get("source") or "fetch",
-                        "updated_at": utcnow(),
-                    }
-                },
+                {"$set": patch},
             )
     except Exception as exc:
         logger.debug("Synopsis différé import fail: %s", exc)
@@ -989,13 +1090,17 @@ def get_book_detail(
         # Description
         raw_desc = work_data.get("description", "")
         description = raw_desc.get("value", raw_desc) if isinstance(raw_desc, dict) else raw_desc
+        from ..utils.book_synopsis import ensure_french_synopsis, looks_french
+        description, _src = ensure_french_synopsis(description or "", source="openlibrary")
+        if description and not looks_french(description):
+            description = ""
 
         # Couverture
         covers = work_data.get("covers", [])
         cover_url = f"https://covers.openlibrary.org/b/id/{covers[0]}-L.jpg" if covers and covers[0] > 0 else ""
 
         # Sujets
-        subjects = work_data.get("subjects", [])
+        subjects = _displayable_subjects(work_data.get("subjects", []), 10)
 
         # Vérifier si dans la bibliothèque de l'utilisateur
         in_library = books_collection.count_documents({
@@ -1003,13 +1108,24 @@ def get_book_detail(
             "$or": [{"ol_key": ol_key}, {"ol_key": work_key}]
         }) > 0
 
+        ol_title = work_data.get("title", "") or ""
+        alias = _alias_french_title(ol_title)
+        display_title = alias or ol_title
+        year = None
+        m_year = _re_global.search(r"(1[5-9]\d{2}|20\d{2})", str(work_data.get("first_publish_date") or ""))
+        if m_year:
+            year = int(m_year.group(1))
+
         return {
             "ol_key": ol_key,
-            "title": work_data.get("title", ""),
+            "title": display_title,
+            "original_title": ol_title if alias and alias != ol_title else None,
             "author": ", ".join(a for a in authors if a),
             "description": description,
-            "subjects": subjects[:10],
+            "subjects": subjects,
             "cover_url": cover_url,
+            "publication_year": year,
+            "first_publish_year": year,
             "category": detect_category_from_subjects(subjects),
             "in_user_library": in_library,
             "source": "openlibrary",

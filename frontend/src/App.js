@@ -33,6 +33,8 @@ import ConfirmHost from './components/common/ConfirmHost';
 import PrimaryTabsLayout from './components/navigation/PrimaryTabsLayout';
 import FriendInvitePage from './pages/FriendInvitePage';
 import useCollectionsSync from './hooks/useCollectionsSync';
+import useOfflineWriteQueue from './hooks/useOfflineWriteQueue';
+import OfflineBanner from './components/OfflineBanner';
 
 import './App.css';
 import './styles/optimized.css';
@@ -101,6 +103,7 @@ function App() {
           <ErrorBoundary>
             <NativeAppShell />
             <UpdateBanner />
+            <OfflineBanner />
             <ConfirmHost />
             <Suspense fallback={<RouteFallback />}>
               <Routes>
@@ -122,6 +125,7 @@ function App() {
 function AppWithAuth() {
   const { user, loading } = useAuth();
   useCollectionsSync(user?.id);
+  useOfflineWriteQueue(user?.id);
 
   if (loading) {
     return (

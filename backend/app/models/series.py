@@ -10,10 +10,12 @@ class VolumeData(BaseModel):
     review: Optional[str] = None
 
 class SeriesLibraryCreate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     series_name: str
-    authors: List[str]
-    category: str
-    volumes: List[VolumeData]
+    authors: List[str] = Field(default_factory=list)
+    category: str = "roman"
+    volumes: List[VolumeData] = Field(default_factory=list)
     total_volumes: int = 0
     description_fr: str = ""
     cover_image_url: str = ""

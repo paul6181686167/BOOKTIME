@@ -105,8 +105,8 @@ class TestOnboardingCatalog:
         works = (
             await test_client.get("/api/catalog/onboarding?group=graphic_novel", headers=auth_headers)
         ).json()["works"]
-        manga = next(w for w in works if w["category"] == "manga")
-        bd = next(w for w in works if w["category"] == "bd")
+        manga = next(w for w in works if w["category"] == "manga" and w.get("kind") != "series")
+        bd = next(w for w in works if w["category"] == "bd" and w.get("kind") != "series")
         await test_client.post(
             "/api/catalog/onboarding", json={"ids": [manga["id"], bd["id"]]}, headers=auth_headers
         )
@@ -131,3 +131,33 @@ class TestOnboardingCatalog:
         assert stats["completed_books"] == 4
         assert stats["completed_this_year"] == 0
         assert stats["completion_dates"] == {}
+
+    @pytest.mark.asyncio
+    async def test_tintin_asterix_one_piece_sont_ajoutes_comme_series(
+        self, test_client: AsyncClient, auth_headers: dict
+    ):
+        works = (
+            await test_client.get("/api/catalog/onboarding?group=graphic_novel", headers=auth_headers)
+        ).json()["works"]
+        wanted = [w for w in works if w["title"] in ("One Piece", "Astérix", "Tintin")]
+        assert len(wanted) == 3
+        assert all(w.get("kind") == "series" for w in wanted)
+
+        r = await test_client.post(
+            "/api/catalog/onboarding",
+            json={"ids": [w["id"] for w in wanted]},
+            headers=auth_headers,
+        )
+        assert r.status_code == 200
+        assert r.json()["added"] == 3
+
+        series = (await test_client.get("/api/series/library", headers=auth_headers)).json()
+        items = series if isinstance(series, list) else series.get("series") or []
+        names = {(s.get("series_name") or s.get("name") or "").lower() for s in items}
+        assert "one piece" in names
+        assert "astérix" in names or "asterix" in names
+        assert "tintin" in names
+        books = (await test_client.get("/api/books?limit=100", headers=auth_headers)).json()["items"]
+        book_titles = {b["title"] for b in books}
+        assert "One Piece" not in book_titles
+        assert "Tintin" not in book_titles

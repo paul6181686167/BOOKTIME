@@ -42,13 +42,27 @@ const SeriesTomeList = ({
                   // Source : EXTENDED_SERIES_DATABASE → style TomeDropdown exact comme Harry Potter
                   return Array.from({ length: volumeCount }, (_, index) => {
                     const tomeNumber = index + 1;
-                    const tomeTitle = enrichedSeries.volume_titles?.[tomeNumber] || `${enrichedSeries.name} - Tome ${tomeNumber}`;
+                    const fromOl = (olBooks || []).find(
+                      (b) => Number(b.volume_number) === tomeNumber
+                    );
+                    const tomeTitle =
+                      (fromOl && (fromOl.display_title || fromOl.title)) ||
+                      enrichedSeries.volume_titles?.[tomeNumber] ||
+                      `${enrichedSeries.name} - Tome ${tomeNumber}`;
                     return (
                       <TomeDropdown
                         key={tomeNumber}
                         tomeNumber={tomeNumber}
                         tomeTitle={tomeTitle}
-                        seriesData={enrichedSeries}
+                        seriesData={{
+                          ...enrichedSeries,
+                          mergedLibraryVolumes: olBooks,
+                          cover_url:
+                            enrichedSeries.cover_url ||
+                            enrichedSeries.cover_image_url ||
+                            series?.cover_image_url ||
+                            series?.cover_url,
+                        }}
                         tomeStatus={tomeStatuses[String(tomeNumber)]?.status || 'non_lu'}
                         currentPage={tomeStatuses[String(tomeNumber)]?.currentPage || null}
                         rating={tomeStatuses[String(tomeNumber)]?.rating || 0}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDownIcon, ChevronUpIcon, BookOpenIcon, CalendarIcon, DocumentTextIcon, StarIcon } from '@heroicons/react/24/outline';
+import { coverImgSrc } from '../utils/helpers';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 import { isVolumeUnreleased } from '../utils/volumeRelease';
@@ -74,6 +75,7 @@ const TomeDropdown = ({
       description: null,
       isbn: null,
       publisher: null,
+      cover_url: seriesData?.cover_url || seriesData?.cover_image_url || null,
     };
     if (!seriesData) return baseInfo;
 
@@ -87,6 +89,7 @@ const TomeDropdown = ({
         description: d.description || null,
         isbn: d.isbn || null,
         publisher: d.publisher || null,
+        cover_url: d.cover_url || baseInfo.cover_url || null,
       };
     }
 
@@ -121,6 +124,7 @@ const TomeDropdown = ({
         description: fromMerged.description || null,
         isbn: fromMerged.isbn || fromMerged.isbn13 || null,
         publisher: fromMerged.publisher || null,
+        cover_url: fromMerged.cover_url || fromMerged.cover || baseInfo.cover_url || null,
       };
     }
 
@@ -158,6 +162,19 @@ const TomeDropdown = ({
       {/* Jusqu’à lg : titre + toggle empilés (modales / tablettes étroites) · lg+ : une ligne */}
       <div className="flex flex-col gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded lg:flex-row lg:items-center lg:justify-between lg:gap-3">
         <div className="flex min-w-0 flex-1 flex-col gap-1 lg:flex-row lg:items-center lg:gap-2">
+          {tomeInfo.cover_url ? (
+            <img
+              src={coverImgSrc(tomeInfo.cover_url)}
+              alt=""
+              className="h-10 w-7 shrink-0 rounded object-cover bg-gray-100 dark:bg-gray-700"
+            />
+          ) : seriesData?.cover_url || seriesData?.cover_image_url ? (
+            <img
+              src={coverImgSrc(seriesData.cover_url || seriesData.cover_image_url)}
+              alt=""
+              className="h-10 w-7 shrink-0 rounded object-cover bg-gray-100 dark:bg-gray-700"
+            />
+          ) : null}
           <span className="shrink-0 text-xs font-semibold text-purple-600 dark:text-purple-400 lg:w-[4.5rem]">
             Tome {tomeNumber}
           </span>

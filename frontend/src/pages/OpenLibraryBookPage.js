@@ -16,6 +16,8 @@ import {
 import { API_BASE_URL } from '../config/environment';
 import logger from '../utils/logger';
 import { getToken } from '../services/apiClient';
+import { preferFrenchSynopsis, sanitizeSynopsis } from '../utils/synopsisQuality';
+import { displayableSubjects, formatBookMetaLine, pickFirstPublisher } from '../utils/bookDisplay';
 
 const OpenLibraryBookPage = () => {
   // Récupère la clé depuis le splat (* dans la route /catalogue/*)
@@ -222,6 +224,19 @@ const OpenLibraryBookPage = () => {
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{book.title}</h1>
+              {book.original_title && book.original_title !== book.title ? (
+                <p className="text-sm italic text-gray-500 dark:text-gray-400 mb-2">
+                  Titre original : {book.original_title}
+                </p>
+              ) : null}
+              {formatBookMetaLine({
+                ...book,
+                publisher: pickFirstPublisher(book.publisher),
+              }) ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                  {formatBookMetaLine({ ...book, publisher: pickFirstPublisher(book.publisher) })}
+                </p>
+              ) : null}
               
               {book.authors && book.authors.length > 0 ? (
                 <div className="mb-4">
@@ -255,11 +270,11 @@ const OpenLibraryBookPage = () => {
                   </div>
                 )}
 
-                {book.publisher && (
+                {pickFirstPublisher(book.publisher) && (
                   <div className="flex items-center space-x-2">
                     <BuildingLibraryIcon className="h-4 w-4 text-gray-400" />
                     <span className="text-gray-600 dark:text-gray-400">Éditeur :</span>
-                    <span className="font-medium text-gray-900 dark:text-white">{book.publisher}</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{pickFirstPublisher(book.publisher)}</span>
                   </div>
                 )}
 
@@ -295,18 +310,34 @@ const OpenLibraryBookPage = () => {
               )}
             </div>
 
-            {book.description && (
+            {preferFrenchSynopsis(book.description, { rejectEnglish: true }) ? (
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Résumé</h2>
-                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{book.description}</p>
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                  {sanitizeSynopsis(preferFrenchSynopsis(book.description, { rejectEnglish: true }))}
+                </p>
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Résumé</h2>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Résumé indisponible</p>
+                  <button
+                    type="button"
+                    onClick={loadBookDetails}
+                    className="inline-flex items-center rounded-full border border-gray-200 dark:border-gray-600 px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Réessayer
+                  </button>
+                </div>
               </div>
             )}
 
-            {book.subjects && book.subjects.length > 0 && (
+            {displayableSubjects(book.subjects, 15).length > 0 && (
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Genres et sujets</h2>
                 <div className="flex flex-wrap gap-2">
-                  {book.subjects.slice(0, 15).map((subject, index) => (
+                  {displayableSubjects(book.subjects, 15).map((subject, index) => (
                     <span
                       key={index}
                       className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm"

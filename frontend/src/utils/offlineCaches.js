@@ -8,6 +8,7 @@
 export const USER_CACHE_KEY_PREFIXES = [
   'booktime_offline_library',
   'booktime_offline_series',
+  'booktime_offline_queue',
   'booktime_author_profile',
 ];
 

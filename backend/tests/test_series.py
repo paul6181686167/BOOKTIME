@@ -109,3 +109,15 @@ class TestSeries:
             "/api/series/complete", json=invalid_data, headers=auth_headers
         )
         assert response.status_code in (400, 422)
+
+    @pytest.mark.asyncio
+    async def test_ajout_serie_incomplete_renvoie_422_sans_nom_interne(
+        self, test_client: AsyncClient, auth_headers: dict
+    ):
+        response = await test_client.post(
+            "/api/series/library", json={"category": "manga"}, headers=auth_headers
+        )
+        assert response.status_code == 422
+        detail = str(response.json().get("detail") or "")
+        assert "SeriesLibraryCreate" not in detail
+        assert "nom" in detail.lower() or "série" in detail.lower() or "serie" in detail.lower()

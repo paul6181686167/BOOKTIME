@@ -4,6 +4,13 @@ import {
   saveLibraryCache,
   loadLibraryCache,
 } from '../utils/offlineLibraryCache';
+import {
+  enqueueCreateBook,
+  enqueueUpdateBook,
+  enqueueDeleteBook,
+  shouldEnqueueWrite,
+  mergePendingBooks,
+} from '../utils/offlineWriteQueue';
 import logger from '../utils/logger';
 import { getToken, notifyUnauthorized } from './apiClient';
 
@@ -63,13 +70,17 @@ export const bookService = {
       const response = await api.get('/api/books/all', { params });
       const data = response.data;
       const books = Array.isArray(data) ? data : data?.books || data?.items || [];
+      const merged = mergePendingBooks(books);
       // Cache complet sans filtre pour permettre le filtrage offline
-      if (!category && !status && Array.isArray(books) && books.length > 0) {
-        saveLibraryCache(books, {});
-      } else if (Array.isArray(books) && books.length > 0) {
-        saveLibraryCache(books, filters);
+      if (!category && !status && Array.isArray(merged) && merged.length > 0) {
+        saveLibraryCache(merged, {});
+      } else if (Array.isArray(merged) && merged.length > 0) {
+        saveLibraryCache(merged, filters);
       }
-      return data;
+      if (Array.isArray(data)) return merged;
+      if (data && Array.isArray(data.books)) return { ...data, books: merged };
+      if (data && Array.isArray(data.items)) return { ...data, items: merged };
+      return merged;
     } catch (error) {
       const cached = loadLibraryCache(filters);
       if (cached?.books) {
@@ -94,10 +105,14 @@ export const bookService = {
 
   // Créer un nouveau livre
   async createBook(bookData) {
+    if (shouldEnqueueWrite()) {
+      return enqueueCreateBook(bookData);
+    }
     try {
       const response = await api.post('/api/books', bookData);
       return response.data;
     } catch (error) {
+      if (shouldEnqueueWrite(error)) return enqueueCreateBook(bookData);
       logger.error('Erreur lors de la création du livre:', error);
       throw new Error('Erreur lors de la création du livre');
     }
@@ -105,10 +120,14 @@ export const bookService = {
 
   // Mettre à jour un livre
   async updateBook(id, updateData) {
+    if (shouldEnqueueWrite()) {
+      return enqueueUpdateBook(id, updateData);
+    }
     try {
       const response = await api.put(`/api/books/${id}`, updateData);
       return response.data;
     } catch (error) {
+      if (shouldEnqueueWrite(error)) return enqueueUpdateBook(id, updateData);
       logger.error('Erreur lors de la mise à jour du livre:', error);
       throw new Error('Erreur lors de la mise à jour du livre');
     }
@@ -116,10 +135,14 @@ export const bookService = {
 
   // Supprimer un livre
   async deleteBook(id) {
+    if (shouldEnqueueWrite()) {
+      return enqueueDeleteBook(id);
+    }
     try {
       const response = await api.delete(`/api/books/${id}`);
       return response.data;
     } catch (error) {
+      if (shouldEnqueueWrite(error)) return enqueueDeleteBook(id);
       logger.error('Erreur lors de la suppression du livre:', error);
       throw new Error('Erreur lors de la suppression du livre');
     }

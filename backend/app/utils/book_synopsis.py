@@ -171,7 +171,8 @@ _SECONDARY_LIT = re.compile(
     r"etudes?|études?|commentaire|analyse|analyses|critique|critiques|"
     r"resume|résumé|fiches?|scolaire|bac\b|abridged|extrait|extraits|"
     r"anthologie|companion|study\s*guide|cliff\s*notes|spark\s*notes|"
-    r"lecture\s*analytique|profil\s*d|rep[eè]res"
+    r"lecture\s*analytique|profil\s*d|rep[eè]res|"
+    r"summary|summaries|review|reviews"
     r")\b",
     re.I,
 )
@@ -217,12 +218,32 @@ _STUDY_GUIDE = re.compile(
 )
 
 
+def _fix_encoding(text: str) -> str:
+    """Répare mojibake UTF-8/Latin-1, apostrophes doublées et caractères de remplacement."""
+    t = text or ""
+    if re.search(r"Ã.|Â.", t):
+        try:
+            repaired = t.encode("latin-1").decode("utf-8")
+            if repaired and "\ufffd" not in repaired:
+                t = repaired
+        except (UnicodeDecodeError, UnicodeEncodeError):
+            pass
+    t = t.replace("\ufffd", "")
+    t = re.sub(r"fran[\ufffd]?aise", "française", t, flags=re.I)
+    t = re.sub(r"([dlLnNsS]|qu|Qu)''", r"\1'", t)
+    t = t.replace("''", "'")
+    return t
+
+
 def _sanitize_synopsis(text: str) -> str:
     """Retire markdown OL, sections annexes et URLs."""
-    t = text or ""
+    t = _fix_encoding(text or "")
     # Les éditeurs séparent les paragraphes de la 4ᵉ par <br> / <p> : on garde ces coupures
     t = re.sub(r"(?i)<\s*br\s*/?\s*>|</\s*(?:p|div|li)\s*>", "\n\n", t)
     t = re.sub(r"<[^>]+>", " ", t)
+    t = re.sub(r"\*\*([^*]+)\*\*", r"\1", t)
+    t = re.sub(r"(^|[\s(])\*([^*\n]+)\*(?=[\s).,]|$)", r"\1\2", t)
+    t = re.sub(r"\*+", "", t)
     t = re.split(
         r"(?is)(?:^|\n)\s*(?:Also contained in|Contenu dans|See also|Voir aussi|"
         r"External links|Liens externes|References|Références)\s*:?",
@@ -272,15 +293,78 @@ _EN_STOPWORDS = {
     "their", "they", "have", "has", "been", "which", "who", "will", "would",
     "about", "into", "when", "what", "there", "can", "not", "but", "all",
 }
+_ES_STOPWORDS = {
+    "el", "los", "las", "una", "unos", "unas", "es", "son", "del", "al", "se",
+    "su", "sus", "como", "pero", "este", "esta", "estos", "estas", "está",
+    "están", "hay", "muy", "más", "también", "cuando", "donde", "sobre",
+    "hasta", "desde", "porque", "sin", "entre", "tiene", "tienen", "solo",
+    "sólo", "único", "unico",
+}
+_FR_UNIQUE = {
+    "les", "une", "des", "du", "et", "est", "sont", "cette", "ces", "aux",
+    "qui", "dans", "pour", "par", "avec", "mais", "leur", "leurs",
+    "sa", "ses", "plus",
+}
+_ES_UNIQUE = {
+    "el", "los", "las", "una", "unos", "unas", "es", "son", "del", "al", "se",
+    "su", "sus", "está", "están", "hay", "más", "también", "pero", "este",
+    "esta", "tiene", "tienen", "porque",
+}
 
 
-def _lang_scores(text: str | None) -> tuple[int, int, int, int]:
+def _lang_scores(text: str | None) -> tuple[int, int, int, int, int, int, int]:
     t = (text or "").strip()
-    accent_n = len(re.findall(r"[àâäéèêëïîôùûüçœæÀÂÄÉÈÊËÏÎÔÙÛÜÇŒÆ]", t))
-    tokens = re.findall(r"[a-zA-ZàâäéèêëïîôùûüçœæÀÂÄÉÈÊËÏÎÔÙÛÜÇŒÆ']+", t.lower())
+    accent_n = len(re.findall(r"[àâäáéèêëïîíôóùûúüçœæñÀÂÄÁÉÈÊËÏÎÍÔÓÙÛÚÜÇŒÆÑ]", t))
+    tokens = re.findall(r"[a-zA-ZàâäáéèêëïîíôóùûúüçœæñÀÂÄÁÉÈÊËÏÎÍÔÓÙÛÚÜÇŒÆÑ']+", t.lower())
     fr_hits = sum(1 for w in tokens if w in _FR_STOPWORDS)
     en_hits = sum(1 for w in tokens if w in _EN_STOPWORDS)
-    return accent_n, fr_hits, en_hits, len(tokens)
+    es_hits = sum(1 for w in tokens if w in _ES_STOPWORDS)
+    fr_unique = sum(1 for w in tokens if w in _FR_UNIQUE)
+    es_unique = sum(1 for w in tokens if w in _ES_UNIQUE)
+    return accent_n, fr_hits, en_hits, es_hits, fr_unique, es_unique, len(tokens)
+
+
+def looks_spanish(text: str | None) -> bool:
+    t = (text or "").strip()
+    if len(t) < 20:
+        return False
+    _accent_n, fr_hits, _en_hits, es_hits, fr_unique, es_unique, n_tokens = _lang_scores(t)
+    if not n_tokens:
+        return False
+    if es_unique >= 3 and es_unique > fr_unique:
+        return True
+    if es_unique >= 2 and es_unique >= fr_unique and fr_unique <= 4:
+        return True
+    if es_hits >= 3 and es_hits > fr_hits:
+        return True
+    if len(t) > 350:
+        _a, _fr, _en, _es, fr_u_h, es_u_h, n_h = _lang_scores(t[:400])
+        if n_h and es_u_h >= 3 and es_u_h > fr_u_h:
+            return True
+    return False
+
+
+def extract_french_synopsis(text: str | None) -> str:
+    """Garde uniquement les paragraphes français d'un blurb concaténé ES/EN/FR."""
+    cleaned = _sanitize_synopsis(text or "")
+    if not cleaned:
+        return ""
+    chunks: list[str] = []
+    for block in re.split(r"(?i)\bENGLISH DESCRIPTION\b[:\s]*", cleaned):
+        chunks.extend(re.split(r"\n\s*\n+", block))
+    french: list[str] = []
+    for raw_p in chunks:
+        p = raw_p.strip()
+        if len(p) < 40:
+            continue
+        if re.match(r"^[a-zàâäéèêëïîôùûüç]", p):
+            continue
+        if looks_french(p) and not looks_spanish(p) and not looks_english(p):
+            french.append(p)
+    if not french:
+        return ""
+    joined = "\n\n".join(french)
+    return _sanitize_synopsis(joined) if is_usable_synopsis(joined) else ""
 
 
 def looks_french(text: str | None) -> bool:
@@ -288,8 +372,10 @@ def looks_french(text: str | None) -> bool:
     t = (text or "").strip()
     if len(t) < 20:
         return False
-    accent_n, fr_hits, en_hits, n_tokens = _lang_scores(t)
+    accent_n, fr_hits, en_hits, _es_hits, _fr_u, _es_u, n_tokens = _lang_scores(t)
     if not n_tokens:
+        return False
+    if looks_spanish(t):
         return False
     # Paragraphe anglais avec quelques accents (noms) : pas du français
     if en_hits >= 6 and en_hits >= fr_hits * 2:
@@ -317,7 +403,7 @@ def looks_english(text: str | None) -> bool:
     t = (text or "").strip()
     if len(t) < 20:
         return False
-    _accent_n, fr_hits, en_hits, n_tokens = _lang_scores(t)
+    _accent_n, fr_hits, en_hits, _es_hits, _fr_u, _es_u, n_tokens = _lang_scores(t)
     if not n_tokens:
         return False
     # Anglais dominant même avec quelques accents
@@ -338,21 +424,16 @@ def prefer_french_synopsis(*candidates: tuple[str, str]) -> tuple[str, str]:
     Préfère un texte FR utilisable ; sinon le premier utilisable.
     """
     usable_fr: list[tuple[str, str]] = []
-    usable_any: list[tuple[str, str]] = []
     for text, source in candidates:
-        if not is_usable_synopsis(text):
+        extracted = extract_french_synopsis(text)
+        candidate = extracted or (text if is_usable_synopsis(text) else "")
+        if not candidate:
             continue
-        usable_any.append((text, source))
-        if looks_french(text):
-            usable_fr.append((text, source))
+        if looks_french(candidate) and not looks_spanish(candidate) and not looks_english(candidate):
+            usable_fr.append((candidate, source))
     if usable_fr:
         return usable_fr[0]
-    # Éviter l'anglais si on a mieux… sinon accepter en dernier recours
-    non_en = [(t, s) for t, s in usable_any if not looks_english(t)]
-    if non_en:
-        return non_en[0]
-    if usable_any:
-        return usable_any[0]
+    # Ne plus accepter l'espagnol / l'anglais sous couvert de résumé FR
     return "", "none"
 
 
@@ -470,17 +551,22 @@ def ensure_french_synopsis(text: str, *, source: str = "") -> tuple[str, str]:
     cleaned = _sanitize_synopsis(text)
     if not is_usable_synopsis(cleaned):
         return "", source or "none"
-    if looks_french(cleaned) and not looks_english(cleaned):
+    extracted = extract_french_synopsis(cleaned)
+    if extracted:
+        return extracted, source or "french"
+    if looks_french(cleaned) and not looks_english(cleaned) and not looks_spanish(cleaned):
         return cleaned, source or "french"
-    if looks_english(cleaned) or not looks_french(cleaned):
+    if looks_english(cleaned) or looks_spanish(cleaned) or not looks_french(cleaned):
         translated = translate_synopsis_to_french(cleaned)
-        if translated:
+        if translated and looks_french(translated) and not looks_spanish(translated):
             tag = f"{source}+translate_fr" if source else "translate_fr"
             return translated, tag
-        # Échec : ne pas servir l'anglais sous couvert de résumé FR
-        if looks_english(cleaned):
+        # Échec : ne pas servir un texte non français sous couvert de résumé FR
+        if looks_english(cleaned) or looks_spanish(cleaned) or not looks_french(cleaned):
             return "", f"{source}+translate_failed" if source else "translate_failed"
-    return cleaned, source or "unknown"
+    if looks_french(cleaned):
+        return cleaned, source or "unknown"
+    return "", source or "none"
 
 
 def _title_match_score(query: str, candidate: str) -> int:
