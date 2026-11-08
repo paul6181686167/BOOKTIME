@@ -7,7 +7,7 @@ export default function SortControls({ sortConfig, setSortConfig, isVoid = false
   ];
   return (
     <div className="flex items-center gap-2 ml-4">
-      <span className={`text-xs ${isVoid ? 'text-white/30' : 'text-gray-500 dark:text-gray-400'}`}>Trier</span>
+      <span className={`text-xs ${isVoid ? 'text-white/65' : 'text-gray-500 dark:text-gray-400'}`}>Trier</span>
       {fields.map(f => (
         <button
           key={f.key}
@@ -22,7 +22,7 @@ export default function SortControls({ sortConfig, setSortConfig, isVoid = false
                 ? 'bg-[#4ade80] text-black font-medium'
                 : 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 font-medium'
               : isVoid
-                ? 'bg-white/[0.06] text-white/45 hover:bg-white/[0.1]'
+                ? 'bg-white/[0.06] text-white/65 hover:bg-white/[0.1]'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
         >

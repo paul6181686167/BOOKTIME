@@ -121,6 +121,9 @@ export default function PrimaryTabsLayout({ slides }) {
               key={id}
               className="mobile-slideshow-slide"
               aria-hidden={i !== activeIndex}
+              // `inert` : les panneaux hors écran ne reçoivent ni focus clavier ni lecteur d'écran
+              // (React 18 ne gère pas le booléen : on passe une chaîne vide).
+              inert={i !== activeIndex ? '' : undefined}
               style={{ pointerEvents: i === activeIndex ? 'auto' : 'none' }}
             >
               {mounted[i] ? slides[id] : null}

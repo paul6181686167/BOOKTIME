@@ -191,7 +191,7 @@ const BookDetailsGrid = ({
                       <span>{book.current_page || 0} pages lues</span>
                       <span>{totalPages} pages total</span>
                     </div>
-                    <div className="progress-bar bg-gray-200 dark:bg-gray-700">
+                    <div className="progress-bar bg-gray-200 dark:bg-gray-700" role="progressbar" aria-label="Progression de lecture" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(getProgressPercentage())}>
                       <div 
                         className="progress-fill"
                         style={{ width: `${getProgressPercentage()}%` }}

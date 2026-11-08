@@ -16,8 +16,10 @@
     if (meta) meta.setAttribute('content', page);
     var ms = document.querySelector('meta[name="msapplication-navbutton-color"]');
     if (ms) ms.setAttribute('content', page);
+    // Même règle que ThemeContext : sombre si choisi, ou si rien n'est choisi et que l'OS est sombre
+    var isDark = t === 'dark' || t === 'void' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches);
     var scheme = document.querySelector('meta[name="color-scheme"]');
-    if (scheme) scheme.setAttribute('content', t === 'light' ? 'light' : 'dark');
+    if (scheme) scheme.setAttribute('content', isDark ? 'dark' : 'light');
     var boot = document.getElementById('bt-boot-bg');
     if (!boot) {
       boot = document.createElement('style');
@@ -27,7 +29,7 @@
     boot.textContent = 'html,body,#root{background-color:' + page + ' !important;}';
     var root = document.documentElement;
     root.style.backgroundColor = page;
-    root.style.colorScheme = t === 'light' ? 'light' : 'dark';
+    root.style.colorScheme = isDark ? 'dark' : 'light';
     if (t === 'dark' || t === 'void') root.classList.add('dark');
     if (t === 'void') root.classList.add('cinema');
   } catch (e) {

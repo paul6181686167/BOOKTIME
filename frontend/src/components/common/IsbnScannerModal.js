@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { API_BASE_URL } from '../../config/environment';
 import logger from '../../utils/logger';
 import { getToken } from '../../services/apiClient';
+import ModalOverlay, { MODAL_Z } from './ModalOverlay';
 
 function normalizeIsbn(raw) {
   return String(raw || '')
@@ -131,7 +132,7 @@ function CoverThumb({ url, title }) {
   if (!url || failed) {
     return (
       <div
-        className="w-full h-full flex items-center justify-center p-1.5 text-center text-[11px] leading-tight font-medium text-gray-500 dark:text-gray-300 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600"
+        className="w-full h-full flex items-center justify-center p-1.5 text-center text-tiny leading-tight font-medium text-gray-500 dark:text-gray-300 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600"
         data-testid="cover-placeholder"
       >
         {title}
@@ -409,14 +410,11 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAdded
   // Rendu dans <body> : la fenêtre ne doit dépendre d'aucun parent (carrousel de pages
   // transformé, barre de navigation du bas) qui la rognerait ou la recouvrirait.
   const modal = (
-    <div
-      className="fixed inset-0 z-[1300] bg-black/80 flex items-end md:items-center justify-center md:p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Scanner un ISBN"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+    <ModalOverlay
+      onClose={onClose}
+      zIndex={MODAL_Z.nested}
+      ariaLabel="Scanner un ISBN"
+      className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center md:p-4"
     >
       <div
         className="bg-[#f3faf6] dark:bg-gray-800 w-full md:max-w-md md:rounded-2xl max-h-[94dvh] flex flex-col shadow-2xl safe-area-bottom"
@@ -433,7 +431,7 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAdded
           <button aria-label="Fermer"
             type="button"
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg"
+            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg"
           >
             ✕
           </button>
@@ -541,9 +539,9 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAdded
                   <p className="text-sm text-gray-600 dark:text-gray-300">
                     {foundBook.author}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">ISBN {foundBook.isbn}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">ISBN {foundBook.isbn}</p>
                   {foundBook.total_pages ? (
-                    <p className="text-xs text-gray-500">{foundBook.total_pages} pages</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{foundBook.total_pages} pages</p>
                   ) : null}
                 </div>
               </div>
@@ -570,7 +568,7 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAdded
           )}
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 
   return createPortal(modal, document.body);

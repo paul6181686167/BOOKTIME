@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { API_BASE_URL } from '../config/environment';
 import { getToken } from '../services/apiClient';
+import { clickableProps } from '../utils/a11y';
 
 function catalogPath(olKey) {
   if (!olKey) return null;
@@ -56,8 +57,7 @@ const DiscoverCard = ({ book, onAdd, alreadyOwned }) => {
       {/* Couverture cliquable */}
       <div
         className={`relative h-40 sm:h-44 bg-gray-100 dark:bg-gray-700 overflow-hidden flex items-center justify-center ${path ? 'cursor-pointer' : ''}`}
-        onClick={() => path && navigate(path)}
-        title={path ? 'Voir la fiche' : ''}
+        {...(path ? clickableProps(() => navigate(path), `Voir la fiche : ${book.title}`) : {})}
       >
         {book.cover_url ? (
           <img
@@ -99,6 +99,7 @@ const DiscoverCard = ({ book, onAdd, alreadyOwned }) => {
             <button
               onClick={handleAdd}
               disabled={adding}
+              aria-label={`Ajouter « ${book.title} » à ma bibliothèque`}
               className="btn-ripple w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg transition-colors disabled:opacity-60"
             >
               {adding
@@ -220,7 +221,7 @@ const DiscoverSection = ({ activeCategory = 'roman', userBooks = [], onBookAdded
         <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
           Livres populaires à découvrir
         </h2>
-        <span className="text-xs text-gray-400 dark:text-gray-500 ml-1 italic">
+        <span className="text-xs text-gray-500 dark:text-gray-400 ml-1 italic">
           Clique "Ajouter" pour les mettre dans ta bibliothèque
         </span>
       </div>
@@ -250,7 +251,7 @@ const DiscoverSection = ({ activeCategory = 'roman', userBooks = [], onBookAdded
               <button
                 onClick={() => loadBooks(false)}
                 disabled={isLoading}
-                className="px-6 py-2.5 text-sm font-medium text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50"
+                className="px-6 py-2.5 text-sm font-medium text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50"
               >
                 {isLoading ? 'Chargement...' : 'Afficher plus'}
               </button>

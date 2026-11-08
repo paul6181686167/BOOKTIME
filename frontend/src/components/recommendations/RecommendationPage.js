@@ -47,6 +47,7 @@ import BookDetailModal from '../BookDetailModal';
 import SeriesDetailModal from '../SeriesDetailModal';
 import logger from '../../utils/logger';
 import { getToken } from '../../services/apiClient';
+import { clickableProps } from '../../utils/a11y';
 
 // Classes écrites en toutes lettres : Tailwind supprime celles construites dynamiquement
 // (`text-${color}-500`), ce qui faisait disparaître les couleurs en production.
@@ -340,7 +341,7 @@ const BookCard = ({
   return (
     <div
       className="col-span-1 group cursor-pointer transform transition-transform duration-200 sm:hover:-translate-y-1"
-      onClick={openDetails}
+      {...clickableProps(openDetails, title)}
     >
       <div className={CARD_SHELL}>
         <div className={COVER_FRAME}>
@@ -381,7 +382,7 @@ const BookCard = ({
           <button aria-label="Pas intéressé"
             type="button"
             onClick={handleDismiss}
-            className="absolute top-1 right-1 sm:top-2 sm:right-2 z-10 p-1 rounded-full bg-black/40 hover:bg-red-600/90 text-white transition-colors"
+            className="absolute top-1 right-1 sm:top-2 sm:right-2 z-10 p-1.5 rounded-full bg-black/40 hover:bg-red-600/90 text-white transition-colors"
             title="Pas intéressé"
           >
             <XMarkIcon className="h-3.5 w-3.5" />
@@ -1166,7 +1167,7 @@ const RecommendationPage = () => {
 
   return (
     <>
-    <div className="min-h-screen bg-honeycomb">
+    <div className="min-h-screen min-h-dvh bg-honeycomb">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-8">
       {/* Bouton retour — desktop ; mobile = barre bas + glissement */}
       <div className="mb-6 hidden md:block">
@@ -1291,7 +1292,7 @@ const RecommendationPage = () => {
               </span>
             </div>
           ) : null}
-          <input
+          <input aria-label="Rechercher dans ta bibliothèque…"
             type="search"
             value={seedFilter}
             onChange={(e) => setSeedFilter(e.target.value)}
@@ -1300,7 +1301,7 @@ const RecommendationPage = () => {
           />
           <div className="max-h-48 overflow-y-auto scrollbar-hide divide-y divide-gray-100 dark:divide-gray-700 rounded-lg border border-gray-100 dark:border-gray-700">
             {filteredSeedOptions.length === 0 ? (
-              <p className="p-3 text-sm text-gray-500">
+              <p className="p-3 text-sm text-gray-500 dark:text-gray-400">
                 Aucun titre trouvé. Ajoute des livres à ta bibliothèque pour commencer.
               </p>
             ) : (

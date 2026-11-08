@@ -57,7 +57,7 @@ describe("inscription et acceptation des CGU", () => {
 
   const goToSignup = () => {
     render(<LoginPage />);
-    fireEvent.click(screen.getByRole('button', { name: 'Inscription' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Inscription' }));
     fireEvent.change(screen.getByPlaceholderText('vous@exemple.com'), { target: { value: 'a@b.fr' } });
     fireEvent.change(screen.getByPlaceholderText('Minimum 8 caractères'), { target: { value: 'secret123' } });
   };

@@ -600,7 +600,7 @@ export default function MainApp() {
   const sortedCompleted = useMemo(() => sortBooks(groupedBooks.completed || []), [sortBooks, groupedBooks.completed]);
 
   return (
-    <div className="min-h-screen bg-honeycomb transition-colors duration-200">
+    <div className="min-h-screen min-h-dvh bg-honeycomb transition-colors duration-200">
       {/* Mobile: overlay de recherche */}
       <MobileSearchOverlay
         isOpen={showMobileSearch}
@@ -614,6 +614,17 @@ export default function MainApp() {
           searchOpenLibrary(term);
         }}
       />
+
+      <a
+        href="#contenu-principal"
+        onClick={(e) => {
+          e.preventDefault();
+          document.getElementById('contenu-principal')?.focus();
+        }}
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[2000] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-green-800 focus:shadow-lg"
+      >
+        Aller au contenu
+      </a>
 
       <header
         className={`backdrop-blur-xl sticky top-0 z-30 safe-area-top border-b ${
@@ -680,7 +691,7 @@ export default function MainApp() {
                 type="button"
                 onClick={() => setShowIsbnScanner(true)}
                 aria-label="Scanner un ISBN"
-                className={`p-2 ${isVoid ? 'text-white/45 hover:text-white/80' : 'text-gray-500 dark:text-gray-400'}`}
+                className={`p-2 ${isVoid ? 'text-white/65 hover:text-white/80' : 'text-gray-500 dark:text-gray-400'}`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7V5a1 1 0 011-1h2M4 17v2a1 1 0 001 1h2m10-16h2a1 1 0 011 1v2m0 10v2a1 1 0 01-1 1h-2" />
@@ -691,7 +702,7 @@ export default function MainApp() {
                 type="button"
                 onClick={() => setShowMobileSearch(true)}
                 aria-label="Rechercher"
-                className={`p-2 ${isVoid ? 'text-white/45 hover:text-white/80' : 'text-gray-500 dark:text-gray-400'}`}
+                className={`p-2 ${isVoid ? 'text-white/65 hover:text-white/80' : 'text-gray-500 dark:text-gray-400'}`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -702,7 +713,7 @@ export default function MainApp() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0">
+      <main id="contenu-principal" tabIndex={-1} className="max-w-7xl mx-auto pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0 focus:outline-none">
         <div className="px-4 sm:px-6 lg:px-8">
           {/* Mode recherche */}
           {searchHook.isSearchMode && (
@@ -712,7 +723,7 @@ export default function MainApp() {
                   <h2 className={`font-display text-lg sm:text-2xl font-semibold tracking-tight ${isVoid ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                     Résultats pour «&nbsp;{searchHook.lastSearchTerm}&nbsp;»
                   </h2>
-                  <p className={`text-xs sm:text-sm ${isVoid ? 'text-white/45' : 'text-gray-600 dark:text-gray-400'}`}>
+                  <p className={`text-xs sm:text-sm ${isVoid ? 'text-white/65' : 'text-gray-600 dark:text-gray-400'}`}>
                     {displayedBooks.length} résultat(s) trouvé(s)
                   </p>
                 </div>
@@ -802,8 +813,8 @@ export default function MainApp() {
                           }`}
                         />
                         <span
-                          className={`text-[10px] sm:text-xs whitespace-nowrap leading-none ${
-                            isVoid ? 'text-white/40' : 'text-gray-500 dark:text-gray-400'
+                          className={`text-tiny sm:text-xs whitespace-nowrap leading-none ${
+                            isVoid ? 'text-white/65' : 'text-gray-500 dark:text-gray-400'
                           }`}
                         >
                           {s.label}
@@ -849,7 +860,7 @@ export default function MainApp() {
               {!unifiedContent.loading && groupedBooks.reading && groupedBooks.reading.length > 0 && (
                 <div className="section-appear">
                   <div className="flex items-center mb-3 sm:mb-4 flex-wrap gap-2">
-                    <h2 className={`text-base sm:text-xl font-semibold text-green-600 dark:text-white`}>
+                    <h2 className={`text-base sm:text-xl font-semibold text-green-800 dark:text-white`}>
                       En cours ({groupedBooks.reading.length})
                     </h2>
                     <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} isVoid={isVoid} />
@@ -869,7 +880,7 @@ export default function MainApp() {
               {!unifiedContent.loading && groupedBooks.to_read && groupedBooks.to_read.length > 0 && (
                 <div className="section-appear" style={{ animationDelay: '80ms' }}>
                   <div className="flex items-center mb-4 flex-wrap gap-2">
-                    <h2 className={`text-xl font-semibold text-green-600 dark:text-white`}>
+                    <h2 className={`text-xl font-semibold text-green-800 dark:text-white`}>
                       À lire ({groupedBooks.to_read.length})
                     </h2>
                     <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} isVoid={isVoid} />
@@ -889,7 +900,7 @@ export default function MainApp() {
               {!unifiedContent.loading && groupedBooks.to_reread && groupedBooks.to_reread.length > 0 && (
                 <div className="section-appear" style={{ animationDelay: '120ms' }}>
                   <div className="flex items-center mb-4 flex-wrap gap-2">
-                    <h2 className={`text-xl font-semibold text-green-600 dark:text-white`}>
+                    <h2 className={`text-xl font-semibold text-green-800 dark:text-white`}>
                       À relire ({groupedBooks.to_reread.length})
                     </h2>
                     <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} isVoid={isVoid} />
@@ -909,7 +920,7 @@ export default function MainApp() {
               {!unifiedContent.loading && groupedBooks.completed && groupedBooks.completed.length > 0 && (
                 <div className="section-appear" style={{ animationDelay: '160ms' }}>
                   <div className="flex items-center mb-4 flex-wrap gap-2">
-                    <h2 className={`text-xl font-semibold text-green-600 dark:text-white`}>
+                    <h2 className={`text-xl font-semibold text-green-800 dark:text-white`}>
                       Terminé ({groupedBooks.completed.length})
                     </h2>
                     <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} isVoid={isVoid} />

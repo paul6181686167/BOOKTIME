@@ -5,12 +5,14 @@ import { API_BASE_URL } from '../../config/environment';
 import { wakeBackend, isBackendRemote } from '../../utils/backendWake';
 import TermsContent from '../legal/TermsContent';
 import logger from '../../utils/logger';
+import ModalOverlay, { MODAL_Z } from '../common/ModalOverlay';
 
 // Login Page Component
 function LoginPage() {
   const { login, register } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [rememberMe, setRememberMe] = useState(true);
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -155,7 +157,7 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-honeycomb flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen min-h-dvh bg-honeycomb flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center mb-6">
@@ -163,32 +165,39 @@ function LoginPage() {
               B
             </div>
           </div>
-          <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
             BookTime
-          </h2>
+          </h1>
           <p className="text-gray-600 dark:text-gray-400">
             Votre bibliothèque personnelle
           </p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 font-mono">
-            API : {API_BASE_URL}
-            {!backendReady && isBackendRemote() ? ' · réveil…' : ''}
-          </p>
+          {!backendReady && isBackendRemote() && (
+            <p role="status" className="text-sm text-gray-700 dark:text-gray-300 mt-2">
+              Réveil du serveur en cours…
+            </p>
+          )}
         </div>
 
         <div className="bg-white dark:bg-gray-800 shadow-2xl rounded-2xl p-8 space-y-6 border dark:border-gray-700">
-          <div className="flex mb-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+          <div className="flex mb-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-1" role="tablist" aria-label="Connexion ou inscription">
             <button
+              type="button"
+              role="tab"
+              aria-selected={isLogin}
               onClick={() => setIsLogin(true)}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                isLogin ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm' : 'text-gray-600 dark:text-gray-400'
+              className={`flex-1 py-3 px-4 min-h-11 rounded-md text-sm font-medium transition-all ${
+                isLogin ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm' : 'text-gray-700 dark:text-gray-300'
               }`}
             >
               Connexion
             </button>
             <button
+              type="button"
+              role="tab"
+              aria-selected={!isLogin}
               onClick={() => setIsLogin(false)}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                !isLogin ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm' : 'text-gray-600 dark:text-gray-400'
+              className={`flex-1 py-3 px-4 min-h-11 rounded-md text-sm font-medium transition-all ${
+                !isLogin ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm' : 'text-gray-700 dark:text-gray-300'
               }`}
             >
               Inscription
@@ -197,12 +206,16 @@ function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Email
               </label>
-              <input
+              <input id="login-email"
                 type="email"
                 name="email"
+                autoComplete="email"
+                inputMode="email"
+                autoCapitalize="none"
+                spellCheck={false}
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="vous@exemple.com"
@@ -211,19 +224,40 @@ function LoginPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Mot de passe
               </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                placeholder={isLogin ? '' : 'Minimum 8 caractères'}
-                minLength={isLogin ? undefined : 8}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                required
-              />
+              <div className="relative">
+                <input id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  autoComplete={isLogin ? 'current-password' : 'new-password'}
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder={isLogin ? '' : 'Minimum 8 caractères'}
+                  minLength={isLogin ? undefined : 8}
+                  className="w-full pl-4 pr-14 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  aria-pressed={showPassword}
+                  className="absolute inset-y-0 right-0 w-12 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                    {showPassword ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.22A10.5 10.5 0 001.93 12c1.4 3.9 5.2 6.75 10.07 6.75 1.9 0 3.6-.45 5.1-1.2M6.2 6.2A10.7 10.7 0 0112 5.25c4.87 0 8.67 2.85 10.07 6.75a10.5 10.5 0 01-4.2 5.2M3 3l18 18M9.9 9.9a3 3 0 004.2 4.2" />
+                    ) : (
+                      <>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M1.93 12C3.33 8.1 7.13 5.25 12 5.25S20.67 8.1 22.07 12c-1.4 3.9-5.2 6.75-10.07 6.75S3.33 15.9 1.93 12z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </>
+                    )}
+                  </svg>
+                </button>
+              </div>
             </div>
 
             {!isLogin && (
@@ -240,7 +274,7 @@ function LoginPage() {
                   type="checkbox"
                   checked={acceptTerms}
                   onChange={(e) => setAcceptTerms(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  className="mt-0.5 w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">
                   J'ai lu et j'accepte les{' '}
@@ -260,12 +294,12 @@ function LoginPage() {
             )}
 
             {isLogin && (
-              <label className="flex items-center gap-2 cursor-pointer select-none">
+              <label className="flex items-center gap-2 py-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  className="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">
                   Rester connecté
@@ -285,7 +319,7 @@ function LoginPage() {
               <button
                 type="button"
                 onClick={openForgotModal}
-                className="w-full text-sm text-green-600 dark:text-green-400 hover:underline text-center mt-1"
+                className="w-full min-h-11 py-3 text-sm text-green-700 dark:text-green-300 hover:underline text-center mt-1"
               >
                 Mot de passe oublié ?
               </button>
@@ -294,11 +328,11 @@ function LoginPage() {
         </div>
 
         {isLogin && (
-          <p className="text-center text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-center text-sm text-gray-700 dark:text-gray-300">
             <button
               type="button"
               onClick={() => setShowTerms(true)}
-              className="underline hover:text-gray-700 dark:hover:text-gray-200"
+              className="min-h-11 px-3 underline hover:text-gray-900 dark:hover:text-white"
             >
               Conditions générales d'utilisation
             </button>
@@ -307,13 +341,13 @@ function LoginPage() {
       </div>
 
       {showTerms && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Conditions générales d'utilisation"
+        <ModalOverlay
+          onClose={() => setShowTerms(false)}
+          zIndex={MODAL_Z.dialog}
+          ariaLabel="Conditions générales d'utilisation"
+          className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4"
         >
-          <div className="bg-white dark:bg-gray-800 sm:rounded-2xl rounded-t-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+          <div className="bg-white dark:bg-gray-800 sm:rounded-2xl rounded-t-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] max-h-[90dvh] flex flex-col">
             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-700">
               <h3 className="text-base font-bold text-gray-900 dark:text-white">
                 Conditions générales d'utilisation
@@ -322,7 +356,7 @@ function LoginPage() {
                 type="button"
                 onClick={() => setShowTerms(false)}
                 aria-label="Fermer"
-                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -355,12 +389,17 @@ function LoginPage() {
               )}
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* Modal mot de passe oublié */}
       {showForgot && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <ModalOverlay
+          onClose={() => setShowForgot(false)}
+          zIndex={MODAL_Z.dialog}
+          ariaLabel="Mot de passe oublié"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+        >
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-md">
             {forgotSent ? (
               <div className="text-center">
@@ -422,7 +461,7 @@ function LoginPage() {
                   Saisis ton adresse email. Tu obtiendras un lien pour réinitialiser ton mot de passe (valable 1 heure).
                 </p>
                 <form onSubmit={handleForgotPassword} className="space-y-4">
-                  <input
+                  <input aria-label="Adresse e-mail" autoComplete="email" inputMode="email"
                     type="email"
                     value={forgotEmail}
                     onChange={e => setForgotEmail(e.target.value)}
@@ -449,9 +488,9 @@ function LoginPage() {
               </>
             )}
           </div>
-        </div>
+        </ModalOverlay>
       )}
-    </div>
+    </main>
   );
 }
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import ModalOverlay, { MODAL_Z } from '../common/ModalOverlay';
 
 /** Confirmation « cocher aussi les tomes précédents ? ». */
 const PreviousTomesDialog = ({
@@ -10,7 +11,12 @@ const PreviousTomesDialog = ({
   <>
         {/* Modal de confirmation pour cocher les tomes précédents */}
         {missingPreviousWarning && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <ModalOverlay
+            onClose={() => setMissingPreviousWarning(null)}
+            zIndex={MODAL_Z.dialog}
+            ariaLabel="Cocher aussi les tomes précédents ?"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center"
+          >
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-full">
@@ -48,7 +54,7 @@ const PreviousTomesDialog = ({
                 </button>
               </div>
             </div>
-          </div>
+          </ModalOverlay>
         )}
   </>
 );

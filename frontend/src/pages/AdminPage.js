@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import adminService from '../services/adminService';
+import ModalOverlay, { MODAL_Z } from '../components/common/ModalOverlay';
 
 const REFRESH_MS = 10000;
 const PAGE_SIZE = 20;
@@ -24,9 +25,9 @@ const fmt = (n) => nf.format(Number(n) || 0);
 function Card({ label, value, hint, accent }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3">
-      <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</p>
+      <p className="text-tiny uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</p>
       <p className={`text-2xl font-bold ${accent || 'text-gray-900 dark:text-white'}`}>{fmt(value)}</p>
-      {hint ? <p className="text-[11px] text-gray-400 mt-0.5">{hint}</p> : null}
+      {hint ? <p className="text-tiny text-gray-500 dark:text-gray-400 mt-0.5">{hint}</p> : null}
     </div>
   );
 }
@@ -51,7 +52,7 @@ function Bars({ data, label }) {
       <div className="flex items-end gap-1 h-24">
         {data.map((d) => (
           <div key={d.date} className="flex-1 flex flex-col items-center justify-end h-full min-w-0">
-            <span className="text-[9px] text-gray-500 dark:text-gray-400 leading-none mb-0.5">
+            <span className="text-tiny text-gray-500 dark:text-gray-400 leading-none mb-0.5">
               {d.count > 0 ? d.count : ''}
             </span>
             <div
@@ -62,7 +63,7 @@ function Bars({ data, label }) {
           </div>
         ))}
       </div>
-      <div className="flex justify-between text-[10px] text-gray-400 mt-1">
+      <div className="flex justify-between text-tiny text-gray-500 dark:text-gray-400 mt-1">
         <span>{data[0]?.date?.slice(5)}</span>
         <span>{data[data.length - 1]?.date?.slice(5)}</span>
       </div>
@@ -73,11 +74,11 @@ function Bars({ data, label }) {
 function BanDialog({ user, onCancel, onConfirm, busy }) {
   const [reason, setReason] = useState('');
   return (
-    <div
-      className="fixed inset-0 z-[1100] bg-black/50 flex items-end sm:items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Bannir cet utilisateur"
+    <ModalOverlay
+      onClose={onCancel}
+      zIndex={MODAL_Z.dialog}
+      ariaLabel="Bannir cet utilisateur"
+      className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-4"
     >
       <div className="bg-white dark:bg-gray-800 rounded-xl p-4 w-full max-w-sm space-y-3">
         <h3 className="font-semibold text-gray-900 dark:text-white">Bannir {user.display_name || user.email} ?</h3>
@@ -113,7 +114,7 @@ function BanDialog({ user, onCancel, onConfirm, busy }) {
           </button>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 
@@ -126,17 +127,17 @@ function UserRow({ user, onBan, onUnban, busy }) {
             {user.display_name || user.email}
           </p>
           {user.online ? (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+            <span className="text-tiny px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
               en ligne
             </span>
           ) : null}
           {user.is_admin ? (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+            <span className="text-tiny px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
               admin
             </span>
           ) : null}
           {user.banned ? (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
+            <span className="text-tiny px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
               banni
             </span>
           ) : null}
@@ -282,7 +283,7 @@ export default function AdminPage() {
         </button>
         <div className="min-w-0 flex-1">
           <h1 className="text-base font-bold text-gray-900 dark:text-white">Administration</h1>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400">
+          <p className="text-tiny text-gray-500 dark:text-gray-400">
             {updatedAt
               ? `Mis à jour ${timeAgo(new Date(updatedAt).toISOString())}${paused ? ' (en pause)' : ''}`
               : 'Chargement…'}
@@ -308,7 +309,7 @@ export default function AdminPage() {
 
   if (forbidden) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen min-h-dvh bg-gray-50 dark:bg-gray-900">
         {header}
         <div className="max-w-md mx-auto p-6 text-center space-y-3">
           <p className="text-sm text-gray-700 dark:text-gray-200">Cette page est réservée aux administrateurs.</p>
@@ -330,7 +331,7 @@ export default function AdminPage() {
   const pages = Math.max(1, Math.ceil((users.total || 0) / PAGE_SIZE));
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-10">
+    <div className="min-h-screen min-h-dvh bg-gray-50 dark:bg-gray-900 pb-10">
       {header}
       <div className="max-w-3xl mx-auto px-4 py-4 space-y-6">
         {error ? (
@@ -356,7 +357,7 @@ export default function AdminPage() {
                 <Card label="Bannis" value={u.banned} accent={u.banned > 0 ? 'text-red-600' : undefined} />
               </div>
               <Bars data={u.signups_per_day} label="Inscriptions par jour sur 14 jours" />
-              <p className="text-[11px] text-gray-400">Inscriptions par jour, 14 derniers jours.</p>
+              <p className="text-tiny text-gray-500 dark:text-gray-400">Inscriptions par jour, 14 derniers jours.</p>
             </Block>
 
             <Block title="Livres">
@@ -372,7 +373,7 @@ export default function AdminPage() {
                 <Card label="Autres" value={b.by_category.autre} />
               </div>
               <Bars data={b.added_per_day} label="Livres ajoutés par jour sur 14 jours" />
-              <p className="text-[11px] text-gray-400">Livres ajoutés par jour, 14 derniers jours.</p>
+              <p className="text-tiny text-gray-500 dark:text-gray-400">Livres ajoutés par jour, 14 derniers jours.</p>
             </Block>
 
             <Block title="Activité">

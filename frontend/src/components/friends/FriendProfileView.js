@@ -104,7 +104,7 @@ export default function FriendProfileView({ friend, onOpenBook, onOpenChat, onRe
                 title={b.title}
               >
                 <MiniCover url={b.cover_url} className="w-20 h-28" />
-                <span className="block mt-1 text-[11px] leading-tight text-gray-800 dark:text-gray-200 line-clamp-2">
+                <span className="block mt-1 text-tiny leading-tight text-gray-800 dark:text-gray-200 line-clamp-2">
                   {b.title}
                 </span>
               </button>
@@ -174,7 +174,7 @@ export default function FriendProfileView({ friend, onOpenBook, onOpenChat, onRe
           <button
             type="button"
             onClick={() => setConfirmRemove(true)}
-            className="w-full py-2 text-xs text-gray-500 hover:text-red-600 transition-colors"
+            className="w-full py-2 text-xs text-gray-500 dark:text-gray-400 hover:text-red-600 transition-colors"
           >
             Retirer des amis
           </button>

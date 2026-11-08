@@ -182,7 +182,7 @@ const SeriesHeader = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="hidden md:block p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="hidden md:block p-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 aria-label="Fermer"
               >
                 <span className="text-xl leading-none">✕</span>
@@ -193,7 +193,7 @@ const SeriesHeader = ({
 
         {showWdRaw && series.staticWikidataDetail && (
           <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6">
-            <pre className="max-h-56 overflow-auto rounded bg-gray-50 p-3 text-left text-[10px] leading-snug text-gray-800 dark:bg-gray-900 dark:text-gray-200 sm:text-xs">
+            <pre className="max-h-56 overflow-auto rounded bg-gray-50 p-3 text-left text-tiny leading-snug text-gray-800 dark:bg-gray-900 dark:text-gray-200 sm:text-xs">
               {JSON.stringify(series.staticWikidataDetail, null, 2)}
             </pre>
           </div>

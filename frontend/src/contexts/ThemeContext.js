@@ -36,6 +36,10 @@ export function applyThemeToDocument(theme) {
   const root = document.documentElement;
   root.classList.toggle('dark', theme === 'dark' || theme === 'void');
   root.classList.toggle('cinema', theme === 'void');
+  // Contrôles natifs (barres de défilement, listes déroulantes, saisie automatique) dans le bon thème
+  root.style.colorScheme = theme === 'light' ? 'light' : 'dark';
+  const schemeMeta = document.querySelector('meta[name="color-scheme"]');
+  if (schemeMeta) schemeMeta.setAttribute('content', theme === 'light' ? 'light' : 'dark');
 
   const chrome = getThemeChrome(theme);
   applyThemeColor(chrome.page, theme);

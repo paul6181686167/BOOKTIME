@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { parseFriendCode } from '../../utils/friendLink';
+import ModalOverlay, { MODAL_Z } from '../common/ModalOverlay';
 
 /** Scanner de QR code Booktime (caméra) avec saisie manuelle du code en secours. */
 export default function QrScanModal({ onClose, onCode }) {
@@ -76,24 +77,20 @@ export default function QrScanModal({ onClose, onCode }) {
   };
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-[1300] bg-black/70 flex items-center justify-center p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+    <ModalOverlay
+      onClose={onClose}
+      zIndex={MODAL_Z.nested}
+      ariaLabel="Scanner un QR code"
+      className="fixed inset-0 bg-black/70 flex items-center justify-center p-4"
     >
-      <div
-        className="w-full max-w-sm rounded-2xl bg-white dark:bg-gray-800 p-4 space-y-3"
-        role="dialog"
-        aria-label="Scanner un QR code"
-      >
+      <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-gray-800 p-4 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-bold text-gray-900 dark:text-white">Scanner un QR code</h3>
           <button
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="p-2 text-gray-400 hover:text-gray-600"
+            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-600"
           >
             ✕
           </button>
@@ -120,7 +117,7 @@ export default function QrScanModal({ onClose, onCode }) {
           </button>
         </form>
       </div>
-    </div>,
+    </ModalOverlay>,
     document.body
   );
 }

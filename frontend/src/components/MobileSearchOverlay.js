@@ -40,9 +40,9 @@ const MobileSearchOverlay = ({ isOpen, onClose, searchTerm, onSearchChange, onSe
         }`}
       >
         <MagnifyingGlassIcon
-          className={`w-5 h-5 flex-shrink-0 ${isVoid ? 'text-white/35' : 'text-gray-400'}`}
+          className={`w-5 h-5 flex-shrink-0 ${isVoid ? 'text-white/65' : 'text-gray-400'}`}
         />
-        <input
+        <input aria-label="Titre, auteur, série…"
           ref={inputRef}
           type="search"
           value={searchTerm}
@@ -51,14 +51,14 @@ const MobileSearchOverlay = ({ isOpen, onClose, searchTerm, onSearchChange, onSe
           className={`flex-1 bg-transparent text-base outline-none ${
             isVoid
               ? 'text-white placeholder-white/30'
-              : 'text-gray-900 dark:text-white placeholder-gray-400'
+              : 'text-gray-900 dark:text-white placeholder-gray-500'
           }`}
           enterKeyHint="search"
         />
         <button aria-label="Fermer"
           type="button"
           onClick={onClose}
-          className={`p-1 ${isVoid ? 'text-white/40 hover:text-white/80' : 'text-gray-500 dark:text-gray-400'}`}
+          className={`p-1 ${isVoid ? 'text-white/65 hover:text-white/80' : 'text-gray-500 dark:text-gray-400'}`}
         >
           <XMarkIcon className="w-6 h-6" />
         </button>
@@ -66,7 +66,7 @@ const MobileSearchOverlay = ({ isOpen, onClose, searchTerm, onSearchChange, onSe
 
       <div className="flex-1 overflow-auto px-4 py-6">
         {!searchTerm?.trim() ? (
-          <div className={`text-center mt-12 ${isVoid ? 'text-white/35' : 'text-gray-400 dark:text-gray-500'}`}>
+          <div className={`text-center mt-12 ${isVoid ? 'text-white/65' : 'text-gray-500 dark:text-gray-400'}`}>
             <MagnifyingGlassIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="text-sm">Tape le titre d'un livre, un auteur ou une série</p>
           </div>

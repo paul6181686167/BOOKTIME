@@ -9,6 +9,7 @@ import SocialFeed from './SocialFeed';
 import UserProfile from './UserProfile';
 import logger from '../../utils/logger';
 import toast from 'react-hot-toast';
+import { clickableProps } from '../../utils/a11y';
 
 const SocialModal = ({ isOpen, onClose, currentUser }) => {
   const [activeTab, setActiveTab] = useState('feed');
@@ -136,7 +137,7 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
 
   return (
     <ModalOverlay onClose={onClose} zIndex={MODAL_Z.panel} ariaLabel="Communauté" closeOnBackdrop={false} className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] max-h-[90dvh] overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6">
           <div className="flex items-center justify-between">
@@ -183,19 +184,19 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
                 <div className="grid grid-cols-4 gap-4 mb-6">
                   <div className="bg-blue-50 rounded-lg p-4 text-center">
                     <div className="text-2xl font-bold text-blue-600">{socialStats.followers_count}</div>
-                    <div className="text-sm text-gray-500">Followers</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Followers</div>
                   </div>
                   <div className="bg-green-50 rounded-lg p-4 text-center">
                     <div className="text-2xl font-bold text-green-600">{socialStats.following_count}</div>
-                    <div className="text-sm text-gray-500">Following</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Following</div>
                   </div>
                   <div className="bg-purple-50 rounded-lg p-4 text-center">
                     <div className="text-2xl font-bold text-purple-600">{socialStats.activities_count}</div>
-                    <div className="text-sm text-gray-500">Activités</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Activités</div>
                   </div>
                   <div className="bg-orange-50 rounded-lg p-4 text-center">
                     <div className="text-2xl font-bold text-orange-600">{socialStats.likes_received}</div>
-                    <div className="text-sm text-gray-500">Likes</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Likes</div>
                   </div>
                 </div>
               )}
@@ -203,10 +204,10 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
               {/* Formulaire de profil */}
               <form onSubmit={handleProfileUpdate} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="f-socialmodal-210" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Nom d'affichage
                   </label>
-                  <input
+                  <input id="f-socialmodal-210"
                     type="text"
                     value={profileForm.display_name}
                     onChange={(e) => setProfileForm({ ...profileForm, display_name: e.target.value })}
@@ -216,10 +217,10 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="f-socialmodal-223" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Biographie
                   </label>
-                  <textarea
+                  <textarea id="f-socialmodal-223"
                     value={profileForm.bio}
                     onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
                     rows={3}
@@ -230,10 +231,10 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="f-socialmodal-237" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Localisation
                     </label>
-                    <input
+                    <input id="f-socialmodal-237"
                       type="text"
                       value={profileForm.location}
                       onChange={(e) => setProfileForm({ ...profileForm, location: e.target.value })}
@@ -242,10 +243,10 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="f-socialmodal-249" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Site web
                     </label>
-                    <input
+                    <input id="f-socialmodal-249"
                       type="url"
                       value={profileForm.website}
                       onChange={(e) => setProfileForm({ ...profileForm, website: e.target.value })}
@@ -256,10 +257,10 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="f-socialmodal-263" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Niveau de confidentialité
                   </label>
-                  <select
+                  <select id="f-socialmodal-263"
                     value={profileForm.privacy_level}
                     onChange={(e) => setProfileForm({ ...profileForm, privacy_level: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-booktime-500"
@@ -271,7 +272,7 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Visibilité des données
                   </label>
                   <div className="space-y-2">
@@ -282,7 +283,7 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
                         onChange={(e) => setProfileForm({ ...profileForm, show_reading_stats: e.target.checked })}
                         className="mr-2"
                       />
-                      <span className="text-sm text-gray-700">Afficher les statistiques de lecture</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Afficher les statistiques de lecture</span>
                     </label>
                     <label className="flex items-center">
                       <input
@@ -291,7 +292,7 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
                         onChange={(e) => setProfileForm({ ...profileForm, show_current_reading: e.target.checked })}
                         className="mr-2"
                       />
-                      <span className="text-sm text-gray-700">Afficher les lectures en cours</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Afficher les lectures en cours</span>
                     </label>
                     <label className="flex items-center">
                       <input
@@ -300,7 +301,7 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
                         onChange={(e) => setProfileForm({ ...profileForm, show_wishlist: e.target.checked })}
                         className="mr-2"
                       />
-                      <span className="text-sm text-gray-700">Afficher la wishlist</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Afficher la wishlist</span>
                     </label>
                   </div>
                 </div>
@@ -322,14 +323,14 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
               
               {notifications.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">Aucune notification</p>
+                  <p className="text-gray-500 dark:text-gray-400">Aucune notification</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {notifications.map((notification) => (
                     <div
                       key={notification.id}
-                      onClick={() => handleNotificationClick(notification)}
+                      {...clickableProps(() => handleNotificationClick(notification))}
                       className={`p-4 rounded-lg border cursor-pointer transition-colors ${
                         notification.is_read 
                           ? 'bg-gray-50 border-gray-200' 
@@ -344,8 +345,8 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
                         </div>
                         <div className="flex-1">
                           <h4 className="font-medium text-gray-900">{notification.title}</h4>
-                          <p className="text-sm text-gray-600">{notification.message}</p>
-                          <p className="text-xs text-gray-400 mt-1">
+                          <p className="text-sm text-gray-600 dark:text-gray-300">{notification.message}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             {new Date(notification.created_at).toLocaleString()}
                           </p>
                         </div>
@@ -362,8 +363,8 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
             <div>
               <h3 className="text-lg font-medium text-gray-900 mb-4">Découvrir des utilisateurs</h3>
               <div className="text-center py-8">
-                <p className="text-gray-500">Fonctionnalité à venir</p>
-                <p className="text-sm text-gray-400 mt-2">
+                <p className="text-gray-500 dark:text-gray-400">Fonctionnalité à venir</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                   Bientôt, vous pourrez découvrir d'autres lecteurs avec des goûts similaires !
                 </p>
               </div>

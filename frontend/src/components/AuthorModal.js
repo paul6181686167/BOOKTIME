@@ -434,7 +434,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
             <button
               onClick={onClose}
               aria-label="Fermer"
-              className="hidden md:block p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className="hidden md:block p-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             >
               <XMarkIcon className="h-6 w-6" />
             </button>
@@ -515,7 +515,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
                     {(authorInfo.birth_date || authorInfo.death_date) && (
                       <div>
                         <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2 flex items-center">
-                          <CalendarIcon className="h-4 w-4 mr-1 text-gray-500" />
+                          <CalendarIcon className="h-4 w-4 mr-1 text-gray-500 dark:text-gray-400" />
                           Dates
                         </h4>
                         <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -532,7 +532,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
                     {/* Statistiques */}
                     <div>
                       <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2 flex items-center">
-                        <BookOpenIcon className="h-4 w-4 mr-1 text-gray-500" />
+                        <BookOpenIcon className="h-4 w-4 mr-1 text-gray-500 dark:text-gray-400" />
                         Œuvres
                       </h4>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -640,7 +640,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
                     ({authorBooks.total_books} livre{authorBooks.total_books > 1 ? 's' : ''})
                   </span>
                   {authorBooks.sources && (
-                    <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
+                    <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
                       {authorBooks.sources.wikidata ? `Wikidata: ${authorBooks.sources.wikidata}` : ''}
                       {authorBooks.sources.wikipedia ? `Wikipedia: ${authorBooks.sources.wikipedia}` : ''}
                       {authorBooks.sources.openlibrary ? ` OpenLibrary: ${authorBooks.sources.openlibrary}` : ''}
@@ -790,7 +790,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
                                         <div className="min-w-0">
                                           <p className="text-sm text-gray-900 dark:text-white truncate">{title}</p>
                                           {detail?.published_year && (
-                                            <p className="text-xs text-gray-400">{detail.published_year}</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">{detail.published_year}</p>
                                           )}
                                         </div>
                                       </div>
@@ -808,7 +808,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
                                   );
                                 })
                             ) : (
-                              <p className="text-xs text-gray-400 italic py-1">
+                              <p className="text-xs text-gray-500 dark:text-gray-400 italic py-1">
                                 Détails des tomes disponibles en ouvrant la série
                               </p>
                             )}
@@ -879,7 +879,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
                   <p className="text-gray-500 dark:text-gray-400">
                     Aucune œuvre trouvée pour cet auteur
                   </p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                     Nous cherchons dans Wikipedia et OpenLibrary
                   </p>
                 </div>

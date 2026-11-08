@@ -17,6 +17,7 @@ import { EXTENDED_SERIES_DATABASE } from '../utils/seriesDatabaseExtended';
 import { enrichSeriesMetadata } from '../components/series/SeriesActions';
 import logger from '../utils/logger';
 import { getToken } from '../services/apiClient';
+import { clickableProps } from '../utils/a11y';
 
 const SeriesDetailPage = () => {
   const { seriesName } = useParams();
@@ -309,7 +310,7 @@ const SeriesDetailPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-honeycomb p-4">
+      <div className="min-h-screen min-h-dvh bg-honeycomb p-4">
         <div className="max-w-4xl mx-auto">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
@@ -327,7 +328,7 @@ const SeriesDetailPage = () => {
 
   if (!series) {
     return (
-      <div className="min-h-screen bg-honeycomb flex items-center justify-center">
+      <div className="min-h-screen min-h-dvh bg-honeycomb flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Série non trouvée
@@ -348,7 +349,7 @@ const SeriesDetailPage = () => {
   const completedVolumes = volumes.filter(v => v.status === 'completed').length;
 
   return (
-    <div className="min-h-screen bg-honeycomb">
+    <div className="min-h-screen min-h-dvh bg-honeycomb">
       {/* Header */}
       <div className="bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl shadow-sm border-b border-booktime-mist/55 dark:border-booktime-800/50 sticky top-0 z-30 safe-area-top">
         <div className="max-w-4xl mx-auto px-4 py-4">
@@ -387,7 +388,7 @@ const SeriesDetailPage = () => {
                 {series.description}
               </p>
 
-              <div className="flex items-center space-x-6 text-sm text-gray-500 dark:text-gray-500">
+              <div className="flex items-center space-x-6 text-sm text-gray-500 dark:text-gray-400">
                 <span className="flex items-center">
                   <BookOpenIcon className="w-4 h-4 mr-1" />
                   {(Array.isArray(series.volumes) ? series.volumes.length : series.volumes) || 0} tomes
@@ -472,7 +473,9 @@ const SeriesDetailPage = () => {
                 className={`p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
                   volume.isOwned ? 'cursor-pointer' : 'cursor-default'
                 }`}
-                onClick={() => volume.isOwned && toggleVolumeStatus(volume)}
+                {...(volume.isOwned
+                  ? clickableProps(() => toggleVolumeStatus(volume), `Tome ${volume.volume_number} : changer le statut`)
+                  : {})}
               >
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold">
@@ -508,7 +511,7 @@ const SeriesDetailPage = () => {
                       </span>
                     </div>
                   ) : (
-                    <span className="text-sm text-gray-400 dark:text-gray-500">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
                       Non possédé
                     </span>
                   )}

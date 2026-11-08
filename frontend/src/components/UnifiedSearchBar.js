@@ -229,7 +229,7 @@ const UnifiedSearchBar = React.memo(({
       {/* Barre de recherche principale */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+          <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 dark:text-gray-400" />
         </div>
         
         <input
@@ -252,6 +252,9 @@ const UnifiedSearchBar = React.memo(({
           }}
           className={inputClasses}
           placeholder={isCompact ? "Rechercher..." : "Rechercher par titre, auteur, saga..."}
+          aria-label="Rechercher par titre, auteur ou saga"
+          enterKeyHint="search"
+          autoComplete="off"
         />
 
         {/* Boutons d'action */}
@@ -260,7 +263,7 @@ const UnifiedSearchBar = React.memo(({
           {hasActiveSearch && (
             <button aria-label="Effacer la recherche"
               onClick={clearSearch}
-              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               title="Effacer la recherche"
             >
               <XMarkIcon className="h-4 w-4" />
@@ -275,13 +278,13 @@ const UnifiedSearchBar = React.memo(({
               className={`p-1 transition-colors relative ${
                 showFilters || activeFiltersCount > 0
                   ? 'text-green-600 dark:text-green-400'
-                  : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
               title="Filtres avancés"
             >
               <AdjustmentsHorizontalIcon className="h-4 w-4" />
               {activeFiltersCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center text-[10px]">
+                <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center text-tiny">
                   {activeFiltersCount}
                 </span>
               )}
@@ -294,6 +297,9 @@ const UnifiedSearchBar = React.memo(({
       {showSuggestions && (suggestions.length > 0 || recentSearches.length > 0 || universalResults.length > 0) && (
         <div
           ref={suggestionsRef}
+          id="unified-search-suggestions"
+          role="region"
+          aria-label="Suggestions de recherche"
           className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-96 overflow-y-auto"
         >
           {/* Suggestions locales */}
@@ -381,10 +387,10 @@ const UnifiedSearchBar = React.memo(({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Filtre Catégorie */}
             <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="f-unifiedsearchbar-387" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Catégorie
               </label>
-              <select
+              <select id="f-unifiedsearchbar-387"
                 value={filters?.category || ''}
                 onChange={(e) => onFiltersChange({ ...filters, category: e.target.value })}
                 className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -398,10 +404,10 @@ const UnifiedSearchBar = React.memo(({
 
             {/* Filtre Statut */}
             <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="f-unifiedsearchbar-404" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Statut
               </label>
-              <select
+              <select id="f-unifiedsearchbar-404"
                 value={filters?.status || ''}
                 onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
                 className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -415,10 +421,10 @@ const UnifiedSearchBar = React.memo(({
 
             {/* Filtre Auteur */}
             <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="f-unifiedsearchbar-421" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Auteur
               </label>
-              <input
+              <input id="f-unifiedsearchbar-421"
                 type="text"
                 value={filters?.author || ''}
                 onChange={(e) => onFiltersChange({ ...filters, author: e.target.value })}

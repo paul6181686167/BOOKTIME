@@ -409,7 +409,7 @@ function ProfileModal({
               {!isPage && (
                 <button aria-label="Fermer"
                   onClick={onClose}
-                  className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >✕</button>
               )}
             </div>
@@ -423,7 +423,7 @@ function ProfileModal({
                 onClick={() => setActiveTab(t.key)}
                 className={`font-medium rounded-full transition-colors ${
                   isPage
-                    ? 'min-w-0 px-px py-1.5 text-[9px] leading-tight tracking-tight text-center'
+                    ? 'min-w-0 px-px py-1.5 text-tiny leading-tight tracking-tight text-center'
                     : 'px-3 py-1.5 text-xs whitespace-nowrap'
                 } ${
                   activeTab === t.key
@@ -453,7 +453,7 @@ function ProfileModal({
               >
                 <span>Amis et messages</span>
                 {friendsBadge > 0 && (
-                  <span className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-green-600 text-white text-[11px] font-bold flex items-center justify-center">
+                  <span className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-green-600 text-white text-tiny font-bold flex items-center justify-center">
                     {friendsBadge}
                   </span>
                 )}
@@ -504,7 +504,7 @@ function ProfileModal({
                           de lecture estimées
                         </div>
                         {formatAsDays(readingTime.totalMinutes) && (
-                          <div className="text-[11px] text-amber-700/80 dark:text-amber-300/80 mt-0.5">
+                          <div className="text-tiny text-amber-700/80 dark:text-amber-300/80 mt-0.5">
                             {formatAsDays(readingTime.totalMinutes)}
                           </div>
                         )}
@@ -529,7 +529,7 @@ function ProfileModal({
                                   style={{ width: `${share}%` }}
                                 />
                               </div>
-                              <div className="text-[11px] text-gray-600 dark:text-gray-400">
+                              <div className="text-tiny text-gray-600 dark:text-gray-400">
                                 {entry.pages.toLocaleString('fr-FR')} pages
                                 {entry.words > 0 ? ` · environ ${formatWords(entry.words)}` : ''}
                               </div>
@@ -537,7 +537,7 @@ function ProfileModal({
                           );
                         })}
                       </div>
-                      <p className="text-[11px] leading-snug text-gray-500 dark:text-gray-400">
+                      <p className="text-tiny leading-snug text-gray-500 dark:text-gray-400">
                         Estimation : romans à {readingWpm} mots par minute et{' '}
                         {READING_PROFILES.roman.wordsPerPage} mots par page, romans graphiques à{' '}
                         {secondsPerPage('bd')} s par page, mangas à {secondsPerPage('manga')} s par
@@ -567,7 +567,7 @@ function ProfileModal({
                     <span className="text-gray-600 dark:text-gray-400">{booksThisYear} livres terminés</span>
                     <span className="font-medium text-gray-800 dark:text-gray-200">{booksThisYear} / {currentGoal}</span>
                   </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden" role="progressbar" aria-label="Objectif de lecture" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, Math.round(goalPercent))}>
                     <div
                       className="h-4 rounded-full bg-gradient-to-r from-green-400 to-green-600 reading-progress-bar transition-all duration-700"
                       style={{ width: `${goalPercent}%` }}
@@ -593,7 +593,7 @@ function ProfileModal({
 
               {editingGoal ? (
                 <div className="flex gap-2">
-                  <input
+                  <input aria-label="Objectif de lecture : nombre de livres par an"
                     type="number"
                     value={goalInput}
                     onChange={e => setGoalInput(e.target.value)}
@@ -603,7 +603,7 @@ function ProfileModal({
                     onKeyDown={e => e.key === 'Enter' && handleSaveGoal()}
                     autoFocus
                   />
-                  <button onClick={handleSaveGoal} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">✓</button>
+                  <button aria-label="Enregistrer l'objectif" onClick={handleSaveGoal} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">✓</button>
                   <button aria-label="Fermer" onClick={() => setEditingGoal(false)} className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors">✕</button>
                 </div>
               ) : (
@@ -626,7 +626,7 @@ function ProfileModal({
               </div>
               <ReadingHeatmap completionDates={completionDates} />
               {Object.keys(completionDates).length === 0 && (
-                <div className="text-center mt-4 text-gray-400 text-sm">
+                <div className="text-center mt-4 text-gray-500 dark:text-gray-400 text-sm">
                   <p>Terminez des livres pour voir votre activité apparaître ici.</p>
                 </div>
               )}
@@ -648,7 +648,7 @@ function ProfileModal({
                   ))}
                 </div>
               ) : followedAuthors.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Aucun auteur suivi</p>
                   <p className="text-xs mt-1">Ouvre la fiche d&apos;un auteur et clique sur « Suivre ».</p>
                 </div>
@@ -699,7 +699,7 @@ function ProfileModal({
               {creatingCollection ? (
                 <div className="space-y-2">
                 <div className="flex gap-2">
-                  <input
+                  <input aria-label="Nom de la collection..."
                     type="text"
                     autoFocus
                     value={newCollectionName}
@@ -738,7 +738,7 @@ function ProfileModal({
               )}
 
               {collections.length === 0 ? (
-                <div className="text-center py-6 text-gray-400">
+                <div className="text-center py-6 text-gray-500 dark:text-gray-400">
                   <p className="text-sm">Aucune collection créée</p>
                 </div>
               ) : (
@@ -824,7 +824,7 @@ function ProfileModal({
                                       {it.cover_url ? (
                                         <img src={it.cover_url} alt="" className="w-full h-full object-cover" />
                                       ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400">
+                                        <div className="w-full h-full flex items-center justify-center text-tiny text-gray-500 dark:text-gray-400">
                                           {it.type === 'series' ? 'S' : 'L'}
                                         </div>
                                       )}
@@ -845,7 +845,7 @@ function ProfileModal({
                                       <span className="block text-xs font-medium text-gray-900 dark:text-white truncate">
                                         {it.title}
                                       </span>
-                                      <span className="block text-[11px] text-gray-500 truncate">
+                                      <span className="block text-tiny text-gray-500 dark:text-gray-400 truncate">
                                         {it.type === 'series' ? 'Série' : 'Livre'}
                                         {it.author ? ` · ${it.author}` : ''}
                                       </span>
@@ -877,7 +877,7 @@ function ProfileModal({
                                     key={f.key}
                                     type="button"
                                     onClick={() => setPickerFilter(f.key)}
-                                    className={`px-2 py-1 text-[11px] rounded-full ${
+                                    className={`px-2 py-1 text-tiny rounded-full ${
                                       pickerFilter === f.key
                                         ? 'bg-green-600 text-white'
                                         : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200'
@@ -887,7 +887,7 @@ function ProfileModal({
                                   </button>
                                 ))}
                               </div>
-                              <input
+                              <input aria-label="Rechercher un titre ou un auteur…"
                                 type="search"
                                 value={pickerQuery}
                                 onChange={(e) => setPickerQuery(e.target.value)}
@@ -895,11 +895,11 @@ function ProfileModal({
                                 className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                               />
                               {libraryChoices.length === 0 ? (
-                                <p className="text-xs text-gray-400 italic">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 italic">
                                   Ta bibliothèque est vide — ajoute d&apos;abord des livres ou séries.
                                 </p>
                               ) : choices.length === 0 ? (
-                                <p className="text-xs text-gray-400 italic">Aucun résultat à ajouter.</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 italic">Aucun résultat à ajouter.</p>
                               ) : (
                                 <div className="max-h-44 overflow-y-auto space-y-1">
                                   {choices.slice(0, 40).map((it) => (
@@ -918,7 +918,7 @@ function ProfileModal({
                                         <span className="block text-xs font-medium text-gray-900 dark:text-white truncate">
                                           {it.title}
                                         </span>
-                                        <span className="block text-[11px] text-gray-500 truncate">
+                                        <span className="block text-tiny text-gray-500 dark:text-gray-400 truncate">
                                           {it.type === 'series' ? 'Série' : 'Livre'}
                                           {it.author ? ` · ${it.author}` : ''}
                                         </span>

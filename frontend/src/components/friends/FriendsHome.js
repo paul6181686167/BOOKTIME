@@ -144,10 +144,10 @@ export default function FriendsHome({
   };
 
   const searchAction = (user) => {
-    if (user.state === 'me') return <span className="text-xs text-gray-500">Toi</span>;
+    if (user.state === 'me') return <span className="text-xs text-gray-500 dark:text-gray-400">Toi</span>;
     if (user.state === 'friends') return <span className="text-xs text-green-600 font-medium">Ami</span>;
     if (user.state === 'pending_out')
-      return <span className="text-xs text-gray-500">Demande envoyée</span>;
+      return <span className="text-xs text-gray-500 dark:text-gray-400">Demande envoyée</span>;
     return (
       <button
         type="button"
@@ -183,7 +183,7 @@ export default function FriendsHome({
               <button
                 type="button"
                 onClick={() => setInviteError('')}
-                className="text-xs text-gray-500 px-2 py-1"
+                className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1"
               >
                 Fermer
               </button>
@@ -211,7 +211,7 @@ export default function FriendsHome({
                   ) : null}
                 </div>
                 {invite.is_me ? (
-                  <span className="text-xs text-gray-500">C’est ton code</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">C’est ton code</span>
                 ) : (
                   searchAction(invite.user)
                 )}
@@ -219,7 +219,7 @@ export default function FriendsHome({
               <button
                 type="button"
                 onClick={() => setInvite(null)}
-                className="mt-2 text-xs text-gray-500 hover:text-gray-700"
+                className="mt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700"
               >
                 Fermer
               </button>
@@ -270,9 +270,9 @@ export default function FriendsHome({
         {searchActive && (
           <div className="mt-2 space-y-1.5">
             {searching && results === null ? (
-              <p className="text-xs text-gray-500 px-1">Recherche…</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 px-1">Recherche…</p>
             ) : results.length === 0 ? (
-              <p className="text-xs text-gray-500 px-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 px-1">
                 Aucun lecteur trouvé. Cherche par @pseudo, par nom affiché ou par adresse email
                 complète, ou scanne son QR code.
               </p>
@@ -362,7 +362,7 @@ export default function FriendsHome({
                   type="button"
                   disabled={busyId === r.request_id}
                   onClick={() => run(r.request_id, () => friendsService.declineRequest(r.request_id))}
-                  className="text-xs text-gray-500 hover:text-red-600 px-2 py-1"
+                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-red-600 px-2 py-1"
                 >
                   Annuler
                 </button>
@@ -426,7 +426,7 @@ export default function FriendsHome({
                     </span>
                   </span>
                   {f.unread > 0 && (
-                    <span className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-green-600 text-white text-[11px] font-bold flex items-center justify-center">
+                    <span className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-green-600 text-white text-tiny font-bold flex items-center justify-center">
                       {f.unread}
                     </span>
                   )}

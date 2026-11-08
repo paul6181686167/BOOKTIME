@@ -77,7 +77,7 @@ const SocialFeed = () => {
                 </div>
               )}
               {content.review && (
-                <p className="text-sm text-gray-600 mt-2 italic">"{content.review}"</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 italic">"{content.review}"</p>
               )}
             </div>
           </div>
@@ -168,7 +168,7 @@ const SocialFeed = () => {
               </div>
             </div>
             <div className="flex-1">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 <span className="font-medium text-gray-900">{user.display_name}</span> a une nouvelle activité
               </p>
             </div>
@@ -236,7 +236,7 @@ const SocialFeed = () => {
   if (activities.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center border border-gray-100 dark:border-gray-700">
-        <div className="text-gray-400 mb-4">
+        <div className="text-gray-500 dark:text-gray-400 mb-4">
         </div>
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Votre feed est vide</h3>
         <p className="text-gray-500 dark:text-gray-400">
@@ -261,7 +261,7 @@ const SocialFeed = () => {
                 <span>Commenter ({activity.comments_count || 0})</span>
               </button>
             </div>
-            <span className="text-sm text-gray-400 dark:text-gray-500">
+            <span className="text-sm text-gray-500 dark:text-gray-400">
               {formatTimeAgo(activity.created_at)}
             </span>
           </div>

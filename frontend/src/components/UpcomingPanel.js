@@ -21,6 +21,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { upcomingService } from '../services/upcomingService';
 import { NOTIFICATIONS_CHANGED_EVENT } from '../hooks/useUnreadNotifications';
+import ModalOverlay, { MODAL_Z } from './common/ModalOverlay';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -139,11 +140,11 @@ const ItemCard = ({ item, onMigrate, onRemove, onWatch }) => {
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">{item.author}</p>
         )}
         {item.reason && item.type === 'suggestion' && (
-          <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5 line-clamp-1">{item.reason}</p>
+          <p className="text-tiny text-emerald-700 dark:text-emerald-400 mt-0.5 line-clamp-1">{item.reason}</p>
         )}
         <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
           <span
-            className={`inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full font-medium ${meta.badge}`}
+            className={`inline-flex items-center text-tiny px-1.5 py-0.5 rounded-full font-medium ${meta.badge}`}
           >
             {meta.label}
           </span>
@@ -179,7 +180,7 @@ const ItemCard = ({ item, onMigrate, onRemove, onWatch }) => {
           <button aria-label="Retirer"
             onClick={handleRemove}
             title="Retirer"
-            className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
           >
             <TrashIcon className="h-3.5 w-3.5" />
           </button>
@@ -339,10 +340,16 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
     ? 'min-h-full bg-honeycomb flex flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))]'
     : 'fixed top-0 left-0 h-full w-80 sm:w-96 bg-honeycomb shadow-2xl z-50 flex flex-col transition-transform duration-300';
 
+  // En tiroir : vraie fenêtre (rôle, Échap, focus). En page : rendu direct.
+  const Shell = isPage ? React.Fragment : ModalOverlay;
+  const shellProps = isPage
+    ? {}
+    : { onClose, className: '', closeOnBackdrop: false, ariaLabel: 'Prochaines sorties', zIndex: MODAL_Z.panel };
+
   return (
-    <>
+    <Shell {...shellProps}>
       {!isPage && (
-        <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" onClick={onClose} />
+        <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" onClick={onClose} aria-hidden="true" />
       )}
 
       <div className={shellClass}>
@@ -364,14 +371,14 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
               onClick={() => loadData(true)}
               disabled={isLoading}
               title="Rafraîchir"
-              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
               <ArrowPathIcon className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
             {!isPage && (
               <button aria-label="Fermer"
                 onClick={onClose}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -383,7 +390,7 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
         <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
           <div className="relative">
             <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
+            <input aria-label="Ajouter un livre à surveiller..."
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -541,7 +548,7 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
           )}
         </div>
       </div>
-    </>
+    </Shell>
   );
 };
 

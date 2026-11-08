@@ -52,19 +52,19 @@ function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-honeycomb flex items-center justify-center py-12 px-4">
+    <main className="min-h-screen min-h-dvh bg-honeycomb flex items-center justify-center py-12 px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-lg mx-auto mb-4">
             
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">BookTime</h2>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">BookTime</h1>
         </div>
 
         <div className="bg-white dark:bg-gray-800 shadow-2xl rounded-2xl p-8 border dark:border-gray-700">
           {done ? (
             <div className="text-center">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Mot de passe modifié !</h3>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Mot de passe modifié !</h2>
               <p className="text-gray-600 dark:text-gray-400 mb-6">Tu peux maintenant te connecter avec ton nouveau mot de passe.</p>
               <button
                 onClick={() => navigate('/')}
@@ -75,13 +75,14 @@ function ResetPasswordPage() {
             </div>
           ) : (
             <>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Nouveau mot de passe</h3>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Nouveau mot de passe</h2>
               <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm">Choisis un nouveau mot de passe (minimum 8 caractères).</p>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nouveau mot de passe</label>
-                  <input
+                  <label htmlFor="reset-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nouveau mot de passe</label>
+                  <input id="reset-password"
                     type="password"
+                    autoComplete="new-password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder="Minimum 8 caractères"
@@ -92,9 +93,10 @@ function ResetPasswordPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirmer le mot de passe</label>
-                  <input
+                  <label htmlFor="reset-password-confirm" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirmer le mot de passe</label>
+                  <input id="reset-password-confirm"
                     type="password"
+                    autoComplete="new-password"
                     value={confirm}
                     onChange={e => setConfirm(e.target.value)}
                     placeholder="Répète ton mot de passe"
@@ -114,7 +116,7 @@ function ResetPasswordPage() {
           )}
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 

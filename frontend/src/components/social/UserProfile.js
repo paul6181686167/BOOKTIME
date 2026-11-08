@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import socialService from '../../services/socialService';
 import logger from '../../utils/logger';
 import toast from 'react-hot-toast';
+import ModalOverlay, { MODAL_Z } from '../common/ModalOverlay';
 
 const UserProfile = ({ userId, onClose }) => {
   const [profile, setProfile] = useState(null);
@@ -66,8 +67,8 @@ const UserProfile = ({ userId, onClose }) => {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-pulse">
+      <ModalOverlay onClose={onClose} zIndex={MODAL_Z.nested} ariaLabel="Chargement du profil" className="fixed inset-0 bg-black/50 flex items-center justify-center">
+        <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] max-h-[90dvh] overflow-y-auto animate-pulse">
           <div className="flex items-center space-x-4 mb-6">
             <div className="w-20 h-20 bg-gray-200 rounded-full"></div>
             <div className="flex-1">
@@ -81,17 +82,17 @@ const UserProfile = ({ userId, onClose }) => {
             <div className="h-4 bg-gray-200 rounded w-1/2"></div>
           </div>
         </div>
-      </div>
+      </ModalOverlay>
     );
   }
 
   if (error) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <ModalOverlay onClose={onClose} zIndex={MODAL_Z.nested} ariaLabel="Erreur de chargement du profil" className="fixed inset-0 bg-black/50 flex items-center justify-center">
         <div className="bg-white rounded-lg p-8 max-w-md w-full">
           <div className="text-center">
             <h3 className="text-lg font-medium text-gray-900 mb-2">Erreur</h3>
-            <p className="text-gray-500 mb-4">{error}</p>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">{error}</p>
             <div className="flex space-x-3">
               <button 
                 onClick={loadProfile}
@@ -101,14 +102,14 @@ const UserProfile = ({ userId, onClose }) => {
               </button>
               <button 
                 onClick={onClose}
-                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-400"
+                className="flex-1 bg-gray-300 text-gray-700 dark:text-gray-300 py-2 px-4 rounded hover:bg-gray-400"
               >
                 Fermer
               </button>
             </div>
           </div>
         </div>
-      </div>
+      </ModalOverlay>
     );
   }
 
@@ -117,8 +118,8 @@ const UserProfile = ({ userId, onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <ModalOverlay onClose={onClose} zIndex={MODAL_Z.nested} ariaLabel="Profil du lecteur" className="fixed inset-0 bg-black/50 flex items-center justify-center">
+      <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] max-h-[90dvh] overflow-y-auto">
         {/* Header du profil */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
@@ -140,7 +141,7 @@ const UserProfile = ({ userId, onClose }) => {
                 {profile.display_name || 'Utilisateur'}
               </h2>
               {profile.location && (
-                <p className="text-gray-500 flex items-center">
+                <p className="text-gray-500 dark:text-gray-400 flex items-center">
                   <span className="mr-1"></span>
                   {profile.location}
                 </p>
@@ -149,7 +150,7 @@ const UserProfile = ({ userId, onClose }) => {
           </div>
           <button aria-label="Fermer"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-600 text-2xl font-bold"
           >
             ×
           </button>
@@ -159,15 +160,15 @@ const UserProfile = ({ userId, onClose }) => {
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-900">{profile.books_count}</div>
-            <div className="text-sm text-gray-500">Livres</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Livres</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-900">{profile.followers_count}</div>
-            <div className="text-sm text-gray-500">Followers</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Followers</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-900">{profile.following_count}</div>
-            <div className="text-sm text-gray-500">Following</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Following</div>
           </div>
         </div>
 
@@ -197,7 +198,7 @@ const UserProfile = ({ userId, onClose }) => {
         {profile.bio && (
           <div className="mb-6">
             <h3 className="text-lg font-medium text-gray-900 mb-2">À propos</h3>
-            <p className="text-gray-600">{profile.bio}</p>
+            <p className="text-gray-600 dark:text-gray-300">{profile.bio}</p>
           </div>
         )}
 
@@ -222,25 +223,25 @@ const UserProfile = ({ userId, onClose }) => {
             <h3 className="text-lg font-medium text-gray-900 mb-3">Statistiques de lecture</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-gray-50 rounded-lg p-3">
-                <div className="text-sm text-gray-500">Livres terminés</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">Livres terminés</div>
                 <div className="text-lg font-semibold text-gray-900">
                   {profile.reading_stats.completed_books}
                 </div>
               </div>
               <div className="bg-gray-50 rounded-lg p-3">
-                <div className="text-sm text-gray-500">En cours</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">En cours</div>
                 <div className="text-lg font-semibold text-gray-900">
                   {profile.reading_stats.reading_books}
                 </div>
               </div>
               <div className="bg-gray-50 rounded-lg p-3">
-                <div className="text-sm text-gray-500">Note moyenne</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">Note moyenne</div>
                 <div className="text-lg font-semibold text-gray-900">
                   {profile.reading_stats.avg_rating || 0}/5
                 </div>
               </div>
               <div className="bg-gray-50 rounded-lg p-3">
-                <div className="text-sm text-gray-500">Pages lues</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">Pages lues</div>
                 <div className="text-lg font-semibold text-gray-900">
                   {profile.reading_stats.total_pages || 0}
                 </div>
@@ -263,14 +264,14 @@ const UserProfile = ({ userId, onClose }) => {
                   />
                   <div className="flex-1">
                     <h4 className="font-medium text-gray-900">{book.title}</h4>
-                    <p className="text-sm text-gray-500">{book.author}</p>
-                    <div className="mt-1 w-full bg-gray-200 rounded-full h-1.5">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{book.author}</p>
+                    <div className="mt-1 w-full bg-gray-200 rounded-full h-1.5" role="progressbar" aria-label={`Progression : ${book.title}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(book.progress)}>
                       <div 
                         className="bg-blue-500 h-1.5 rounded-full" 
                         style={{ width: `${book.progress}%` }}
                       ></div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">{Math.round(book.progress)}% terminé</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{Math.round(book.progress)}% terminé</p>
                   </div>
                 </div>
               ))}
@@ -291,7 +292,7 @@ const UserProfile = ({ userId, onClose }) => {
                     className="w-full h-24 object-cover rounded mb-2"
                   />
                   <h4 className="text-xs font-medium text-gray-900 truncate">{book.title}</h4>
-                  <p className="text-xs text-gray-500 truncate">{book.author}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{book.author}</p>
                   {book.rating && (
                     <div className="flex justify-center mt-1">
                       {[...Array(5)].map((_, i) => (
@@ -311,11 +312,11 @@ const UserProfile = ({ userId, onClose }) => {
         )}
 
         {/* Pied de page */}
-        <div className="text-center text-sm text-gray-500">
+        <div className="text-center text-sm text-gray-500 dark:text-gray-400">
           Membre depuis {new Date(profile.created_at).toLocaleDateString()}
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 };
 

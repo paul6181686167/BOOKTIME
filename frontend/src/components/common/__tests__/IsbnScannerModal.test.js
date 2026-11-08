@@ -77,7 +77,7 @@ describe('IsbnScannerModal', () => {
     const dialog = screen.getByRole('dialog');
     expect(container.contains(dialog)).toBe(false);
     expect(document.body.contains(dialog)).toBe(true);
-    expect(dialog.className).toContain('z-[1300]');
+    expect(dialog.style.zIndex).toBe('1300');
   });
 
   test("la saisie manuelle est présente et modifiable", () => {

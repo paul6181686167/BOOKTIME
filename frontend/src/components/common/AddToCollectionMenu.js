@@ -66,7 +66,7 @@ export default function AddToCollectionMenu({ item, onClose, onChanged }) {
           <button aria-label="Fermer"
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-sm px-1"
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-sm px-1"
           >
             ✕
           </button>
@@ -92,12 +92,12 @@ export default function AddToCollectionMenu({ item, onClose, onChanged }) {
                 onClick={() => handleAdd(c.id)}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-left transition-colors ${
                   already
-                    ? 'bg-gray-100 dark:bg-gray-700/40 text-gray-400 cursor-default'
+                    ? 'bg-gray-100 dark:bg-gray-700/40 text-gray-500 dark:text-gray-400 cursor-default'
                     : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-green-50 dark:hover:bg-green-900/20 text-gray-900 dark:text-white'
                 }`}
               >
                 <span className="truncate font-medium">{c.name}</span>
-                <span className="text-xs text-gray-500 shrink-0 ml-2">
+                <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0 ml-2">
                   {already ? 'Déjà ajouté' : `${(c.items || []).length} élément${(c.items || []).length !== 1 ? 's' : ''}`}
                 </span>
               </button>

@@ -94,7 +94,7 @@ const BookHeaderSection = ({
                         onClose?.();
                         navigate(`/recommendations?${params}`);
                       }}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-900/60 transition-colors"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-900/60 transition-colors"
                     >
                       <SparklesIcon className="h-3.5 w-3.5" />
                       Similaires
@@ -105,7 +105,7 @@ const BookHeaderSection = ({
                       type="button"
                       onClick={handleToggleFavorite}
                       aria-pressed={isFavorite}
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                         isFavorite
                           ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-200'
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -123,7 +123,7 @@ const BookHeaderSection = ({
                     <button
                       type="button"
                       onClick={handleRecommendToFriend}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-900/60 transition-colors"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-900/60 transition-colors"
                     >
                       <PaperAirplaneIcon className="h-3.5 w-3.5" />
                       Recommander à un ami
@@ -144,7 +144,7 @@ const BookHeaderSection = ({
                 </p>
               </div>
             ) : olLoading ? (
-              <div className="mb-3 flex items-center gap-2 text-xs text-gray-400 py-1">
+              <div className="mb-3 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 py-1">
                 <div className="h-3.5 w-3.5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
                 Chargement du résumé…
               </div>
@@ -163,7 +163,7 @@ const BookHeaderSection = ({
                         key={option.value}
                         type="button"
                         onClick={() => handleQuickStatusChange(option.value)}
-                        className={`btn-ripple flex flex-1 items-center justify-center whitespace-nowrap px-2 py-1.5 text-[11px] sm:text-xs font-medium transition-all sm:px-3 sm:py-2 ${
+                        className={`btn-ripple flex flex-1 items-center justify-center whitespace-nowrap px-2 py-1.5 text-tiny sm:text-xs font-medium transition-all sm:px-3 sm:py-2 ${
                           bouncing === `status-${option.value}` ? 'btn-bounce' : ''
                         } ${
                           displayStatus === option.value
@@ -180,7 +180,7 @@ const BookHeaderSection = ({
                     <button
                       type="button"
                       onClick={handleMarkToReread}
-                      className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap px-2 py-1.5 text-[11px] sm:text-xs font-medium rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors ${
+                      className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap px-2 py-1.5 text-tiny sm:text-xs font-medium rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors ${
                         bouncing === 'to-reread' ? 'btn-bounce' : ''
                       }`}
                       title="Mettre dans la section À relire"
@@ -193,7 +193,7 @@ const BookHeaderSection = ({
                     <button
                       type="button"
                       onClick={handleStartReread}
-                      className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap px-2 py-1.5 text-[11px] sm:text-xs font-medium rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors ${
+                      className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap px-2 py-1.5 text-tiny sm:text-xs font-medium rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors ${
                         bouncing === 'reread' ? 'btn-bounce' : ''
                       }`}
                       title="Commencer la relecture depuis le début"
@@ -236,7 +236,7 @@ const BookHeaderSection = ({
                   )}
                 </div>
                 {totalPages > 0 && pageInput > 0 && (
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mb-3">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mb-3" role="progressbar" aria-label="Progression de lecture" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, Math.round(((pageInput || 0) / totalPages) * 100))}>
                     <div
                       className="bg-blue-500 h-1.5 rounded-full reading-progress-bar transition-all duration-300"
                       style={{ width: `${Math.min(100, Math.round(((pageInput || 0) / totalPages) * 100))}%` }}
@@ -245,7 +245,7 @@ const BookHeaderSection = ({
                 )}
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-500 dark:text-gray-400">Page</span>
-                  <input
+                  <input aria-label="Page actuelle (facultatif)"
                     ref={pageInputRef}
                     type="number"
                     value={pageInput || ''}
@@ -260,7 +260,7 @@ const BookHeaderSection = ({
                   {totalPages > 0 ? (
                     <span className="text-sm text-gray-500 dark:text-gray-400">/ {totalPages}</span>
                   ) : olLoading ? (
-                    <span className="text-xs text-gray-400 dark:text-gray-500">recherche du total…</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">recherche du total…</span>
                   ) : null}
                   {(parseInt(pageInput) || 0) !== (book.current_page || 0) && (
                     <button
@@ -318,7 +318,7 @@ const BookHeaderSection = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               aria-label="Fermer"
             >
               <XMarkIcon className="h-6 w-6" />

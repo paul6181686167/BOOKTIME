@@ -105,7 +105,7 @@ const ChapterSection = ({ seriesName, onClose }) => {
           <h4 className="text-md font-semibold text-gray-900 dark:text-white flex items-center">
             <ChapterIcon />
             <span className="ml-2">Chapitres (pas encore en tome)</span>
-            <span className="ml-2 text-sm text-gray-500">({ungroupedChapters.length})</span>
+            <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">({ungroupedChapters.length})</span>
           </h4>
 
           {ungroupedChapters.length > 10 && (
@@ -181,13 +181,13 @@ const ChapterSection = ({ seriesName, onClose }) => {
                     Volume {volume.volume_number}
                   </span>
                   {volume.chapters_range && (
-                    <span className="ml-2 text-xs text-gray-500">
+                    <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
                       Ch. {volume.chapters_range}
                     </span>
                   )}
                 </div>
                 
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   {formatDate(volume.release_date)}
                 </div>
               </div>
@@ -271,7 +271,7 @@ const ChapterSection = ({ seriesName, onClose }) => {
         
         <div className="flex items-center space-x-2">
           {lastUpdated && (
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
               Mis à jour {lastUpdated.toLocaleTimeString()}
             </span>
           )}
@@ -282,7 +282,7 @@ const ChapterSection = ({ seriesName, onClose }) => {
             className={`
               p-2 rounded-lg border transition-colors
               ${loading 
-                ? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed'
+                ? 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-white hover:bg-gray-50 border-gray-300 text-gray-700 hover:text-gray-900'
               }
               dark:bg-gray-700 dark:hover:bg-gray-600 dark:border-gray-600 dark:text-gray-300
@@ -305,7 +305,7 @@ const ChapterSection = ({ seriesName, onClose }) => {
 
       {loading && (
         <div className="flex items-center justify-center py-8">
-          <div className="flex items-center text-sm text-gray-500">
+          <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
             Récupération des données chapitres...
           </div>

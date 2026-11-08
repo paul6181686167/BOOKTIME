@@ -36,6 +36,10 @@ module.exports = {
           700: '#166534',
         },
         'gray': {
+          // 400 : texte secondaire en thème sombre (>= 4,5:1 sur la page #234f37) ;
+          // 500 : texte secondaire en thème clair (>= 4,5:1 même sur le vert clair #bce8cb).
+          400: '#b8bfca',
+          500: '#556070',
           700: '#1e3a2c',
           800: '#163528',
           900: '#234f37',

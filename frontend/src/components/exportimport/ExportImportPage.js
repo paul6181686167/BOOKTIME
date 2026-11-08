@@ -37,7 +37,7 @@ const ExportImportPage = () => {
   const closeModal = useCallback(() => setIsModalOpen(false), []);
 
   return (
-    <div className="export-import-page min-h-screen bg-honeycomb">
+    <div className="export-import-page min-h-screen min-h-dvh bg-honeycomb">
       <div className="container mx-auto px-4 py-8 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}

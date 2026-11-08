@@ -390,9 +390,45 @@ button:not(:disabled):active,
 button:not(:disabled):focus-visible,
 a:focus-visible,
 [tabindex]:not([tabindex="-1"]):focus-visible {
-  outline: 2px solid #16a34a;
+  outline: 2px solid #166534; /* thème clair : 5,3:1 sur le vert clair, 7:1 sur blanc */
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* Thèmes sombres : vert clair (6,7:1 sur la page, 14:1 en "très foncé") */
+.dark button:not(:disabled):focus-visible,
+.dark a:focus-visible,
+.dark [tabindex]:not([tabindex="-1"]):focus-visible,
+.dark input:focus-visible,
+.dark textarea:focus-visible,
+.dark select:focus-visible {
+  outline-color: #86efac;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #166534;
+  outline-offset: 1px;
+}
+
+/* Zone tactile de 44 px minimum pour les boutons-icônes (reconnus à leur aria-label),
+   agrandie par un pseudo-élément invisible : la mise en page ne bouge pas. */
+@media (pointer: coarse) {
+  button[aria-label]:not(.absolute):not(.fixed):not(.sticky):not(.no-touch-target),
+  [role="button"][aria-label]:not(.absolute):not(.fixed):not(.sticky):not(.no-touch-target) {
+    position: relative;
+  }
+  button[aria-label]:not(.no-touch-target)::before,
+  [role="button"][aria-label]:not(.no-touch-target)::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
 }
 
 /* Effet ripple CSS (pseudo-élément) */
@@ -459,6 +495,9 @@ a:focus-visible,
   .badge-reading-pulse,
   .btn-ripple::after,
   .btn-spinner,
+  .animate-pulse,
+  .animate-bounce,
+  .animate-ping,
   button:not(:disabled):active,
   [role="button"]:not(:disabled):active {
     animation: none !important;

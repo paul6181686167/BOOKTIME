@@ -83,7 +83,7 @@ export default function FriendsModal({
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg"
+            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg"
           >
             ✕
           </button>

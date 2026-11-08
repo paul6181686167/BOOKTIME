@@ -161,7 +161,7 @@ const TomeDropdown = ({
           <span className="shrink-0 text-xs font-semibold text-purple-600 dark:text-purple-400 lg:w-[4.5rem]">
             Tome {tomeNumber}
           </span>
-          <span className={`min-w-0 text-sm leading-snug break-words lg:line-clamp-2 ${isRead ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>
+          <span className={`min-w-0 text-sm leading-snug break-words lg:line-clamp-2 ${isRead ? 'line-through text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
             {tomeTitle}
           </span>
           {isInProgress && currentPage && (
@@ -172,13 +172,13 @@ const TomeDropdown = ({
         <div className="flex w-full shrink-0 items-stretch gap-2 lg:w-auto lg:items-center lg:justify-end">
           {unreleased ? (
             <div
-              className="flex min-h-[2.5rem] flex-1 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800 dark:border-amber-700/60 dark:bg-amber-900/30 dark:text-amber-200 lg:flex-none lg:text-xs"
+              className="flex min-h-[2.5rem] flex-1 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-tiny font-semibold text-amber-800 dark:border-amber-700/60 dark:bg-amber-900/30 dark:text-amber-200 lg:flex-none lg:text-xs"
               title="Ce volume n'est pas encore paru"
             >
               Non sorti
             </div>
           ) : (
-            <div className="grid min-h-[2.5rem] flex-1 grid-cols-3 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600 text-[10px] font-medium leading-tight lg:flex lg:h-auto lg:min-h-0 lg:flex-none lg:text-xs lg:leading-normal">
+            <div className="grid min-h-[2.5rem] flex-1 grid-cols-3 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600 text-tiny font-medium leading-tight lg:flex lg:h-auto lg:min-h-0 lg:flex-none lg:text-xs lg:leading-normal">
               {(['non_lu', 'en_cours', 'lu']).map((s) => (
                 <button
                   key={s}
@@ -231,10 +231,12 @@ const TomeDropdown = ({
               max={tomeInfo.pages || 9999}
               value={pageInput}
               onChange={e => setPageInput(e.target.value)}
+              aria-label="Page actuelle"
+              inputMode="numeric"
               placeholder={tomeInfo.pages ? `/ ${tomeInfo.pages}` : 'optionnel'}
               className="w-20 text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-booktime-500 focus:outline-none"
             />
-            {tomeInfo.pages && <span className="text-xs text-gray-400">/ {tomeInfo.pages}</span>}
+            {tomeInfo.pages && <span className="text-xs text-gray-500 dark:text-gray-400">/ {tomeInfo.pages}</span>}
             <button
               onClick={() => { handleStatusChange('en_cours'); }}
               className="ml-auto text-xs px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
@@ -310,12 +312,12 @@ const TomeDropdown = ({
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Avis</p>
-                <textarea
+                <textarea aria-label="Qu'avez-vous pensé de ce tome ?"
                   value={localReview}
                   onChange={(e) => setLocalReview(e.target.value)}
                   rows={3}
                   placeholder="Qu'avez-vous pensé de ce tome ?"
-                  className="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-booktime-500 resize-none"
+                  className="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-booktime-500 resize-none"
                 />
                 <button
                   type="button"
@@ -357,7 +359,7 @@ const TomeDropdown = ({
           )}
 
           {(tomeInfo.publisher || tomeInfo.isbn) && (
-            <div className="pt-2 border-t border-gray-200 dark:border-gray-600 space-y-0.5 text-xs text-gray-500">
+            <div className="pt-2 border-t border-gray-200 dark:border-gray-600 space-y-0.5 text-xs text-gray-500 dark:text-gray-400">
               {tomeInfo.publisher && <p><span className="font-medium">Éditeur :</span> {tomeInfo.publisher}</p>}
               {tomeInfo.isbn && <p><span className="font-medium">ISBN :</span> {tomeInfo.isbn}</p>}
             </div>

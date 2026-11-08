@@ -299,7 +299,7 @@ export default function ProfileSettings({
             getLabel={(opt) => `${opt.label} · ${opt.wpm}`}
             isActive={(opt, value) => opt.wpm === value}
           />
-          <p className="text-[11px] text-gray-400 mt-1.5">En mots par minute.</p>
+          <p className="text-tiny text-gray-500 dark:text-gray-400 mt-1.5">En mots par minute.</p>
         </div>
       </Section>
 

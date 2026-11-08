@@ -7,7 +7,7 @@ export default function NotFoundPage() {
 
   return (
     <main
-      className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 text-center bg-gray-50 dark:bg-gray-900"
+      className="min-h-screen min-h-dvh flex flex-col items-center justify-center gap-4 px-6 text-center bg-gray-50 dark:bg-gray-900"
       style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
       data-testid="not-found"
     >

@@ -9,6 +9,7 @@ import SmartCover, {
   CoverScrim,
   PILL,
 } from './SmartCover';
+import { clickableProps } from '../../utils/a11y';
 
 const GRID_CLASSES =
   'grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-x-2.5 gap-y-4 sm:gap-5 p-1 sm:p-6';
@@ -45,11 +46,11 @@ const CinemaProgress = ({ current, total, percent }) => {
   return (
     <div className="mt-1.5 space-y-1">
       {hasNumbers && (
-        <p className="text-[10px] sm:text-xs font-medium tabular-nums tracking-wide text-gray-500 dark:text-white/55">
+        <p className="text-tiny sm:text-xs font-medium tabular-nums tracking-wide text-gray-500 dark:text-white/70">
           {current}/{total}
         </p>
       )}
-      <div className="cinema-progress-track">
+      <div className="cinema-progress-track" aria-hidden="true">
         <div className="cinema-progress-fill" style={{ width: `${pct}%` }} />
       </div>
     </div>
@@ -89,14 +90,14 @@ const SeriesCardBody = ({ item, coverSrc, onCoverFound, priority, rimColors }) =
         <CoverScrim />
 
         <div className="absolute top-1.5 left-1.5">
-          <span className={`inline-flex items-center rounded-md bg-black/65 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white/90 ${PILL}`}>
+          <span className={`inline-flex items-center rounded-md bg-black/65 px-1.5 py-0.5 text-tiny font-medium uppercase tracking-wider text-white/90 ${PILL}`}>
             Série
           </span>
         </div>
 
         {seriesStatus === 'completed' && (
           <div className="absolute top-1.5 right-1.5">
-            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#4ade80]/90 text-[10px] font-bold text-black ${PILL}`}>
+            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#4ade80]/90 text-tiny font-bold text-black ${PILL}`}>
               ✓
             </span>
           </div>
@@ -104,7 +105,7 @@ const SeriesCardBody = ({ item, coverSrc, onCoverFound, priority, rimColors }) =
       </div>
 
       <div className="pt-2 px-0.5">
-        <h3 className="font-medium text-gray-900 dark:text-white text-[11px] sm:text-sm line-clamp-2 leading-snug tracking-tight min-h-[2.75em]">
+        <h3 className="font-medium text-gray-900 dark:text-white text-tiny sm:text-sm line-clamp-2 leading-snug tracking-tight min-h-[2.75em]">
           {item.name}
         </h3>
         <CinemaProgress current={done} total={total} percent={pct} />
@@ -139,14 +140,14 @@ const BookCardBody = ({ item, coverSrc, onCoverFound, priority, rimColors }) => 
 
         {isDone && (
           <div className="absolute top-1.5 right-1.5">
-            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#4ade80]/90 text-[10px] font-bold text-black ${PILL}`}>
+            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#4ade80]/90 text-tiny font-bold text-black ${PILL}`}>
               ✓
             </span>
           </div>
         )}
         {item.status === 'to_reread' && (
           <div className="absolute top-1.5 right-1.5">
-            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/15 text-[10px] text-white ${PILL}`}>
+            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/15 text-tiny text-white ${PILL}`}>
               ↻
             </span>
           </div>
@@ -154,7 +155,7 @@ const BookCardBody = ({ item, coverSrc, onCoverFound, priority, rimColors }) => 
       </div>
 
       <div className="pt-2 px-0.5">
-        <h3 className="font-medium text-gray-900 dark:text-white text-[11px] sm:text-sm line-clamp-2 leading-snug tracking-tight min-h-[2.75em]">
+        <h3 className="font-medium text-gray-900 dark:text-white text-tiny sm:text-sm line-clamp-2 leading-snug tracking-tight min-h-[2.75em]">
           {title}
         </h3>
         {(isReading || isDone) && total > 0 ? (
@@ -183,7 +184,12 @@ const GridCard = React.memo(({ item, index, onSelect, onCoverFound, rimColors })
         animated ? ' book-card-stagger' : ''
       }`}
       style={animated ? { animationDelay: `${Math.min(index * 40, 400)}ms` } : undefined}
-      onClick={() => onSelect(item)}
+      {...clickableProps(
+        () => onSelect(item),
+        item.isSeriesCard
+          ? `Série ${item.name || item.title || ''}`.trim()
+          : displayBookTitleFrFirst(item) || item.title
+      )}
     >
       {item.isSeriesCard ? (
         <SeriesCardBody item={item} coverSrc={coverSrc} onCoverFound={onCoverFound} priority={priority} rimColors={rimColors} />
@@ -300,7 +306,7 @@ const BookGrid = ({
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
           {emptyTitle}
         </h3>
-        <p className="text-gray-600 dark:text-white/40">
+        <p className="text-gray-600 dark:text-white/70">
           {emptySubtitle}
         </p>
       </div>

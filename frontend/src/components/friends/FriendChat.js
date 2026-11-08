@@ -53,7 +53,7 @@ function BookPicker({ libraryBooks, onPick, onClose }) {
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
         {choices.length === 0 ? (
-          <p className="text-sm text-center text-gray-500 py-8">Aucun livre trouvé.</p>
+          <p className="text-sm text-center text-gray-500 dark:text-gray-400 py-8">Aucun livre trouvé.</p>
         ) : (
           choices.map((b) => (
             <BookRefCard key={b.id} book={toBookRef(b)} onOpen={onPick} />
@@ -85,7 +85,7 @@ function Bubble({ message, onOpenBook }) {
         {message.text ? (
           <p className="text-sm whitespace-pre-line break-words">{message.text}</p>
         ) : null}
-        <p className={`text-[10px] ${mine ? 'text-green-100' : 'text-gray-400'}`}>
+        <p className={`text-tiny ${mine ? 'text-green-100' : 'text-gray-500 dark:text-gray-400'}`}>
           {formatTime(message.created_at)}
         </p>
       </div>
@@ -187,7 +187,7 @@ export default function FriendChat({ friend, libraryBooks, initialBook, onOpenBo
         className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3"
       >
         {loading ? (
-          <p className="text-sm text-center text-gray-500 py-8">Chargement…</p>
+          <p className="text-sm text-center text-gray-500 dark:text-gray-400 py-8">Chargement…</p>
         ) : error ? (
           <p className="text-sm text-center text-amber-700 dark:text-amber-300 py-8">{error}</p>
         ) : messages.length === 0 ? (
@@ -214,7 +214,7 @@ export default function FriendChat({ friend, libraryBooks, initialBook, onOpenBo
               type="button"
               onClick={() => setDraftBook(null)}
               aria-label="Retirer le livre"
-              className="px-2 py-1 text-gray-500 hover:text-red-600"
+              className="px-2 py-1 text-gray-500 dark:text-gray-400 hover:text-red-600"
             >
               ✕
             </button>

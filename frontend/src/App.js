@@ -125,8 +125,8 @@ function AppWithAuth() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-honeycomb">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+      <div className="min-h-screen min-h-dvh flex items-center justify-center bg-honeycomb">
+        <div role="status" aria-label="Chargement en cours" className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-700 dark:border-green-400"></div>
       </div>
     );
   }

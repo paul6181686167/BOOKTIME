@@ -46,7 +46,7 @@ const SeriesRatingReview = ({
 
               <div>
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Avis</h3>
-                <textarea
+                <textarea aria-label="Qu’avez-vous pensé de cette série ?"
                   value={seriesReview}
                   onChange={(e) => setSeriesReview(e.target.value)}
                   rows={4}

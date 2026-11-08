@@ -104,7 +104,7 @@ class ErrorBoundary extends React.Component {
       const { error, errorId } = this.state;
       
       return (
-        <div className="min-h-screen bg-honeycomb flex items-center justify-center px-4">
+        <div className="min-h-screen min-h-dvh bg-honeycomb flex items-center justify-center px-4">
           <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
             {/* Icône d'erreur */}
             <div className="flex justify-center mb-4">

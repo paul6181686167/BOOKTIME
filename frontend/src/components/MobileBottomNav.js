@@ -28,7 +28,7 @@ const MobileBottomNav = ({ activeTab, onTabChange }) => {
   const unreadNotifications = useUnreadNotifications();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 pointer-events-none safe-area-bottom">
+    <nav aria-label="Navigation principale" className="md:hidden fixed bottom-0 left-0 right-0 z-40 pointer-events-none safe-area-bottom">
       <div className="px-5 pb-3 pt-1">
         <div
           className={`pointer-events-auto mx-auto flex h-[3.35rem] max-w-sm items-stretch overflow-hidden rounded-full backdrop-blur-2xl ${
@@ -44,8 +44,8 @@ const MobileBottomNav = ({ activeTab, onTabChange }) => {
               ? 'text-[#4ade80]'
               : 'text-booktime-700 dark:text-booktime-400';
             const idleCls = isVoid
-              ? 'text-white/35 active:text-white/70'
-              : 'text-gray-500 dark:text-gray-400 active:text-gray-700';
+              ? 'text-white/65 active:text-white'
+              : 'text-gray-600 dark:text-gray-300 active:text-gray-900';
             return (
               <button
                 key={id}
@@ -82,7 +82,7 @@ const MobileBottomNav = ({ activeTab, onTabChange }) => {
                   }`}
                   aria-hidden="true"
                 />
-                <span className="relative z-[1] text-[9px] font-medium leading-none tracking-wide">
+                <span className="relative z-[1] text-tiny font-medium leading-none tracking-wide">
                   {label}
                 </span>
               </button>

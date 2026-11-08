@@ -121,7 +121,7 @@ const OpenLibraryBookPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-honeycomb flex items-center justify-center">
+      <div className="min-h-screen min-h-dvh bg-honeycomb flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Chargement...</p>
@@ -132,7 +132,7 @@ const OpenLibraryBookPage = () => {
 
   if (!book) {
     return (
-      <div className="min-h-screen bg-honeycomb flex items-center justify-center">
+      <div className="min-h-screen min-h-dvh bg-honeycomb flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Livre non trouvé</h1>
           <button
@@ -147,7 +147,7 @@ const OpenLibraryBookPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-honeycomb">
+    <div className="min-h-screen min-h-dvh bg-honeycomb">
       <header className="bg-booktime-mistSoft/75 dark:bg-gray-900/70 backdrop-blur-xl border-b border-booktime-mist/55 dark:border-booktime-800/50 sticky top-0 z-30 safe-area-top">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-4">
@@ -202,7 +202,7 @@ const OpenLibraryBookPage = () => {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <PhotoIcon className="h-16 w-16 text-gray-400 dark:text-gray-500" />
+                    <PhotoIcon className="h-16 w-16 text-gray-400 dark:text-gray-400" />
                   </div>
                 )}
               </div>

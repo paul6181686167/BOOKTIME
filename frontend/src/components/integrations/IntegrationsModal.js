@@ -127,7 +127,7 @@ const IntegrationsModal = ({ isOpen, onClose, onAddBooks }) => {
 
   return (
     <ModalOverlay onClose={onClose} zIndex={MODAL_Z.panel} ariaLabel="Intégrations" closeOnBackdrop={false} className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-6xl max-h-[90vh] max-h-[90dvh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div>
@@ -140,9 +140,10 @@ const IntegrationsModal = ({ isOpen, onClose, onAddBooks }) => {
           </div>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            aria-label="Fermer"
+            className="p-2 -m-2 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -166,13 +167,13 @@ const IntegrationsModal = ({ isOpen, onClose, onAddBooks }) => {
               }`}
             >
               <div>{tab.label}</div>
-              <div className="text-xs text-gray-500">{tab.description}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{tab.description}</div>
             </button>
           ))}
         </div>
 
         {/* Contenu */}
-        <div className="p-6 overflow-y-auto max-h-[60vh]">
+        <div className="p-6 overflow-y-auto max-h-[60vh] max-h-[60dvh]">
           {/* Onglet Goodreads */}
           {activeTab === 'goodreads' && (
             <div className="space-y-6">
@@ -266,7 +267,7 @@ const IntegrationsModal = ({ isOpen, onClose, onAddBooks }) => {
                 <h3 className="text-lg font-semibold mb-4">Recherche Google Books</h3>
                 
                 <div className="flex gap-4 mb-6">
-                  <input
+                  <input aria-label="Titre, auteur, ISBN..."
                     type="text"
                     placeholder="Titre, auteur, ISBN..."
                     value={searchQuery}
@@ -342,7 +343,7 @@ const IntegrationsModal = ({ isOpen, onClose, onAddBooks }) => {
                 </div>
 
                 <div className="flex gap-4 mb-6">
-                  <input
+                  <input aria-label="Recherche sur toutes les sources..."
                     type="text"
                     placeholder="Recherche sur toutes les sources..."
                     value={searchQuery}
@@ -433,7 +434,7 @@ const IntegrationsModal = ({ isOpen, onClose, onAddBooks }) => {
                             }`}>
                               {integration.status}
                             </span>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
                               Type: {integration.type}
                             </span>
                           </div>

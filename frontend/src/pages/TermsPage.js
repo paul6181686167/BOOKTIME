@@ -12,7 +12,7 @@ export default function TermsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen min-h-dvh bg-gray-50 dark:bg-gray-900">
       <div
         className="sticky top-0 z-10 bg-white/95 dark:bg-gray-900/95 backdrop-blur border-b border-gray-100 dark:border-gray-800"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
