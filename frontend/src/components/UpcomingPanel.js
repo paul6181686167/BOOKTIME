@@ -246,10 +246,14 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
         setTotal(data.counts?.total || 0);
         const unreadList = (notifData.notifications || []).filter((n) => !n.read);
         setNotifications(unreadList);
-        if (unreadList.length > 0) {
-          // Vues dans le panneau : elles restent affichées ici mais ne gonflent plus le badge
+        const releaseUnread = unreadList.filter(
+          (n) => !n.type || n.type === 'upcoming_release'
+        );
+        if (releaseUnread.length > 0) {
+          // Sorties vues ici : elles restent affichées mais ne gonflent plus le badge.
+          // Les messages d'amis restent non lus jusqu'à l'ouverture de la conversation.
           upcomingService
-            .markAllNotificationsRead()
+            .markAllNotificationsRead('upcoming_release')
             .then(() => window.dispatchEvent(new Event(NOTIFICATIONS_CHANGED_EVENT)))
             .catch(() => {});
         }
@@ -472,9 +476,11 @@ const UpcomingPanel = ({ isOpen, onClose, variant = 'panel' }) => {
               </button>
             </div>
             <div className="space-y-1.5 max-h-40 overflow-y-auto">
-              {notifications.map((n) => (
+                  {notifications.map((n) => (
                 <div key={n.id} className="text-xs px-2.5 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-900/40">
-                  <p className="font-medium text-gray-900 dark:text-white line-clamp-1">{n.title}</p>
+                  <p className="font-medium text-gray-900 dark:text-white line-clamp-1">
+                    {n.type === 'friend_message' ? `Message · ${n.title}` : n.title}
+                  </p>
                   {n.body && <p className="text-gray-500 dark:text-gray-400 line-clamp-1">{n.body}</p>}
                 </div>
               ))}

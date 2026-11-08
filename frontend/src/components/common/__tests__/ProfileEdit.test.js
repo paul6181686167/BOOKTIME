@@ -78,7 +78,23 @@ describe('carte de profil', () => {
     jest.spyOn(AuthService.prototype, 'fetchProfile').mockResolvedValue({ success: false });
     render(<ProfileIdentityCard />);
     expect(screen.getByText('Alice')).toBeInTheDocument();
+    expect(screen.getByText(/Aucun pseudo/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Modifier/ })).toBeNull();
+  });
+
+  test('affiche le @pseudo quand il existe', () => {
+    mockUser = { ...mockUser, username: 'alice' };
+    jest.spyOn(AuthService.prototype, 'fetchProfile').mockResolvedValue({ success: false });
+    render(<ProfileIdentityCard />);
+    expect(screen.getByText('@alice')).toBeInTheDocument();
+  });
+
+  test('« Choisir un pseudo » ouvre l’éditeur si on le demande', () => {
+    jest.spyOn(AuthService.prototype, 'fetchProfile').mockResolvedValue({ success: false });
+    const onEdit = jest.fn();
+    render(<ProfileIdentityCard onEditProfile={onEdit} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Choisir un pseudo' }));
+    expect(onEdit).toHaveBeenCalled();
   });
 });
 

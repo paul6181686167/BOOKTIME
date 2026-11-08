@@ -115,6 +115,15 @@ describe('OnboardingGate', () => {
     render(<OnboardingGate userKey="u1" libraryEmpty onDone={jest.fn()} />);
     expect(service.serverLibraryIsEmpty).not.toHaveBeenCalled();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  test('affiche un écran d\'attente à la place de la bibliothèque pendant le chargement', () => {
+    service.isOnboardingDone.mockReturnValue(false);
+    render(<OnboardingGate userKey="u1" libraryEmpty={false} loading onDone={jest.fn()} />);
+    expect(screen.getByRole('status')).toHaveTextContent(/Préparation de ta bibliothèque/);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(service.serverLibraryIsEmpty).not.toHaveBeenCalled();
   });
 
   test('ne montre rien si la bibliothèque n\'est pas vide côté serveur', async () => {

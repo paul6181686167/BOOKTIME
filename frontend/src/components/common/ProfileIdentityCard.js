@@ -32,10 +32,10 @@ export function UserAvatar({ user, src, size = 56, className = '' }) {
 }
 
 /**
- * Photo de profil, nom et biographie de l'utilisateur (lecture seule).
+ * Photo de profil, nom, pseudo et biographie de l'utilisateur (lecture seule).
  * La modification se fait uniquement depuis les paramètres.
  */
-export default function ProfileIdentityCard() {
+export default function ProfileIdentityCard({ onEditProfile }) {
   const { user, updateUser } = useAuth();
   const authService = useRef(new AuthService()).current;
 
@@ -60,7 +60,19 @@ export default function ProfileIdentityCard() {
           <p className="font-semibold text-gray-900 dark:text-white truncate">{title}</p>
           {user?.username ? (
             <p className="text-sm text-green-700 dark:text-green-400 truncate">@{user.username}</p>
-          ) : null}
+          ) : onEditProfile ? (
+            <button
+              type="button"
+              onClick={onEditProfile}
+              className="text-sm text-green-700 dark:text-green-400 hover:underline"
+            >
+              Choisir un pseudo
+            </button>
+          ) : (
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Aucun pseudo — Paramètres → Modifier mon profil
+            </p>
+          )}
           {user?.display_name && (
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
           )}

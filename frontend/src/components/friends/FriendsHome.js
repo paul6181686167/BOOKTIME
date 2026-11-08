@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import friendsService from '../../services/friendsService';
+import { refreshFriendsUnread } from '../../hooks/useFriendsUnread';
+import { useAuth } from '../../hooks/useAuth';
 import { UserAvatar } from '../common/ProfileIdentityCard';
 import ShareProfileModal from './ShareProfileModal';
 import MyQrModal from './MyQrModal';
@@ -38,6 +40,7 @@ export default function FriendsHome({
   const [searching, setSearching] = useState(false);
   const [busyId, setBusyId] = useState(null);
   const searchSeq = useRef(0);
+  const myUsername = useAuth().user?.username || '';
 
   const load = useCallback(async () => {
     try {
@@ -49,6 +52,7 @@ export default function FriendsHome({
         unread: (f.friends || []).reduce((s, x) => s + (x.unread || 0), 0),
         pending: (r.incoming || []).length,
       });
+      refreshFriendsUnread();
     } catch (err) {
       setError(err.message || 'Chargement impossible');
     } finally {
@@ -82,7 +86,7 @@ export default function FriendsHome({
     if (inviteCode) resolveCode(inviteCode);
   }, [inviteCode, resolveCode]);
 
-  // Recherche avec délai : évite une requête à chaque touche
+  // Recherche avec délai : n'affiche « Recherche… » qu'une fois la requête lancée
   useEffect(() => {
     const q = query.trim();
     if (q.length < 2 && !q.includes('@')) {
@@ -90,9 +94,9 @@ export default function FriendsHome({
       setSearching(false);
       return undefined;
     }
-    setSearching(true);
     const seq = ++searchSeq.current;
     const timer = setTimeout(async () => {
+      setSearching(true);
       try {
         const data = await friendsService.search(q);
         if (seq === searchSeq.current) setResults(data.users || []);
@@ -104,7 +108,7 @@ export default function FriendsHome({
       } finally {
         if (seq === searchSeq.current) setSearching(false);
       }
-    }, 350);
+    }, 180);
     return () => clearTimeout(timer);
   }, [query]);
 
@@ -229,6 +233,34 @@ export default function FriendsHome({
           )}
         </div>
       )}
+
+      <div className="flex items-center justify-between gap-2 rounded-lg bg-white dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700 px-3 py-2">
+          {myUsername ? (
+            <>
+              <p className="text-sm text-gray-800 dark:text-gray-100 min-w-0">
+                Ton pseudo : @{myUsername}
+              </p>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(`@${myUsername}`);
+                    toast.success('Pseudo copié');
+                  } catch (_) {
+                    toast.error('Copie impossible');
+                  }
+                }}
+                className="shrink-0 text-xs font-medium text-green-700 dark:text-green-400 px-2 py-1"
+              >
+                Copier
+              </button>
+            </>
+          ) : (
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Tu n’as pas encore de pseudo. Paramètres (engrenage) → Modifier mon profil pour en choisir un : tes amis te trouvent avec @pseudo.
+            </p>
+          )}
+        </div>
 
       <div className="flex gap-2">
         <button

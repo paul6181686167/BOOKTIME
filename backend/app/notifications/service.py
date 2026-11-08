@@ -33,14 +33,19 @@ def create_notification(
     type: str = "upcoming_release",
     data: Optional[dict[str, Any]] = None,
     dedup_key: Optional[str] = None,
+    dedup_unread_only: bool = False,
 ) -> Optional[dict[str, Any]]:
     """
     Crée une notification in-app. `dedup_key` évite les doublons (une même sortie
-    ne notifie qu'une fois par utilisateur).
+    ne notifie qu'une fois par utilisateur). `dedup_unread_only` ne bloque que
+    tant que la précédente n'est pas lue (messages d'amis).
     """
     try:
         if dedup_key:
-            existing = _coll().find_one({"user_id": user_id, "dedup_key": dedup_key}, {"_id": 0, "id": 1})
+            query: dict[str, Any] = {"user_id": user_id, "dedup_key": dedup_key}
+            if dedup_unread_only:
+                query["read"] = {"$ne": True}
+            existing = _coll().find_one(query, {"_id": 0, "id": 1})
             if existing:
                 return None
         doc = {
@@ -62,6 +67,46 @@ def create_notification(
         return None
 
 
+def upsert_unread_notification(
+    user_id: str,
+    *,
+    title: str,
+    body: str = "",
+    type: str = "upcoming_release",
+    data: Optional[dict[str, Any]] = None,
+    group_key: str,
+) -> Optional[dict[str, Any]]:
+    """Une notification non lue par conversation : met à jour le texte si elle existe déjà."""
+    try:
+        existing = _coll().find_one(
+            {"user_id": user_id, "dedup_key": group_key, "read": {"$ne": True}},
+            {"_id": 0},
+        )
+        if existing:
+            now = datetime.now(timezone.utc)
+            _coll().update_one(
+                {"id": existing["id"]},
+                {"$set": {"title": title, "body": body, "data": data or {}, "created_at": now}},
+            )
+            existing["title"] = title
+            existing["body"] = body
+            existing["data"] = data or {}
+            existing["created_at"] = now
+            return existing
+        return create_notification(
+            user_id,
+            title=title,
+            body=body,
+            type=type,
+            data=data,
+            dedup_key=group_key,
+            dedup_unread_only=True,
+        )
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Mise à jour notification échouée : %s", exc)
+        return None
+
+
 def list_notifications(user_id: str, *, limit: int = 50) -> list[dict[str, Any]]:
     try:
         cursor = _coll().find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).limit(limit)
@@ -72,8 +117,15 @@ def list_notifications(user_id: str, *, limit: int = 50) -> list[dict[str, Any]]
 
 
 def unread_count(user_id: str) -> int:
+    """Pastille « À venir » : sorties uniquement, pas les messages d'amis."""
     try:
-        return _coll().count_documents({"user_id": user_id, "read": {"$ne": True}})
+        return _coll().count_documents(
+            {
+                "user_id": user_id,
+                "read": {"$ne": True},
+                "type": {"$ne": "friend_message"},
+            }
+        )
     except Exception:  # pragma: no cover
         return 0
 
@@ -88,11 +140,33 @@ def mark_read(user_id: str, notif_id: str) -> bool:
         return False
 
 
-def mark_all_read(user_id: str) -> int:
-    """Marque toutes les notifications non lues comme lues (compatible mock)."""
+def mark_all_read(user_id: str, *, notif_type: Optional[str] = None) -> int:
+    """Marque les notifications non lues comme lues (compatible mock)."""
+    count = 0
+    query: dict[str, Any] = {"user_id": user_id, "read": {"$ne": True}}
+    if notif_type:
+        query["type"] = notif_type
+    try:
+        for n in _coll().find(query, {"_id": 0, "id": 1}):
+            if mark_read(user_id, n.get("id")):
+                count += 1
+    except Exception:  # pragma: no cover
+        pass
+    return count
+
+
+def mark_matching_read(user_id: str, *, notif_type: str, sender_id: Optional[str] = None) -> int:
+    """Marque comme lues les notifications d'un type (et d'un expéditeur, pour le chat)."""
+    query: dict[str, Any] = {
+        "user_id": user_id,
+        "type": notif_type,
+        "read": {"$ne": True},
+    }
+    if sender_id:
+        query["data.sender_id"] = sender_id
     count = 0
     try:
-        for n in _coll().find({"user_id": user_id, "read": {"$ne": True}}, {"_id": 0, "id": 1}):
+        for n in _coll().find(query, {"_id": 0, "id": 1}):
             if mark_read(user_id, n.get("id")):
                 count += 1
     except Exception:  # pragma: no cover

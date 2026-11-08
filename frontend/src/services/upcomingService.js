@@ -79,8 +79,9 @@ export const upcomingService = {
     return apiFetch(`/api/notifications/${id}/read`, { method: 'POST' });
   },
 
-  async markAllNotificationsRead() {
-    return apiFetch('/api/notifications/read-all', { method: 'POST' });
+  async markAllNotificationsRead(type) {
+    const q = type ? `?type=${encodeURIComponent(type)}` : '';
+    return apiFetch(`/api/notifications/read-all${q}`, { method: 'POST' });
   },
 
   /**

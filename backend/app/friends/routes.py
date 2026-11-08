@@ -29,6 +29,7 @@ from .helpers import (
     search_rank,
 )
 from .identity import normalize_friend_code, new_friend_code, safe_label
+from ..notifications.service import mark_matching_read, upsert_unread_notification
 from app.utils.timeutils import utcnow
 
 router = APIRouter(prefix="/api/friends", tags=["friends"])
@@ -98,6 +99,27 @@ def _relation(a: str, b: str) -> Optional[dict]:
     )
 
 
+def _relations_by_peer(me: str, other_ids: List[str]) -> Dict[str, dict]:
+    """Une seule lecture pour toutes les relations avec `me` (évite N find_one)."""
+    ids = [uid for uid in other_ids if uid]
+    if not ids:
+        return {}
+    docs = friendships.find(
+        {
+            "$or": [
+                {"requester_id": me, "addressee_id": {"$in": ids}},
+                {"addressee_id": me, "requester_id": {"$in": ids}},
+            ]
+        }
+    )
+    out: Dict[str, dict] = {}
+    for rel in docs:
+        other = rel["addressee_id"] if rel.get("requester_id") == me else rel.get("requester_id")
+        if other:
+            out[str(other)] = rel
+    return out
+
+
 def _are_friends(a: str, b: str) -> bool:
     rel = _relation(a, b)
     return bool(rel and rel.get("status") == "accepted")
@@ -114,6 +136,28 @@ def _relation_state(me: str, rel: Optional[dict]) -> str:
     if rel.get("status") == "accepted":
         return "friends"
     return "pending_out" if rel.get("requester_id") == me else "pending_in"
+
+
+def _message_preview(content: Dict[str, Any]) -> str:
+    book = content.get("book") or {}
+    title = str(book.get("title") or "").strip()
+    if title:
+        return f"a recommandé « {title} »"
+    return str(content.get("text") or "").strip()[:140]
+
+
+def _notify_incoming_message(recipient_id: str, sender: dict, content: Dict[str, Any]) -> None:
+    sender_id = str(sender.get("id") or "")
+    if not sender_id:
+        return
+    upsert_unread_notification(
+        recipient_id,
+        title=display_label(sender),
+        body=_message_preview(content) or "Nouveau message",
+        type="friend_message",
+        data={"sender_id": sender_id},
+        group_key=f"friend_message:{sender_id}",
+    )
 
 
 def _message_out(doc: dict, me: str) -> Dict[str, Any]:
@@ -198,24 +242,34 @@ def reader_by_code(code: str, current_user: dict = Depends(get_current_user)):
 # ---------- recherche et demandes ----------
 
 
+_SEARCH_USER_FIELDS = {
+    "_id": 0,
+    "id": 1,
+    "display_name": 1,
+    "username": 1,
+    "bio": 1,
+    "avatar_url": 1,
+}
+
+
 @router.get("/search")
 def search_readers(
     q: str = Query("", max_length=80),
     current_user: dict = Depends(get_current_user),
 ):
     """Cherche un lecteur par @pseudo, nom affiché, ou adresse email exacte."""
+    _ensure_indexes()
     me = _me(current_user)
     flt = search_filter(q, me)
     if not flt:
         return {"users": []}
-    found = list(
-        users_collection.find(flt, {"_id": 0, "password_hash": 0}).limit(MAX_SEARCH_RESULTS)
-    )
+    found = list(users_collection.find(flt, _SEARCH_USER_FIELDS).limit(MAX_SEARCH_RESULTS))
     found.sort(key=lambda doc: search_rank(doc, q))
+    rels = _relations_by_peer(me, [doc.get("id") for doc in found])
     out = []
     for doc in found:
         card = _user_card(doc)
-        card["state"] = _relation_state(me, _relation(me, doc["id"]))
+        card["state"] = _relation_state(me, rels.get(str(doc.get("id") or "")))
         out.append(card)
     return {"users": out}
 
@@ -483,6 +537,7 @@ def get_messages(
         {"sender_id": user_id, "recipient_id": me, "read_at": None},
         {"$set": {"read_at": utcnow()}},
     )
+    mark_matching_read(me, notif_type="friend_message", sender_id=user_id)
     return {"messages": [_message_out(d, me) for d in docs]}
 
 
@@ -506,4 +561,5 @@ def send_message(
         "read_at": None,
     }
     messages.insert_one(doc)
+    _notify_incoming_message(user_id, current_user, content)
     return {"message": _message_out(doc, me)}

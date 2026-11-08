@@ -1,6 +1,7 @@
 """Routes API notifications utilisateur."""
 
 import logging
+from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 
@@ -33,6 +34,9 @@ def read_notification(notif_id: str, current_user: dict = Depends(get_current_us
 
 
 @router.post("/read-all")
-def read_all_notifications(current_user: dict = Depends(get_current_user)):
-    count = service.mark_all_read(current_user["id"])
+def read_all_notifications(
+    type: Optional[str] = Query(None, max_length=40),
+    current_user: dict = Depends(get_current_user),
+):
+    count = service.mark_all_read(current_user["id"], notif_type=type)
     return {"success": True, "marked": count}

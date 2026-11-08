@@ -1,0 +1,42 @@
+name: Fiches quotidiennes
+
+# Réveille le backend Render puis déclenche l'ajout de nouvelles fiches complètes.
+# Configurer le secret CATALOG_DAILY_SECRET (identique à la variable Render).
+
+on:
+  schedule:
+    - cron: "25 3 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Réveiller le backend puis lancer l'ingest
+        env:
+          SECRET: ${{ secrets.CATALOG_DAILY_SECRET }}
+        run: |
+          URL="${{ vars.BACKEND_PING_URL }}"
+          if [ -z "$URL" ]; then
+            URL="https://booktime-uo15.onrender.com/ping"
+          fi
+          BASE="${URL%/ping}"
+          echo "Ping: $URL"
+          for attempt in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 90 "$URL" || echo "000")
+            echo "Tentative $attempt -> HTTP $code"
+            if [ "$code" = "200" ]; then
+              break
+            fi
+            sleep 15
+          done
+          if [ -z "$SECRET" ]; then
+            echo "Pas de secret CATALOG_DAILY_SECRET : le cron interne du backend fera l'ajout."
+            exit 0
+          fi
+          echo "POST $BASE/api/catalog/daily/run"
+          curl -sS -X POST --max-time 180 \
+            -H "X-Catalog-Daily-Secret: $SECRET" \
+            -w "\nHTTP %{http_code}\n" \
+            "$BASE/api/catalog/daily/run"

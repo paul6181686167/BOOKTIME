@@ -185,6 +185,16 @@ def ensure_loaded() -> None:
             if entry:
                 _register(entry, overwrite=True)
 
+    try:
+        from ..catalog import daily_store
+
+        for raw in daily_store.all_series():
+            entry = _normalize_entry(raw, "curated_daily")
+            if entry:
+                _register(entry, overwrite=False)
+    except Exception as exc:
+        logger.warning("Noyau quotidien illisible : %s", exc)
+
     for entry in _series:
         _index_volume_titles(entry)
 

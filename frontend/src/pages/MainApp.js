@@ -12,6 +12,7 @@ import { useAuth } from '../hooks/useAuth';
 import UnifiedSearchBar from '../components/UnifiedSearchBar';
 import DiscoverSection from '../components/DiscoverSection';
 import OnboardingGate from '../components/onboarding/OnboardingGate';
+import { isOnboardingDone } from '../services/onboardingService';
 
 
 // PHASE 2.4 - Monitoring et Analytics
@@ -44,6 +45,7 @@ import BookGrid from '../components/books/BookGrid';
 import MobileSearchOverlay from '../components/MobileSearchOverlay';
 import NotificationBadge from '../components/common/NotificationBadge';
 import useUnreadNotifications from '../hooks/useUnreadNotifications';
+import useFriendsUnread from '../hooks/useFriendsUnread';
 import PwaInstallPrompt from '../components/PwaInstallPrompt';
 import { PENDING_FRIEND_CODE_KEY, normalizeFriendCode } from '../utils/friendLink';
 
@@ -78,6 +80,7 @@ export default function MainApp() {
   const [showIntegrationsModal, setShowIntegrationsModal] = useState(false);
   const [showUpcomingPanel, setShowUpcomingPanel] = useState(false);
   const unreadNotifications = useUnreadNotifications();
+  const friendsUnread = useFriendsUnread();
   const [upcomingMounted, setUpcomingMounted] = useState(false);
   const openUpcomingPanel = useCallback(() => {
     setUpcomingMounted(true);
@@ -604,15 +607,27 @@ export default function MainApp() {
     !unifiedContent.loading &&
     !unifiedContent.error &&
     ['reading', 'to_read', 'to_reread', 'completed'].every((k) => !groupedBooks[k] || groupedBooks[k].length === 0);
+  const userKey = user?.id ?? user?.email;
+  const blockLibrary =
+    Boolean(userKey) &&
+    !isOnboardingDone(userKey) &&
+    (unifiedContent.loading || libraryEmpty);
+
+  if (blockLibrary) {
+    return (
+      <div className="min-h-screen min-h-dvh bg-honeycomb transition-colors duration-200">
+        <OnboardingGate
+          userKey={userKey}
+          libraryEmpty={libraryEmpty}
+          loading={unifiedContent.loading}
+          onDone={() => unifiedContent.refreshAll()}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen min-h-dvh bg-honeycomb transition-colors duration-200">
-      {/* Accueil d'un compte vide : « Qu'as-tu déjà lu ? » avant d'accéder à la bibliothèque */}
-      <OnboardingGate
-        userKey={user?.id ?? user?.email}
-        libraryEmpty={libraryEmpty}
-        onDone={() => unifiedContent.refreshAll()}
-      />
       {/* Mobile: overlay de recherche */}
       <MobileSearchOverlay
         isOpen={showMobileSearch}
@@ -680,13 +695,22 @@ export default function MainApp() {
               
               <button
                 onClick={() => setShowProfileModal(true)}
-                className={`font-bold py-2 px-4 rounded-full transition-colors duration-200 ${
+                aria-label={
+                  friendsUnread
+                    ? `Profil, ${friendsUnread} message(s) ou demande(s)`
+                    : 'Profil'
+                }
+                className={`relative font-bold py-2 px-4 rounded-full transition-colors duration-200 ${
                   isVoid
                     ? 'bg-[#4ade80] hover:bg-[#22c55e] text-black shadow-[0_0_20px_rgba(74,222,128,0.25)]'
                     : 'bg-booktime-600 hover:bg-booktime-700 text-white shadow-card'
                 }`}
               >
                 {user?.email?.[0]?.toUpperCase() || '?'}{(user?.email?.[1] || '')?.toUpperCase() || ''}
+                <NotificationBadge
+                  count={friendsUnread}
+                  className="absolute -top-1 -right-1"
+                />
               </button>
             </div>
           </div>
@@ -948,8 +972,14 @@ export default function MainApp() {
                 </div>
               )}
 
-              {/* Section Découvrir — pas pour Romans graphiques (catalogue vide) */}
-              {activeTab !== 'graphic_novels' && !unifiedContent.loading && ((groupedBooks.reading?.length || 0) + (groupedBooks.to_read?.length || 0) + (groupedBooks.to_reread?.length || 0) + (groupedBooks.completed?.length || 0)) < 10 && (
+              {/* Découvrir : seulement une bibliothèque déjà commencée (jamais si elle est vide) */}
+              {activeTab !== 'graphic_novels' &&
+                !unifiedContent.loading &&
+                !libraryEmpty &&
+                ((groupedBooks.reading?.length || 0) +
+                  (groupedBooks.to_read?.length || 0) +
+                  (groupedBooks.to_reread?.length || 0) +
+                  (groupedBooks.completed?.length || 0)) < 10 && (
                 <div className="section-appear" style={{ animationDelay: '240ms' }}>
                   <DiscoverSection
                     activeCategory={activeTab}
@@ -959,30 +989,14 @@ export default function MainApp() {
                 </div>
               )}
 
-              {/* Section Découvrir — affichée quand la bibliothèque est vide */}
-              {!unifiedContent.loading &&
-               (!groupedBooks.reading || groupedBooks.reading.length === 0) &&
-               (!groupedBooks.to_read || groupedBooks.to_read.length === 0) &&
-               (!groupedBooks.to_reread || groupedBooks.to_reread.length === 0) &&
-               (!groupedBooks.completed || groupedBooks.completed.length === 0) && (
-                <div className="section-appear">
-                  <div className="text-center py-8 mb-6">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
-                      Ta bibliothèque est vide
-                    </h3>
-                    {activeTab !== 'graphic_novels' && (
-                      <p className="text-gray-500 dark:text-gray-400 text-sm">
-                        Découvre des livres populaires et ajoute-les à ta collection !
-                      </p>
-                    )}
-                  </div>
-                  {activeTab !== 'graphic_novels' && (
-                    <DiscoverSection
-                      activeCategory={activeTab}
-                      userBooks={unifiedContent.books || []}
-                      onBookAdded={() => unifiedContent.refreshAfterAdd('books')}
-                    />
-                  )}
+              {libraryEmpty && (
+                <div className="section-appear text-center py-16">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
+                    Ta bibliothèque est vide
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">
+                    Recherche un titre pour commencer.
+                  </p>
                 </div>
               )}
             </div>

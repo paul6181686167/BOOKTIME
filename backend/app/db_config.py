@@ -19,6 +19,9 @@ class _MockDb:
     def __getattr__(self, name):
         return MockCollection(name)
 
+    def __getitem__(self, name):
+        return MockCollection(name)
+
 
 class _MockClient:
     """Client mock avec attribut booktime pour client.booktime"""
@@ -158,6 +161,13 @@ class Database:
         if self.is_mock_mode():
             return MockCollection("series_library")
         return self._db[COLLECTIONS["series_library"]]
+
+    @property
+    def catalog_daily_collection(self):
+        """Séries ajoutées chaque jour au noyau curé."""
+        if self.is_mock_mode():
+            return MockCollection("catalog_daily_series")
+        return self._db[COLLECTIONS["catalog_daily_series"]]
 
 # Stockage en mémoire pour le mode MOCK - persiste les données pendant la session serveur
 _mock_storage = {"users": [], "books": [], "authors": [], "series_library": []}
@@ -340,3 +350,4 @@ users_collection = database.users_collection
 books_collection = database.books_collection
 authors_collection = database.authors_collection
 series_library_collection = database.series_library_collection
+catalog_daily_collection = database.catalog_daily_collection

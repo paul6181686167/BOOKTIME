@@ -3,7 +3,7 @@ Catalogue global de livres — endpoint de découverte.
 Sert les livres depuis MongoDB (books_catalog) ou depuis le fichier JSON local
 si MongoDB est vide ou inaccessible.
 """
-from fastapi import APIRouter, Query, Depends, HTTPException
+from fastapi import APIRouter, Query, Depends, HTTPException, Header
 from typing import Optional, List, Dict
 import re
 import json
@@ -405,3 +405,26 @@ def search_expanded_fiches(
 ):
     """Recherche dans le catalogue étendu (nom de série ou titre de tome)."""
     return {"results": expanded_fiches.search_series(q, limit=limit), "query": q}
+
+
+def _daily_secret_ok(header_val: str | None) -> bool:
+    import hmac
+    import os
+
+    secret = (os.getenv("CATALOG_DAILY_SECRET") or "").strip()
+    got = (header_val or "").strip()
+    if not secret or not got:
+        return False
+    return hmac.compare_digest(secret, got)
+
+
+@router.post("/daily/run")
+def run_daily_catalog(
+    x_catalog_daily_secret: str | None = Header(default=None, alias="X-Catalog-Daily-Secret"),
+):
+    """Déclenche l'ajout du jour (secret Render + GitHub Actions)."""
+    if not _daily_secret_ok(x_catalog_daily_secret):
+        raise HTTPException(status_code=403, detail="Interdit")
+    from .daily_ingest import run_daily_ingest
+
+    return run_daily_ingest()

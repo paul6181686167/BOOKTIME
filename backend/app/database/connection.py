@@ -8,6 +8,7 @@ from ..db_config import (
     books_collection,
     authors_collection,
     series_library_collection,
+    catalog_daily_collection,
 )
 client = database.client
 db = database.db

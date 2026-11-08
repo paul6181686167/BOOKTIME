@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/solid';
 import { useTheme } from '../contexts/ThemeContext';
 import useUnreadNotifications from '../hooks/useUnreadNotifications';
+import useFriendsUnread from '../hooks/useFriendsUnread';
 import NotificationBadge from './common/NotificationBadge';
 
 const NAV_ITEMS = [
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
 const MobileBottomNav = ({ activeTab, onTabChange }) => {
   const { isVoid } = useTheme();
   const unreadNotifications = useUnreadNotifications();
+  const friendsUnread = useFriendsUnread();
 
   return (
     <nav aria-label="Navigation principale" className="md:hidden fixed bottom-0 left-0 right-0 z-40 pointer-events-none safe-area-bottom">
@@ -54,7 +56,9 @@ const MobileBottomNav = ({ activeTab, onTabChange }) => {
                 aria-label={
                   id === 'upcoming' && unreadNotifications
                     ? `${label}, ${unreadNotifications} notification(s) non lue(s)`
-                    : label
+                    : id === 'profile' && friendsUnread
+                      ? `${label}, ${friendsUnread} message(s) ou demande(s)`
+                      : label
                 }
                 aria-current={isActive ? 'page' : undefined}
                 className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 transition-all duration-200 ${
@@ -73,6 +77,12 @@ const MobileBottomNav = ({ activeTab, onTabChange }) => {
                 {id === 'upcoming' && (
                   <NotificationBadge
                     count={unreadNotifications}
+                    className="absolute right-[22%] top-1.5 z-[2]"
+                  />
+                )}
+                {id === 'profile' && (
+                  <NotificationBadge
+                    count={friendsUnread}
                     className="absolute right-[22%] top-1.5 z-[2]"
                   />
                 )}

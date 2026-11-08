@@ -15,6 +15,38 @@ _doc: dict[str, Any] | None = None
 _loaded = False
 
 
+def _merge_daily(series: list) -> list:
+    """Ajoute les séries ingérées chaque jour (Mongo), sans doublon de QID/nom."""
+    from . import daily_store
+
+    seen: set[str] = set()
+    out: list = []
+    for s in series:
+        if not isinstance(s, dict):
+            continue
+        out.append(s)
+        for k in (s.get("qid"), s.get("wikidata_qid"), s.get("key")):
+            if k:
+                seen.add(str(k))
+        name = (s.get("name") or "").strip().lower()
+        if name:
+            seen.add("n:" + name)
+    for extra in daily_store.all_series():
+        qid = str(extra.get("qid") or extra.get("wikidata_qid") or "")
+        key = str(extra.get("key") or "")
+        name = (extra.get("name") or "").strip().lower()
+        if (qid and qid in seen) or (key and key in seen) or (name and ("n:" + name) in seen):
+            continue
+        out.append(extra)
+        if qid:
+            seen.add(qid)
+        if key:
+            seen.add(key)
+        if name:
+            seen.add("n:" + name)
+    return out
+
+
 def clear_cache() -> None:
     global _doc, _loaded
     with _lock:
@@ -30,7 +62,17 @@ def _load() -> dict[str, Any]:
             return _doc or {"meta": {}, "series": []}
         _loaded = True
         if not _PATH.is_file():
-            _doc = {"meta": {"book_count": 0, "series_count": 0, "ready": False}, "series": []}
+            series = _merge_daily([])
+            books = sum(int(s.get("volumes") or 0) for s in series if isinstance(s, dict))
+            _doc = {
+                "meta": {
+                    "book_count": books,
+                    "series_count": len(series),
+                    "daily_series": len(series),
+                    "ready": bool(series),
+                },
+                "series": series,
+            }
             return _doc
         try:
             with open(_PATH, encoding="utf-8") as f:
@@ -38,9 +80,12 @@ def _load() -> dict[str, Any]:
             if not isinstance(data, dict):
                 data = {"meta": {}, "series": []}
             series = data.get("series") if isinstance(data.get("series"), list) else []
+            json_n = len(series)
+            series = _merge_daily(series)
             meta = data.get("meta") if isinstance(data.get("meta"), dict) else {}
-            meta.setdefault("series_count", len(series))
-            meta.setdefault("book_count", sum(int(s.get("volumes") or 0) for s in series if isinstance(s, dict)))
+            meta["series_count"] = len(series)
+            meta["book_count"] = sum(int(s.get("volumes") or 0) for s in series if isinstance(s, dict))
+            meta["daily_series"] = max(0, len(series) - json_n)
             meta["ready"] = True
             _doc = {"meta": meta, "series": series}
         except Exception:
@@ -58,6 +103,7 @@ def stats() -> dict[str, Any]:
         "ready": bool(meta.get("ready")),
         "categories": meta.get("categories") or {},
         "series_with_cover": int(meta.get("series_with_cover") or 0),
+        "daily_series": int(meta.get("daily_series") or 0),
         "source": meta.get("source") or "expanded_fiches_catalog.json",
     }
 

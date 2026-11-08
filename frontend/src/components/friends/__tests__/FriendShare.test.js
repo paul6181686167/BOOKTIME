@@ -3,6 +3,9 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import FriendsHome from '../FriendsHome';
 import friendsService from '../../../services/friendsService';
 
+jest.mock('../../../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { username: 'alice', display_name: 'Alice' } }),
+}));
 jest.mock('react-hot-toast', () => {
   const toast = () => {};
   toast.success = () => {};
@@ -42,6 +45,11 @@ const card = (state = 'none') => ({
 });
 
 describe('partage de profil et ajout par code', () => {
+  test('affiche le pseudo sur la page amis', () => {
+    render(<FriendsHome onOpenChat={jest.fn()} onOpenProfile={jest.fn()} />);
+    expect(screen.getByText('Ton pseudo : @alice')).toBeInTheDocument();
+  });
+
   test('« Afficher le QR code » affiche le QR, le pseudo et le code ami', async () => {
     render(<FriendsHome onOpenChat={jest.fn()} onOpenProfile={jest.fn()} />);
     expect(screen.queryByRole('button', { name: 'Scanner un QR code' })).not.toBeInTheDocument();

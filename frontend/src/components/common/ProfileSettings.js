@@ -198,6 +198,7 @@ export default function ProfileSettings({
   user,
   theme,
   setTheme,
+  startEditing = false,
   readingWpm,
   onChangeWpm,
   onTriggerEvent,
@@ -208,8 +209,12 @@ export default function ProfileSettings({
   const navigate = useNavigate();
   const [settings, setSettings] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [editingProfile, setEditingProfile] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(startEditing);
   const [savingKey, setSavingKey] = useState(null);
+
+  useEffect(() => {
+    if (startEditing) setEditingProfile(true);
+  }, [startEditing]);
 
   useEffect(() => {
     let cancelled = false;
@@ -252,7 +257,7 @@ export default function ProfileSettings({
             onClick={() => setEditingProfile(true)}
             className="w-full py-2.5 rounded-lg bg-gray-50 dark:bg-gray-700 text-sm font-medium text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600"
           >
-            Modifier mon profil (photo, nom, biographie)
+            Modifier mon profil (photo, nom, pseudo, biographie)
           </button>
         )}
         <PasswordForm />

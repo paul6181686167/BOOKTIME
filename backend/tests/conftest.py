@@ -11,6 +11,7 @@ import uuid
 # (toutes les requêtes viennent de la même adresse) et environnement de test explicite.
 os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
 os.environ.setdefault("ENVIRONMENT", "test")
+os.environ.setdefault("ENABLE_CATALOG_DAILY", "false")
 
 import pytest
 import pytest_asyncio

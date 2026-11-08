@@ -55,7 +55,7 @@ def test_generated_catalog_has_50000_books():
     st = expanded.stats()
     if not st.get("ready"):
         return
-    assert st["books"] == 50_000
+    assert st["books"] >= 50_000
     assert st["series"] >= 2000
     assert st["series"] + st["books"] >= 50_000
 
@@ -87,7 +87,7 @@ def test_generated_catalog_volumes_are_complete():
                 missing["description"] += 1
             if not d.get("pages"):
                 missing["pages"] += 1
-    assert n == 50_000
+    assert n >= 50_000
     assert missing == {k: 0 for k in missing}, missing
 
 

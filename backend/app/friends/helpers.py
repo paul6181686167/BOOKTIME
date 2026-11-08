@@ -109,10 +109,12 @@ def search_filter(query: str, exclude_id: str) -> Optional[Dict[str, Any]]:
         return {"email": q.lower(), **others, **visible}
     if len(q) < 2:
         return None
+    # Préfixe uniquement : un fragment au milieu du nom forcerait un scan
+    # de toute la collection, ce qui rend la recherche trop longue.
     return {
         "$or": [
             {"username": {"$regex": "^" + re.escape(q.lower())}},
-            {"display_name": {"$regex": re.escape(q), "$options": "i"}},
+            {"display_name": {"$regex": "^" + re.escape(q), "$options": "i"}},
         ],
         **others,
         **visible,

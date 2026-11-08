@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import friendsService, { bookRefToBookLike, toBookRef } from '../../services/friendsService';
+import { refreshFriendsUnread } from '../../hooks/useFriendsUnread';
 import BookRefCard, { MiniCover } from './BookRefCard';
 
 const POLL_MS = 4000;
@@ -127,6 +128,7 @@ export default function FriendChat({ friend, libraryBooks, initialBook, onOpenBo
         if (cancelled) return;
         append(res.messages || []);
         setError('');
+        refreshFriendsUnread();
       })
       .catch((err) => {
         if (!cancelled) setError(err.message || 'Messages indisponibles');

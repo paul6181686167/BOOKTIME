@@ -33,7 +33,7 @@ import {
 } from '../../utils/readingTime';
 import IsbnScannerModal from './IsbnScannerModal';
 import ProfileIdentityCard, { UserAvatar } from './ProfileIdentityCard';
-import friendsService from '../../services/friendsService';
+import useFriendsUnread from '../../hooks/useFriendsUnread';
 import FriendsPanel from '../friends/FriendsPanel';
 import ProfileSettings from './ProfileSettings';
 import DeleteAccountDialog from '../user/DeleteAccountDialog';
@@ -120,6 +120,7 @@ function ProfileModal({
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'stats' | 'goal' | 'collections' | 'authors' | 'settings'
+  const [openProfileEditor, setOpenProfileEditor] = useState(false);
   const [showIsbnScanner, setShowIsbnScanner] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
@@ -173,20 +174,7 @@ function ProfileModal({
   }, [isOpen, isPage]);
 
   // Pastille « Amis et messages » : messages non lus + demandes d'amis reçues
-  const [friendsBadge, setFriendsBadge] = useState(0);
-  useEffect(() => {
-    if (!isOpen && !isPage) return undefined;
-    let cancelled = false;
-    friendsService
-      .unreadSummary()
-      .then((s) => {
-        if (!cancelled) setFriendsBadge((s.unread_messages || 0) + (s.pending_requests || 0));
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, isPage]);
+  const friendsBadge = useFriendsUnread();
 
   const readingWpm = normalizeWpm(profileData.reading_wpm);
   const readingTime = useMemo(
@@ -391,14 +379,24 @@ function ProfileModal({
                   {activeTab === 'settings' ? 'Paramètres' : 'Profil'}
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                  {user?.display_name || user?.email}
+                  {user?.username
+                    ? `@${user.username}`
+                    : user?.display_name || user?.email}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
-                onClick={() => setActiveTab((tab) => (tab === 'settings' ? 'profile' : 'settings'))}
+                onClick={() =>
+                  setActiveTab((tab) => {
+                    if (tab === 'settings') {
+                      setOpenProfileEditor(false);
+                      return 'profile';
+                    }
+                    return 'settings';
+                  })
+                }
                 aria-label={activeTab === 'settings' ? 'Fermer les paramètres' : 'Ouvrir les paramètres'}
                 aria-pressed={activeTab === 'settings'}
                 className={`p-2 rounded-lg transition-colors ${
@@ -456,7 +454,12 @@ function ProfileModal({
           {/* ─── PROFIL (identité + amis) ─── */}
           {activeTab === 'profile' && (
             <div className="space-y-4 animate-fadeIn">
-              <ProfileIdentityCard />
+              <ProfileIdentityCard
+                onEditProfile={() => {
+                  setOpenProfileEditor(true);
+                  setActiveTab('settings');
+                }}
+              />
               <button
                 type="button"
                 onClick={() => setShowIsbnScanner(true)}
@@ -979,6 +982,7 @@ function ProfileModal({
               user={user}
               theme={theme}
               setTheme={setTheme}
+              startEditing={openProfileEditor}
               readingWpm={readingWpm}
               onChangeWpm={(wpm) => updateProfileData({ reading_wpm: wpm })}
               onTriggerEvent={(event) => {

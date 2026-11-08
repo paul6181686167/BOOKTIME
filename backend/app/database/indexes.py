@@ -20,7 +20,11 @@ INDEXES: List[Tuple[str, Any, Dict[str, Any]]] = [
     ("users", "id", {"unique": True, "sparse": True}),
     ("users", "email", {"unique": True, "sparse": True}),
     ("users", "username", {"unique": True, "sparse": True}),
+    ("users", "display_name", {"sparse": True}),
     ("users", "reset_token", {"sparse": True}),
+    # Amis : recherche + état de relation (une requête $in au lieu de N)
+    ("friendships", [("requester_id", ASCENDING), ("addressee_id", ASCENDING)], {}),
+    ("friendships", "addressee_id", {}),
     # Livres : toutes les requêtes sont filtrées par user_id
     ("books", [("user_id", ASCENDING), ("id", ASCENDING)], {}),
     ("books", [("user_id", ASCENDING), ("date_added", DESCENDING)], {}),
@@ -28,6 +32,7 @@ INDEXES: List[Tuple[str, Any, Dict[str, Any]]] = [
     ("books", [("user_id", ASCENDING), ("saga", ASCENDING)], {}),
     ("series_library", [("user_id", ASCENDING)], {}),
     ("notifications", [("user_id", ASCENDING), ("created_at", DESCENDING)], {}),
+    ("catalog_daily_series", "qid", {"unique": True, "sparse": True}),
 ]
 
 

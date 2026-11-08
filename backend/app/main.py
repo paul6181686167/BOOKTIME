@@ -52,12 +52,25 @@ async def lifespan(app: FastAPI):
         logger.warning("Scheduler prochaines sorties non démarré : %s", exc)
 
     try:
+        from .catalog.daily_scheduler import start_daily_scheduler
+
+        start_daily_scheduler()
+    except Exception as exc:
+        logger.warning("Scheduler fiches quotidiennes non démarré : %s", exc)
+
+    try:
         yield
     finally:
         try:
             from .upcoming.scheduler import shutdown_scheduler
 
             shutdown_scheduler()
+        except Exception:
+            pass
+        try:
+            from .catalog.daily_scheduler import shutdown_daily_scheduler
+
+            shutdown_daily_scheduler()
         except Exception:
             pass
 

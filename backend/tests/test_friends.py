@@ -36,7 +36,7 @@ def test_search_filter_never_matches_email_fragments():
 
 def test_search_filter_escapes_regex():
     flt = search_filter("a.*", "me")
-    assert flt["$or"][1]["display_name"]["$regex"] == r"a\.\*"
+    assert flt["$or"][1]["display_name"]["$regex"] == r"^a\.\*"
 
 
 def test_clean_message_requires_text_or_book():
@@ -85,6 +85,9 @@ def api(monkeypatch):
     monkeypatch.setattr(routes, "users_collection", mock_db["users"])
     monkeypatch.setattr(routes, "books_collection", mock_db["books"])
     monkeypatch.setattr(routes, "_indexes_ready", True)
+    from app.notifications import service as notif_service
+
+    monkeypatch.setattr(notif_service, "_coll", lambda: mock_db["notifications"])
 
     mock_db["users"].insert_many(
         [
@@ -139,6 +142,9 @@ def test_full_friend_flow(api):
     assert bob.get("/api/friends/unread").json()["pending_requests"] == 1
     assert bob.post(f"/api/friends/requests/{incoming[0]['request_id']}/accept").json()["state"] == "friends"
 
+    found = api("u1").get("/api/friends/search", params={"q": "bo"}).json()["users"]
+    assert found[0]["id"] == "u2" and found[0]["state"] == "friends"
+
     # Alice voit le profil de Bob : favoris, avis, statistiques
     profile = api("u1").get("/api/friends/u2/profile").json()
     assert [b["title"] for b in profile["favorites"]] == ["Dune"]
@@ -156,10 +162,16 @@ def test_full_friend_flow(api):
     assert friends[0]["id"] == "u1" and friends[0]["unread"] == 1
     assert friends[0]["last_message"]["book_title"] == "Fondation"
     assert api("u2").get("/api/friends/unread").json()["unread_messages"] == 1
+    from app.notifications import service as notif_service
+
+    notifs = list(notif_service._coll().find({"user_id": "u2", "type": "friend_message"}))
+    assert len(notifs) == 1 and notifs[0]["read"] is False
+    assert "Fondation" in (notifs[0].get("body") or "")
 
     thread = api("u2").get("/api/friends/u1/messages").json()["messages"]
     assert len(thread) == 1 and thread[0]["mine"] is False
     assert api("u2").get("/api/friends/unread").json()["unread_messages"] == 0
+    assert notif_service._coll().find_one({"user_id": "u2", "type": "friend_message"})["read"] is True
 
     # Récupération incrémentale
     after = {"after": thread[0]["created_at"]}

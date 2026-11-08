@@ -70,7 +70,8 @@ COLLECTIONS = {
     "users": "users",
     "books": "books",
     "authors": "authors",
-    "series_library": "series_library"
+    "series_library": "series_library",
+    "catalog_daily_series": "catalog_daily_series",
 }
 
 # Configuration Open Library

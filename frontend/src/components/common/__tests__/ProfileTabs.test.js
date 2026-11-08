@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ProfileModal from '../ProfileModal';
 import { bookService } from '../../../services/bookService';
 import friendsService from '../../../services/friendsService';
+import { __resetFriendsUnread } from '../../../hooks/useFriendsUnread';
 
 jest.mock('react-hot-toast', () => {
   const toast = () => {};
@@ -31,6 +32,7 @@ jest.mock('../../friends/FriendsPanel', () => ({
 jest.mock('../IsbnScannerModal', () => ({ __esModule: true, default: () => null }));
 
 beforeEach(() => {
+  localStorage.setItem('token', 't');
   jest.spyOn(bookService, 'getStats').mockResolvedValue({
     total_books: 4,
     completed_books: 2,
@@ -42,7 +44,11 @@ beforeEach(() => {
   });
 });
 
-afterEach(() => jest.restoreAllMocks());
+afterEach(() => {
+  jest.restoreAllMocks();
+  __resetFriendsUnread();
+  localStorage.clear();
+});
 
 const open = () => render(<ProfileModal isOpen onClose={jest.fn()} libraryBooks={[]} />);
 
