@@ -37,6 +37,7 @@ import friendsService from '../../services/friendsService';
 import ProfileSettings from './ProfileSettings';
 import DeleteAccountDialog from '../user/DeleteAccountDialog';
 import logger from '../../utils/logger';
+import { getToken } from '../../services/apiClient';
 
 // ─── Teintes des statistiques ────────────────────────────────────────────────
 // Classes écrites en toutes lettres (Tailwind ne génère pas les noms assemblés dynamiquement).
@@ -144,7 +145,7 @@ function ProfileModal({
   const loadFollowedAuthors = useCallback(async () => {
     setAuthorsLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const res = await fetch(`${API_BASE_URL}/api/authors/following`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -323,7 +324,7 @@ function ProfileModal({
     const prev = followedAuthors;
     setFollowedAuthors((list) => list.filter((a) => a.toLowerCase() !== authorName.toLowerCase()));
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const res = await fetch(
         `${API_BASE_URL}/api/authors/follow/${encodeURIComponent(authorName)}`,
         {

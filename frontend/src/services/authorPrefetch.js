@@ -3,6 +3,7 @@
  * livre ou série, pour que l'écran auteur s'affiche sans attente au clic sur le nom.
  */
 import { API_BASE_URL } from '../config/environment';
+import { getToken } from './apiClient';
 
 const profiles = new Map(); // clé auteur -> Promise<données | null> (lecture rapide du cache serveur)
 const ensured = new Set(); // auteurs pour lesquels la construction a déjà été demandée
@@ -24,7 +25,7 @@ function isRealAuthor(name) {
 }
 
 function headers() {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 

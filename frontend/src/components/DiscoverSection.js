@@ -12,6 +12,7 @@ import {
   FireIcon,
 } from '@heroicons/react/24/outline';
 import { API_BASE_URL } from '../config/environment';
+import { getToken } from '../services/apiClient';
 
 function catalogPath(olKey) {
   if (!olKey) return null;
@@ -23,7 +24,7 @@ function catalogPath(olKey) {
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function authHeaders() {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -181,7 +182,7 @@ const DiscoverSection = ({ activeCategory = 'roman', userBooks = [], onBookAdded
   }, [activeCategory]);
 
   const handleAdd = async (book) => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     const res = await fetch(`${API_BASE_URL}/api/books`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

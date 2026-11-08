@@ -1,8 +1,9 @@
 import toast from 'react-hot-toast';
 import { API_BASE_URL } from '../config/environment';
+import { getToken } from '../services/apiClient';
 
 export async function loadStaticWikidataSeriesDetail(qid) {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   const r = await fetch(
     `${API_BASE_URL}/api/static-wikidata/series/${encodeURIComponent(qid)}`,
     { headers: { Authorization: `Bearer ${token}` } }

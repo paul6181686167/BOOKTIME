@@ -14,6 +14,7 @@ import {
   saveCollections,
   setSyncState,
 } from '../utils/collectionsStorage';
+import { getToken } from './apiClient';
 
 const PUSH_DEBOUNCE_MS = 1000;
 const FOCUS_PULL_MIN_INTERVAL_MS = 30000;
@@ -27,7 +28,7 @@ function currentUserId() {
 }
 
 function authHeaders() {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   return token
     ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
     : null;

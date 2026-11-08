@@ -23,48 +23,15 @@
     />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json?v=12" />
 
-    <!-- Appliquer le thème AVANT le paint (évite barre système verte / splash vert) -->
-    <script>
-      (function () {
-        try {
-          var t = localStorage.getItem('booktime-theme') || '';
-          if (t === 'cinema') t = 'void';
-          var page = '#bce8cb';
-          if (t === 'void') page = '#050505';
-          else if (t === 'dark') page = '#234f37';
-          else if (!t && window.matchMedia('(prefers-color-scheme: dark)').matches) page = '#234f37';
-          var meta = document.getElementById('bt-theme-color');
-          if (meta) meta.setAttribute('content', page);
-          var ms = document.querySelector('meta[name="msapplication-navbutton-color"]');
-          if (ms) ms.setAttribute('content', page);
-          var scheme = document.querySelector('meta[name="color-scheme"]');
-          if (scheme) scheme.setAttribute('content', t === 'light' ? 'light' : 'dark');
-          var boot = document.getElementById('bt-boot-bg');
-          if (!boot) {
-            boot = document.createElement('style');
-            boot.id = 'bt-boot-bg';
-            document.head.appendChild(boot);
-          }
-          boot.textContent = 'html,body,#root{background-color:' + page + ' !important;}';
-          var root = document.documentElement;
-          root.style.backgroundColor = page;
-          root.style.colorScheme = t === 'light' ? 'light' : 'dark';
-          if (t === 'dark' || t === 'void') root.classList.add('dark');
-          if (t === 'void') root.classList.add('cinema');
-        } catch (e) { /* ignore */ }
-      })();
-    </script>
+    <!-- Thème appliqué avant le paint + masquage du splash (fichier externe : CSP sans script inline) -->
+    <script src="%PUBLIC_URL%/boot.js"></script>
 
     <!-- Couvertures : DNS / TLS anticipés -->
     <link rel="preconnect" href="https://covers.openlibrary.org" crossorigin>
     <link rel="dns-prefetch" href="https://covers.openlibrary.org">
     <link rel="preconnect" href="https://wsrv.nl" crossorigin>
     <link rel="dns-prefetch" href="https://wsrv.nl">
-
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Police Inter hébergée avec l'application (voir src/index.js) -->
 
     <title>Booktime</title>
 
@@ -158,11 +125,5 @@
     </div>
 
     <div id="root"></div>
-
-    <script>
-      window.addEventListener('load', function() {
-        document.body.classList.add('loaded');
-      });
-    </script>
   </body>
 </html>

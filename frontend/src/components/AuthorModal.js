@@ -8,6 +8,7 @@ import { buildMergedLibraryVolumeRowsFromOlBooks } from '../utils/openLibraryBoo
 import { useTheme } from '../contexts/ThemeContext';
 import { readAuthorProfile } from '../services/authorPrefetch';
 import logger from '../utils/logger';
+import { getToken } from '../services/apiClient';
 
 // Cherche une série dans la base statique par nom (insensible à la casse)
 const findSeriesInDB = (name) => {
@@ -36,7 +37,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
   // Charger l'état "Suivre" depuis le backend (auteurs suivis persistés)
   useEffect(() => {
     if (!author) return;
-    const token = localStorage.getItem('token');
+    const token = getToken();
     fetch(`${API_BASE_URL}/api/authors/following`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
@@ -49,7 +50,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
   }, [author]);
 
   const handleToggleFollow = async () => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     const headers = {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -88,7 +89,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
     setError(null);
     
     const backendUrl = API_BASE_URL;
-    const token = localStorage.getItem('token');
+    const token = getToken();
 
     // Timeout de 8 secondes max — on n'attend pas indéfiniment Wikidata
     const withTimeout = (promise, ms = 8000) =>
@@ -203,7 +204,7 @@ const AuthorModal = ({ author, isOpen, onClose, userBooks = [], onAddBook, onOpe
     
     // 3. FALLBACK : OpenLibrary (données basiques)
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const openlibResponse = await fetch(`${backendUrl}/api/openlibrary/author/${encodeURIComponent(author)}`, {
         headers: {
           'Authorization': `Bearer ${token}`

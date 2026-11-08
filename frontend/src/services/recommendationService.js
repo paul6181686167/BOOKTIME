@@ -5,6 +5,7 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../config/environment';
 import logger from '../utils/logger';
+import { getToken, notifyUnauthorized } from './apiClient';
 
 
 // Configuration axios
@@ -19,7 +20,7 @@ const api = axios.create({
 // Intercepteur pour ajouter le token d'authentification
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -35,10 +36,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expiré ou invalide
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.reload();
+      // Session expirée : l'application déconnecte l'utilisateur (voir AuthProvider)
+      notifyUnauthorized();
     }
     logger.error('Recommendation API Error:', error);
     return Promise.reject(error);

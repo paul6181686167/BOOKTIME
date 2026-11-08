@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import socialService from '../../services/socialService';
 import logger from '../../utils/logger';
+import toast from 'react-hot-toast';
 
 const UserProfile = ({ userId, onClose }) => {
   const [profile, setProfile] = useState(null);
@@ -57,7 +58,7 @@ const UserProfile = ({ userId, onClose }) => {
       }
     } catch (err) {
       logger.error('Erreur follow/unfollow:', err);
-      alert('Erreur lors de l\'opération');
+      toast.error('Opération impossible, réessaie dans un instant.');
     } finally {
       setFollowLoading(false);
     }

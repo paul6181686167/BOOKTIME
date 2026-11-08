@@ -17,11 +17,15 @@ describe('seriesAttribution', () => {
   });
 
   test('rattache un tome anglais LOTR via la série de la requête + auteur (inter-langues)', () => {
-    // Titre anglais absent des volume_titles FR : non rattachable par titre seul.
+    // Titre anglais absent des volume_titles FR : rattaché par auteur + mots-clés
+    // (« fellowship », « ring »), avec une confiance moindre qu'un titre exact.
     const book = { title: 'The Fellowship of the Ring', author: 'J.R.R. Tolkien' };
-    expect(attributeBookToSeries(book)).toBeNull();
+    const direct = attributeBookToSeries(book);
+    expect(direct).not.toBeNull();
+    expect(direct.seriesName).toBe('Le Seigneur des Anneaux');
+    expect(direct.confidence).toBeLessThan(100);
 
-    // Mais via la requête "seigneur des anneaux" + auteur Tolkien → rattaché.
+    // Même résultat via la requête "seigneur des anneaux" + auteur Tolkien.
     const querySeries = findCuratedSeriesByQuery('seigneur des anneaux');
     expect(querySeries).not.toBeNull();
     const attr = attachBookToQuerySeries(book, querySeries);

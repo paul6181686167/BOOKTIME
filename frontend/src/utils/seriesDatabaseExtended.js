@@ -241,25 +241,6 @@ export const EXTENDED_SERIES_DATABASE = {
         es: 'Canción de Hielo y Fuego'
       }
     },
-    'dune': {
-      name: 'Dune',
-      authors: ['Frank Herbert'],
-      category: 'roman',
-      volumes: 6,
-      description: 'Saga de science-fiction sur la planète désertique Arrakis.',
-      first_published: '1965',
-      status: 'completed',
-      keywords: ['dune', 'arrakis', 'épice', 'paul atreides', 'desert', 'fremen', 'spice'],
-      variations: ['dune', 'dun', 'duune', 'cycles dune', 'cycle de dune'],
-      exclusions: ['brian herbert', 'kevin anderson', 'prequel', 'sequel'],
-      wikipedia_url: 'https://fr.wikipedia.org/wiki/Dune_(série)',
-      translations: {
-        en: 'Dune',
-        fr: 'Dune',
-        es: 'Duna',
-        de: 'Der Wüstenplanet'
-      }
-    },
     'foundation': {
       name: 'Fondation',
       authors: ['Isaac Asimov'],
@@ -455,15 +436,11 @@ export const EXTENDED_SERIES_DATABASE = {
       description: 'Science-fiction épique sur la planète Arrakis.',
       first_published: '1965',
       status: 'completed',
-      keywords: ['dune', 'arrakis', 'paul atreides', 'muad dib', 'spice', 'desert', 'herbert'],
-      variations: ['dune', 'dunes'],
+      keywords: ['dune', 'arrakis', 'paul atreides', 'muad dib', 'spice', 'desert', 'herbert', 'épice', 'fremen'],
+      variations: ['dune', 'dunes', 'dun', 'duune', 'cycles dune', 'cycle de dune'],
       exclusions: ['brian herbert', 'prequels'],
       wikipedia_url: 'https://fr.wikipedia.org/wiki/Dune_(série)',
-      translations: {
-        en: 'Dune',
-        fr: 'Dune',
-        es: 'Duna'
-      }
+      translations: { en: 'Dune', fr: 'Dune', es: 'Duna', de: 'Der Wüstenplanet' }
     },
     'discworld': {
       name: 'Les Annales du Disque-Monde',
@@ -499,24 +476,6 @@ export const EXTENDED_SERIES_DATABASE = {
         en: 'The Wheel of Time',
         fr: 'La Roue du Temps',
         es: 'La Rueda del Tiempo'
-      }
-    },
-    'witcher': {
-      name: 'The Witcher',
-      authors: ['Andrzej Sapkowski'],
-      category: 'roman',
-      volumes: 8,
-      description: 'Fantasy avec Geralt de Riv, sorceleur chasseur de monstres.',
-      first_published: '1993',
-      status: 'completed',
-      keywords: ['witcher', 'geralt', 'sorceleur', 'ciri', 'yennefer', 'sapkowski'],
-      variations: ['witcher', 'sorceleur', 'geralt'],
-      exclusions: ['jeux vidéo', 'série tv'],
-      wikipedia_url: 'https://fr.wikipedia.org/wiki/The_Witcher',
-      translations: {
-        en: 'The Witcher',
-        fr: 'The Witcher',
-        es: 'The Witcher'
       }
     },
     'les_fourmis': {
@@ -755,11 +714,11 @@ export const EXTENDED_SERIES_DATABASE = {
       description: 'Fantasy slave avec Geralt de Rivia, sorceleur chasseur de monstres.',
       first_published: '1986',
       status: 'completed',
-      keywords: ['witcher', 'sorceleur', 'geralt', 'rivia', 'ciri', 'yennefer'],
-      variations: ['witcher', 'sorceleur', 'geralt de rivia', 'wiedźmin'],
+      keywords: ['witcher', 'sorceleur', 'geralt', 'rivia', 'ciri', 'yennefer', 'sapkowski'],
+      variations: ['witcher', 'sorceleur', 'geralt de rivia', 'wiedźmin', 'geralt'],
       exclusions: ['netflix', 'game', 'cd projekt'],
       wikipedia_url: 'https://fr.wikipedia.org/wiki/Le_Sorceleur',
-      translations: { en: 'The Witcher', fr: 'Le Sorceleur', pl: 'Wiedźmin' }
+      translations: { en: 'The Witcher', fr: 'Le Sorceleur', es: 'The Witcher', pl: 'Wiedźmin' }
     },
     'outlander': {
       name: 'Outlander',
@@ -1729,59 +1688,6 @@ export const EXTENDED_SERIES_DATABASE = {
         fr: 'Yoko Tsuno'
       }
     },
-    'largo_winch': {
-      name: 'Largo Winch',
-      authors: ['Jean Van Hamme', 'Philippe Francq'],
-      category: 'bd',
-      volumes: 24,
-      description: 'Thriller économique avec l\'héritier milliardaire Largo Winch.',
-      first_published: '1990',
-      status: 'ongoing',
-      keywords: ['largo winch', 'milliardaire', 'business', 'thriller', 'van hamme', 'francq'],
-      variations: ['largo winch', 'largo', 'winch'],
-      exclusions: ['films', 'séries TV'],
-      wikipedia_url: 'https://fr.wikipedia.org/wiki/Largo_Winch',
-      translations: {
-        en: 'Largo Winch',
-        fr: 'Largo Winch'
-      }
-    },
-    'blacksad': {
-      name: 'Blacksad',
-      authors: ['Juan Díaz Canales', 'Juanjo Guarnido'],
-      category: 'bd',
-      volumes: 6,
-      description: 'Noir policier avec des animaux anthropomorphes.',
-      first_published: '2000',
-      status: 'ongoing',
-      keywords: ['blacksad', 'john blacksad', 'polar', 'animaux', 'guarnido'],
-      variations: ['blacksad', 'black sad', 'black-sad'],
-      exclusions: ['jeux vidéo'],
-      wikipedia_url: 'https://fr.wikipedia.org/wiki/Blacksad',
-      translations: {
-        en: 'Blacksad',
-        fr: 'Blacksad',
-        es: 'Blacksad'
-      }
-    },
-    'corto_maltese': {
-      name: 'Corto Maltese',
-      authors: ['Hugo Pratt'],
-      category: 'bd',
-      volumes: 15,
-      description: 'Aventures du marin-aventurier Corto Maltese.',
-      first_published: '1967',
-      status: 'completed',
-      keywords: ['corto maltese', 'marin', 'aventurier', 'pratt', 'hugo pratt'],
-      variations: ['corto maltese', 'corto', 'maltese'],
-      exclusions: ['autres auteurs', 'adaptations'],
-      wikipedia_url: 'https://fr.wikipedia.org/wiki/Corto_Maltese',
-      translations: {
-        en: 'Corto Maltese',
-        fr: 'Corto Maltese',
-        it: 'Corto Maltese'
-      }
-    },
     'les_petits_hommes': {
       name: 'Les Petits Hommes',
       authors: ['Pierre Seron'],
@@ -1797,23 +1703,6 @@ export const EXTENDED_SERIES_DATABASE = {
       translations: {
         en: 'The Little Men',
         fr: 'Les Petits Hommes'
-      }
-    },
-    'lanfeust': {
-      name: 'Lanfeust de Troy',
-      authors: ['Christophe Arleston', 'Didier Tarquin'],
-      category: 'bd',
-      volumes: 8,
-      description: 'Fantasy humoristique avec le jeune forgeron Lanfeust.',
-      first_published: '1994',
-      status: 'completed',
-      keywords: ['lanfeust', 'troy', 'fantasy', 'forgeron', 'arleston', 'tarquin'],
-      variations: ['lanfeust', 'lanfeust de troy', 'lanfeust troy'],
-      exclusions: ['autres séries lanfeust'],
-      wikipedia_url: 'https://fr.wikipedia.org/wiki/Lanfeust_de_Troy',
-      translations: {
-        en: 'Lanfeust of Troy',
-        fr: 'Lanfeust de Troy'
       }
     },
     'les_legendaires': {
@@ -1841,32 +1730,25 @@ export const EXTENDED_SERIES_DATABASE = {
       description: 'Polar noir avec des animaux anthropomorphes dans l\'Amérique des années 50.',
       first_published: '2000',
       status: 'ongoing',
-      keywords: ['blacksad', 'john blacksad', 'chat noir', 'polar', 'guarnido'],
-      variations: ['blacksad', 'black sad'],
+      keywords: ['blacksad', 'john blacksad', 'chat noir', 'polar', 'guarnido', 'animaux'],
+      variations: ['blacksad', 'black sad', 'black-sad'],
       exclusions: ['adaptations', 'game'],
       wikipedia_url: 'https://fr.wikipedia.org/wiki/Blacksad',
-      translations: {
-        en: 'Blacksad',
-        fr: 'Blacksad',
-        es: 'Blacksad'
-      }
+      translations: { en: 'Blacksad', fr: 'Blacksad', es: 'Blacksad' }
     },
     'largo_winch': {
       name: 'Largo Winch',
       authors: ['Jean Van Hamme', 'Philippe Francq'],
       category: 'bd',
-      volumes: 23,
+      volumes: 24,
       description: 'Thriller économique avec l\'héritier milliardaire Largo Winch.',
       first_published: '1990',
       status: 'ongoing',
-      keywords: ['largo winch', 'group w', 'milliardaire', 'thriller', 'van hamme'],
+      keywords: ['largo winch', 'group w', 'milliardaire', 'thriller', 'van hamme', 'business', 'francq'],
       variations: ['largo winch', 'largo', 'winch'],
       exclusions: ['films', 'adaptations'],
       wikipedia_url: 'https://fr.wikipedia.org/wiki/Largo_Winch',
-      translations: {
-        en: 'Largo Winch',
-        fr: 'Largo Winch'
-      }
+      translations: { en: 'Largo Winch', fr: 'Largo Winch' }
     },
     'lanfeust': {
       name: 'Lanfeust de Troy',
@@ -1876,32 +1758,25 @@ export const EXTENDED_SERIES_DATABASE = {
       description: 'Fantasy humoristique dans le monde de Troy.',
       first_published: '1994',
       status: 'completed',
-      keywords: ['lanfeust', 'troy', 'cixi', 'hébus', 'fantasy', 'arleston'],
-      variations: ['lanfeust de troy', 'lanfeust', 'troy'],
+      keywords: ['lanfeust', 'troy', 'cixi', 'hébus', 'fantasy', 'arleston', 'forgeron', 'tarquin'],
+      variations: ['lanfeust de troy', 'lanfeust', 'troy', 'lanfeust troy'],
       exclusions: ['trolls de troy', 'autres séries troy'],
       wikipedia_url: 'https://fr.wikipedia.org/wiki/Lanfeust_de_Troy',
-      translations: {
-        en: 'Lanfeust of Troy',
-        fr: 'Lanfeust de Troy'
-      }
+      translations: { en: 'Lanfeust of Troy', fr: 'Lanfeust de Troy' }
     },
     'corto_maltese': {
       name: 'Corto Maltese',
       authors: ['Hugo Pratt'],
       category: 'bd',
-      volumes: 12,
+      volumes: 15,
       description: 'Aventures du marin romantique dans les mers du Sud.',
       first_published: '1967',
       status: 'completed',
-      keywords: ['corto maltese', 'hugo pratt', 'marin', 'aventure', 'ballad'],
+      keywords: ['corto maltese', 'hugo pratt', 'marin', 'aventure', 'ballad', 'aventurier', 'pratt'],
       variations: ['corto maltese', 'corto', 'maltese'],
       exclusions: ['autres auteurs', 'adaptations'],
       wikipedia_url: 'https://fr.wikipedia.org/wiki/Corto_Maltese',
-      translations: {
-        en: 'Corto Maltese',
-        fr: 'Corto Maltese',
-        it: 'Corto Maltese'
-      }
+      translations: { en: 'Corto Maltese', fr: 'Corto Maltese', it: 'Corto Maltese' }
     }
   },
 
@@ -1993,128 +1868,6 @@ export const EXTENDED_SERIES_DATABASE = {
         en: 'Attack on Titan',
         fr: 'L\'Attaque des Titans',
         ja: '進撃の巨人'
-      }
-    },
-    'death_note': {
-      name: 'Death Note',
-      authors: ['Tsugumi Ohba', 'Takeshi Obata'],
-      category: 'manga',
-      volumes: 12,
-      volume_titles: {
-        1: "Ennui",
-        2: "Confluence",
-        3: "Dur labeur",
-        4: "Amour",
-        5: "Carnet blanc",
-        6: "Bourse",
-        7: "Zéro",
-        8: "Cible",
-        9: "Contact",
-        10: "Doute",
-        11: "Contexte",
-        12: "Fini"
-      },
-      description: 'Thriller psychologique avec Light Yagami et le carnet de la mort.',
-      first_published: '2003',
-      status: 'completed',
-      keywords: ['death note', 'light', 'l', 'kira', 'ryuk', 'shinigami', 'yagami'],
-      variations: ['death note', 'deathnote', 'death not'],
-      exclusions: ['another note', 'l change world', 'adaptations'],
-      wikipedia_url: 'https://fr.wikipedia.org/wiki/Death_Note',
-      translations: {
-        en: 'Death Note',
-        fr: 'Death Note',
-        ja: 'デスノート'
-      }
-    },
-    'demon_slayer': {
-      name: 'Demon Slayer',
-      authors: ['Koyoharu Gotouge'],
-      category: 'manga',
-      volumes: 23,
-      description: 'Tanjiro Kamado chasseur de démons pour sauver sa sœur.',
-      first_published: '2016',
-      status: 'completed',
-      keywords: ['demon slayer', 'kimetsu no yaiba', 'tanjiro', 'nezuko', 'demons', 'hashira'],
-      variations: ['demon slayer', 'kimetsu no yaiba', 'kimetsu', 'demon slayers'],
-      exclusions: ['spin-offs', 'novels'],
-      wikipedia_url: 'https://fr.wikipedia.org/wiki/Demon_Slayer',
-      translations: {
-        en: 'Demon Slayer',
-        fr: 'Demon Slayer',
-        ja: '鬼滅の刃'
-      }
-    },
-    'my_hero_academia': {
-      name: 'My Hero Academia',
-      authors: ['Kohei Horikoshi'],
-      category: 'manga',
-      volumes: 38,
-      description: 'Izuku Midoriya dans un monde où presque tout le monde a des super-pouvoirs.',
-      first_published: '2014',
-      status: 'ongoing',
-      keywords: ['my hero academia', 'boku no hero', 'midoriya', 'deku', 'quirk', 'all might'],
-      variations: ['my hero academia', 'boku no hero academia', 'my hero', 'bnha', 'mha'],
-      exclusions: ['vigilantes', 'movies', 'spin-offs'],
-      wikipedia_url: 'https://fr.wikipedia.org/wiki/My_Hero_Academia',
-      translations: {
-        en: 'My Hero Academia',
-        fr: 'My Hero Academia',
-        ja: '僕のヒーローアカデミア'
-      }
-    },
-    'jujutsu_kaisen': {
-      name: 'Jujutsu Kaisen',
-      authors: ['Gege Akutami'],
-      category: 'manga',
-      volumes: 24,
-      description: 'Yuji Itadori et la lutte contre les fléaux dans le monde occulte.',
-      first_published: '2018',
-      status: 'ongoing',
-      keywords: ['jujutsu kaisen', 'yuji itadori', 'gojo', 'sukuna', 'fléaux', 'sorciers'],
-      variations: ['jujutsu kaisen', 'jujutsu', 'jjk'],
-      exclusions: ['prequel', 'movies'],
-      wikipedia_url: 'https://fr.wikipedia.org/wiki/Jujutsu_Kaisen',
-      translations: {
-        en: 'Jujutsu Kaisen',
-        fr: 'Jujutsu Kaisen',
-        ja: '呪術廻戦'
-      }
-    },
-    'chainsaw_man': {
-      name: 'Chainsaw Man',
-      authors: ['Tatsuki Fujimoto'],
-      category: 'manga',
-      volumes: 11,
-      description: 'Denji devient Chainsaw Man pour rembourser ses dettes.',
-      first_published: '2018',
-      status: 'completed',
-      keywords: ['chainsaw man', 'denji', 'makima', 'power', 'devils', 'fujimoto'],
-      variations: ['chainsaw man', 'chainsawman', 'chainsaw'],
-      exclusions: ['part 2', 'spin-offs'],
-      wikipedia_url: 'https://fr.wikipedia.org/wiki/Chainsaw_Man',
-      translations: {
-        en: 'Chainsaw Man',
-        fr: 'Chainsaw Man',
-        ja: 'チェンソーマン'
-      }
-    },
-    'tokyo_ghoul': {
-      name: 'Tokyo Ghoul',
-      authors: ['Sui Ishida'],
-      category: 'manga',
-      volumes: 14,
-      description: 'Ken Kaneki devient un goule dans le Tokyo souterrain.',
-      first_published: '2011',
-      status: 'completed',
-      keywords: ['tokyo ghoul', 'kaneki', 'goule', 'ccg', 'anteiku', 'ishida'],
-      variations: ['tokyo ghoul', 'tokyo goul', 'tokyoghoul'],
-      exclusions: ['tokyo ghoul re', 'spin-offs'],
-      wikipedia_url: 'https://fr.wikipedia.org/wiki/Tokyo_Ghoul',
-      translations: {
-        en: 'Tokyo Ghoul',
-        fr: 'Tokyo Ghoul',
-        ja: '東京喰種'
       }
     },
     'hunter_x_hunter': {
@@ -2212,36 +1965,42 @@ export const EXTENDED_SERIES_DATABASE = {
       authors: ['Tsugumi Ohba', 'Takeshi Obata'],
       category: 'manga',
       volumes: 12,
+      volume_titles: {
+        1: "Ennui",
+        2: "Confluence",
+        3: "Dur labeur",
+        4: "Amour",
+        5: "Carnet blanc",
+        6: "Bourse",
+        7: "Zéro",
+        8: "Cible",
+        9: "Contact",
+        10: "Doute",
+        11: "Contexte",
+        12: "Fini"
+      },
       description: 'Light Yagami trouve un carnet de la mort et devient Kira.',
       first_published: '2003',
       status: 'completed',
-      keywords: ['death note', 'light yagami', 'l', 'kira', 'ryuk', 'shinigami'],
+      keywords: ['death note', 'light yagami', 'l', 'kira', 'ryuk', 'shinigami', 'light', 'yagami'],
       variations: ['death note', 'deathnote', 'death not'],
       exclusions: ['light up', 'another note', 'films'],
       wikipedia_url: 'https://fr.wikipedia.org/wiki/Death_Note',
-      translations: {
-        en: 'Death Note',
-        fr: 'Death Note',
-        ja: 'デスノート'
-      }
+      translations: { en: 'Death Note', fr: 'Death Note', ja: 'デスノート' }
     },
     'my_hero_academia': {
       name: 'My Hero Academia',
       authors: ['Kōhei Horikoshi'],
       category: 'manga',
-      volumes: 37,
+      volumes: 38,
       description: 'Izuku Midoriya rêve de devenir un héros dans un monde de super-pouvoirs.',
       first_published: '2014',
       status: 'ongoing',
-      keywords: ['my hero academia', 'deku', 'midoriya', 'all might', 'quirk', 'ua'],
-      variations: ['my hero academia', 'mha', 'boku no hero academia'],
+      keywords: ['my hero academia', 'deku', 'midoriya', 'all might', 'quirk', 'ua', 'boku no hero'],
+      variations: ['my hero academia', 'mha', 'boku no hero academia', 'my hero', 'bnha'],
       exclusions: ['vigilantes', 'spin-offs', 'films'],
       wikipedia_url: 'https://fr.wikipedia.org/wiki/My_Hero_Academia',
-      translations: {
-        en: 'My Hero Academia',
-        fr: 'My Hero Academia',
-        ja: '僕のヒーローアカデミア'
-      }
+      translations: { en: 'My Hero Academia', fr: 'My Hero Academia', ja: '僕のヒーローアカデミア' }
     },
     'demon_slayer': {
       name: 'Demon Slayer',
@@ -2251,15 +2010,11 @@ export const EXTENDED_SERIES_DATABASE = {
       description: 'Tanjiro Kamado devient un chasseur de démons pour sauver sa sœur.',
       first_published: '2016',
       status: 'completed',
-      keywords: ['demon slayer', 'tanjiro', 'nezuko', 'kimetsu no yaiba', 'hashira'],
-      variations: ['demon slayer', 'kimetsu no yaiba', 'kny'],
+      keywords: ['demon slayer', 'tanjiro', 'nezuko', 'kimetsu no yaiba', 'hashira', 'demons'],
+      variations: ['demon slayer', 'kimetsu no yaiba', 'kny', 'kimetsu', 'demon slayers'],
       exclusions: ['spin-offs', 'films'],
       wikipedia_url: 'https://fr.wikipedia.org/wiki/Demon_Slayer',
-      translations: {
-        en: 'Demon Slayer',
-        fr: 'Demon Slayer',
-        ja: '鬼滅の刃'
-      }
+      translations: { en: 'Demon Slayer', fr: 'Demon Slayer', ja: '鬼滅の刃' }
     },
     'jujutsu_kaisen': {
       name: 'Jujutsu Kaisen',
@@ -2269,15 +2024,11 @@ export const EXTENDED_SERIES_DATABASE = {
       description: 'Yuji Itadori avale un doigt de démon et rejoint l\'école de sorcellerie.',
       first_published: '2018',
       status: 'ongoing',
-      keywords: ['jujutsu kaisen', 'yuji itadori', 'sukuna', 'gojo', 'megumi', 'nobara'],
+      keywords: ['jujutsu kaisen', 'yuji itadori', 'sukuna', 'gojo', 'megumi', 'nobara', 'fléaux', 'sorciers'],
       variations: ['jujutsu kaisen', 'jjk', 'jujutsu'],
       exclusions: ['0 prequel', 'spin-offs'],
       wikipedia_url: 'https://fr.wikipedia.org/wiki/Jujutsu_Kaisen',
-      translations: {
-        en: 'Jujutsu Kaisen',
-        fr: 'Jujutsu Kaisen',
-        ja: '呪術廻戦'
-      }
+      translations: { en: 'Jujutsu Kaisen', fr: 'Jujutsu Kaisen', ja: '呪術廻戦' }
     },
     'tokyo_ghoul': {
       name: 'Tokyo Ghoul',
@@ -2287,15 +2038,11 @@ export const EXTENDED_SERIES_DATABASE = {
       description: 'Ken Kaneki devient un hybride humain-goule à Tokyo.',
       first_published: '2011',
       status: 'completed',
-      keywords: ['tokyo ghoul', 'kaneki', 'goule', 'ccg', 'kagune', 'tokyo'],
-      variations: ['tokyo ghoul', 'tokyo goul', 'tg'],
+      keywords: ['tokyo ghoul', 'kaneki', 'goule', 'ccg', 'kagune', 'tokyo', 'anteiku', 'ishida'],
+      variations: ['tokyo ghoul', 'tokyo goul', 'tg', 'tokyoghoul'],
       exclusions: ['tokyo ghoul re', 'spin-offs'],
       wikipedia_url: 'https://fr.wikipedia.org/wiki/Tokyo_Ghoul',
-      translations: {
-        en: 'Tokyo Ghoul',
-        fr: 'Tokyo Ghoul',
-        ja: '東京喰種'
-      }
+      translations: { en: 'Tokyo Ghoul', fr: 'Tokyo Ghoul', ja: '東京喰種' }
     },
     'chainsaw_man': {
       name: 'Chainsaw Man',
@@ -2305,15 +2052,11 @@ export const EXTENDED_SERIES_DATABASE = {
       description: 'Denji fusionne avec son démon-tronçonneuse pour devenir Chainsaw Man.',
       first_published: '2018',
       status: 'completed',
-      keywords: ['chainsaw man', 'denji', 'makima', 'pochita', 'devil hunter'],
-      variations: ['chainsaw man', 'csm', 'chainsaw'],
+      keywords: ['chainsaw man', 'denji', 'makima', 'pochita', 'devil hunter', 'power', 'devils', 'fujimoto'],
+      variations: ['chainsaw man', 'csm', 'chainsaw', 'chainsawman'],
       exclusions: ['part 2', 'spin-offs'],
       wikipedia_url: 'https://fr.wikipedia.org/wiki/Chainsaw_Man',
-      translations: {
-        en: 'Chainsaw Man',
-        fr: 'Chainsaw Man',
-        ja: 'チェンソーマン'
-      }
+      translations: { en: 'Chainsaw Man', fr: 'Chainsaw Man', ja: 'チェンソーマン' }
     },
     'haikyuu': {
       name: 'Haikyū!!',

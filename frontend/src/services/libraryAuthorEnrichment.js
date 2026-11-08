@@ -8,6 +8,7 @@
 import { API_BASE_URL } from '../config/environment';
 import { isMobileClient } from '../utils/device';
 import logger from '../utils/logger';
+import { getToken } from './apiClient';
 
 let running = false;
 let lastRunAt = 0;
@@ -16,7 +17,7 @@ const BATCH_PAUSE_MS = 1500;
 const MAX_BATCHES = 12;
 
 function authHeaders() {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 

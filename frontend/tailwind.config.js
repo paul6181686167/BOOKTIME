@@ -47,7 +47,7 @@ module.exports = {
         }
       },
       fontFamily: {
-        'sans': ['Inter', 'system-ui', 'sans-serif'],
+        'sans': ['Inter Variable', 'Inter', 'system-ui', 'sans-serif'],
         // Serif système pour les titres d'œuvres : donne du caractère à une
         // application de lecture sans télécharger une police de plus.
         'display': ['"Iowan Old Style"', '"Palatino Linotype"', 'Palatino', 'Georgia', 'serif'],

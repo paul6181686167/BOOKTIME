@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '../config/environment';
 import logger from '../utils/logger';
+import { getToken } from './apiClient';
 /**
  * PHASE 3.3 - Service Social Frontend
  * Service pour les fonctionnalités sociales et communautaires
@@ -13,7 +14,7 @@ class SocialService {
 
   // Récupération du token d'authentification
   getAuthToken() {
-    return localStorage.getItem('token');
+    return getToken();
   }
 
   // Headers avec authentification

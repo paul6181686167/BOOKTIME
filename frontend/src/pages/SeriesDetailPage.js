@@ -16,6 +16,7 @@ import { addSeriesToLibrary as saveSeriesToLibrary, generateVolumesList } from '
 import { EXTENDED_SERIES_DATABASE } from '../utils/seriesDatabaseExtended';
 import { enrichSeriesMetadata } from '../components/series/SeriesActions';
 import logger from '../utils/logger';
+import { getToken } from '../services/apiClient';
 
 const SeriesDetailPage = () => {
   const { seriesName } = useParams();
@@ -35,7 +36,7 @@ const SeriesDetailPage = () => {
   const loadSeriesDetails = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = getToken();
       
       // D'abord, chercher la série dans les séries populaires
       const seriesResponse = await fetch(`${backendUrl}/api/series/popular?limit=1000`, {
@@ -159,7 +160,7 @@ const SeriesDetailPage = () => {
     if (!volume.isOwned) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       let newStatus;
       
       switch (volume.status) {
@@ -203,7 +204,7 @@ const SeriesDetailPage = () => {
     if (!series) return;
     try {
       setAddingToLibrary(true);
-      const token = localStorage.getItem('token');
+      const token = getToken();
 
       const seriesData = {
         name: series.name || 'Série inconnue',

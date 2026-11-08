@@ -28,9 +28,8 @@ html.cinema #root {
   background-color: #050505;
 }
 
-/* Inter est chargée par le <link> de public/index.html, précédé de ses
-   preconnect. Un @import ici la téléchargeait une seconde fois en bloquant le
-   rendu, et se retrouvait de surcroît après les directives @tailwind. */
+/* Inter est hébergée avec l'application (paquet @fontsource-variable/inter importé
+   dans src/index.js) : pas de requête vers Google, et la police marche hors ligne. */
 
 /* Scrollbar invisible pour les sliders horizontaux */
 .scrollbar-hide::-webkit-scrollbar { display: none; }

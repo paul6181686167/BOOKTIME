@@ -8,6 +8,7 @@ import socialService from '../../services/socialService';
 import SocialFeed from './SocialFeed';
 import UserProfile from './UserProfile';
 import logger from '../../utils/logger';
+import toast from 'react-hot-toast';
 
 const SocialModal = ({ isOpen, onClose, currentUser }) => {
   const [activeTab, setActiveTab] = useState('feed');
@@ -83,10 +84,10 @@ const SocialModal = ({ isOpen, onClose, currentUser }) => {
       const updatedProfile = await socialService.getProfile(currentUser.id);
       setProfileData(updatedProfile);
       
-      alert('Profil mis à jour avec succès !');
+      toast.success('Profil mis à jour');
     } catch (error) {
       logger.error('Erreur lors de la mise à jour du profil:', error);
-      alert('Erreur lors de la mise à jour du profil');
+      toast.error('Impossible de mettre à jour le profil');
     }
   };
 

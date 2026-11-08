@@ -3,9 +3,10 @@
  */
 import { API_BASE_URL } from '../config/environment';
 import logger from '../utils/logger';
+import { getToken } from './apiClient';
 
 function authHeaders() {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   return token
     ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
     : { 'Content-Type': 'application/json' };

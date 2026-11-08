@@ -71,7 +71,7 @@ html.cinema {
 
 /* Base layout sans transition globale */
 html {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Inter Variable', 'Inter', system-ui, sans-serif;
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;

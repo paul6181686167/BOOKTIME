@@ -1,0 +1,1193 @@
+// Imports
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import logger from '../utils/logger';
+
+// Context imports
+import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../hooks/useAuth';
+
+// Component imports
+import UnifiedSearchBar from '../components/UnifiedSearchBar';
+import DiscoverSection from '../components/DiscoverSection';
+
+
+// PHASE 2.4 - Monitoring et Analytics
+// Service imports
+import * as seriesLibraryService from '../services/seriesLibraryService';
+// Hook imports
+import { useAdvancedSearch } from '../hooks/useAdvancedSearch';
+import useBooks from '../hooks/useBooks';
+import useSeries from '../hooks/useSeries';
+import useSearch from '../hooks/useSearch';
+// PHASE C.1 - Hook unifié pour rafraîchissement optimisé
+import useUnifiedContent from '../hooks/useUnifiedContent';
+
+
+// Utils imports
+import { buildOwnershipIndex, isBookOwned } from '../utils/bookOwnership';
+import { getCategoryBadge } from '../utils/helpers';
+import { TAB_CONFIG } from '../utils/constants';
+import { API_BASE_URL } from '../config/environment';
+
+
+// Search components imports (Phase 1.1 - Step 3)
+
+// Series components imports (Phase 1.1 - Step 4)
+import SeriesActions from '../components/series/SeriesActions';
+
+// Books components imports (Phase 1.1 - Step 5 & 6)
+import BookActions from '../components/books/BookActions';
+import BookGrid from '../components/books/BookGrid';
+import MobileSearchOverlay from '../components/MobileSearchOverlay';
+import NotificationBadge from '../components/common/NotificationBadge';
+import useUnreadNotifications from '../hooks/useUnreadNotifications';
+import PwaInstallPrompt from '../components/PwaInstallPrompt';
+import OfflineBanner from '../components/OfflineBanner';
+import { PENDING_FRIEND_CODE_KEY, normalizeFriendCode } from '../utils/friendLink';
+
+import '../App.css';
+import '../styles/optimized.css';
+import { getToken } from '../services/apiClient';
+import SortControls from '../components/common/SortControls';
+import AnimatedCounter from '../components/common/AnimatedCounter';
+import useSectionSort from '../hooks/useSectionSort';
+import useStableCallback from '../hooks/useStableCallback';
+import useIdlePreload from '../hooks/useIdlePreload';
+import { BookDetailModal, AuthorModal, SeriesDetailModal, ProfileModal, ExportImportModal, UpcomingPanel, SocialModal, FriendsModal, AdvancedRecommendationsModal, IntegrationsModal, IsbnScannerModal } from '../appLazy';
+
+// Composant principal de l'application
+export default function MainApp() {
+  const { user } = useAuth();
+  const { isVoid } = useTheme();
+  const navigate = useNavigate();
+  const location = useLocation();
+  useIdlePreload();
+  
+  // États locaux pour l'UI
+  const [activeTab, setActiveTab] = useState('roman');
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showIsbnScanner, setShowIsbnScanner] = useState(false);
+  const [showExportImportModal, setShowExportImportModal] = useState(false);
+  const [showSocialModal, setShowSocialModal] = useState(false);
+  const [showFriendsModal, setShowFriendsModal] = useState(false);
+  const [friendsRecommendBook, setFriendsRecommendBook] = useState(null);
+  const [friendsInviteCode, setFriendsInviteCode] = useState('');
+  const [showAdvancedRecommendationsModal, setShowAdvancedRecommendationsModal] = useState(false);
+  const [showIntegrationsModal, setShowIntegrationsModal] = useState(false);
+  const [showUpcomingPanel, setShowUpcomingPanel] = useState(false);
+  const unreadNotifications = useUnreadNotifications();
+  const [upcomingMounted, setUpcomingMounted] = useState(false);
+  const openUpcomingPanel = useCallback(() => {
+    setUpcomingMounted(true);
+    setShowUpcomingPanel(true);
+  }, []);
+  const [showAuthorModal, setShowAuthorModal] = useState(false);
+  const [selectedAuthor, setSelectedAuthor] = useState(null);
+  // Mobile states
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+
+  // Gestionnaire d'événements pour l'export/import
+  useEffect(() => {
+    const handleOpenExportImport = () => {
+      setShowExportImportModal(true);
+    };
+
+    window.addEventListener('openExportImport', handleOpenExportImport);
+    return () => {
+      window.removeEventListener('openExportImport', handleOpenExportImport);
+    };
+  }, []);
+
+  // Gestionnaire d'événements pour le social
+  useEffect(() => {
+    const handleOpenSocial = () => {
+      setShowSocialModal(true);
+    };
+
+    window.addEventListener('openSocial', handleOpenSocial);
+    return () => {
+      window.removeEventListener('openSocial', handleOpenSocial);
+    };
+  }, []);
+
+  // Amis : ouverture depuis le profil, ou depuis une fiche livre pour recommander ce livre
+  useEffect(() => {
+    const handleOpenFriends = (event) => {
+      setFriendsRecommendBook(null);
+      setFriendsInviteCode(event?.detail?.code || '');
+      setShowFriendsModal(true);
+    };
+    const handleRecommendToFriend = (event) => {
+      setFriendsRecommendBook(event?.detail?.book || null);
+      setFriendsInviteCode('');
+      setShowFriendsModal(true);
+    };
+    // Lien /ami/CODE ouvert (ou QR code scanné avec l'appareil photo) : on ouvre la fiche du lecteur
+    try {
+      const pending = localStorage.getItem(PENDING_FRIEND_CODE_KEY);
+      if (pending) {
+        localStorage.removeItem(PENDING_FRIEND_CODE_KEY);
+        handleOpenFriends({ detail: { code: normalizeFriendCode(pending) } });
+      }
+    } catch (_) {
+      /* stockage indisponible */
+    }
+    window.addEventListener('openFriends', handleOpenFriends);
+    window.addEventListener('recommendToFriend', handleRecommendToFriend);
+    return () => {
+      window.removeEventListener('openFriends', handleOpenFriends);
+      window.removeEventListener('recommendToFriend', handleRecommendToFriend);
+    };
+  }, []);
+
+  // Gestionnaire d'événements pour les recommandations avancées
+  useEffect(() => {
+    const handleOpenAdvancedRecommendations = () => {
+      setShowAdvancedRecommendationsModal(true);
+    };
+
+    window.addEventListener('openAdvancedRecommendations', handleOpenAdvancedRecommendations);
+    return () => {
+      window.removeEventListener('openAdvancedRecommendations', handleOpenAdvancedRecommendations);
+    };
+  }, []);
+
+  // Gestionnaire d'événements pour les intégrations
+  useEffect(() => {
+    const handleOpenIntegrations = () => {
+      setShowIntegrationsModal(true);
+    };
+
+    window.addEventListener('openIntegrations', handleOpenIntegrations);
+    return () => {
+      window.removeEventListener('openIntegrations', handleOpenIntegrations);
+    };
+  }, []);
+
+  // Keep-alive : ping le backend toutes les 4 min pour éviter la mise en veille Render
+  useEffect(() => {
+    const PING_INTERVAL = 4 * 60 * 1000; // 4 minutes
+    // Seulement quand l'app est visible : inutile (et coûteux en batterie / données)
+    // de réveiller le serveur pour une application en arrière-plan.
+    const ping = () => {
+      if (document.visibilityState !== 'visible') return;
+      fetch(`${API_BASE_URL}/ping`, { method: 'GET' }).catch(() => {});
+    };
+    const id = setInterval(ping, PING_INTERVAL);
+    return () => clearInterval(id);
+  }, []);
+
+  // PHASE C.1 - Hooks unifiés pour rafraîchissement optimisé
+  const unifiedContent = useUnifiedContent();
+  
+  // Hooks personnalisés pour gérer les états (Phase 1.1 - Step 6)
+  // CONSERVÉS pour compatibilité avec les modals et actions spécialisées
+  const booksHook = useBooks();
+  const seriesHook = useSeries();
+  const searchHook = useSearch();
+  
+  // Hook de recherche avancée avec données unifiées
+  const {
+    filters,
+    setFilters,
+    filteredBooks,
+    clearSearch
+  } = useAdvancedSearch(unifiedContent.books);
+
+  // CORRECTION RCA DÉFINITIVE - Fonction backToLibrary définie APRÈS tous les hooks mais AVANT tous les useEffect
+  const backToLibrary = useCallback(() => {
+    if (searchHook && clearSearch) {
+      searchHook.backToLibrary(clearSearch);
+    }
+  }, [searchHook, clearSearch]);
+
+  // Gestionnaire unique pour l'événement backToLibrary (fusion des deux anciens listeners)
+  useEffect(() => {
+    const handleBackToLibrary = (event) => {
+      const detail = event.detail || {};
+      const { reason, seriesName, bookTitle, attempts } = detail;
+
+      if (reason === 'series_verified_success') {
+        toast.success(`Série "${seriesName}" ajoutée avec succès !`);
+      } else if (reason === 'book_verified_success') {
+        toast.success(`Livre "${bookTitle}" ajouté avec succès !`);
+      } else if (reason === 'series_verification_failed') {
+        toast.error(`Série "${seriesName}" non trouvée après ${attempts} tentatives`);
+        return; // Ne pas revenir en cas d'échec
+      }
+
+      backToLibrary();
+    };
+
+    window.addEventListener('backToLibrary', handleBackToLibrary);
+    return () => window.removeEventListener('backToLibrary', handleBackToLibrary);
+  }, [backToLibrary]);
+
+  // FONCTION UTILITAIRE : Déterminer le badge de catégorie depuis un livre Open Library
+  const getCategoryBadgeFromBook = (book) => {
+    return getCategoryBadge(book);
+  };
+
+  // FONCTION AFFICHAGE UNIFIÉ : Mélange séries et livres individuels par date d'ajout
+  // PHASE C.1 : Utiliser données unifiées pour créer l'affichage
+  const createUnifiedDisplay = (booksList) => {
+    //  CORRECTION RCA - Filtrer les séries selon l'onglet actif
+    const filteredSeries = (unifiedContent.userSeriesLibrary || []).filter(series => {
+      const seriesCategory = series.category || 'roman';
+      
+      // Logique de filtrage identique à useAdvancedSearch
+      if (activeTab === 'roman') {
+        return seriesCategory === 'roman';
+      } else if (activeTab === 'graphic_novels') {
+        // Romans graphiques = BD + Manga
+        return seriesCategory === 'bd' || seriesCategory === 'manga';
+      }
+      
+      return true; // Fallback pour autres onglets
+    });
+    
+    
+    return BookActions.createUnifiedDisplay(booksList, getCategoryBadgeFromBook, filteredSeries, unifiedContent.readingPreferences || {});
+  };
+
+  // Fonction pour rechercher dans Open Library avec RECHERCHE GLOBALE (toutes catégories)
+  const searchOpenLibrary = async (query) => {
+    await searchHook.searchOpenLibrary(query, {
+      books: unifiedContent.books,
+      getCategoryBadgeFromBook
+    });
+  };
+
+  // Fonction pour ajouter un livre depuis Open Library
+  // Mise à jour optimiste : UI instantanée + sync backend en arrière-plan
+  const handleUpdateBookOptimistic = async (bookId, bookData) => {
+    const selected = booksHook.selectedBook;
+    // Séries rétrogradées en « livre » : l'id est celui de series_library, pas books
+    const isDemotedSeries =
+      !!(selected?.isDemotedSeries && selected?.id === bookId);
+
+    // 1. UI immédiate (liste + modal)
+    if (isDemotedSeries) {
+      unifiedContent.setUserSeriesLibrary((prev) =>
+        (prev || []).map((s) => {
+          if (s.id !== bookId) return s;
+          const next = { ...s };
+          if (bookData.status) next.series_status = bookData.status;
+          if (bookData.current_page !== undefined) next.current_page = bookData.current_page;
+          if (bookData.total_pages !== undefined) next.total_pages = bookData.total_pages;
+          if (bookData.description !== undefined) {
+            next.description_fr = bookData.description;
+          }
+          if (bookData.rating !== undefined) next.rating = bookData.rating;
+          if (bookData.review !== undefined) next.review = bookData.review;
+          return next;
+        })
+      );
+    } else {
+      unifiedContent.setBooks((prev) =>
+        prev.map((b) => (b.id === bookId ? { ...b, ...bookData } : b))
+      );
+    }
+    if (selected?.id === bookId) {
+      booksHook.setSelectedBook({ ...selected, ...bookData });
+    }
+
+    // 2. Persistance API
+    try {
+      if (isDemotedSeries) {
+        const token = getToken();
+        const payload = {};
+        if (bookData.status) payload.series_status = bookData.status;
+        if (bookData.current_page !== undefined) {
+          payload.current_page = bookData.current_page;
+        }
+        if (bookData.total_pages !== undefined) {
+          payload.total_pages = bookData.total_pages;
+        }
+        if (bookData.description !== undefined) {
+          payload.description_fr = bookData.description;
+        }
+        if (bookData.rating !== undefined) payload.rating = bookData.rating;
+        if (bookData.review !== undefined) payload.review = bookData.review;
+        if (Object.keys(payload).length === 0) return;
+        await seriesLibraryService.updateSeriesLibraryEntry(bookId, payload, token);
+        // Éviter un rechargement complet pour méta (résumé / pages) — garde le modal stable
+        const metaOnly =
+          !payload.series_status &&
+          (payload.description_fr !== undefined ||
+            payload.total_pages !== undefined ||
+            payload.rating !== undefined ||
+            payload.review !== undefined ||
+            payload.current_page !== undefined);
+        if (!metaOnly) {
+          await unifiedContent.loadUnifiedContent({
+            forceRefresh: true,
+            silent: true,
+            skipBooks: true,
+            skipStats: true,
+          });
+        }
+      } else {
+        await booksHook.handleUpdateBook(bookId, bookData);
+        await unifiedContent.refreshAfterAdd('books');
+      }
+    } catch (error) {
+      await unifiedContent.loadUnifiedContent({ forceRefresh: true, silent: true });
+      throw error;
+    }
+  };
+
+  const handleAddFromOpenLibrary = async (openLibraryBook) => {
+    try {
+      // CORRECTION RCA : Restaurer la compatibilité d'interface avec SearchLogic
+      // Créer des wrappers compatibles avec l'ancienne signature
+      const loadBooksWrapper = async () => {
+        await unifiedContent.refreshAfterAdd('books');
+        // Également rafraîchir les livres avec l'ancien hook pour compatibilité
+        await booksHook.loadBooks();
+      };
+      
+      const loadStatsWrapper = async () => {
+        await unifiedContent.refreshAfterAdd('stats');
+        // Également rafraîchir les stats avec l'ancien hook pour compatibilité
+        await booksHook.loadStats();
+      };
+      
+      await searchHook.handleAddFromOpenLibrary(openLibraryBook, {
+        books: unifiedContent.books,
+        activeTab,
+        getCategoryBadgeFromBook,
+        loadBooks: loadBooksWrapper,
+        loadStats: loadStatsWrapper
+      });
+    } catch (error) {
+      logger.error('Error adding book:', error);
+      toast.error(error.message || 'Erreur lors de l\'ajout du livre');
+    }
+  };
+
+  // Livre déjà ajouté côté serveur (scan ISBN) : on rafraîchit seulement l'affichage
+  const refreshLibraryAfterImport = async () => {
+    await Promise.allSettled([
+      unifiedContent.refreshAfterAdd('books'),
+      unifiedContent.refreshAfterAdd('stats'),
+      booksHook.loadBooks(),
+      booksHook.loadStats(),
+    ]);
+  };
+
+  // Fonction pour ajouter une série à la bibliothèque
+  const handleAddSeries = async (series) => {
+    try {
+      await SeriesActions.handleAddSeriesToLibrary(series, {
+        setSeriesLibraryLoading: () => {},
+        // Refresh léger en fond (1 passe, pas de retries qui retenaient l'UI)
+        loadUserSeriesLibrary: () =>
+          unifiedContent.loadUnifiedContent({
+            forceRefresh: true,
+            silent: true,
+            skipBooks: true,
+            skipStats: true,
+          }),
+      });
+
+      seriesHook.closeSeriesModal();
+      searchHook.backToLibrary(clearSearch);
+    } catch (error) {
+      // Le toast est déjà émis dans SeriesActions pour les cas connus (ex. 409)
+      logger.error(' Erreur ajout série:', error);
+    }
+  };
+
+  // Gestionnaires de clic
+  const handleSeriesClick = async (series) => {
+    await searchHook.handleSeriesClick(series, seriesHook);
+  };
+
+  const handleItemClick = (item) => {
+    booksHook.handleItemClick(item, seriesHook);
+  };
+
+  const handleAuthorClick = (author) => {
+    // Fermer le modal livre s'il est ouvert
+    if (booksHook.showBookModal) {
+      booksHook.closeBookModal();
+    }
+    
+    // Ouvrir le modal auteur
+    setSelectedAuthor(author);
+    setShowAuthorModal(true);
+  };
+
+  const handleCloseAuthorModal = () => {
+    setShowAuthorModal(false);
+    setSelectedAuthor(null);
+    
+    // Optionnellement, rouvrir le modal livre s'il y avait un livre sélectionné
+    // (pour une expérience utilisateur plus fluide)
+    if (booksHook.selectedBook) {
+      // Petit délai pour éviter le conflit d'animation
+      setTimeout(() => {
+        booksHook.setShowBookModal(true);
+      }, 100);
+    }
+  };
+
+  // Identités stables passées aux grilles, pour que la mémoïsation des cartes tienne
+  const stableItemClick = useStableCallback(handleItemClick);
+  const stableAuthorClick = useStableCallback(handleAuthorClick);
+
+  // Couverture trouvée pour une vignette → mémoriser dans l'état local
+  // (no-op si l'URL est déjà la même : évite de resetter BookGrid en bas de page)
+  const handleCoverFound = useCallback((item, coverUrl) => {
+    if (!item || !coverUrl) return;
+    if (item.isSeriesCard || item.isOwnedSeries) {
+      const sid = item.librarySeriesId || item.seriesLibraryId || item.id;
+      unifiedContent.setUserSeriesLibrary((prev) => {
+        const list = prev || [];
+        const cur = list.find((s) => s.id === sid);
+        if (
+          cur &&
+          (cur.cover_url === coverUrl || cur.cover_image_url === coverUrl)
+        ) {
+          return list;
+        }
+        return list.map((s) =>
+          s.id === sid
+            ? { ...s, cover_image_url: coverUrl, cover_url: coverUrl }
+            : s
+        );
+      });
+      const firstBook = (item.books || []).find((b) => b?.id);
+      if (firstBook?.id) {
+        unifiedContent.setBooks((prev) => {
+          const list = prev || [];
+          const cur = list.find((b) => b.id === firstBook.id);
+          if (cur?.cover_url) return list;
+          return list.map((b) =>
+            b.id === firstBook.id ? { ...b, cover_url: coverUrl } : b
+          );
+        });
+      }
+      return;
+    }
+    unifiedContent.setBooks((prev) => {
+      const list = prev || [];
+      const cur = list.find((b) => b.id === item.id);
+      if (cur?.cover_url === coverUrl) return list;
+      return list.map((b) =>
+        b.id === item.id ? { ...b, cover_url: coverUrl } : b
+      );
+    });
+  }, [unifiedContent]);
+  const stableCoverFound = useStableCallback(handleCoverFound);
+
+  // Ouverture de la fiche auteur demandée depuis une autre page (navigate('/', { state }))
+  useEffect(() => {
+    const author = location.state?.openAuthor;
+    if (!author) return;
+    setSelectedAuthor(author);
+    setShowAuthorModal(true);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location, navigate]);
+
+  // Gestion changement d'onglet
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    localStorage.setItem('booktime_active_tab', newTab);
+  };
+
+  // CORRECTION RCA - Synchronisation activeTab avec filters.category - MISE À JOUR SESSION 75
+  useEffect(() => {
+    // Nouvelle logique pour gérer le regroupement BD + Manga = Romans graphiques
+    if (activeTab === 'graphic_novels') {
+      // Pour Romans graphiques, on utilise un filtre spécial qui sera géré dans useAdvancedSearch
+      setFilters(prev => ({ ...prev, category: 'graphic_novels' }));
+    } else if (activeTab === 'upcoming') {
+      // Pour l'onglet À venir, on utilise un filtre spécial (mais maintenant c'est un panneau)
+      setFilters(prev => ({ ...prev, category: 'upcoming' }));
+    } else {
+      // Pour Romans, on applique le filtre normal
+      setFilters(prev => ({ ...prev, category: activeTab }));
+    }
+  }, [activeTab]);
+
+  // Listener backToLibrary fusionné avec le gestionnaire unique ci-dessus
+
+  // Toast d'information si le backend est en veille (erreur au 1er chargement)
+  useEffect(() => {
+    if (unifiedContent.error && !unifiedContent.loading) {
+      toast('Le serveur se réveille, patiente quelques secondes puis réessaie.', {
+        icon: '',
+        duration: 6000,
+        id: 'backend-wakeup' // éviter les doublons
+      });
+    }
+  }, [unifiedContent.error, unifiedContent.loading]);
+
+  // Helper : recalcule isOwned depuis la bibliothèque courante (évite les faux "déjà possédé" après suppression)
+  const recomputeOwnership = useCallback((olResults, localBooks) => {
+    if (!olResults?.length) return olResults;
+    const index = buildOwnershipIndex(localBooks);
+    return olResults.map((item) =>
+      item.isSeriesCard ? item : { ...item, isOwned: isBookOwned(item, index) }
+    );
+  }, []);
+
+  // Calculer les livres à afficher selon le mode
+  const displayedBooks = useMemo(() => {
+    if (searchHook.isSearchMode) {
+      // Recalcule isOwned à chaque fois que la bibliothèque change (ex. après suppression)
+      const refreshed = recomputeOwnership(searchHook.openLibraryResults, unifiedContent.books) || [];
+      // Les cartes série sont déjà construites/dédupliquées par SearchLogic (source unique
+      // de vérité du regroupement recherche) : on les CONSERVE telles quelles.
+      const searchSeriesCards = refreshed
+        .filter(item => item.isSeriesCard)
+        .sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
+      // Les livres restants (réellement standalone) passent dans le regroupement unifié
+      // pour capter d'éventuelles séries résiduelles, sans dupliquer une carte existante.
+      const rawBooks = refreshed.filter(item => !item.isSeriesCard);
+      const unified = BookActions.createUnifiedDisplay(rawBooks, getCategoryBadgeFromBook, [], {});
+
+      const seenSeriesNames = new Set(
+        searchSeriesCards.map(c => (c.name || c.title || '').toLowerCase().trim()).filter(Boolean)
+      );
+      const extraSeriesCards = [];
+      const standaloneBooks = [];
+      unified.forEach(item => {
+        if (item.isSeriesCard) {
+          const key = (item.name || item.title || '').toLowerCase().trim();
+          if (!key || seenSeriesNames.has(key)) return;
+          seenSeriesNames.add(key);
+          extraSeriesCards.push(item);
+        } else {
+          standaloneBooks.push(item);
+        }
+      });
+
+      return [...searchSeriesCards, ...extraSeriesCards, ...standaloneBooks];
+    }
+    return createUnifiedDisplay(filteredBooks || []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchHook.isSearchMode, searchHook.openLibraryResults, filteredBooks, activeTab, unifiedContent.userSeriesLibrary, unifiedContent.books, recomputeOwnership]);
+
+  const groupedBooks = useMemo(() => {
+    if (searchHook.isSearchMode) {
+      return { all: displayedBooks };
+    }
+    const groups = { reading: [], to_read: [], to_reread: [], completed: [] };
+    displayedBooks.forEach(book => {
+      const status = book.status || 'to_read';
+      (groups[status] || groups.to_read).push(book);
+    });
+    const sortGroup = (arr) => [...arr].sort((a, b) => {
+      if (a.isSeriesCard && !b.isSeriesCard) return -1;
+      if (!a.isSeriesCard && b.isSeriesCard) return 1;
+      return new Date(b.date_added || b.updated_at || 0) - new Date(a.date_added || a.updated_at || 0);
+    });
+    Object.keys(groups).forEach(s => { groups[s] = sortGroup(groups[s]); });
+    return groups;
+  }, [displayedBooks, searchHook.isSearchMode]);
+  const { sortConfig, setSortConfig, sortBooks } = useSectionSort();
+
+  // Tris mémoïsés : appelés directement dans le JSX, ils renvoyaient un nouveau
+  // tableau à chaque rendu et forçaient les grilles à se recalculer.
+  const sortedReading = useMemo(() => sortBooks(groupedBooks.reading || []), [sortBooks, groupedBooks.reading]);
+  const sortedToRead = useMemo(() => sortBooks(groupedBooks.to_read || []), [sortBooks, groupedBooks.to_read]);
+  const sortedToReread = useMemo(() => sortBooks(groupedBooks.to_reread || []), [sortBooks, groupedBooks.to_reread]);
+  const sortedCompleted = useMemo(() => sortBooks(groupedBooks.completed || []), [sortBooks, groupedBooks.completed]);
+
+  return (
+    <div className="min-h-screen bg-honeycomb transition-colors duration-200">
+      {/* Mobile: overlay de recherche */}
+      <MobileSearchOverlay
+        isOpen={showMobileSearch}
+        onClose={() => setShowMobileSearch(false)}
+        searchTerm={searchHook.lastSearchTerm || ''}
+        onSearchChange={searchHook.handleSearchTermChange}
+        onSearch={(term) => {
+          searchHook.handleSearchTermChange(term);
+          // L'overlay se ferme seul après la recherche (voir MobileSearchOverlay)
+          window.scrollTo?.(0, 0);
+          searchOpenLibrary(term);
+        }}
+      />
+
+      <header
+        className={`backdrop-blur-xl sticky top-0 z-30 safe-area-top border-b ${
+          isVoid
+            ? 'bg-[#050505]/75 border-white/[0.04]'
+            : 'bg-booktime-mistSoft/75 dark:bg-gray-900/70 border-booktime-mist/55 dark:border-booktime-800/50 sm:border-b border-b-0'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Desktop header */}
+          <div className="hidden md:flex justify-between items-center h-16">
+            <div className="flex-shrink-0 flex items-center">
+              <h1 className={`text-xl font-bold tracking-tight ${isVoid ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                BOOKTIME
+              </h1>
+            </div>
+            
+            <div className="flex-1 max-w-2xl mx-8">
+              <UnifiedSearchBar 
+                searchTerm={searchHook.lastSearchTerm || ''}
+                onSearchChange={searchHook.handleSearchTermChange}
+                books={unifiedContent.books || []}
+                onOpenLibrarySearch={searchOpenLibrary}
+                filters={filters || {}}
+                onFiltersChange={setFilters}
+                isCompact={true}
+              />
+            </div>
+            
+            <div className="flex-shrink-0 flex items-center space-x-4">
+              <button
+                onClick={() => navigate('/recommendations')}
+                className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                  isVoid
+                    ? 'text-white/55 hover:text-white hover:bg-white/5'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800'
+                }`}
+              >
+                <span>Découvrir</span>
+              </button>
+              
+              <button
+                onClick={() => setShowProfileModal(true)}
+                className={`font-bold py-2 px-4 rounded-full transition-colors duration-200 ${
+                  isVoid
+                    ? 'bg-[#4ade80] hover:bg-[#22c55e] text-black shadow-[0_0_20px_rgba(74,222,128,0.25)]'
+                    : 'bg-booktime-600 hover:bg-booktime-700 text-white shadow-card'
+                }`}
+              >
+                {user?.email?.[0]?.toUpperCase() || '?'}{(user?.email?.[1] || '')?.toUpperCase() || ''}
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile header */}
+          <div className="flex md:hidden justify-between items-center h-12">
+            <div className="flex items-center gap-2">
+              <h1 className={`text-base font-bold tracking-tight ${isVoid ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                BOOKTIME
+              </h1>
+            </div>
+            <div className="flex items-center">
+              <button
+                type="button"
+                onClick={() => setShowIsbnScanner(true)}
+                aria-label="Scanner un ISBN"
+                className={`p-2 ${isVoid ? 'text-white/45 hover:text-white/80' : 'text-gray-500 dark:text-gray-400'}`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7V5a1 1 0 011-1h2M4 17v2a1 1 0 001 1h2m10-16h2a1 1 0 011 1v2m0 10v2a1 1 0 01-1 1h-2" />
+                  <path strokeLinecap="round" strokeWidth={2} d="M8 8v8M10.5 8v8M13 8v8M15.5 8v8M18 8v8" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowMobileSearch(true)}
+                aria-label="Rechercher"
+                className={`p-2 ${isVoid ? 'text-white/45 hover:text-white/80' : 'text-gray-500 dark:text-gray-400'}`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0">
+        <div className="px-4 sm:px-6 lg:px-8">
+          {/* Mode recherche */}
+          {searchHook.isSearchMode && (
+            <div className="py-3 sm:py-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+                <div>
+                  <h2 className={`font-display text-lg sm:text-2xl font-semibold tracking-tight ${isVoid ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                    Résultats pour «&nbsp;{searchHook.lastSearchTerm}&nbsp;»
+                  </h2>
+                  <p className={`text-xs sm:text-sm ${isVoid ? 'text-white/45' : 'text-gray-600 dark:text-gray-400'}`}>
+                    {displayedBooks.length} résultat(s) trouvé(s)
+                  </p>
+                </div>
+                <button
+                  onClick={backToLibrary}
+                  className={`self-start sm:self-auto px-3 sm:px-4 py-1.5 sm:py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                    isVoid
+                      ? 'text-white/80 bg-white/5 ring-1 ring-white/10 hover:bg-white/10'
+                      : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 ring-1 ring-gray-900/10 dark:ring-white/10 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  ← Retour
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {/* Mode bibliothèque */}
+          {!searchHook.isSearchMode && (
+            <div className="py-3 sm:py-6">
+              {/* Onglets de navigation */}
+              <div className="flex justify-between items-center mb-4 sm:mb-6">
+                <div className="flex space-x-1 overflow-x-auto scrollbar-hide mobile-scroll-x pb-1 sm:pb-0 flex-1 mr-2">
+                  {TAB_CONFIG.filter(tab => tab.key !== 'upcoming').map((tab) => (
+                    <button
+                      key={tab.key}
+                      onClick={() => handleTabChange(tab.key)}
+                      className={`flex-shrink-0 px-3 sm:px-4 py-2 rounded-full font-medium transition-colors duration-200 text-sm sm:text-base ${
+                        activeTab === tab.key
+                          ? isVoid
+                            ? 'bg-[#4ade80] text-black shadow-[0_0_18px_rgba(74,222,128,0.22)]'
+                            : 'bg-booktime-600 text-white shadow-card'
+                          : isVoid
+                            ? 'bg-white/[0.04] hover:bg-white/[0.08] text-white/50'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+                
+                <button
+                  onClick={openUpcomingPanel}
+                  className={`hidden md:flex px-4 py-2 rounded-full font-medium transition-colors duration-200 ${
+                    isVoid
+                      ? 'bg-white/[0.06] hover:bg-white/[0.1] text-white/70'
+                      : 'bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/20 dark:hover:bg-purple-800/30 dark:text-purple-300'
+                  }`}
+                >
+                  <span>À venir</span>
+                  <NotificationBadge count={unreadNotifications} className="ml-2 self-center" />
+                </button>
+              </div>
+              
+              {/* Stats oblongues — une seule ligne sur mobile */}
+              {!searchHook.isSearchMode && (() => {
+                const completed = (groupedBooks.completed || []).length;
+                const reading   = (groupedBooks.reading   || []).length;
+                const toRead    = (groupedBooks.to_read   || []).length;
+                const toReread  = (groupedBooks.to_reread || []).length;
+                const total     = completed + reading + toRead + toReread;
+                return (
+                  <div className="flex flex-nowrap items-center gap-1.5 sm:gap-2.5 mb-4 sm:mb-6 overflow-x-auto scrollbar-hide mobile-scroll-x -mx-1 px-1">
+                    {[
+                      { value: total,     label: 'Total' },
+                      { value: completed, label: 'Terminés' },
+                      { value: reading,   label: 'En cours' },
+                      { value: toRead,    label: 'À lire' },
+                      ...(toReread > 0
+                        ? [{ value: toReread, label: 'À relire' }]
+                        : []),
+                    ].map((s, i) => (
+                      <div
+                        key={s.label}
+                        className={`flex-shrink-0 inline-flex items-center gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-3.5 py-1 sm:py-1.5 section-appear border ${
+                          isVoid
+                            ? 'border-white/[0.08] bg-white/[0.05]'
+                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                        }`}
+                        style={{ animationDelay: `${i * 80}ms` }}
+                      >
+                        <AnimatedCounter
+                          value={s.value}
+                          className={`text-sm sm:text-base font-semibold tabular-nums leading-none ${
+                            isVoid ? 'text-white/90' : 'text-gray-800 dark:text-gray-100'
+                          }`}
+                        />
+                        <span
+                          className={`text-[10px] sm:text-xs whitespace-nowrap leading-none ${
+                            isVoid ? 'text-white/40' : 'text-gray-500 dark:text-gray-400'
+                          }`}
+                        >
+                          {s.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+          
+          {/* Affichage par sections de statut - MODIFICATION ORGANISATIONNELLE */}
+          {!searchHook.isSearchMode && (
+            <div className="space-y-6 sm:space-y-8">
+
+              {/* Erreur de chargement */}
+              {unifiedContent.error && !unifiedContent.loading && (
+                <div className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm ${
+                  isVoid
+                    ? 'border border-red-500/30 bg-red-950/40 text-red-300'
+                    : 'border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
+                }`}>
+                  <span></span>
+                  <span>Impossible de charger ta bibliothèque. Vérifie ta connexion et <button className="underline font-medium" onClick={() => unifiedContent.loadUnifiedContent({ forceRefresh: true })}>réessaie</button>.</span>
+                </div>
+              )}
+
+              {/* Skeleton de chargement initial */}
+              {unifiedContent.loading && (
+                <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-x-2.5 gap-y-4 sm:gap-5 p-1 sm:p-6">
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className={`rounded-xl aspect-[2/3] mb-2 ${isVoid ? 'bg-white/[0.06] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.28)]' : 'bg-gray-200 dark:bg-gray-700'}`} />
+                      <div className={`h-3 rounded mb-1 ${isVoid ? 'bg-white/[0.06]' : 'bg-gray-200 dark:bg-gray-700'}`} />
+                      <div className={`h-2 rounded w-2/3 ${isVoid ? 'bg-white/[0.04]' : 'bg-gray-200 dark:bg-gray-700'}`} />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Section EN COURS */}
+              {!unifiedContent.loading && groupedBooks.reading && groupedBooks.reading.length > 0 && (
+                <div className="section-appear">
+                  <div className="flex items-center mb-3 sm:mb-4 flex-wrap gap-2">
+                    <h2 className={`text-base sm:text-xl font-semibold text-green-600 dark:text-white`}>
+                      En cours ({groupedBooks.reading.length})
+                    </h2>
+                    <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} isVoid={isVoid} />
+                  </div>
+                  <BookGrid
+                    books={sortedReading}
+                    loading={false}
+                    onItemClick={stableItemClick}
+                    onAuthorClick={stableAuthorClick}
+                    onCoverFound={stableCoverFound}
+                    showEmptyState={false}
+                  />
+                </div>
+              )}
+
+              {/* Section À LIRE */}
+              {!unifiedContent.loading && groupedBooks.to_read && groupedBooks.to_read.length > 0 && (
+                <div className="section-appear" style={{ animationDelay: '80ms' }}>
+                  <div className="flex items-center mb-4 flex-wrap gap-2">
+                    <h2 className={`text-xl font-semibold text-green-600 dark:text-white`}>
+                      À lire ({groupedBooks.to_read.length})
+                    </h2>
+                    <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} isVoid={isVoid} />
+                  </div>
+                  <BookGrid
+                    books={sortedToRead}
+                    loading={false}
+                    onItemClick={stableItemClick}
+                    onAuthorClick={stableAuthorClick}
+                    onCoverFound={stableCoverFound}
+                    showEmptyState={false}
+                  />
+                </div>
+              )}
+
+              {/* Section À RELIRE — visible seulement s'il y a au moins un livre */}
+              {!unifiedContent.loading && groupedBooks.to_reread && groupedBooks.to_reread.length > 0 && (
+                <div className="section-appear" style={{ animationDelay: '120ms' }}>
+                  <div className="flex items-center mb-4 flex-wrap gap-2">
+                    <h2 className={`text-xl font-semibold text-green-600 dark:text-white`}>
+                      À relire ({groupedBooks.to_reread.length})
+                    </h2>
+                    <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} isVoid={isVoid} />
+                  </div>
+                  <BookGrid
+                    books={sortedToReread}
+                    loading={false}
+                    onItemClick={stableItemClick}
+                    onAuthorClick={stableAuthorClick}
+                    onCoverFound={stableCoverFound}
+                    showEmptyState={false}
+                  />
+                </div>
+              )}
+
+              {/* Section TERMINÉ */}
+              {!unifiedContent.loading && groupedBooks.completed && groupedBooks.completed.length > 0 && (
+                <div className="section-appear" style={{ animationDelay: '160ms' }}>
+                  <div className="flex items-center mb-4 flex-wrap gap-2">
+                    <h2 className={`text-xl font-semibold text-green-600 dark:text-white`}>
+                      Terminé ({groupedBooks.completed.length})
+                    </h2>
+                    <SortControls sortConfig={sortConfig} setSortConfig={setSortConfig} isVoid={isVoid} />
+                  </div>
+                  <BookGrid
+                    books={sortedCompleted}
+                    loading={false}
+                    onItemClick={stableItemClick}
+                    onAuthorClick={stableAuthorClick}
+                    onCoverFound={stableCoverFound}
+                    showEmptyState={false}
+                  />
+                </div>
+              )}
+
+              {/* Section Découvrir — pas pour Romans graphiques (catalogue vide) */}
+              {activeTab !== 'graphic_novels' && !unifiedContent.loading && ((groupedBooks.reading?.length || 0) + (groupedBooks.to_read?.length || 0) + (groupedBooks.to_reread?.length || 0) + (groupedBooks.completed?.length || 0)) < 10 && (
+                <div className="section-appear" style={{ animationDelay: '240ms' }}>
+                  <DiscoverSection
+                    activeCategory={activeTab}
+                    userBooks={unifiedContent.books || []}
+                    onBookAdded={() => unifiedContent.refreshAfterAdd('books')}
+                  />
+                </div>
+              )}
+
+              {/* Section Découvrir — affichée quand la bibliothèque est vide */}
+              {!unifiedContent.loading &&
+               (!groupedBooks.reading || groupedBooks.reading.length === 0) &&
+               (!groupedBooks.to_read || groupedBooks.to_read.length === 0) &&
+               (!groupedBooks.to_reread || groupedBooks.to_reread.length === 0) &&
+               (!groupedBooks.completed || groupedBooks.completed.length === 0) && (
+                <div className="section-appear">
+                  <div className="text-center py-8 mb-6">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
+                      Ta bibliothèque est vide
+                    </h3>
+                    {activeTab !== 'graphic_novels' && (
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">
+                        Découvre des livres populaires et ajoute-les à ta collection !
+                      </p>
+                    )}
+                  </div>
+                  {activeTab !== 'graphic_novels' && (
+                    <DiscoverSection
+                      activeCategory={activeTab}
+                      userBooks={unifiedContent.books || []}
+                      onBookAdded={() => unifiedContent.refreshAfterAdd('books')}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Mode recherche - Grille unique avec données unifiées */}
+          {searchHook.isSearchMode && (
+            <BookGrid
+              books={displayedBooks}
+              loading={searchHook.searchLoading}
+              onItemClick={stableItemClick}
+              onAuthorClick={stableAuthorClick}
+              onCoverFound={stableCoverFound}
+              showEmptyState={true}
+              emptyTitle="Aucun résultat pour cette recherche"
+              emptySubtitle="Essaie un autre titre, auteur, ou orthographe."
+            />
+          )}
+        </div>
+      </main>
+      
+      {/* Modales : code chargé à la demande, d'où la frontière Suspense.
+          Fallback nul : la modale s'affiche dès que son code est là. */}
+      <Suspense fallback={null}>
+      {booksHook.showBookModal && booksHook.selectedBook && (
+        <BookDetailModal
+          book={booksHook.selectedBook}
+          isOpen={booksHook.showBookModal}
+          onClose={booksHook.closeBookModal}
+          onUpdate={handleUpdateBookOptimistic}
+          onDelete={async (bookId) => {
+            const selected = booksHook.selectedBook;
+            if (selected?.isDemotedSeries && selected?.id === bookId) {
+              const token = getToken();
+              await seriesLibraryService.deleteSeriesFromLibrary(bookId, token);
+              booksHook.closeBookModal();
+              toast.success('Livre retiré de la bibliothèque');
+              await unifiedContent.loadUnifiedContent({ forceRefresh: true, silent: true });
+              return;
+            }
+            await booksHook.handleDeleteBook(bookId);
+            // Rafraîchir unifiedContent pour que isOwned soit recalculé dans les résultats de recherche
+            await unifiedContent.loadUnifiedContent({ forceRefresh: true, skipSeries: true, skipStats: true });
+          }}
+          onAddFromOpenLibrary={handleAddFromOpenLibrary}
+          onAuthorClick={handleAuthorClick}
+        />
+      )}
+      
+      {seriesHook.showSeriesModal && seriesHook.selectedSeries && (
+        <SeriesDetailModal
+          series={seriesHook.selectedSeries}
+          isOpen={seriesHook.showSeriesModal}
+          onClose={seriesHook.closeSeriesModal}
+          onUpdate={() => unifiedContent.loadUnifiedContent({ forceRefresh: true })}
+          onDelete={() => {
+            seriesHook.closeSeriesModal();
+            unifiedContent.loadUnifiedContent({ forceRefresh: true });
+          }}
+          onAddSeries={handleAddSeries}
+          onAuthorClick={handleAuthorClick}
+          userSeriesLibrary={unifiedContent.userSeriesLibrary || []}
+        />
+      )}
+      
+      {showAuthorModal && selectedAuthor && (
+        <AuthorModal
+          author={selectedAuthor}
+          isOpen={showAuthorModal}
+          onClose={handleCloseAuthorModal}
+          userBooks={unifiedContent.books || []}
+          onAddBook={async (bookData) => { await BookActions.addBook(bookData); await unifiedContent.refreshAfterAdd('books'); }}
+          onOpenSeries={(series) => {
+            // La fiche auteur est rendue dans document.body (au-dessus du carrousel) :
+            // on la ferme pour que la fiche série s'affiche bien par-dessus.
+            setShowAuthorModal(false);
+            setSelectedAuthor(null);
+            seriesHook.setSelectedSeries(series);
+            seriesHook.setShowSeriesModal(true);
+          }}
+          onAddSeries={async (series) => {
+            await seriesHook.handleAddSeriesToLibrary(series);
+            // Refresh en fond — ne pas bloquer sur les retries
+            unifiedContent
+              .loadUnifiedContent({
+                forceRefresh: true,
+                silent: true,
+                skipBooks: true,
+                skipStats: true,
+              })
+              .catch(() => {});
+          }}
+        />
+      )}
+      
+      {showIsbnScanner && (
+        <IsbnScannerModal
+          isOpen={showIsbnScanner}
+          onClose={() => setShowIsbnScanner(false)}
+          onAdded={refreshLibraryAfterImport}
+        />
+      )}
+
+      {showProfileModal && (
+        <ProfileModal
+          isOpen={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+          onAuthorClick={handleAuthorClick}
+          onAddFromOpenLibrary={handleAddFromOpenLibrary}
+          onBookImported={refreshLibraryAfterImport}
+          libraryBooks={unifiedContent.books || []}
+          librarySeries={unifiedContent.userSeriesLibrary || []}
+          onOpenBook={(bookId) => {
+            const book = (unifiedContent.books || []).find((b) => b.id === bookId);
+            if (book) {
+              booksHook.setSelectedBook(book);
+              booksHook.setShowBookModal(true);
+            }
+          }}
+          onOpenSeries={(seriesId) => {
+            const series = (unifiedContent.userSeriesLibrary || []).find((s) => s.id === seriesId);
+            if (series) {
+              handleSeriesClick({
+                ...series,
+                name: series.series_name || series.name,
+                isOwnedSeries: true,
+                isLibrarySeries: true,
+              });
+            }
+          }}
+        />
+      )}
+      
+      {showExportImportModal && (
+        <ExportImportModal
+          isOpen={showExportImportModal}
+          onClose={() => setShowExportImportModal(false)}
+          backendUrl={process.env.REACT_APP_BACKEND_URL}
+          token={getToken()}
+        />
+      )}
+      
+      {showFriendsModal && (
+        <FriendsModal
+          isOpen={showFriendsModal}
+          onClose={() => setShowFriendsModal(false)}
+          recommendBook={friendsRecommendBook}
+          inviteCode={friendsInviteCode}
+          libraryBooks={unifiedContent.books || []}
+          onOpenBook={(bookLike) => {
+            booksHook.setSelectedBook(bookLike);
+            booksHook.setShowBookModal(true);
+          }}
+        />
+      )}
+
+      {showSocialModal && (
+        <SocialModal
+          isOpen={showSocialModal}
+          onClose={() => setShowSocialModal(false)}
+          currentUser={user}
+        />
+      )}
+      
+      {/* PHASE 3.4 - Modal Recommandations Avancées */}
+      {showAdvancedRecommendationsModal && (
+        <AdvancedRecommendationsModal
+          isOpen={showAdvancedRecommendationsModal}
+          onClose={() => setShowAdvancedRecommendationsModal(false)}
+          onAddBook={async (bookData) => {
+            try {
+              await BookActions.addBook(bookData);
+              setActiveTab(bookData.category || 'roman');
+              // PHASE C.2 : Utiliser rafraîchissement optimisé avec cache intelligent
+              await unifiedContent.refreshAfterAdd('books', {
+                expectNewItem: true,
+                maxRetries: 2,
+                retryDelay: 800
+              });
+            } catch (error) {
+              logger.error('Erreur lors de l\'ajout du livre:', error);
+              toast.error(error.message || 'Erreur lors de l\'ajout du livre');
+            }
+          }}
+        />
+      )}
+      
+      {/* PHASE 3.5 - Modal Intégrations Externes */}
+      {showIntegrationsModal && (
+        <IntegrationsModal
+          isOpen={showIntegrationsModal}
+          onClose={() => setShowIntegrationsModal(false)}
+          onAddBooks={async (booksArray) => {
+            try {
+              for (const bookData of booksArray) {
+                await BookActions.addBook(bookData);
+              }
+              // PHASE C.2 : Utiliser rafraîchissement optimisé avec cache intelligent
+              await unifiedContent.refreshAfterAdd('books', {
+                expectNewItem: true,
+                maxRetries: 2,
+                retryDelay: 800
+              });
+            } catch (error) {
+              logger.error('Erreur lors de l\'ajout des livres:', error);
+              toast.error(error.message || 'Erreur lors de l\'import des livres');
+            }
+          }}
+        />
+      )}
+      
+      </Suspense>
+
+      {/* Toasts : PrimaryTabsLayout (partagés entre les 4 onglets mobiles) */}
+
+      {/* Panneau "À venir" — desktop (mobile = page /upcoming) */}
+      {(showUpcomingPanel || upcomingMounted) && (
+        <Suspense fallback={null}>
+          <UpcomingPanel
+            isOpen={showUpcomingPanel}
+            onClose={() => setShowUpcomingPanel(false)}
+            userBooks={unifiedContent.books || []}
+          />
+        </Suspense>
+      )}
+      
+      <PwaInstallPrompt />
+      <OfflineBanner />
+    </div>
+  );
+}

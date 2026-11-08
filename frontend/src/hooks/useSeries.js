@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import SeriesActions from '../components/series/SeriesActions';
 
 // Hook personnalisé pour gérer l'état des séries

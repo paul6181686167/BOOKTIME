@@ -101,10 +101,11 @@ const BookDetailsGrid = ({
             {isEditing ? (
               <div className="grid grid-cols-3 gap-3">
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="book-edit-saga" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Série (optionnel)
                   </label>
                   <input
+                    id="book-edit-saga"
                     type="text"
                     value={editData.saga}
                     onChange={(e) => setEditData(prev => ({ ...prev, saga: e.target.value }))}
@@ -113,10 +114,11 @@ const BookDetailsGrid = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="book-edit-volume" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Tome n°
                   </label>
                   <input
+                    id="book-edit-volume"
                     type="number"
                     value={editData.volume_number}
                     onChange={(e) => setEditData(prev => ({ ...prev, volume_number: e.target.value }))}
@@ -138,10 +140,11 @@ const BookDetailsGrid = ({
             {/* Statut — uniquement si le livre est dans la bibliothèque */}
             {inLibrary && (isEditing ? (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="book-edit-status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Statut
                 </label>
                 <select
+                  id="book-edit-status"
                   value={editData.status}
                   onChange={(e) => setEditData(prev => ({ ...prev, status: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-booktime-500 transition-colors"
@@ -170,6 +173,7 @@ const BookDetailsGrid = ({
                   <div className="space-y-2">
                     <input
                       type="number"
+                      aria-label="Pages lues"
                       value={editData.current_page}
                       onChange={(e) => setEditData(prev => ({ ...prev, current_page: e.target.value }))}
                       min="0"
@@ -209,6 +213,8 @@ const BookDetailsGrid = ({
                         key={star}
                         type="button"
                         onClick={() => handleRatingClick(star)}
+                        aria-label={`Noter ${star} sur 5`}
+                        aria-pressed={star <= (editData.rating || book.rating || 0)}
                         className="h-6 w-6 cursor-pointer"
                       >
                         {star <= (editData.rating || book.rating || 0) ? (
@@ -224,6 +230,7 @@ const BookDetailsGrid = ({
                 <div>
                   <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Avis</h3>
                   <textarea
+                    aria-label="Votre avis sur ce livre"
                     value={editData.review}
                     onChange={(e) => setEditData((prev) => ({ ...prev, review: e.target.value }))}
                     rows={4}

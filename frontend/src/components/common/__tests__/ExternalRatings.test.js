@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import ExternalRatings from '../ExternalRatings';
 import { fetchExternalRatings } from '../../../services/externalRatingsService';
 
@@ -36,7 +36,9 @@ test('indique l’absence de note mais garde les liens de recherche', async () =
 test('ne montre rien si le serveur est injoignable', async () => {
   fetchExternalRatings.mockRejectedValue(new Error('offline'));
   const { container } = render(<ExternalRatings title="X Y Z" />);
-  await screen.findByText('Notes des autres sites').catch(() => {});
-  await new Promise((r) => setTimeout(r, 0));
+  await waitFor(() => expect(fetchExternalRatings).toHaveBeenCalled());
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, 0));
+  });
   expect(container).toBeEmptyDOMElement();
 });

@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { API_BASE_URL } from '../config/environment';
 import logger from '../utils/logger';
+import { getToken } from '../services/apiClient';
 
 export const useAdvancedSearch = (books = []) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -38,7 +39,7 @@ export const useAdvancedSearch = (books = []) => {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const params = new URLSearchParams({
         q: term,
         ...(category && { category })

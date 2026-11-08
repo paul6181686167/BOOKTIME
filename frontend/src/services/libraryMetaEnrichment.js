@@ -18,6 +18,7 @@ import {
 import { searchCoverInBrowser } from '../utils/coverClientSearch';
 import { bookService } from './bookService';
 import { updateSeriesLibraryEntry } from './seriesLibraryService';
+import { getToken } from './apiClient';
 
 function enrichmentLimits() {
   const mobile = isMobileClient();
@@ -38,7 +39,7 @@ let running = false;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function authHeaders() {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -251,7 +252,7 @@ async function resolvePages(item) {
 }
 
 async function persistCoverIfPossible(item, cover) {
-  if (!isUsableCoverUrl(cover) || !localStorage.getItem('token')) return;
+  if (!isUsableCoverUrl(cover) || !getToken()) return;
   try {
     if (item.isSeriesCard || item.isOwnedSeries || item.series_name) {
       const sid = item.librarySeriesId || item.seriesLibraryId || item.id;
@@ -259,7 +260,7 @@ async function persistCoverIfPossible(item, cover) {
         await updateSeriesLibraryEntry(
           sid,
           { cover_image_url: cover },
-          localStorage.getItem('token')
+          getToken()
         );
       }
       return;
@@ -280,7 +281,7 @@ async function enrichBookCover(item, { setBooks }) {
     isbn: item.isbn || item.item?.isbn,
     ol_key: item.ol_key || item.item?.ol_key,
   });
-  if (!isUsableCoverUrl(cover) && localStorage.getItem('token')) {
+  if (!isUsableCoverUrl(cover) && getToken()) {
     const data = await fetchJson(
       `${API_BASE_URL}/api/books/${item.id}/cover`,
       { method: 'POST', headers: authHeaders() },
@@ -305,7 +306,7 @@ async function enrichSeriesCover(item, { setBooks, setUserSeriesLibrary }) {
     isbn: item.isbn || item.item?.isbn,
     ol_key: item.ol_key || item.item?.ol_key,
   });
-  if (!isUsableCoverUrl(cover) && localStorage.getItem('token')) {
+  if (!isUsableCoverUrl(cover) && getToken()) {
     const data = await fetchJson(
       `${API_BASE_URL}/api/series/library/${item.id}/cover`,
       { method: 'POST', headers: authHeaders() },
@@ -425,7 +426,7 @@ async function enrichDemoted(item, { setUserSeriesLibrary }) {
   if (description) patch.description_fr = description;
   if (pages > 0) patch.total_pages = pages;
   if (!Object.keys(patch).length) return false;
-  const token = localStorage.getItem('token');
+  const token = getToken();
   if (!token) return false;
   await updateSeriesLibraryEntry(item.id, patch, token);
   if (typeof setUserSeriesLibrary === 'function') {
@@ -478,7 +479,7 @@ export async function enrichLibraryMetadata({
   setUserSeriesLibrary,
 } = {}) {
   if (running) return;
-  if (!localStorage.getItem('token')) return;
+  if (!getToken()) return;
 
   const limits = enrichmentLimits();
   running = true;
@@ -592,7 +593,7 @@ export async function resolveCoverForVisibleItem(item) {
     }
 
     // 3) Backend en dernier recours
-    if (!isUsableCoverUrl(cover) && localStorage.getItem('token')) {
+    if (!isUsableCoverUrl(cover) && getToken()) {
       if (
         (item.isSeriesCard || item.isOwnedSeries) &&
         isRealLibraryId(item.librarySeriesId || item.seriesLibraryId || item.id)

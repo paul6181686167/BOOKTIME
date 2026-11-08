@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { StarIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { API_BASE_URL } from '../../config/environment';
+import { getToken } from '../../services/apiClient';
 
 function Stars({ value, size = 'md' }) {
   const n = Math.round(Number(value) || 0);
   const cls = size === 'sm' ? 'h-4 w-4' : 'h-5 w-5';
   return (
-    <div className="flex items-center gap-0.5" aria-label={`${value || 0} sur 5`}>
+    <div className="flex items-center gap-0.5" role="img" aria-label={`Note : ${value || 0} sur 5`}>
       {[1, 2, 3, 4, 5].map((star) =>
         star <= n ? (
           <StarSolidIcon key={star} className={`${cls} text-yellow-400`} />
@@ -48,7 +49,7 @@ export default function CommunityReviews({
       setLoading(true);
       setError(null);
       try {
-        const token = localStorage.getItem('token');
+        const token = getToken();
         const params = new URLSearchParams();
         if (title) params.set('title', title);
         if (author && author !== 'Auteur inconnu') params.set('author', author);

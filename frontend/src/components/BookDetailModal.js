@@ -18,6 +18,7 @@ import BookHeaderSection from './book-detail/BookHeaderSection';
 import BookDetailsGrid from './book-detail/BookDetailsGrid';
 import BookActionBar from './book-detail/BookActionBar';
 import logger from '../utils/logger';
+import { getToken } from '../services/apiClient';
 
 // Déclenche les confettis de célébration
 const launchConfetti = () => {
@@ -136,7 +137,7 @@ const BookDetailModal = ({ book, onClose, onUpdate, onDelete, onAddFromOpenLibra
     }
 
     const reqId = ++metaReqIdRef.current;
-    const token = localStorage.getItem('token');
+    const token = getToken();
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     const fetchKey = `${book.id}|${book.title}|p=${needsPages}|d=${needsDesc}|v=${needsVerify}`;
     if (pagesFetchDoneRef.current === fetchKey) {

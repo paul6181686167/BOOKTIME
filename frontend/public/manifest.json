@@ -32,7 +32,7 @@
   "id": "booktime-v12-chrome",
   "display": "standalone",
   "display_override": ["standalone", "browser"],
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "theme_color": "#050505",
   "background_color": "#050505",
   "categories": ["books", "lifestyle", "entertainment"],

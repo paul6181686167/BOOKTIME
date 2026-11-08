@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { API_BASE_URL } from '../../config/environment';
 import logger from '../../utils/logger';
+import { getToken } from '../../services/apiClient';
 
 function normalizeIsbn(raw) {
   return String(raw || '')
@@ -122,8 +123,10 @@ export function buildImportPayload(book) {
 
 /** Vignette : repli lisible si la couverture est absente, cassée ou réduite à un pixel. */
 function CoverThumb({ url, title }) {
-  const [failed, setFailed] = useState(false);
-  useEffect(() => setFailed(false), [url]);
+  // On mémorise l'URL en échec (plutôt qu'un booléen réinitialisé dans un effet) : une image
+  // déjà en cache peut se charger avant l'exécution des effets, et le reset effaçait alors le verdict.
+  const [failedUrl, setFailedUrl] = useState(null);
+  const failed = failedUrl === url;
 
   if (!url || failed) {
     return (
@@ -141,9 +144,9 @@ function CoverThumb({ url, title }) {
       alt=""
       className="w-full h-full object-cover"
       onLoad={(e) => {
-        if (e.currentTarget.naturalWidth <= 1) setFailed(true);
+        if (e.currentTarget.naturalWidth <= 1) setFailedUrl(url);
       }}
-      onError={() => setFailed(true)}
+      onError={() => setFailedUrl(url)}
     />
   );
 }
@@ -205,7 +208,7 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAdded
       setLookingUp(true);
       setFoundBook(null);
       try {
-        const token = localStorage.getItem('token');
+        const token = getToken();
         const res = await fetch(
           `${API_BASE_URL}/api/openlibrary/search-isbn?isbn=${encodeURIComponent(isbn)}`,
           {
@@ -369,7 +372,7 @@ export default function IsbnScannerModal({ isOpen, onClose, onBookFound, onAdded
     if (!foundBook || adding) return;
     setAdding(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const res = await fetch(`${API_BASE_URL}/api/openlibrary/import`, {
         method: 'POST',
         headers: {

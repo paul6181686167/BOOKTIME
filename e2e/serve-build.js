@@ -1,6 +1,10 @@
 /**
  * Serveur statique minimal pour les tests e2e : sert frontend/build avec repli SPA
  * (toute route inconnue renvoie index.html), comme le fait Vercel.
+ *
+ * Les en-têtes de sécurité globaux de vercel.json (CSP, Permissions-Policy…) sont
+ * appliqués à l'identique : les tests tournent donc sous la politique de production et
+ * tout script ou ressource bloqué(e) par la CSP fait échouer le test de non-régression.
  */
 const http = require('http');
 const fs = require('fs');
@@ -22,6 +26,25 @@ const TYPES = {
   '.webmanifest': 'application/manifest+json',
 };
 
+function securityHeaders() {
+  try {
+    const config = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'vercel.json'), 'utf8'));
+    const block = (config.headers || []).find((h) => h.source === '/(.*)');
+    return Object.fromEntries(
+      (block ? block.headers : []).map((h) => [
+        h.key,
+        // En test, l'API simulée est jointe en http://localhost:8001 (en production : https)
+        h.key === 'Content-Security-Policy'
+          ? h.value.replace("connect-src 'self'", "connect-src 'self' http://localhost:8001 http://127.0.0.1:8001")
+          : h.value,
+      ])
+    );
+  } catch {
+    return {};
+  }
+}
+const SECURITY = securityHeaders();
+
 http
   .createServer((req, res) => {
     const urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
@@ -33,7 +56,10 @@ http
     if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) {
       file = path.join(root, 'index.html');
     }
-    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream' });
+    res.writeHead(200, {
+      ...SECURITY,
+      'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream',
+    });
     fs.createReadStream(file).pipe(res);
   })
   .listen(port, '127.0.0.1', () => {

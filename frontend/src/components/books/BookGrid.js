@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { resolveCoverForGridItem } from '../../utils/helpers';
 import { displayBookTitleFrFirst } from '../../utils/openLibraryBookDisplay';
 import { colorsForGridItem, collectionRimShadow } from '../../utils/collectionsStorage';

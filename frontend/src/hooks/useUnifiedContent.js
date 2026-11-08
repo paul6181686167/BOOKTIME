@@ -8,6 +8,7 @@ import {
   loadLibraryCache,
   loadSeriesCache,
 } from '../utils/offlineLibraryCache';
+import { getToken } from '../services/apiClient';
 
 function readLocalLibrarySnapshot() {
   const books = loadLibraryCache({})?.books || [];
@@ -92,7 +93,7 @@ export const useUnifiedContent = () => {
     // Préférences de lecture
     promises.push(
       fetch(`${API_BASE_URL || ''}/api/series/reading-preferences`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        headers: { Authorization: `Bearer ${getToken()}` }
       })
         .then(r => r.ok ? r.json() : { preferences: {} })
         .then(data => setReadingPreferences(data.preferences || {}))

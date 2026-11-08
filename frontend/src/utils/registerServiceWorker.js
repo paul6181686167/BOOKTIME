@@ -4,7 +4,33 @@ import { isNativeApp } from './platform';
  * Enregistrement du Service Worker Booktime (PWA).
  * Activé en production, ou en local si REACT_APP_ENABLE_SW=true.
  * Vérifie les mises à jour à chaque ouverture / retour sur l'app.
+ *
+ * Quand une nouvelle version prend la main, l'application n'est plus rechargée de force :
+ * on prévient l'interface (bandeau « Nouvelle version disponible », voir UpdateBanner).
+ * Seule exception : si l'application est en arrière-plan, on recharge tout de suite, car
+ * personne n'est en train d'y saisir quoi que ce soit.
  */
+export const UPDATE_READY_EVENT = 'booktime:update-ready';
+
+let updateReady = false;
+
+export const isUpdateReady = () => updateReady;
+
+/** Recharge la page pour charger la dernière version. */
+export const applyUpdate = () => {
+  window.location.reload();
+};
+
+function signalUpdate() {
+  if (updateReady) return;
+  updateReady = true;
+  if (document.visibilityState === 'hidden') {
+    applyUpdate();
+    return;
+  }
+  window.dispatchEvent(new Event(UPDATE_READY_EVENT));
+}
+
 export function registerServiceWorker() {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
     return;
@@ -22,19 +48,24 @@ export function registerServiceWorker() {
     return;
   }
 
-  let refreshing = false;
-  const reloadOnce = () => {
-    if (refreshing) return;
-    refreshing = true;
-    window.location.reload();
+  // Première installation : il n'y a rien à « mettre à jour », on ne dérange personne
+  const hadController = !!navigator.serviceWorker.controller;
+  const onUpdate = () => {
+    if (hadController) signalUpdate();
   };
 
-  // Nouveau SW actif → recharge pour charger le JS/CSS du dernier déploiement
-  navigator.serviceWorker.addEventListener('controllerchange', reloadOnce);
+  navigator.serviceWorker.addEventListener('controllerchange', onUpdate);
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'SW_UPDATED') {
-      reloadOnce();
+      onUpdate();
     }
+  });
+
+  // Un fichier JS d'une ancienne version qui n'existe plus : seul un rechargement répare
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason;
+    const text = String((reason && (reason.name || reason.message)) || '');
+    if (/ChunkLoadError|Loading chunk|Loading CSS chunk/i.test(text)) signalUpdate();
   });
 
   const askSkipWaiting = (registration) => {

@@ -12,6 +12,7 @@
  */
 
 import { toast } from 'react-hot-toast';
+import { confirmAction } from '../../utils/confirmDialog';
 import * as seriesLibraryService from '../../services/seriesLibraryService';
 import { EXTENDED_SERIES_DATABASE } from '../../utils/seriesDatabaseExtended.js';
 import {
@@ -19,6 +20,7 @@ import {
   saveSeriesCache,
 } from '../../utils/offlineLibraryCache';
 import logger from '../../utils/logger';
+import { getToken } from '../../services/apiClient';
 
 /** Couverture déjà connue sur la carte / les tomes — sans rappeler Open Library. */
 const resolveSeriesCover = (seriesData) => {
@@ -39,7 +41,7 @@ const resolveSeriesCover = (seriesData) => {
 export const loadUserSeriesLibrary = async (setSeriesLibraryLoading, setUserSeriesLibrary) => {
   try {
     setSeriesLibraryLoading(true);
-    const token = localStorage.getItem('token');
+    const token = getToken();
     const result = await seriesLibraryService.getUserSeriesLibrary(token);
     const series = Array.isArray(result?.series)
       ? result.series
@@ -110,7 +112,7 @@ export const handleAddSeriesToLibrary = async (seriesData, {
 }) => {
   try {
     setSeriesLibraryLoading?.(true);
-    const token = localStorage.getItem('token');
+    const token = getToken();
 
     const volumes = seriesLibraryService.generateVolumesList(
       seriesData,
@@ -183,7 +185,7 @@ export const handleAddSeriesToLibrary = async (seriesData, {
 // MISE À JOUR DU STATUT D'UN TOME
 export const handleUpdateVolumeStatus = async (seriesId, volumeNumber, isRead, setUserSeriesLibrary) => {
   try {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     const result = await seriesLibraryService.toggleVolumeStatus(seriesId, volumeNumber, isRead, token);
     
     if (result.success) {
@@ -216,7 +218,7 @@ export const handleUpdateVolumeStatus = async (seriesId, volumeNumber, isRead, s
 // MISE À JOUR DU STATUT GLOBAL D'UNE SÉRIE
 export const handleUpdateSeriesStatus = async (seriesId, newStatus, setUserSeriesLibrary) => {
   try {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     const result = await seriesLibraryService.updateSeriesStatus(seriesId, newStatus, token);
     
     if (result.success) {
@@ -244,12 +246,12 @@ export const handleUpdateSeriesStatus = async (seriesId, newStatus, setUserSerie
 
 // SUPPRESSION D'UNE SÉRIE DE LA BIBLIOTHÈQUE
 export const handleDeleteSeriesFromLibrary = async (seriesId, setUserSeriesLibrary) => {
-  if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette série de votre bibliothèque ?')) {
+  if (!(await confirmAction('Supprimer cette série de ta bibliothèque ?', { confirmLabel: 'Supprimer' }))) {
     return;
   }
   
   try {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     const result = await seriesLibraryService.deleteSeriesFromLibrary(seriesId, token);
     
     if (result.success) {

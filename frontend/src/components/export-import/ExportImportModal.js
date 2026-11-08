@@ -4,7 +4,17 @@ import ModalOverlay, { MODAL_Z } from '../common/ModalOverlay';
  * Interface utilisateur complète pour export/import
  */
 import React, { useState } from 'react';
-import { X, Download, Upload, FileText, FileSpreadsheet, Archive, Eye, CheckCircle, AlertCircle } from 'lucide-react';
+import {
+  XMarkIcon as X,
+  ArrowDownTrayIcon as Download,
+  ArrowUpTrayIcon as Upload,
+  DocumentTextIcon as FileText,
+  TableCellsIcon as FileSpreadsheet,
+  ArchiveBoxIcon as Archive,
+  EyeIcon as Eye,
+  CheckCircleIcon as CheckCircle,
+  ExclamationCircleIcon as AlertCircle,
+} from '@heroicons/react/24/outline';
 import { saveBlobAsFile } from '../../utils/fileDownload';
 import logger from '../../utils/logger';
 

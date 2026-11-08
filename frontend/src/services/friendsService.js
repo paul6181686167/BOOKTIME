@@ -1,7 +1,8 @@
 import { API_BASE_URL } from '../config/environment';
+import { getToken } from './apiClient';
 
 async function request(method, path, body) {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   const res = await fetch(`${API_BASE_URL}/api/friends${path}`, {
     method,
     headers: {

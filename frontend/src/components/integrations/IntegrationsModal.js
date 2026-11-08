@@ -6,6 +6,7 @@ import ModalOverlay, { MODAL_Z } from '../common/ModalOverlay';
 import React, { useState, useEffect } from 'react';
 import integrationsService from '../../services/integrationsService';
 import logger from '../../utils/logger';
+import toast from 'react-hot-toast';
 
 const IntegrationsModal = ({ isOpen, onClose, onAddBooks }) => {
   const [activeTab, setActiveTab] = useState('goodreads');
@@ -39,14 +40,14 @@ const IntegrationsModal = ({ isOpen, onClose, onAddBooks }) => {
     if (file && integrationsService.validateGoodreadsCSV(file)) {
       setGoodreadsFile(file);
     } else {
-      alert('Veuillez sélectionner un fichier CSV valide de Goodreads');
+      toast.error('Choisis un fichier CSV exporté depuis Goodreads.');
       event.target.value = '';
     }
   };
 
   const handleGoodreadsImport = async () => {
     if (!goodreadsFile) {
-      alert('Veuillez sélectionner un fichier CSV');
+      toast.error('Choisis d\'abord un fichier CSV.');
       return;
     }
 
@@ -65,10 +66,10 @@ const IntegrationsModal = ({ isOpen, onClose, onAddBooks }) => {
         await onAddBooks(response.data.books);
       }
 
-      alert(`Import terminé ! ${formattedStats.convertedBooks} livres ajoutés.`);
+      toast.success(`Import terminé : ${formattedStats.convertedBooks} livres ajoutés.`);
     } catch (error) {
       logger.error('Erreur lors de l\'import Goodreads:', error);
-      alert('Erreur lors de l\'import. Vérifiez le format du fichier.');
+      toast.error('Import impossible : vérifie le format du fichier.');
     } finally {
       setLoading(false);
     }
@@ -94,10 +95,10 @@ const IntegrationsModal = ({ isOpen, onClose, onAddBooks }) => {
   const handleAddGoogleBook = async (book) => {
     try {
       await onAddBooks([book]);
-      alert('Livre ajouté avec succès !');
+      toast.success('Livre ajouté');
     } catch (error) {
       logger.error('Erreur lors de l\'ajout du livre:', error);
-      alert('Erreur lors de l\'ajout du livre');
+      toast.error('Impossible d\'ajouter le livre');
     }
   };
 

@@ -12,9 +12,7 @@
  */
 
 import { toast } from 'react-hot-toast';
-import SearchOptimizer from '../../utils/searchOptimizer';
 import { calculateRelevanceScore, getRelevanceLevel } from './RelevanceEngine';
-import SeriesDetector from '../../utils/seriesDetector';
 import { API_BASE_URL } from '../../config/environment';
 import { displayBookTitleFrFirst, mergeOpenLibraryBooksByVolume } from '../../utils/openLibraryBookDisplay';
 import { openStaticWikidataSeriesModal } from '../../utils/openStaticWikidataSeries';
@@ -34,6 +32,7 @@ import {
   resolveSeriesTotalBooks,
 } from '../../utils/seriesAttribution';
 import logger from '../../utils/logger';
+import { getToken } from '../../services/apiClient';
 
 // Une réponse lente ne doit jamais écraser les résultats d'une recherche plus
 // récente : chaque appel prend un numéro de séquence et seul le dernier a le droit
@@ -179,7 +178,7 @@ export const searchOpenLibrary = async (query, {
     toastOnce(`${immediate.length} résultat(s) trouvé(s)`);
   }
 
-  const token = localStorage.getItem('token');
+  const token = getToken();
   const backendUrl = API_BASE_URL;
   const authHeaders = {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -469,7 +468,7 @@ export const handleAddFromOpenLibrary = async (openLibraryBook, {
       )
     );
 
-    const token = localStorage.getItem('token');
+    const token = getToken();
     const backendUrl = API_BASE_URL;
 
     const response = await fetch(`${backendUrl}/api/openlibrary/import`, {

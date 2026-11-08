@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { API_BASE_URL } from '../config/environment';
+import { getToken } from '../services/apiClient';
 
 /**
  * Nombre de notifications non lues (sorties de tomes / livres d'auteurs suivis).
@@ -22,7 +23,7 @@ function setUnread(next) {
 }
 
 export async function refreshUnreadNotifications() {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   if (!token) {
     loaded = false;
     setUnread(0);

@@ -3,6 +3,7 @@ import { API_BASE_URL } from '../config/environment';
 import { TERMS_VERSION } from '../legal/terms';
 import { clearUserCaches } from '../utils/offlineCaches';
 import logger from '../utils/logger';
+import { getToken } from './apiClient';
 
 class AuthService {
   constructor() {
@@ -82,7 +83,7 @@ class AuthService {
   getCurrentUser() {
     try {
       const userString = localStorage.getItem('user');
-      const token = localStorage.getItem('token');
+      const token = getToken();
       
       if (userString && token) {
         return JSON.parse(userString);
@@ -97,7 +98,7 @@ class AuthService {
   async fetchProfile() {
     try {
       const response = await fetch(`${this.backendUrl}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (!response.ok) return { success: false };
       const data = await response.json();
@@ -119,7 +120,7 @@ class AuthService {
   async fetchSettings() {
     try {
       const response = await fetch(`${this.backendUrl}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (!response.ok) return { success: false };
       const data = await response.json();
@@ -146,7 +147,7 @@ class AuthService {
         method,
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${getToken()}`,
         },
         body: JSON.stringify(body),
       });
@@ -173,7 +174,7 @@ class AuthService {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${getToken()}`,
           },
           body: JSON.stringify(patch),
           signal: controller.signal,
@@ -208,7 +209,7 @@ class AuthService {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${getToken()}`,
         },
         body: JSON.stringify({ password }),
       });
@@ -235,7 +236,7 @@ class AuthService {
     clearUserCaches();
     // Supprime le cookie de session httpOnly s'il est utilisé (sans effet sinon)
     try {
-      fetch(`/api/auth/logout`, { method: 'POST', credentials: 'include', keepalive: true }).catch(() => {});
+      fetch(`${this.backendUrl}/api/auth/logout`, { method: 'POST', credentials: 'include', keepalive: true }).catch(() => {});
     } catch {
       /* hors ligne ou fetch indisponible : le cookie expirera de lui-même */
     }

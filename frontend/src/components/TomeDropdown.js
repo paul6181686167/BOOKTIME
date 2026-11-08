@@ -295,6 +295,8 @@ const TomeDropdown = ({
                         setLocalRating(star);
                         onFeedbackChange?.(tomeNumber, { rating: star, review: localReview });
                       }}
+                      aria-label={`Noter ${star} sur 5`}
+                      aria-pressed={star <= localRating}
                       className="h-5 w-5"
                     >
                       {star <= localRating ? (

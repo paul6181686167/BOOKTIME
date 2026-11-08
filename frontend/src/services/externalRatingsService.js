@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../config/environment';
+import { getToken } from './apiClient';
 
 const cache = new Map();
 
@@ -8,7 +9,7 @@ const cache = new Map();
  * Résultat gardé en mémoire pour la session (la fiche est souvent rouverte).
  */
 export async function fetchExternalRatings({ title, author = '', isbn = '', kind = 'book', category = '' }) {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   if (!token || !(title || isbn)) return { ratings: [], links: [] };
 
   const params = new URLSearchParams({ title: title || '', author, isbn, kind, category });

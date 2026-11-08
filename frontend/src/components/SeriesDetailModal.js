@@ -3,9 +3,6 @@ import ModalOverlay, { MODAL_Z } from './common/ModalOverlay';
 import { useNavigate } from 'react-router-dom';
 import {
   BookOpenIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  PlusIcon,
   XMarkIcon,
   SparklesIcon,
 } from '@heroicons/react/24/outline';
@@ -39,6 +36,7 @@ import {
   mapStaticWikidataWorksToOlBooks,
 } from '../utils/seriesDetailHelpers';
 import logger from '../utils/logger';
+import { getToken } from '../services/apiClient';
 
 const SeriesDetailModal = ({ 
   series, 
@@ -98,7 +96,7 @@ const SeriesDetailModal = ({
     setDeleting(true);
     setConfirmDelete(false);
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       let deleted = false;
 
       // Cas 1 : série possédée → retirer de la bibliothèque de séries
@@ -176,7 +174,7 @@ const SeriesDetailModal = ({
   //  NOUVELLE FONCTION : Charger les préférences de lecture depuis la base de données
   const loadReadingPreferences = async (seriesName) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const backendUrl = API_BASE_URL
       
       const response = await fetch(`${backendUrl}/api/series/reading-preferences/${encodeURIComponent(seriesName)}`, {
@@ -207,7 +205,7 @@ const SeriesDetailModal = ({
   //  NOUVELLE FONCTION : Sauvegarder les préférences de lecture en base de données
   const saveReadingPreferences = async (seriesName, currentTomeStatuses) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const backendUrl = API_BASE_URL
       
       const response = await fetch(`${backendUrl}/api/series/reading-preferences`, {
@@ -436,7 +434,7 @@ const SeriesDetailModal = ({
     if (enrichedSeries?.name) {
       await saveReadingPreferences(enrichedSeries.name, newStatuses);
 
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const booksInSeries = series?.books || [];
       const matchingBook = booksInSeries.find(
         (b) =>
@@ -522,7 +520,7 @@ const SeriesDetailModal = ({
       // Mapping statut tome → statut livre (pour mettre à jour la BDD et bouger la carte)
       const tomeToBookStatus = { non_lu: 'to_read', en_cours: 'reading', lu: 'completed' };
       const bookStatus = tomeToBookStatus[newStatus] || 'to_read';
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const backendUrl = API_BASE_URL;
 
       // 1. Mettre à jour le livre correspondant dans series.books (séries auto-détectées)
@@ -599,7 +597,7 @@ const SeriesDetailModal = ({
       await saveReadingPreferences(enrichedSeries.name, newStatuses);
 
       // Mettre à jour chaque livre coché "lu" en BDD
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const backendUrl = API_BASE_URL;
       const booksInSeries = series?.books || [];
       await Promise.all(
@@ -676,7 +674,7 @@ const SeriesDetailModal = ({
       toast.error('Ajoutez d’abord la série à votre bibliothèque');
       return false;
     }
-    const token = localStorage.getItem('token');
+    const token = getToken();
     const res = await fetch(`${API_BASE_URL}/api/series/library/${seriesId}`, {
       method: 'PUT',
       headers: {
@@ -747,7 +745,7 @@ const SeriesDetailModal = ({
       return;
     }
 
-    const token = localStorage.getItem('token');
+    const token = getToken();
     const backendUrl = API_BASE_URL;
     const statusLabel = statusOptions.find(s => s.value === newStatus)?.label || newStatus;
     const previousStatus = seriesStatus;
@@ -875,7 +873,7 @@ const SeriesDetailModal = ({
   const checkIfSeriesOwned = async (signal) => {
     if (!series?.name) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const response = await fetch(
         `${API_BASE_URL}/api/books/all?saga=${encodeURIComponent(series.name)}&limit=1`,
         { headers: { 'Authorization': `Bearer ${token}` }, signal }
@@ -1032,7 +1030,7 @@ const SeriesDetailModal = ({
     if (!series?.name) return;
     try {
       setVerifying(true);
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const qid = series.wikidata_qid || series.staticWikidataDetail?.qid || '';
       const params = new URLSearchParams({ name: series.name });
       if (series.author) params.set('author', series.author);
@@ -1064,7 +1062,7 @@ const SeriesDetailModal = ({
         return;
       }
       try {
-        const token = localStorage.getItem('token');
+        const token = getToken();
         const olParams = new URLSearchParams({ name: series.name, limit: '30' });
         if (series.author) olParams.append('author', series.author);
         const olRes = await fetch(`${API_BASE_URL}/api/openlibrary/series-books?${olParams}`, {
@@ -1110,7 +1108,7 @@ const SeriesDetailModal = ({
     }
     if (!series?.name) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
 
       const olParams = new URLSearchParams({ name: series.name, limit: '20' });
       if (series.author) olParams.append('author', series.author);

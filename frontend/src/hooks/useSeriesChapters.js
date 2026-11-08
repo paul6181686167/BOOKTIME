@@ -12,6 +12,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { API_BASE_URL } from '../config/environment';
 import logger from '../utils/logger';
+import { getToken } from '../services/apiClient';
 
 export const useSeriesChapters = (seriesName) => {
   const [chaptersData, setChaptersData] = useState(null);
@@ -74,7 +75,7 @@ export const useSeriesChapters = (seriesName) => {
     setError(null);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const user = localStorage.getItem('user');
       
       logger.debug(' DEBUG useSeriesChapters:', {
@@ -161,7 +162,7 @@ export const useSeriesChapters = (seriesName) => {
     if (!seriesName) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       if (!token) {
         throw new Error('Token d\'authentification requis');
       }

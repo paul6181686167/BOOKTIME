@@ -1,5 +1,5 @@
 /* Booktime PWA Service Worker — bump force redeploy cache Vercel */
-const SW_VERSION = 'booktime-v19-offline-details';
+const SW_VERSION = 'booktime-v20-soft-update';
 const SHELL_CACHE = `${SW_VERSION}-shell`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const API_CACHE = `${SW_VERSION}-api`;
@@ -34,30 +34,20 @@ self.addEventListener('activate', (event) => {
           .map((key) => caches.delete(key))
       );
       await self.clients.claim();
-      // Force le rechargement des fenêtres déjà ouvertes (PWA mobile figée)
+      // Prévient les fenêtres déjà ouvertes : c'est à l'application de proposer le
+      // rechargement (bandeau « Nouvelle version »), on ne force plus la navigation,
+      // ce qui pouvait couper une saisie en cours.
       const clients = await self.clients.matchAll({
         type: 'window',
         includeUncontrolled: true,
       });
-      await Promise.all(
-        clients.map((client) => {
-          if (typeof client.navigate === 'function') {
-            return client.navigate(client.url).catch(() => {
-              try {
-                client.postMessage({ type: 'SW_UPDATED' });
-              } catch (_) {
-                /* ignore */
-              }
-            });
-          }
-          try {
-            client.postMessage({ type: 'SW_UPDATED' });
-          } catch (_) {
-            /* ignore */
-          }
-          return undefined;
-        })
-      );
+      clients.forEach((client) => {
+        try {
+          client.postMessage({ type: 'SW_UPDATED' });
+        } catch (_) {
+          /* ignore */
+        }
+      });
     })()
   );
 });
@@ -80,6 +70,8 @@ function isApiLibraryRequest(url) {
 // Les entrées sont propres à l'utilisateur : le cache `-detail` / `-api` est vidé à la
 // déconnexion (voir utils/offlineCaches.js côté application).
 const DETAIL_MAX_ENTRIES = 120;
+// Fichiers statiques et autres GET : sans plafond, les anciens JS hachés s'accumulaient
+const RUNTIME_MAX_ENTRIES = 200;
 const DETAIL_NETWORK_TIMEOUT_MS = 8000;
 
 function isDetailRequest(url) {
@@ -155,7 +147,9 @@ async function staleWhileRevalidate(request, cacheName) {
         const isLib =
           path.includes('/api/books') || path.includes('/api/series/library');
         if (!isLib || (await isNonEmptyJsonArray(response))) {
-          cache.put(request, response.clone());
+          cache.put(request, response.clone()).then(() => {
+            if (cacheName === RUNTIME_CACHE) trimCache(cacheName, RUNTIME_MAX_ENTRIES);
+          }).catch(() => {});
         }
       }
       return response;

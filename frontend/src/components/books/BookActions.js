@@ -9,6 +9,7 @@ import { isUsableSynopsis, looksEnglish } from '../../utils/synopsisQuality';
 import { normalizeForSearch } from '../../utils/helpers';
 import { API_BASE_URL } from '../../config/environment';
 import logger from '../../utils/logger';
+import { getToken } from '../../services/apiClient';
 
 /** Clés de dédoublonnage titre (FR/EN) pour éviter livre + série rétrogradée du même ouvrage. */
 function workTitleKeys(book) {
@@ -487,7 +488,7 @@ const BookActions = {
       const newId = result?.id || result?.book?.id;
       const desc = bookData?.description || result?.description || '';
       if (newId && (!isUsableSynopsis(desc) || looksEnglish(desc))) {
-        const token = localStorage.getItem('token');
+        const token = getToken();
         fetch(`${API_BASE_URL}/api/books/${newId}/synopsis?persist=true`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         }).catch(() => {});

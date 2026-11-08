@@ -6,6 +6,7 @@ import ModalOverlay, { MODAL_Z } from '../common/ModalOverlay';
 import React, { useState, useEffect } from 'react';
 import advancedRecommendationService from '../../services/advancedRecommendationService';
 import logger from '../../utils/logger';
+import toast from 'react-hot-toast';
 
 const AdvancedRecommendationsModal = ({ isOpen, onClose, onAddBook }) => {
   const [activeTab, setActiveTab] = useState('contextual');
@@ -139,10 +140,10 @@ const AdvancedRecommendationsModal = ({ isOpen, onClose, onAddBook }) => {
     try {
       await advancedRecommendationService.trainModel(modelType);
       await loadMLStats();
-      alert(`Modèle ${modelType} entraîné avec succès !`);
+      toast.success(`Modèle ${modelType} entraîné`);
     } catch (error) {
       logger.error('Erreur entraînement modèle:', error);
-      alert('Erreur lors de l\'entraînement du modèle');
+      toast.error('Entraînement du modèle impossible');
     } finally {
       setLoading(false);
     }

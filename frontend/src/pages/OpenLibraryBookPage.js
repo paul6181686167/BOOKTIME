@@ -15,6 +15,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { API_BASE_URL } from '../config/environment';
 import logger from '../utils/logger';
+import { getToken } from '../services/apiClient';
 
 const OpenLibraryBookPage = () => {
   // Récupère la clé depuis le splat (* dans la route /catalogue/*)
@@ -34,7 +35,7 @@ const OpenLibraryBookPage = () => {
   const loadBookDetails = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const response = await fetch(`${backendUrl}/api/openlibrary/book/${workKey}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -62,7 +63,7 @@ const OpenLibraryBookPage = () => {
     
     try {
       setAdding(true);
-      const token = localStorage.getItem('token');
+      const token = getToken();
       
       const bookData = {
         title: book.title,
@@ -90,10 +91,10 @@ const OpenLibraryBookPage = () => {
         throw new Error('Erreur lors de l\'ajout');
       }
 
-      const newBook = await response.json();
+      await response.json();
       toast.success(`"${book.title}" ajouté à votre bibliothèque !`);
       
-      navigate(`/livre/${newBook.id}`);
+      navigate('/');
     } catch (error) {
       logger.error('Erreur lors de l\'ajout:', error);
       toast.error('Erreur lors de l\'ajout du livre');
@@ -102,8 +103,9 @@ const OpenLibraryBookPage = () => {
     }
   };
 
+  // La fiche auteur est une fenêtre de la bibliothèque : on y retourne et on l'ouvre
   const handleAuthorClick = (authorName) => {
-    navigate(`/auteur/ol/${encodeURIComponent(authorName)}`);
+    navigate('/', { state: { openAuthor: authorName } });
   };
 
   const getCategoryIcon = () => '';
@@ -160,7 +162,7 @@ const OpenLibraryBookPage = () => {
             <div className="flex items-center space-x-3">
               {book.in_user_library ? (
                 <button
-                  onClick={() => navigate(`/livre/${book.user_book_id}`)}
+                  onClick={() => navigate('/')}
                   className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
                   <CheckCircleIcon className="h-4 w-4" />

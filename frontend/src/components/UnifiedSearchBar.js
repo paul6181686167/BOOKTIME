@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import toast from 'react-hot-toast';
-import { API_BASE_URL } from '../config/environment';
 import { 
   MagnifyingGlassIcon, 
   AdjustmentsHorizontalIcon,
@@ -33,7 +31,6 @@ const UnifiedSearchBar = React.memo(({
   const searchInputRef = useRef(null);
   const suggestionsRef = useRef(null);
   const filtersRef = useRef(null);
-  const backendUrl = API_BASE_URL
 
   // Synchroniser l'état local avec la prop searchTerm UNIQUEMENT si différent
   useEffect(() => {

@@ -46,6 +46,16 @@ import SmartCover, {
 import BookDetailModal from '../BookDetailModal';
 import SeriesDetailModal from '../SeriesDetailModal';
 import logger from '../../utils/logger';
+import { getToken } from '../../services/apiClient';
+
+// Classes écrites en toutes lettres : Tailwind supprime celles construites dynamiquement
+// (`text-${color}-500`), ce qui faisait disparaître les couleurs en production.
+const STAT_TONES = {
+  blue: { icon: 'text-blue-500', value: 'text-blue-600' },
+  green: { icon: 'text-green-500', value: 'text-green-600' },
+  purple: { icon: 'text-purple-500', value: 'text-purple-600' },
+  orange: { icon: 'text-orange-500', value: 'text-orange-600' },
+};
 
 // ── Cache (sessionStorage) ────────────────────────────────────────────────
 // Évite de recalculer les recommandations à chaque visite de la page.
@@ -546,7 +556,7 @@ const RecommendationPage = () => {
 
   // Charge la liste des livres / séries pour détecter "déjà dans bibliothèque" + picker
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (!token) return;
     const headers = { Authorization: `Bearer ${token}` };
     fetch(`${API_BASE_URL}/api/books/all?limit=1000`, { headers })
@@ -813,7 +823,7 @@ const RecommendationPage = () => {
       const genreTab = GENRE_TABS.find((t) => t.id === tab);
 
       if (genreTab) {
-        const token = localStorage.getItem('token');
+        const token = getToken();
         const books = await fetchGenreBooks(genreTab, token);
         const grouped = toBooktimeSections(
           books.length ? { algorithm_genre: books } : {}
@@ -1060,7 +1070,7 @@ const RecommendationPage = () => {
       olKey.includes('works/') && !olKey.startsWith('gbooks_');
 
     if (isOlWork) {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const response = await fetch(`${API_BASE_URL}/api/openlibrary/import`, {
         method: 'POST',
         headers: {
@@ -1203,8 +1213,8 @@ const RecommendationPage = () => {
             { label: 'Note moy.', value: (userProfile.reading_patterns?.average_rating || 0).toFixed(1), icon: FireIcon, color: 'orange' },
           ].map(({ label, value, icon: Icon, color }) => (
             <div key={label} className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 text-center">
-              <Icon className={`h-6 w-6 mx-auto mb-1 text-${color}-500`} />
-              <div className={`text-xl font-bold text-${color}-600`}>{value}</div>
+              <Icon className={`h-6 w-6 mx-auto mb-1 ${STAT_TONES[color].icon}`} />
+              <div className={`text-xl font-bold ${STAT_TONES[color].value}`}>{value}</div>
               <div className="text-xs text-gray-500 dark:text-gray-400">{label}</div>
             </div>
           ))}

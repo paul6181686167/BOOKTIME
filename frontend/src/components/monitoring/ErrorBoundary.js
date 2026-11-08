@@ -77,8 +77,13 @@ class ErrorBoundary extends React.Component {
       }).catch(err => logger.error('Failed to log error:', err));
     }
 
-    // Log local pour développement
-    localStorage.setItem(`error_${errorId}`, JSON.stringify(errorData));
+    // Copie locale pour le diagnostic : on ne garde que la dernière erreur (une clé
+    // par erreur finissait par saturer le stockage du navigateur).
+    try {
+      localStorage.setItem('booktime_last_error', JSON.stringify(errorData));
+    } catch {
+      /* stockage plein ou indisponible : sans conséquence */
+    }
   };
 
   handleReload = () => {

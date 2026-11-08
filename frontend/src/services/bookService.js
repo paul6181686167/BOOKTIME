@@ -5,6 +5,7 @@ import {
   loadLibraryCache,
 } from '../utils/offlineLibraryCache';
 import logger from '../utils/logger';
+import { getToken, notifyUnauthorized } from './apiClient';
 
 // Configuration axios
 const api = axios.create({
@@ -18,7 +19,7 @@ const api = axios.create({
 // Intercepteur pour ajouter le token d'authentification
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -36,10 +37,8 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      // Token expiré ou invalide
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.reload();
+      // Session expirée : l'application déconnecte l'utilisateur (voir AuthProvider)
+      notifyUnauthorized();
     }
     logger.error('API Error:', error);
     return Promise.reject(error);
