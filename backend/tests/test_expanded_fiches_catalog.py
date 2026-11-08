@@ -1,4 +1,4 @@
-"""Catalogue étendu de 10 000 fiches (Wikidata, hors overlay curé)."""
+"""Catalogue étendu de 50 000 fiches (Wikidata, hors overlay curé)."""
 from __future__ import annotations
 
 import json
@@ -50,14 +50,45 @@ def test_search_matches_volume_title(tmp_path, monkeypatch):
     assert hits[0]["name"] == "Shannara"
 
 
-def test_generated_catalog_has_10000_books():
+def test_generated_catalog_has_50000_books():
     expanded.clear_cache()
     st = expanded.stats()
     if not st.get("ready"):
         return
-    assert st["books"] == 10_000
-    assert st["series"] >= 1000
-    assert st["series"] + st["books"] >= 10_000
+    assert st["books"] == 50_000
+    assert st["series"] >= 2000
+    assert st["series"] + st["books"] >= 50_000
+
+
+def test_generated_catalog_volumes_are_complete():
+    expanded.clear_cache()
+    series = expanded.all_series()
+    if not series:
+        return
+    n = 0
+    missing = {k: 0 for k in ("author", "year", "genre", "language", "cover", "description", "pages")}
+    for s in series:
+        details = s.get("volume_details") or {}
+        for vn, title in (s.get("volume_titles") or {}).items():
+            n += 1
+            d = details.get(str(vn)) or details.get(vn) or {}
+            if not (d.get("author") or "").strip():
+                missing["author"] += 1
+            if not d.get("published_year"):
+                missing["year"] += 1
+            if not d.get("genre"):
+                missing["genre"] += 1
+            if not d.get("language"):
+                missing["language"] += 1
+            cover = (d.get("cover_url") or "").strip()
+            if not cover or cover.startswith("data:"):
+                missing["cover"] += 1
+            if not (d.get("description") or "").strip():
+                missing["description"] += 1
+            if not d.get("pages"):
+                missing["pages"] += 1
+    assert n == 50_000
+    assert missing == {k: 0 for k in missing}, missing
 
 
 @pytest.mark.asyncio

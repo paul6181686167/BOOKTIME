@@ -40,3 +40,17 @@ def test_curated_to_source_rows_uses_titles_when_present():
     assert len(rows) == 7
     assert all(r["volume_number"] for r in rows)
     assert rows[0]["title"]
+
+
+def test_noyau_cure_inclut_le_catalogue_50000():
+    entry = curated.match_curated("Shannara")
+    assert entry is not None
+    assert int(entry["volumes"]) >= 3
+    assert entry.get("source") == "curated_core"
+
+
+def test_overlay_riche_reste_prioritaire_sur_le_noyau():
+    entry = curated.match_curated("Harry Potter")
+    assert entry is not None
+    assert entry.get("source") == "curated_overlay"
+    assert entry["volumes"] == 7

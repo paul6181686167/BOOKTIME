@@ -393,7 +393,7 @@ def get_catalog_stats(current_user: dict = Depends(get_current_user)):
 
 @router.get("/expanded")
 def get_expanded_fiches(current_user: dict = Depends(get_current_user)):
-    """Catalogue étendu : 10 000 fiches tomes (hors overlay curé)."""
+    """Noyau curé : 50 000 fiches tomes (overlay riche ~103 séries en plus)."""
     return expanded_fiches.catalog_payload()
 
 

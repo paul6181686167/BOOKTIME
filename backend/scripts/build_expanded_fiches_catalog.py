@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Construit un catalogue de 10 000 fiches tomes à partir de Wikidata.
+"""Construit un catalogue de 50 000 fiches tomes à partir de Wikidata.
 
 Les 103 séries curées (frontend) restent la couche qualité : elles sont
 exclues du JSON pour éviter les doublons. Le fichier généré alimente
@@ -25,8 +25,8 @@ from app.static_wikidata.service import infer_series_category, is_real_series, n
 WD_PATH = ROOT / "wikidata_series_db.json"
 CURATED_PATH = BACKEND / "app" / "series_verification" / "curated_series.json"
 OUT_PATH = BACKEND / "data" / "expanded_fiches_catalog.json"
-TARGET_BOOKS = 10_000
-MAX_WORKS_PER_SERIES = 80
+TARGET_BOOKS = 50_000
+MAX_WORKS_PER_SERIES = 120
 
 PREFERRED_TYPES = {
     "novel series",
@@ -64,6 +64,44 @@ GENERIC_NAME = re.compile(
     r"^(satires|poems|novels|works|series|collection|stories|essays|"
     r"plays|letters|omnibus|anthology)$",
     re.I,
+)
+
+LANG_BY_QID = {
+    "Q150": "français",
+    "Q1860": "anglais",
+    "Q188": "allemand",
+    "Q1321": "espagnol",
+    "Q652": "italien",
+    "Q809": "japonais",
+    "Q5146": "portugais",
+    "Q7411": "néerlandais",
+    "Q9027": "suédois",
+    "Q1412": "finnois",
+    "Q8097": "polonais",
+    "Q7737": "russe",
+    "Q256": "turc",
+    "Q13955": "arabe",
+    "Q7850": "chinois",
+    "Q9176": "coréen",
+}
+
+GENRE_FR = (
+    ("science fiction", "Science-fiction"),
+    ("speculative fiction", "Science-fiction"),
+    ("fantasy", "Fantasy"),
+    ("dark fantasy", "Fantasy"),
+    ("horror", "Horreur"),
+    ("mystery", "Policier"),
+    ("detective", "Policier"),
+    ("crime", "Policier"),
+    ("thriller", "Thriller"),
+    ("romance", "Romance"),
+    ("historical", "Historique"),
+    ("adventure", "Aventure"),
+    ("young adult", "Young adult"),
+    ("children", "Jeunesse"),
+    ("comic", "BD"),
+    ("manga", "Manga"),
 )
 
 
@@ -149,8 +187,42 @@ def quality_score(row: dict, works: list[dict], type_label: str) -> tuple:
     )
 
 
+def infer_language(works: list[dict]) -> str | None:
+    votes: Counter[str] = Counter()
+    for w in works:
+        for qid in w.get("language_qids") or []:
+            lang = LANG_BY_QID.get(str(qid))
+            if lang:
+                votes[lang] += 1
+        if (w.get("title_fr") or "").strip():
+            votes["français"] += 1
+    if not votes:
+        return None
+    return votes.most_common(1)[0][0]
+
+
+def infer_genre(category: str, works: list[dict]) -> str | None:
+    if category == "manga":
+        return "Manga"
+    if category == "bd":
+        return "BD"
+    blob = " ".join(
+        str(g).lower()
+        for w in works
+        for g in (w.get("genres_en") or [])
+        if g
+    )
+    for needle, label in GENRE_FR:
+        if needle in blob:
+            return label
+    return "Roman"
+
+
 def select_candidates(by_qid: dict, curated_names: set[str]) -> list[dict]:
-    out: list[dict] = []
+    preferred: list[dict] = []
+    fill_good: list[dict] = []
+    fill_weak: list[dict] = []
+    fill_last: list[dict] = []
     seen_names: set[str] = set(curated_names)
     for qid, row in by_qid.items():
         if not isinstance(row, dict):
@@ -167,10 +239,7 @@ def select_candidates(by_qid: dict, curated_names: set[str]) -> list[dict]:
         if not key or key in seen_names:
             continue
         raw_works = [w for w in (row.get("works") or []) if isinstance(w, dict) and work_title(w)]
-        if not (2 <= len(raw_works) <= MAX_WORKS_PER_SERIES):
-            continue
-        n_auth = sum(1 for w in raw_works if work_author(w))
-        if t in FILL_TYPES and n_auth < max(2, len(raw_works) * 0.4):
+        if len(raw_works) < 2:
             continue
         raw_works.sort(
             key=lambda w: (
@@ -178,25 +247,39 @@ def select_candidates(by_qid: dict, curated_names: set[str]) -> list[dict]:
                 work_title(w).lower(),
             )
         )
+        raw_works = raw_works[:MAX_WORKS_PER_SERIES]
+        n_auth = sum(1 for w in raw_works if work_author(w))
+        n_fr = sum(1 for w in raw_works if (w.get("title_fr") or "").strip())
         seen_names.add(key)
-        out.append(
-            {
-                "qid": qid,
-                "row": row,
-                "works": raw_works,
-                "name": name,
-                "type": t,
-                "score": quality_score(row, raw_works, t),
-            }
-        )
-    out.sort(key=lambda x: x["score"], reverse=True)
-    return out
+        cand = {
+            "qid": qid,
+            "row": row,
+            "works": raw_works,
+            "name": name,
+            "type": t,
+            "score": quality_score(row, raw_works, t),
+        }
+        if t in PREFERRED_TYPES:
+            preferred.append(cand)
+        elif n_auth >= max(2, len(raw_works) * 0.35):
+            fill_good.append(cand)
+        elif n_auth >= 1 or n_fr >= 2:
+            fill_weak.append(cand)
+        else:
+            fill_last.append(cand)
+    preferred.sort(key=lambda x: x["score"], reverse=True)
+    fill_good.sort(key=lambda x: x["score"], reverse=True)
+    fill_weak.sort(key=lambda x: x["score"], reverse=True)
+    fill_last.sort(key=lambda x: x["score"], reverse=True)
+    return preferred + fill_good + fill_weak + fill_last
 
 
 def build_series_entry(cand: dict, works: list[dict]) -> dict:
     row = cand["row"]
     author = series_author(works)
     category = infer_series_category(row)
+    genre = infer_genre(category, works) or "Roman"
+    language = infer_language(works) or "français"
     volume_titles: dict[str, str] = {}
     volume_titles_en: dict[str, str] = {}
     volume_details: dict[str, dict] = {}
@@ -214,24 +297,26 @@ def build_series_entry(cand: dict, works: list[dict]) -> dict:
         if year.isdigit() and first_year is None:
             first_year = year
         olid = ol_id(w)
-        detail = {}
+        detail = {
+            "author": work_author(w) or author or "Collectif",
+            "genre": genre,
+            "language": language,
+        }
         if year.isdigit():
             detail["published_year"] = int(year)
         if olid:
             detail["ol_key"] = ol_key(olid)
             cover = ol_cover_url(olid)
-            detail["cover_url"] = cover
-            if not cover_url:
-                cover_url = cover
+            if cover and not re.search(r"OL\d+W", cover):
+                detail["cover_url"] = cover
+                if not cover_url:
+                    cover_url = cover
         if w.get("work_qid"):
             detail["work_qid"] = w.get("work_qid")
         isbn_list = w.get("isbns") or []
         if isinstance(isbn_list, list) and isbn_list:
             detail["isbn"] = str(isbn_list[0])
-        if work_author(w):
-            detail["author"] = work_author(w)
-        if detail:
-            volume_details[vn] = detail
+        volume_details[vn] = detail
     entry = {
         "key": (norm_title(cand["name"]).replace(" ", "_")[:80] or cand["qid"]),
         "qid": cand["qid"],
@@ -247,6 +332,8 @@ def build_series_entry(cand: dict, works: list[dict]) -> dict:
         "status": "ongoing" if len(works) >= 20 else "completed",
         "wikidata_qid": cand["qid"],
         "cover_url": cover_url,
+        "language": language,
+        "genre": genre,
         "source": "wikidata",
     }
     if volume_titles_en:
@@ -300,6 +387,7 @@ def main() -> None:
         json.dump(catalog, f, ensure_ascii=False, separators=(",", ":"))
     size_mb = OUT_PATH.stat().st_size / 1_048_576
     print(f"Écrit {OUT_PATH} ({size_mb:.1f} Mo)")
+    print("Ensuite : python backend/scripts/fill_expanded_fiches_catalog.py")
     print(f"  fiches séries : {catalog['meta']['series_count']}")
     print(f"  fiches livres : {catalog['meta']['book_count']}")
     print(f"  avec couverture : {catalog['meta']['series_with_cover']}")

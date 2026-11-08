@@ -602,6 +602,8 @@ def _import_from_ol_sync(import_data: dict, user_id: str) -> dict:
     if not cover_url and ol_key:
         cover_url = f"https://covers.openlibrary.org/b/olid/{ol_key.split('/')[-1]}-M.jpg"
 
+    from ..catalog.hydrate import hydrate_book_dict
+
     book_id = str(uuid.uuid4())
     book = {
         "id": book_id,
@@ -631,6 +633,7 @@ def _import_from_ol_sync(import_data: dict, user_id: str) -> dict:
         "date_completed": None,
         "updated_at": utcnow(),
     }
+    book = hydrate_book_dict(book)
 
     books_collection.insert_one(book)
     book.pop("_id", None)

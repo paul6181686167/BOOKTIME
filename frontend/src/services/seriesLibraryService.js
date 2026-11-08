@@ -1,6 +1,7 @@
 import { API_BASE_URL } from '../config/environment';
 import { mapMergedVolumeRowsToLibraryVolumes, orderWikidataWorks } from '../utils/sourceMerge';
 import { resolveCuratedSeriesByName } from '../utils/seriesAttribution';
+import { resolveExpandedSeriesByName } from '../utils/expandedFichesCatalog';
 import logger from '../utils/logger';
 import {
   enqueueCreateSeries,
@@ -152,7 +153,26 @@ export const deleteSeriesFromLibrary = async (seriesId, token) => {
   }
 };
 
-// Générer la liste des tomes avec titres depuis le référentiel
+function asVolumeTitlesMap(raw) {
+  if (!raw) return null;
+  if (Array.isArray(raw)) {
+    const m = {};
+    raw.forEach((t, i) => {
+      if (t && typeof t === 'object') {
+        const n = Number(t.volume_number || i + 1);
+        const title = t.title || t.volume_title;
+        if (Number.isFinite(n) && title) m[n] = title;
+      } else if (typeof t === 'string' && t.trim()) {
+        m[i + 1] = t;
+      }
+    });
+    return Object.keys(m).length ? m : null;
+  }
+  if (typeof raw === 'object' && Object.keys(raw).length) return raw;
+  return null;
+}
+
+// Générer la liste des tomes avec titres depuis le noyau curé
 export const generateVolumesList = (seriesData, extendedSeriesDatabase) => {
   const parseVol = (vol, fallbackIndex) => {
     if (vol == null || vol === '') return fallbackIndex;
@@ -169,18 +189,35 @@ export const generateVolumesList = (seriesData, extendedSeriesDatabase) => {
     return mapMergedVolumeRowsToLibraryVolumes(seriesData.name || '', seriesData.mergedLibraryVolumes);
   }
 
-  const curatedTitles = resolveCuratedSeriesByName(seriesData.name)?.data?.volume_titles;
-  if (curatedTitles && Object.keys(curatedTitles).length > 0) {
-    return Object.keys(curatedTitles)
+  const coreTitles =
+    asVolumeTitlesMap(seriesData.volume_titles) ||
+    asVolumeTitlesMap(seriesData.seriesData?.volume_titles) ||
+    asVolumeTitlesMap(resolveExpandedSeriesByName(seriesData.name)?.data?.volume_titles) ||
+    asVolumeTitlesMap(resolveCuratedSeriesByName(seriesData.name)?.data?.volume_titles);
+  const details =
+    seriesData.volume_details ||
+    seriesData.seriesData?.volume_details ||
+    resolveExpandedSeriesByName(seriesData.name)?.data?.volume_details ||
+    resolveCuratedSeriesByName(seriesData.name)?.data?.volume_details ||
+    {};
+  if (coreTitles && Object.keys(coreTitles).length > 0) {
+    return Object.keys(coreTitles)
       .map((k) => Number(k))
       .filter((n) => Number.isFinite(n) && n > 0)
       .sort((a, b) => a - b)
-      .map((volume_number) => ({
-        volume_number,
-        volume_title: curatedTitles[volume_number] || curatedTitles[String(volume_number)],
-        is_read: false,
-        date_read: null,
-      }));
+      .map((volume_number) => {
+        const d = details[volume_number] || details[String(volume_number)] || {};
+        return {
+          volume_number,
+          volume_title: coreTitles[volume_number] || coreTitles[String(volume_number)],
+          is_read: false,
+          date_read: null,
+          cover_url: d.cover_url || '',
+          isbn: d.isbn || undefined,
+          published_year: d.published_year || undefined,
+          ol_key: d.ol_key || undefined,
+        };
+      });
   }
 
   if (

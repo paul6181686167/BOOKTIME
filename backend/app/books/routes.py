@@ -805,7 +805,10 @@ def create_book(book_data: BookCreate, current_user: dict = Depends(get_current_
         "date_started": None,
         "date_completed": None
     }
-    
+    from ..catalog.hydrate import hydrate_book_dict
+
+    book = hydrate_book_dict(book)
+
     # Définir les dates selon le statut
     if book_data.status == "reading":
         book["date_started"] = utcnow()

@@ -33,7 +33,7 @@ import {
 } from '../../utils/seriesAttribution';
 import logger from '../../utils/logger';
 import { getToken } from '../../services/apiClient';
-import { ensureExpandedCatalog } from '../../utils/expandedFichesCatalog';
+import { searchExpandedCatalog } from '../../utils/expandedFichesCatalog';
 
 // Une réponse lente ne doit jamais écraser les résultats d'une recherche plus
 // récente : chaque appel prend un numéro de séquence et seul le dernier a le droit
@@ -130,6 +130,50 @@ async function fetchWikidataSpotlight(query, token, backendUrl, signal) {
   return { wikidataSpotlight, wikidataMatcher };
 }
 
+function cardFromExpandedEntry(entry, i) {
+  const authors = (entry.authors || []).filter(Boolean);
+  const cover =
+    entry.cover_url ||
+    entry.volume_details?.['1']?.cover_url ||
+    entry.volume_details?.[1]?.cover_url ||
+    '';
+  return {
+    isSeriesCard: true,
+    id: `series_exp_${entry.qid || entry.key || i}`,
+    name: entry.name,
+    author: authors.join(', '),
+    category: entry.category,
+    cover_url: cover,
+    volume_titles: entry.volume_titles || null,
+    volume_details: entry.volume_details || null,
+    publisher: entry.publisher || '',
+    genre: entry.genre || '',
+    first_published: entry.first_published || '',
+    totalBooks: entry.volumes,
+    volumes: entry.volumes,
+    completedBooks: 0,
+    progressPercent: 0,
+    books: [],
+    wikidata_qid: entry.wikidata_qid || entry.qid || null,
+    seriesData: entry,
+    relevanceScore: 100000 - i * 10,
+    sourceType: 'official',
+    fromOpenLibrary: false,
+    description: [entry.genre, entry.language, entry.volumes ? `${entry.volumes} tome(s)` : '']
+      .filter(Boolean)
+      .join(' · '),
+  };
+}
+
+async function fetchExpandedSpotlight(query, signal) {
+  try {
+    const rows = await searchExpandedCatalog(query, 8, signal);
+    return (rows || []).map(cardFromExpandedEntry);
+  } catch {
+    return [];
+  }
+}
+
 // FONCTION PRINCIPALE DE RECHERCHE OPEN LIBRARY
 export const searchOpenLibrary = async (query, {
   books, 
@@ -156,8 +200,6 @@ export const searchOpenLibrary = async (query, {
   setSearchLoading(true);
   setIsSearchMode(true);
   setLastSearchTerm(query);
-
-  await ensureExpandedCatalog();
 
   // Cartes curées locales : disponibles même si le backend/OL est down
   const applyCuratedFallback = (extra = []) => {
@@ -193,7 +235,8 @@ export const searchOpenLibrary = async (query, {
     'Content-Type': 'application/json',
   };
 
-  // 2) Wikidata (backend local, rapide) + OL (lent) en parallèle
+  // 2) Catalogue étendu + Wikidata (backend local) + OL (lent) en parallèle
+  const expPromise = fetchExpandedSpotlight(query, controller.signal).catch(() => []);
   const wdRace = Promise.race([
     fetchWikidataSpotlight(query, token, backendUrl, controller.signal),
     new Promise((_, reject) =>
@@ -211,9 +254,9 @@ export const searchOpenLibrary = async (query, {
   let wikidataMatcher = () => null;
 
   try {
-    const wd = await wdRace;
+    const [expandedSpotlight, wd] = await Promise.all([expPromise, wdRace]);
     if (!isStale()) {
-      wikidataSpotlight = wd.wikidataSpotlight || [];
+      wikidataSpotlight = [...(expandedSpotlight || []), ...(wd.wikidataSpotlight || [])];
       wikidataMatcher = wd.wikidataMatcher || (() => null);
       const merged = applyCuratedFallback(wikidataSpotlight);
       setSearchLoading(false);
@@ -463,6 +506,30 @@ export const handleAddFromOpenLibrary = async (openLibraryBook, {
       saga = curated.seriesName;
       auto_detected_series = true;
       detection_confidence = curated.confidence || null;
+    }
+  }
+  if (!saga) {
+    try {
+      await searchExpandedCatalog(addTitle, 5);
+    } catch (_) {
+      /* cache noyau curé optionnel */
+    }
+    const fromCore = attributeBookToSeries({
+      title: addTitle,
+      display_title: addTitle,
+      author: openLibraryBook.author,
+    });
+    if (fromCore?.source === 'curated' && fromCore.seriesName) {
+      saga = fromCore.seriesName;
+      auto_detected_series = true;
+      detection_confidence = fromCore.confidence || 100;
+      if (!volume_number) {
+        const titles = fromCore.seriesData?.volume_titles || {};
+        const hit = Object.entries(titles).find(
+          ([, t]) => String(t).toLowerCase() === String(addTitle).toLowerCase()
+        );
+        if (hit) volume_number = Number(hit[0]);
+      }
     }
   }
 

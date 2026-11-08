@@ -144,9 +144,12 @@ export const handleAddSeriesToLibrary = async (seriesData, {
       volumes,
       description_fr: enrichedMetadata.description_fr,
       cover_image_url: enrichedMetadata.cover_image_url,
-      first_published: enrichedMetadata.first_published || '',
+      first_published: enrichedMetadata.first_published || seriesData.first_published || '',
       last_published: enrichedMetadata.last_published || '',
-      publisher: enrichedMetadata.publisher || '',
+      publisher: enrichedMetadata.publisher || seriesData.publisher || '',
+      genre: seriesData.genre || '',
+      language: seriesData.language || '',
+      wikidata_qid: seriesData.wikidata_qid || seriesData.qid || '',
       series_status: 'to_read',
     };
 

@@ -41,14 +41,14 @@ test('résout un tome par son titre', () => {
   expect(hit.data.name).toBe('Shannara');
 });
 
-test('attribution d’un tome étendu hors curé', () => {
+test('attribution d’un tome du noyau curé', () => {
   indexExpandedSeriesForTests(SAMPLE);
   const attr = attributeBookToSeries({
     title: 'Les Épées de Shannara',
     author: 'Terry Brooks',
   });
   expect(attr).not.toBeNull();
-  expect(attr.source).toBe('expanded');
+  expect(attr.source).toBe('curated');
   expect(attr.seriesName).toBe('Shannara');
 });
 

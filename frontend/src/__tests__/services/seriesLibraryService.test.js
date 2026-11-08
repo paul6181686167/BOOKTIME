@@ -58,6 +58,21 @@ describe('generateVolumesList', () => {
     ]);
   });
 
+  it('utilise les titres du noyau curé fournis sur la carte série', () => {
+    const v = generateVolumesList(
+      {
+        name: 'Shannara',
+        category: 'roman',
+        volume_titles: { 1: 'Les Épées de Shannara', 2: 'Les Pierres de Shannara' },
+        volume_details: { 1: { cover_url: 'https://covers.openlibrary.org/b/olid/OL1W-L.jpg' } },
+      },
+      {}
+    );
+    expect(v).toHaveLength(2);
+    expect(v[0].volume_title).toBe('Les Épées de Shannara');
+    expect(v[0].cover_url).toContain('OL1W');
+  });
+
   it('génère des tomes génériques pour une série populaire hors référentiel', () => {
     const v = generateVolumesList(
       {

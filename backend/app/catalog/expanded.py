@@ -1,4 +1,4 @@
-"""Catalogue étendu de fiches (10 000 tomes Wikidata, hors overlay curé)."""
+"""Noyau curé : 50 000 fiches tomes (Wikidata), overlay riche à part."""
 from __future__ import annotations
 
 import json
@@ -82,6 +82,8 @@ def _series_lite(s: dict[str, Any]) -> dict[str, Any]:
         "volumes": s.get("volumes"),
         "cover_url": s.get("cover_url"),
         "first_published": s.get("first_published"),
+        "genre": s.get("genre"),
+        "language": s.get("language"),
         "wikidata_qid": s.get("wikidata_qid") or s.get("qid"),
         "source": s.get("source") or "wikidata",
     }

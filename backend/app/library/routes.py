@@ -22,6 +22,9 @@ def create_series_library(
 
     user_id = current_user["id"]
     data = series_data.model_dump()
+    from ..catalog.hydrate import hydrate_series_dict
+
+    data = hydrate_series_dict(data)
     series_name = (data.get("series_name") or data.get("name") or "").strip()
 
     # Vérifier si la série existe déjà pour cet utilisateur (clé canonique `series_name`, repli `name` legacy)

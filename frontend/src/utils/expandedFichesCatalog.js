@@ -1,16 +1,18 @@
 /**
- * Catalogue étendu (~10 000 tomes Wikidata), chargé une fois depuis
- * GET /api/catalog/expanded. Le référentiel curé JS reste prioritaire.
+ * Noyau curé (~50 000 tomes).
+ * On n'indexe pas le JSON entier (trop lourd) : la recherche passe par
+ * GET /api/catalog/expanded/search, et les hits sont mis en cache local.
+ * L'overlay JS (~103 séries riches) reste prioritaire en cas d'homonyme.
  */
 import { API_BASE_URL } from '../config/environment';
 import { getToken } from '../services/apiClient';
 import { FuzzyMatcher } from './fuzzyMatcher';
 
 let loaded = false;
-let loading = null;
 let seriesList = [];
 const byNormName = new Map();
 const byVolumeTitle = new Map();
+const byKey = new Map();
 
 export function isExpandedCatalogReady() {
   return loaded;
@@ -22,49 +24,54 @@ export function getExpandedSeriesList() {
 
 export function resetExpandedCatalog() {
   loaded = false;
-  loading = null;
   seriesList = [];
   byNormName.clear();
   byVolumeTitle.clear();
+  byKey.clear();
 }
 
 export function indexExpandedSeriesForTests(list) {
-  indexSeries(list);
+  resetExpandedCatalog();
+  rememberExpandedHits(list);
 }
 
-function indexSeries(list) {
-  seriesList = Array.isArray(list) ? list : [];
-  byNormName.clear();
-  byVolumeTitle.clear();
-  for (const data of seriesList) {
-    if (!data || !data.name) continue;
-    const names = [data.name, data.name_en].filter(Boolean);
-    for (const n of names) {
-      const norm = FuzzyMatcher.normalizeString(n);
-      if (norm && !byNormName.has(norm)) {
-        byNormName.set(norm, { key: data.key || data.qid, data });
-      }
+function indexOne(data) {
+  if (!data || !data.name) return;
+  const key = data.key || data.qid;
+  if (key && byKey.has(key)) return;
+  seriesList.push(data);
+  if (key) byKey.set(key, data);
+  const names = [data.name, data.name_en].filter(Boolean);
+  for (const n of names) {
+    const norm = FuzzyMatcher.normalizeString(n);
+    if (norm && !byNormName.has(norm)) {
+      byNormName.set(norm, { key: key || data.name, data });
     }
-    const titles = data.volume_titles || {};
-    Object.values(titles).forEach((title) => {
-      const norm = FuzzyMatcher.normalizeString(String(title || ''));
-      if (norm && norm.length >= 4 && !byVolumeTitle.has(norm)) {
-        byVolumeTitle.set(norm, { key: data.key || data.qid, data });
-      }
-    });
   }
-  loaded = true;
+  const titles = data.volume_titles || {};
+  Object.values(titles).forEach((title) => {
+    const norm = FuzzyMatcher.normalizeString(String(title || ''));
+    if (norm && norm.length >= 4 && !byVolumeTitle.has(norm)) {
+      byVolumeTitle.set(norm, { key: key || data.name, data });
+    }
+  });
+}
+
+export function rememberExpandedHits(rows) {
+  if (!Array.isArray(rows)) return;
+  rows.forEach(indexOne);
+  loaded = seriesList.length > 0;
 }
 
 export function resolveExpandedSeriesByName(name) {
-  if (!name || !loaded) return null;
+  if (!name || !seriesList.length) return null;
   const norm = FuzzyMatcher.normalizeString(name);
   if (!norm) return null;
   return byNormName.get(norm) || null;
 }
 
 export function resolveExpandedSeriesByVolumeTitle(title) {
-  if (!title || !loaded) return null;
+  if (!title || !seriesList.length) return null;
   const norm = FuzzyMatcher.normalizeString(title);
   if (!norm || norm.length < 4) return null;
   const exact = byVolumeTitle.get(norm);
@@ -76,10 +83,10 @@ export function resolveExpandedSeriesByVolumeTitle(title) {
 }
 
 /**
- * Correspondances rapides (exact / préfixe / sous-chaîne), sans fuzzy sur 1 000+ séries.
+ * Correspondances rapides sur le cache local (hits déjà vus), sans fuzzy lourd.
  */
 export function matchExpandedSeries(query, limit = 5) {
-  if (!loaded || !query) return [];
+  if (!seriesList.length || !query) return [];
   const qn = FuzzyMatcher.normalizeString(query);
   if (qn.length < 2) return [];
   const hits = [];
@@ -111,7 +118,7 @@ export function matchExpandedSeries(query, limit = 5) {
     if (score) {
       hits.push({
         series: data,
-        confidence: 95000 + score,
+        confidence: 100000 + score,
         match_reasons: [matchType, 'expanded_catalog'],
         matchType,
         originalScore: score,
@@ -126,25 +133,22 @@ export function matchExpandedSeries(query, limit = 5) {
   return hits.slice(0, limit);
 }
 
+export async function searchExpandedCatalog(query, limit = 8, signal) {
+  const token = getToken();
+  const q = String(query || '').trim();
+  if (!token || q.length < 2) return [];
+  const res = await fetch(
+    `${API_BASE_URL}/api/catalog/expanded/search?q=${encodeURIComponent(q)}&limit=${limit}`,
+    { headers: { Authorization: `Bearer ${token}` }, signal }
+  );
+  if (!res.ok) return [];
+  const data = await res.json();
+  const rows = data?.results || [];
+  rememberExpandedHits(rows);
+  return rows;
+}
+
+/** Conservé pour compat : plus de téléchargement global du catalogue. */
 export async function ensureExpandedCatalog() {
-  if (loaded) return seriesList;
-  if (loading) return loading;
-  loading = (async () => {
-    try {
-      const token = getToken();
-      if (!token) return seriesList;
-      const res = await fetch(`${API_BASE_URL}/api/catalog/expanded`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) return seriesList;
-      const data = await res.json();
-      indexSeries(data?.series || []);
-      return seriesList;
-    } catch {
-      return seriesList;
-    } finally {
-      loading = null;
-    }
-  })();
-  return loading;
+  return seriesList;
 }

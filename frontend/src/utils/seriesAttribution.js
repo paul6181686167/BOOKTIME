@@ -3,10 +3,9 @@
  *
  * Donne, pour un livre, la série à laquelle il appartient (ou null si standalone),
  * en appliquant un ordre de rattachement unique et stable :
- *   1. Référentiel curé EXTENDED_SERIES_DATABASE (nom / variations / titres de tomes,
- *      avec respect des `exclusions`). Les `keywords` génériques ne servent JAMAIS
- *      à masquer un livre (uniquement gérés en interne par SeriesDetector avec garde-fou
- *      « nom/variation présent dans le titre »).
+ *   1. Overlay riche EXTENDED_SERIES_DATABASE (~103 séries, titres FR / ISBN).
+ *   1b. Noyau curé (~50 000 tomes) déjà chargé en cache.
+ *      Les `keywords` génériques ne servent JAMAIS à masquer un livre.
  *   2. Index Wikidata statique (résultats déjà récupérés via /api/static-wikidata/series/search)
  *      — UNIQUEMENT côté recherche (matcher passé en option). Jamais d'appel réseau ici.
  *   3. Champ `saga` d'Open Library / de la bibliothèque.
@@ -218,7 +217,7 @@ export const attributeBookToSeries = (book, { wikidataMatcher } = {}) => {
   const curated = findCuratedSeriesForBook(book);
   if (curated) return curated;
 
-  // 1b. Catalogue étendu (10 000 tomes), si déjà chargé
+  // 1b. Noyau curé (50 000 tomes), si déjà chargé
   for (const title of bookTitleCandidates(book)) {
     const expanded =
       resolveExpandedSeriesByVolumeTitle(title) || resolveExpandedSeriesByName(title);
@@ -227,7 +226,7 @@ export const attributeBookToSeries = (book, { wikidataMatcher } = {}) => {
         seriesKey: expanded.key,
         seriesName: expanded.data.name,
         seriesData: expanded.data,
-        source: 'expanded',
+        source: 'curated',
         wikidata_qid: expanded.data.wikidata_qid || expanded.data.qid,
       };
     }

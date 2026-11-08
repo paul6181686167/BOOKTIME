@@ -2,6 +2,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List, Dict, Any
 
 class VolumeData(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     volume_number: int
     volume_title: str
     is_read: bool = False
@@ -10,7 +12,7 @@ class VolumeData(BaseModel):
     review: Optional[str] = None
 
 class SeriesLibraryCreate(BaseModel):
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="allow")
 
     series_name: str
     authors: List[str] = Field(default_factory=list)
