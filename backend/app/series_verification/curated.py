@@ -173,22 +173,7 @@ def ensure_loaded() -> None:
     _keyword_index.clear()
     _by_canon.clear()
 
-    # Le JSON 23 Mo est déjà parsé par catalog.expanded : on réindexe, on ne relit pas.
-    try:
-        from ..catalog.expanded import all_series as expanded_all_series
-
-        core_rows = expanded_all_series()
-    except Exception as exc:
-        logger.warning("Noyau 50k illisible via catalogue étendu : %s", exc)
-        core_rows = []
-
-    for raw in core_rows:
-        if not isinstance(raw, dict):
-            continue
-        entry = _normalize_entry(raw, _core_source_label(raw))
-        if entry:
-            _register(entry, overwrite=False)
-
+    # Overlay riche seulement (~113 séries). Le noyau 50k est dans Mongo.
     overlay = _load_json(_CURATED_PATH)
     if isinstance(overlay, dict):
         for raw in overlay.get("series") or []:
@@ -260,7 +245,21 @@ def match_curated(name: str, author: str | None = None) -> dict[str, Any] | None
             continue
         if len(cand_key) > best_len:
             best, best_len = cand, len(cand_key)
-    return best
+    if best:
+        return best
+    try:
+        from ..catalog.seed import ensure_seeded
+        from ..catalog import daily_store
+
+        ensure_seeded()
+        raw = daily_store.find_by_name(name)
+    except Exception:
+        raw = None
+    if raw:
+        entry = _normalize_entry(raw, _core_source_label(raw))
+        if entry and not _is_excluded(entry, q) and _author_matches(entry, author):
+            return entry
+    return None
 
 
 def curated_to_source_rows(entry: dict[str, Any]) -> list[dict[str, Any]]:

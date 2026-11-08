@@ -131,6 +131,28 @@ async function fetchWikidataSpotlight(query, token, backendUrl, signal) {
 }
 
 function cardFromExpandedEntry(entry, i) {
+  if (entry?.type === 'author') {
+    const photo = entry.cover_url || entry.photo_url || '';
+    return {
+      isAuthorCard: true,
+      isSeriesCard: false,
+      id: `author_exp_${entry.qid || entry.key || i}`,
+      name: entry.name,
+      author: entry.name,
+      cover_url: photo,
+      photo_url: photo,
+      birth_date: entry.birth_date,
+      nationality: entry.nationality,
+      bio: entry.bio,
+      wikidata_qid: entry.wikidata_qid || entry.qid || null,
+      relevanceScore: 110000 - i * 10,
+      sourceType: 'official',
+      fromOpenLibrary: false,
+      description: [entry.nationality, entry.birth_date, 'Auteur']
+        .filter(Boolean)
+        .join(' · '),
+    };
+  }
   const authors = (entry.authors || []).filter(Boolean);
   const cover =
     entry.cover_url ||

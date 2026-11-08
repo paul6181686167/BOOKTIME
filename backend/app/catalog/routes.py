@@ -403,8 +403,12 @@ def search_expanded_fiches(
     limit: int = Query(20, ge=1, le=50),
     current_user: dict = Depends(get_current_user),
 ):
-    """Recherche dans le catalogue étendu (nom de série ou titre de tome)."""
-    return {"results": expanded_fiches.search_series(q, limit=limit), "query": q}
+    """Recherche dans le catalogue étendu (séries, tomes, auteurs)."""
+    series = expanded_fiches.search_series(q, limit=limit)
+    authors = expanded_fiches.search_authors(q, limit=min(8, limit))
+    # Auteurs en tête si le nom match, sans noyer les séries.
+    results = list(authors) + [s for s in series if (s.get("type") or "series") != "author"]
+    return {"results": results[:limit], "query": q}
 
 
 def _daily_secret_ok(header_val: str | None) -> bool:
@@ -425,6 +429,22 @@ def run_daily_catalog(
     """Déclenche l'ajout du jour (secret Render + GitHub Actions)."""
     if not _daily_secret_ok(x_catalog_daily_secret):
         raise HTTPException(status_code=403, detail="Interdit")
-    from .daily_ingest import run_daily_ingest
+    import os
 
-    return run_daily_ingest()
+    from ..db_config import database
+    from .daily_ingest import start_daily_ingest
+
+    sync = database.is_mock_mode() or os.getenv("CATALOG_DAILY_SYNC", "").lower() == "true"
+    return start_daily_ingest(sync=sync)
+
+
+@router.get("/daily/status")
+def daily_catalog_status(
+    x_catalog_daily_secret: str | None = Header(default=None, alias="X-Catalog-Daily-Secret"),
+):
+    """État du job 10k fiches (même secret que POST /daily/run)."""
+    if not _daily_secret_ok(x_catalog_daily_secret):
+        raise HTTPException(status_code=403, detail="Interdit")
+    from .daily_ingest import ingest_status
+
+    return ingest_status()

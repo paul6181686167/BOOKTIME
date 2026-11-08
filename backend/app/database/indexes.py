@@ -33,6 +33,14 @@ INDEXES: List[Tuple[str, Any, Dict[str, Any]]] = [
     ("series_library", [("user_id", ASCENDING)], {}),
     ("notifications", [("user_id", ASCENDING), ("created_at", DESCENDING)], {}),
     ("catalog_daily_series", "qid", {"unique": True, "sparse": True}),
+    ("catalog_daily_series", "name_norm", {}),
+    ("catalog_daily_series", "name_en_norm", {}),
+    ("catalog_daily_series", "title_norms", {}),
+    ("catalog_daily_series", "source", {}),
+    ("catalog_daily_series", "name", {}),
+    ("authors", "name_normalized", {"unique": True, "sparse": True}),
+    ("authors", "wikidata_qid", {"sparse": True}),
+    ("authors", "name", {}),
 ]
 
 

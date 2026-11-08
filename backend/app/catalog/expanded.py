@@ -1,7 +1,6 @@
-"""Noyau curé : 50 000 fiches tomes (Wikidata), overlay riche à part."""
+"""Noyau catalogue : Mongo (graine JSON 50k + fiches du jour)."""
 from __future__ import annotations
 
-import json
 import threading
 from functools import lru_cache
 from pathlib import Path
@@ -9,112 +8,85 @@ from typing import Any
 
 from ..static_wikidata.service import norm_title
 
-_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "expanded_fiches_catalog.json"
+_DEFAULT_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "expanded_fiches_catalog.json"
+_PATH = _DEFAULT_PATH
 _lock = threading.Lock()
-_doc: dict[str, Any] | None = None
-_loaded = False
-
-
-def _merge_daily(series: list) -> list:
-    """Ajoute les séries ingérées chaque jour (Mongo), sans doublon de QID/nom."""
-    from . import daily_store
-
-    seen: set[str] = set()
-    out: list = []
-    for s in series:
-        if not isinstance(s, dict):
-            continue
-        out.append(s)
-        for k in (s.get("qid"), s.get("wikidata_qid"), s.get("key")):
-            if k:
-                seen.add(str(k))
-        name = (s.get("name") or "").strip().lower()
-        if name:
-            seen.add("n:" + name)
-    for extra in daily_store.all_series():
-        qid = str(extra.get("qid") or extra.get("wikidata_qid") or "")
-        key = str(extra.get("key") or "")
-        name = (extra.get("name") or "").strip().lower()
-        if (qid and qid in seen) or (key and key in seen) or (name and ("n:" + name) in seen):
-            continue
-        out.append(extra)
-        if qid:
-            seen.add(qid)
-        if key:
-            seen.add(key)
-        if name:
-            seen.add("n:" + name)
-    return out
+_json_meta: dict[str, Any] | None = None
 
 
 def clear_cache() -> None:
-    global _doc, _loaded
+    global _json_meta
     with _lock:
-        _doc = None
-        _loaded = False
+        _json_meta = None
+    try:
+        from .seed import reset_seed_flag
+
+        reset_seed_flag()
+    except Exception:
+        pass
     stats.cache_clear()
 
 
-def _load() -> dict[str, Any]:
-    global _doc, _loaded
+def _json_meta_only() -> dict[str, Any]:
+    """Meta du fichier git, sans conserver les séries en RAM."""
+    global _json_meta
     with _lock:
-        if _loaded:
-            return _doc or {"meta": {}, "series": []}
-        _loaded = True
-        if not _PATH.is_file():
-            series = _merge_daily([])
-            books = sum(int(s.get("volumes") or 0) for s in series if isinstance(s, dict))
-            _doc = {
-                "meta": {
-                    "book_count": books,
-                    "series_count": len(series),
-                    "daily_series": len(series),
-                    "ready": bool(series),
-                },
-                "series": series,
-            }
-            return _doc
-        try:
-            with open(_PATH, encoding="utf-8") as f:
-                data = json.load(f)
-            if not isinstance(data, dict):
-                data = {"meta": {}, "series": []}
-            series = data.get("series") if isinstance(data.get("series"), list) else []
-            json_n = len(series)
-            series = _merge_daily(series)
-            meta = data.get("meta") if isinstance(data.get("meta"), dict) else {}
-            meta["series_count"] = len(series)
-            meta["book_count"] = sum(int(s.get("volumes") or 0) for s in series if isinstance(s, dict))
-            meta["daily_series"] = max(0, len(series) - json_n)
-            meta["ready"] = True
-            _doc = {"meta": meta, "series": series}
-        except Exception:
-            _doc = {"meta": {"book_count": 0, "series_count": 0, "ready": False}, "series": []}
-        return _doc
+        if _json_meta is not None:
+            return _json_meta
+        from .seed import read_json_catalog
+
+        data = read_json_catalog()
+        _json_meta = dict(data.get("meta") or {})
+        return _json_meta
+
+
+def _mongo_counts() -> tuple[int, int, int]:
+    try:
+        from . import daily_store
+
+        return daily_store.count(), daily_store.fiche_count(), daily_store.count_by_source("daily")
+    except Exception:
+        return 0, 0, 0
+
+
+def _daily_author_count() -> int:
+    try:
+        from . import daily_authors
+
+        return daily_authors.count()
+    except Exception:
+        return 0
 
 
 @lru_cache(maxsize=1)
 def stats() -> dict[str, Any]:
-    doc = _load()
-    meta = dict(doc.get("meta") or {})
+    n, fiches, daily_n = _mongo_counts()
+    meta = _json_meta_only()
+    if n <= 0:
+        n = int(meta.get("series_count") or 0)
+        fiches = int(meta.get("book_count") or 0)
     return {
-        "series": int(meta.get("series_count") or 0),
-        "books": int(meta.get("book_count") or 0),
-        "ready": bool(meta.get("ready")),
+        "series": n,
+        "books": fiches,
+        "ready": n > 0 or bool(meta.get("ready")) or int(meta.get("book_count") or 0) > 0,
         "categories": meta.get("categories") or {},
         "series_with_cover": int(meta.get("series_with_cover") or 0),
-        "daily_series": int(meta.get("daily_series") or 0),
-        "source": meta.get("source") or "expanded_fiches_catalog.json",
+        "daily_series": daily_n,
+        "daily_fiches": daily_n,
+        "daily_authors": _daily_author_count(),
+        "source": "mongodb" if n else (meta.get("source") or "expanded_fiches_catalog.json"),
     }
 
 
 def all_series() -> list[dict[str, Any]]:
-    return list(_load().get("series") or [])
+    """Audit / tests : lit le JSON git, ne sert pas la recherche live."""
+    from .seed import read_json_catalog
+
+    return list(read_json_catalog().get("series") or [])
 
 
 def catalog_payload() -> dict[str, Any]:
-    doc = _load()
-    return {"meta": stats(), "series": doc.get("series") or []}
+    return {"meta": stats(), "series": []}
 
 
 def _series_lite(s: dict[str, Any]) -> dict[str, Any]:
@@ -132,35 +104,65 @@ def _series_lite(s: dict[str, Any]) -> dict[str, Any]:
         "language": s.get("language"),
         "wikidata_qid": s.get("wikidata_qid") or s.get("qid"),
         "source": s.get("source") or "wikidata",
+        "type": s.get("type"),
     }
+
+
+def _score_series(s: dict[str, Any], qn: str) -> int:
+    name = s.get("name_norm") or norm_title(str(s.get("name") or ""))
+    name_en = s.get("name_en_norm") or norm_title(str(s.get("name_en") or ""))
+    if name == qn or name_en == qn:
+        return 3
+    if name.startswith(qn) or name_en.startswith(qn):
+        return 2
+    if len(qn) >= 4 and (qn in name or qn in name_en):
+        return 1
+    titles = s.get("title_norms") or []
+    if isinstance(titles, list) and qn in titles:
+        return 1
+    raw_titles = s.get("volume_titles") or {}
+    if isinstance(raw_titles, dict):
+        for title in raw_titles.values():
+            tn = norm_title(str(title or ""))
+            if tn == qn or (len(qn) >= 4 and qn in tn):
+                return 1
+    return 0
+
+
+def search_authors(q: str, limit: int = 8) -> list[dict[str, Any]]:
+    try:
+        from .daily_authors import author_lite, search as search_daily_authors
+
+        return [author_lite(d) for d in search_daily_authors(q, limit=limit)]
+    except Exception:
+        return []
 
 
 def search_series(q: str, limit: int = 20) -> list[dict[str, Any]]:
     qn = norm_title(q or "")
     if len(qn) < 2:
         return []
+    try:
+        from .seed import ensure_seeded
+
+        ensure_seeded()
+    except Exception:
+        pass
+    try:
+        from . import daily_store
+
+        extras = daily_store.search(q, limit=max(limit * 3, 40))
+    except Exception:
+        extras = []
     hits: list[tuple[int, dict[str, Any]]] = []
-    for s in all_series():
+    for s in extras:
         if not isinstance(s, dict):
             continue
-        name = norm_title(str(s.get("name") or ""))
-        name_en = norm_title(str(s.get("name_en") or ""))
-        score = 0
-        if name == qn or name_en == qn:
-            score = 3
-        elif name.startswith(qn) or name_en.startswith(qn):
-            score = 2
-        elif (len(qn) >= 4 and (qn in name or qn in name_en)):
-            score = 1
-        else:
-            titles = s.get("volume_titles") or {}
-            if isinstance(titles, dict):
-                for title in titles.values():
-                    tn = norm_title(str(title or ""))
-                    if tn == qn or (len(qn) >= 4 and qn in tn):
-                        score = 1
-                        break
+        score = _score_series(s, qn)
         if score:
             hits.append((score, s))
     hits.sort(key=lambda h: (h[0], int(h[1].get("volumes") or 0)), reverse=True)
-    return [_series_lite(s) | {"volume_titles": s.get("volume_titles"), "volume_details": s.get("volume_details")} for _, s in hits[:limit]]
+    return [
+        _series_lite(s) | {"volume_titles": s.get("volume_titles"), "volume_details": s.get("volume_details")}
+        for _, s in hits[:limit]
+    ]

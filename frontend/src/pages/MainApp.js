@@ -409,10 +409,6 @@ export default function MainApp() {
     await searchHook.handleSeriesClick(series, seriesHook);
   };
 
-  const handleItemClick = (item) => {
-    booksHook.handleItemClick(item, seriesHook);
-  };
-
   const handleAuthorClick = (author) => {
     // Fermer le modal livre s'il est ouvert
     if (booksHook.showBookModal) {
@@ -422,6 +418,14 @@ export default function MainApp() {
     // Ouvrir le modal auteur
     setSelectedAuthor(author);
     setShowAuthorModal(true);
+  };
+
+  const handleItemClick = (item) => {
+    if (item?.isAuthorCard) {
+      handleAuthorClick(item.name || item.author);
+      return;
+    }
+    booksHook.handleItemClick(item, seriesHook);
   };
 
   const handleCloseAuthorModal = () => {

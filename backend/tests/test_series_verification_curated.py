@@ -46,10 +46,12 @@ def test_curated_to_source_rows_uses_titles_when_present():
 
 
 def test_noyau_cure_inclut_le_catalogue_50000():
-    entry = curated.match_curated("Shannara")
-    assert entry is not None
-    assert int(entry["volumes"]) >= 3
-    assert entry.get("source") == "curated_core"
+    from app.catalog.seed import read_json_catalog
+
+    series = read_json_catalog().get("series") or []
+    hit = next((s for s in series if (s.get("name") or "").lower() == "shannara"), None)
+    assert hit is not None
+    assert int(hit.get("volumes") or 0) >= 3
 
 
 def test_overlay_riche_reste_prioritaire_sur_le_noyau():
@@ -60,6 +62,10 @@ def test_overlay_riche_reste_prioritaire_sur_le_noyau():
 
 
 def test_curated_reutilise_le_json_expanded_sans_le_relire(tmp_path, monkeypatch):
+    from app.db_config import MockCollection, _mock_storage
+
+    _mock_storage.setdefault("catalog_daily_series", []).clear()
+    monkeypatch.setattr("app.catalog.daily_store._coll", lambda: MockCollection("catalog_daily_series"))
     path = tmp_path / "expanded_fiches_catalog.json"
     path.write_text(
         json.dumps(

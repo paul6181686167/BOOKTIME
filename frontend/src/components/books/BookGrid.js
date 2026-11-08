@@ -124,6 +124,37 @@ const SeriesCardBody = ({ item, coverSrc, onCoverFound, priority, rimColors }) =
   );
 };
 
+const AuthorCardBody = ({ item, coverSrc, onCoverFound, priority, rimColors }) => {
+  const years = [item.birth_date, item.death_date].filter(Boolean).join(' – ');
+  return (
+    <div className={CARD_SHELL}>
+      <div className={COVER_FRAME} style={rimStyle(rimColors)}>
+        <SmartCover
+          item={item}
+          alt={item.name}
+          primarySrc={coverSrc}
+          onCoverFound={onCoverFound}
+          priority={priority}
+        />
+        <CoverScrim />
+        <div className="absolute top-1.5 left-1.5">
+          <span className={`inline-flex items-center rounded-md bg-black/65 px-1.5 py-0.5 text-tiny font-medium uppercase tracking-wider text-white/90 ${PILL}`}>
+            Auteur
+          </span>
+        </div>
+      </div>
+      <div className="pt-2 px-0.5">
+        <h3 className="font-medium text-gray-900 dark:text-white text-tiny sm:text-sm line-clamp-2 leading-snug tracking-tight min-h-[2.75em]">
+          {item.name}
+        </h3>
+        <p className="text-tiny sm:text-xs text-gray-500 dark:text-white/60 line-clamp-1">
+          {[item.nationality, years].filter(Boolean).join(' · ')}
+        </p>
+      </div>
+    </div>
+  );
+};
+
 const BookCardBody = ({ item, coverSrc, onCoverFound, priority, rimColors }) => {
   const title = displayBookTitleFrFirst(item);
   const current = item.current_page || 0;
@@ -206,12 +237,16 @@ const GridCard = React.memo(({ item, index, onSelect, onCoverFound, rimColors })
       style={animated ? { animationDelay: `${Math.min(index * 40, 400)}ms` } : undefined}
       {...clickableProps(
         () => onSelect(item),
-        item.isSeriesCard
+        item.isAuthorCard
+          ? `Auteur ${item.name || item.author || ''}`.trim()
+          : item.isSeriesCard
           ? `Série ${item.name || item.title || ''}`.trim()
           : displayBookTitleFrFirst(item) || item.title
       )}
     >
-      {item.isSeriesCard ? (
+      {item.isAuthorCard ? (
+        <AuthorCardBody item={item} coverSrc={coverSrc} onCoverFound={onCoverFound} priority={priority} rimColors={rimColors} />
+      ) : item.isSeriesCard ? (
         <SeriesCardBody item={item} coverSrc={coverSrc} onCoverFound={onCoverFound} priority={priority} rimColors={rimColors} />
       ) : (
         <BookCardBody item={item} coverSrc={coverSrc} onCoverFound={onCoverFound} priority={priority} rimColors={rimColors} />
@@ -253,8 +288,14 @@ const BookGrid = ({
   }, [books]);
 
   const handleSelect = React.useCallback(
-    (item) => (onItemClick ? onItemClick(item) : onBookClick(item)),
-    [onItemClick, onBookClick]
+    (item) => {
+      if (item?.isAuthorCard && onAuthorClick) {
+        onAuthorClick(item.name || item.author);
+        return;
+      }
+      return onItemClick ? onItemClick(item) : onBookClick(item);
+    },
+    [onItemClick, onBookClick, onAuthorClick]
   );
 
   // Rendu progressif : on ne monte qu'un premier lot de cartes, étendu à

@@ -29,7 +29,15 @@ def _tiny_catalog():
     }
 
 
+def _isolate_catalog_mongo(monkeypatch):
+    from app.db_config import MockCollection, _mock_storage
+
+    _mock_storage.setdefault("catalog_daily_series", []).clear()
+    monkeypatch.setattr("app.catalog.daily_store._coll", lambda: MockCollection("catalog_daily_series"))
+
+
 def test_search_prefers_exact_series_name(tmp_path, monkeypatch):
+    _isolate_catalog_mongo(monkeypatch)
     path = tmp_path / "expanded_fiches_catalog.json"
     path.write_text(json.dumps(_tiny_catalog()), encoding="utf-8")
     monkeypatch.setattr(expanded, "_PATH", path)
@@ -41,6 +49,7 @@ def test_search_prefers_exact_series_name(tmp_path, monkeypatch):
 
 
 def test_search_matches_volume_title(tmp_path, monkeypatch):
+    _isolate_catalog_mongo(monkeypatch)
     path = tmp_path / "expanded_fiches_catalog.json"
     path.write_text(json.dumps(_tiny_catalog()), encoding="utf-8")
     monkeypatch.setattr(expanded, "_PATH", path)
@@ -51,17 +60,17 @@ def test_search_matches_volume_title(tmp_path, monkeypatch):
 
 
 def test_generated_catalog_has_50000_books():
-    expanded.clear_cache()
-    st = expanded.stats()
-    if not st.get("ready"):
+    from app.catalog.seed import read_json_catalog
+
+    data = read_json_catalog()
+    meta = data.get("meta") or {}
+    if int(meta.get("book_count") or 0) <= 0 and not data.get("series"):
         return
-    assert st["books"] >= 50_000
-    assert st["series"] >= 2000
-    assert st["series"] + st["books"] >= 50_000
+    assert int(meta.get("book_count") or 0) >= 50_000
+    assert int(meta.get("series_count") or 0) >= 2000
 
 
 def test_generated_catalog_volumes_are_complete():
-    expanded.clear_cache()
     series = expanded.all_series()
     if not series:
         return
@@ -99,6 +108,7 @@ async def test_expanded_endpoint_requires_auth(test_client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_expanded_search_endpoint(test_client: AsyncClient, auth_headers: dict, tmp_path, monkeypatch):
+    _isolate_catalog_mongo(monkeypatch)
     path = tmp_path / "expanded_fiches_catalog.json"
     path.write_text(json.dumps(_tiny_catalog()), encoding="utf-8")
     monkeypatch.setattr(expanded, "_PATH", path)

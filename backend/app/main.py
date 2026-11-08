@@ -31,13 +31,15 @@ async def lifespan(app: FastAPI):
         except Exception as exc:
             logger.warning("Préchargement Wikidata ignoré : %s", exc)
         try:
+            from .catalog.seed import ensure_seeded
             from .catalog import expanded as expanded_fiches
             from .series_verification import curated as curated_mod
 
+            ensure_seeded()
             st = expanded_fiches.stats()
             curated_mod.ensure_loaded()
             logger.info(
-                "Catalogue 50k prêt : %s séries, %s tomes",
+                "Catalogue Mongo prêt : %s séries, %s tomes",
                 st.get("series"),
                 st.get("books"),
             )

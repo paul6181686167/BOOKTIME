@@ -1,6 +1,7 @@
 name: Fiches quotidiennes
 
-# Réveille le backend Render puis déclenche l'ajout de nouvelles fiches complètes.
+# Réveille le backend Render puis déclenche l'ajout (~10 000 fiches, en fond).
+# Le ping répété empêche Render de rendormir le process pendant le job.
 # Configurer le secret CATALOG_DAILY_SECRET (identique à la variable Render).
 
 on:
@@ -36,7 +37,16 @@ jobs:
             exit 0
           fi
           echo "POST $BASE/api/catalog/daily/run"
-          curl -sS -X POST --max-time 300 \
+          curl -sS -X POST --max-time 90 \
             -H "X-Catalog-Daily-Secret: $SECRET" \
             -w "\nHTTP %{http_code}\n" \
             "$BASE/api/catalog/daily/run"
+          for i in $(seq 1 40); do
+            sleep 20
+            curl -s -o /dev/null --max-time 20 "$URL" || true
+            status=$(curl -sS --max-time 20 \
+              -H "X-Catalog-Daily-Secret: $SECRET" \
+              "$BASE/api/catalog/daily/status" || echo "{}")
+            echo "Poll $i : $status"
+            echo "$status" | grep -q '"running": false' && echo "$status" | grep -q '"last"' && break
+          done

@@ -59,7 +59,10 @@ function indexOne(data) {
 
 export function rememberExpandedHits(rows) {
   if (!Array.isArray(rows)) return;
-  rows.forEach(indexOne);
+  rows.forEach((row) => {
+    if (row?.type === 'author') return;
+    indexOne(row);
+  });
   loaded = seriesList.length > 0;
 }
 

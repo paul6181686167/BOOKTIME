@@ -188,17 +188,24 @@ def _doc_matches(doc, query):
             if "$regex" in v:
                 import re
                 val = doc.get(k) or ""
-                if not isinstance(val, str):
-                    return False
                 flags = re.IGNORECASE if v.get("$options") == "i" else 0
-                if not re.search(v["$regex"], val, flags=flags):
+                pattern = v["$regex"]
+                if isinstance(val, list):
+                    if not any(re.search(pattern, str(x), flags) for x in val):
+                        return False
+                elif not isinstance(val, str) or not re.search(pattern, val, flags):
                     return False
             elif "$exists" in v:
                 has_key = k in doc and doc[k] is not None
                 if v["$exists"] != has_key:
                     return False
             elif "$in" in v:
-                if doc.get(k) not in v["$in"]:
+                field = doc.get(k)
+                allowed = v["$in"]
+                if isinstance(field, list):
+                    if not any(x in allowed for x in field):
+                        return False
+                elif field not in allowed:
                     return False
             elif "$ne" in v:
                 if doc.get(k) == v["$ne"]:
@@ -210,6 +217,9 @@ def _doc_matches(doc, query):
                 if doc.get(k) != v:
                     return False
         elif doc.get(k) != v:
+            field = doc.get(k)
+            if isinstance(field, list) and v in field:
+                continue
             return False
     return True
 
