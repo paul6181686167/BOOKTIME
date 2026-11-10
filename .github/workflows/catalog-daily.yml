@@ -41,6 +41,7 @@ jobs:
             -H "X-Catalog-Daily-Secret: $SECRET" \
             -w "\nHTTP %{http_code}\n" \
             "$BASE/api/catalog/daily/run"
+          status="{}"
           for i in $(seq 1 40); do
             sleep 20
             curl -s -o /dev/null --max-time 20 "$URL" || true
@@ -48,5 +49,13 @@ jobs:
               -H "X-Catalog-Daily-Secret: $SECRET" \
               "$BASE/api/catalog/daily/status" || echo "{}")
             echo "Poll $i : $status"
-            echo "$status" | grep -q '"running": false' && echo "$status" | grep -q '"last"' && break
+            # JSON compact ("running":false) ou espacé : ne pas faire échouer le job (set -e).
+            if echo "$status" | grep -Eq '"running"[[:space:]]*:[[:space:]]*false'; then
+              break
+            fi
           done
+          if echo "$status" | grep -Eq '"status"[[:space:]]*:[[:space:]]*"error"'; then
+            echo "Ingest en erreur côté backend"
+            exit 1
+          fi
+          echo "Ingest terminé ou encore en fond (Render). Job GitHub OK."

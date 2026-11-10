@@ -100,6 +100,7 @@ def test_plafonds_quotidiens_par_defaut(monkeypatch):
 def test_ingest_skips_known_qid_and_incomplete(monkeypatch):
     _reset_daily()
     monkeypatch.setattr(daily_ingest, "existing_qids", lambda: {"Qknown"})
+    monkeypatch.setattr(daily_ingest, "existing_names", lambda: set())
     monkeypatch.setattr(
         daily_ingest,
         "fetch_candidate_series",
@@ -108,7 +109,7 @@ def test_ingest_skips_known_qid_and_incomplete(monkeypatch):
             {"qid": "Qnew", "name": "Trop court", "category": "roman", "genre": "Roman", "cover_url": "https://x/c.jpg"},
         ],
     )
-    monkeypatch.setattr(daily_ingest, "fetch_works", lambda qid: [{"title": "Seul", "author": "Moi"}])
+    monkeypatch.setattr(daily_ingest, "fetch_works", lambda qid: [{"title": "Seul", "author": ""}])
     result = daily_ingest.run_daily_ingest(limit=5)
     assert result["added"] == 0
     assert result["skipped"] >= 2
@@ -129,6 +130,7 @@ def test_ingest_persists_complete_series(monkeypatch):
         {"title": "Le Second", "author": "Ève Test", "published_year": 2023, "work_qid": "Q12"},
     ]
     monkeypatch.setattr(daily_ingest, "existing_qids", lambda: set())
+    monkeypatch.setattr(daily_ingest, "existing_names", lambda: set())
     monkeypatch.setattr(daily_ingest, "fetch_candidate_series", lambda limit: [cand])
     monkeypatch.setattr(daily_ingest, "fetch_works", lambda qid: works)
     result = daily_ingest.run_daily_ingest(limit=3)
@@ -146,6 +148,68 @@ def test_ingest_persists_complete_series(monkeypatch):
     assert entry and entry.get("source") == "curated_daily"
 
 
+def test_ingest_skips_overlay_series_like_one_piece(monkeypatch):
+    _reset_daily()
+    monkeypatch.setattr(daily_ingest, "existing_qids", lambda: set())
+    monkeypatch.setattr(daily_ingest, "existing_names", lambda: set())
+    cand = {
+        "qid": "Q710662",
+        "name": "One Piece",
+        "category": "manga",
+        "genre": "Manga",
+        "cover_url": "https://example.test/cover.jpg",
+    }
+    monkeypatch.setattr(daily_ingest, "fetch_candidate_series", lambda limit: [cand])
+    monkeypatch.setattr(
+        daily_ingest,
+        "fetch_works",
+        lambda qid: [
+            {"title": "Romance Dawn", "author": "Eiichiro Oda", "published_year": 1997},
+            {"title": "Baggy", "author": "Eiichiro Oda", "published_year": 1998},
+        ],
+    )
+    result = daily_ingest.run_daily_ingest(limit=3)
+    assert result["added"] == 0
+    assert result["skipped"] >= 1
+    assert not any(s.get("qid") == "Q710662" for s in daily_store.all_series())
+
+
+def test_single_volume_series_kept_as_standalone(monkeypatch):
+    _reset_daily()
+    cand = {
+        "qid": "Qonevol",
+        "name": "Roman Unique",
+        "category": "roman",
+        "genre": "Roman",
+        "cover_url": "https://example.test/cover.jpg",
+    }
+    monkeypatch.setattr(daily_ingest, "existing_qids", lambda: set())
+    monkeypatch.setattr(daily_ingest, "existing_names", lambda: set())
+    monkeypatch.setattr(daily_ingest, "fetch_candidate_series", lambda limit: [cand])
+    monkeypatch.setattr(
+        daily_ingest,
+        "fetch_works",
+        lambda qid: [{"title": "Roman Unique", "author": "Solo", "published_year": 2020}],
+    )
+    result = daily_ingest.run_daily_ingest(limit=3)
+    assert result["added"] == 1
+    stored = [s for s in daily_store.all_series() if s.get("qid") == "Qonevol"]
+    assert stored and stored[0]["type"] == "standalone"
+    assert stored[0]["volumes"] == 1
+
+
+def test_complete_entry_cover_from_real_isbn():
+    isbn_resolve.reset_budget(0)
+    daily_ingest._wiki_cover_budget = 0
+    cand = {"qid": "Qcov", "name": "Sans Jaquette", "category": "roman", "genre": "Roman", "cover_url": ""}
+    works = [
+        {"title": "Sans Jaquette", "author": "A. Auteur", "published_year": 2018, "isbn": "9782070360024"}
+    ]
+    entry = daily_ingest.build_complete_entry(cand, works, min_volumes=1, standalone=True)
+    assert entry is not None
+    assert "9782070360024" in entry["cover_url"]
+
+
 def test_ingest_adds_standalone_books(monkeypatch):
     _reset_daily()
     book = {
@@ -161,6 +225,7 @@ def test_ingest_adds_standalone_books(monkeypatch):
         "year": 2021,
     }
     monkeypatch.setattr(daily_ingest, "existing_qids", lambda: set())
+    monkeypatch.setattr(daily_ingest, "existing_names", lambda: set())
     monkeypatch.setattr(daily_ingest, "fetch_candidate_series", lambda limit: [])
     monkeypatch.setattr(daily_ingest, "fetch_candidate_books", lambda limit: [book])
     result = daily_ingest.run_daily_ingest(limit=0, books_limit=5)
@@ -203,6 +268,8 @@ async def test_daily_run_endpoint_requires_secret(test_client: AsyncClient, monk
 
 
 def test_fetch_candidate_books_pages_by_year(monkeypatch):
+    from datetime import datetime, timezone
+
     calls: list[str] = []
 
     def fake_sparql(query, timeout=55):
@@ -213,6 +280,20 @@ def test_fetch_candidate_books_pages_by_year(monkeypatch):
     daily_ingest.fetch_candidate_books(900)
     assert len(calls) >= 2
     assert any("YEAR(?date)" in c for c in calls)
+    assert any("OPTIONAL { ?work wdt:P18 ?img." in c for c in calls)
+    assert all("?author rdfs:label ?authorLabel" not in c for c in calls)
+    assert any(str(datetime.now(timezone.utc).year) in c for c in calls)
+
+
+def test_book_years_starts_with_recent():
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc).year
+    years = daily_ingest._book_years(20)
+    assert years[0] == now
+    assert now - 1 in years
+    assert len(years) == 20
+    assert len(set(years)) == 20
 
 
 def test_complete_author_needs_photo_and_birth_or_bio():

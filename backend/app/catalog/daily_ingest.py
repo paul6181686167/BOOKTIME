@@ -61,7 +61,7 @@ BOOK_TYPE_GENRE = {
 }
 
 _wiki_cover_budget = 25
-_BOOK_PAGE = 400
+_BOOK_PAGE = 80
 _ingest_lock = threading.Lock()
 _job_running = False
 _job_last: dict[str, Any] | None = None
@@ -176,7 +176,7 @@ SELECT DISTINCT ?series ?seriesLabel ?enLabel ?type ?img WHERE {{
   }}
   SERVICE wikibase:label {{ bd:serviceParam wikibase:language "fr,en". }}
 }}
-LIMIT {max(limit * 4, 40)}
+LIMIT {max(limit * 8, 80)}
 """
     rows = _sparql(query_recent)
     if len(rows) < limit:
@@ -264,34 +264,44 @@ def _parse_book_rows(rows: list[dict], seen: set[str] | None = None) -> list[dic
 
 
 def _book_years(n: int) -> list[int]:
+    """Années récentes d'abord (SPARQL plus fiable), puis une fenêtre qui tourne chaque jour."""
     now = datetime.now(timezone.utc).year
     yday = datetime.now(timezone.utc).timetuple().tm_yday
+    years: list[int] = []
+    seen: set[int] = set()
+    for y in range(now, now - 12, -1):
+        if 1800 <= y <= now and y not in seen:
+            seen.add(y)
+            years.append(y)
     span = max(1, now - 1850)
     start = 1850 + (yday * 17) % span
-    years: list[int] = []
     y = start
-    while len(years) < n:
-        if 1800 <= y <= now:
+    guard = 0
+    while len(years) < n and guard < 400:
+        guard += 1
+        if 1800 <= y <= now and y not in seen:
+            seen.add(y)
             years.append(y)
         y += 1
         if y > now:
             y = 1800
-    return years
+    return years[:n]
 
 
 def _books_sparql(year: int | None, limit: int, offset: int = 0) -> str:
     types = " ".join([NOVEL_WORK, GRAPHIC_NOVEL, COMIC_ALBUM, MANGA_ONESHOT])
     year_filter = f"FILTER(YEAR(?date) = {year})" if year else ""
     offset_clause = f"OFFSET {offset}" if offset else ""
+    # P18 et labels auteur en OPTIONAL : les exiger faisait timeout Wikidata (0 livre).
     return f"""
 SELECT DISTINCT ?work ?workLabel ?enLabel ?author ?authorLabel ?date ?isbn ?isbn10 ?ol ?img ?type WHERE {{
   VALUES ?type {{ {types} }}
   ?work wdt:P31 ?type .
   ?work wdt:P50 ?author .
-  ?work wdt:P18 ?img .
   ?work wdt:P577 ?date .
   {year_filter}
   FILTER NOT EXISTS {{ ?work wdt:P179 ?serie . }}
+  OPTIONAL {{ ?work wdt:P18 ?img. }}
   OPTIONAL {{
     ?work rdfs:label ?enLabel .
     FILTER(LANG(?enLabel) = "en")
@@ -299,12 +309,10 @@ SELECT DISTINCT ?work ?workLabel ?enLabel ?author ?authorLabel ?date ?isbn ?isbn
   OPTIONAL {{ ?work wdt:P212 ?isbn. }}
   OPTIONAL {{ ?work wdt:P957 ?isbn10. }}
   OPTIONAL {{ ?work wdt:P648 ?ol. }}
-  ?author rdfs:label ?authorLabel .
-  FILTER((LANG(?authorLabel) = "fr") || (LANG(?authorLabel) = "en"))
   SERVICE wikibase:label {{ bd:serviceParam wikibase:language "fr,en". }}
 }}
 {offset_clause}
-LIMIT {min(max(limit, 20), 500)}
+LIMIT {min(max(limit, 20), 120)}
 """
 
 
@@ -321,7 +329,7 @@ def fetch_candidate_books(limit: int) -> list[dict[str, Any]]:
     """Livres individuels paginés par année (évite un OFFSET Wikidata trop lent)."""
     if limit <= 0:
         return []
-    pages = max(8, (limit + _BOOK_PAGE - 1) // _BOOK_PAGE + 4)
+    pages = max(12, min(40, (limit + _BOOK_PAGE - 1) // _BOOK_PAGE + 4))
     years = _book_years(pages)
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -454,6 +462,12 @@ def build_complete_entry(
     )
     cover = usable_cover(cand.get("cover_url")) or wiki_cover(cand.get("name") or "", cand.get("name_en"))
     if not cover:
+        for w in titled:
+            isbn = pick_isbn(w.get("isbn"))
+            if isbn:
+                cover = f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg"
+                break
+    if not cover:
         return None
     cat = cand.get("category") or "roman"
     genre = cand.get("genre") or "Roman"
@@ -541,14 +555,59 @@ def existing_qids() -> set[str]:
     return set(daily_store.known_qids())
 
 
+def existing_names() -> set[str]:
+    try:
+        from .seed import ensure_seeded
+
+        ensure_seeded()
+    except Exception:
+        pass
+    return set(daily_store.known_names())
+
+
+def _name_keys(cand: dict[str, Any]) -> list[str]:
+    keys: list[str] = []
+    seen: set[str] = set()
+    for raw in (cand.get("name"), cand.get("name_en")):
+        n = norm_title(raw or "")
+        if n and n not in seen:
+            seen.add(n)
+            keys.append(n)
+    return keys
+
+
+def _already_catalogued(
+    cand: dict[str, Any], known: set[str], names: set[str]
+) -> bool:
+    """QID Mongo, nom déjà en base, ou série de l'overlay (One Piece, etc.)."""
+    qid = cand.get("qid") or ""
+    if qid and qid in known:
+        return True
+    for n in _name_keys(cand):
+        if n in names:
+            return True
+    try:
+        if curated_mod.has_canonical(cand.get("name") or ""):
+            return True
+        en = (cand.get("name_en") or "").strip()
+        if en and en != (cand.get("name") or "") and curated_mod.has_canonical(en):
+            return True
+    except Exception:
+        pass
+    return False
+
+
 def _persist(
     entry: dict[str, Any],
     known: set[str],
     added: list[str],
     hints: list[dict[str, Any]] | None = None,
+    names: set[str] | None = None,
 ) -> int:
     daily_store.upsert_series(entry)
     known.add(entry["qid"])
+    if names is not None:
+        names.update(_name_keys(entry))
     added.append(entry["name"])
     if hints is not None:
         authors = [a for a in (entry.get("authors") or []) if a]
@@ -568,11 +627,15 @@ def _persist(
 
 
 def _ingest_series(
-    cap: int, known: set[str], hints: list[dict[str, Any]] | None = None
+    cap: int,
+    known: set[str],
+    hints: list[dict[str, Any]] | None = None,
+    names: set[str] | None = None,
 ) -> tuple[list[str], int, int]:
     added: list[str] = []
     skipped = 0
     fiches = 0
+    names = names if names is not None else set()
     if cap <= 0:
         return added, skipped, fiches
     try:
@@ -581,7 +644,7 @@ def _ingest_series(
         logger.warning("Ingest quotidien : SPARQL séries échoué : %s", exc)
         return added, skipped, fiches
     candidates.sort(key=lambda c: 0 if usable_cover(c.get("cover_url")) else 1)
-    pending = [c for c in candidates if c.get("qid") and c["qid"] not in known]
+    pending = [c for c in candidates if c.get("qid") and not _already_catalogued(c, known, names)]
     skipped += max(0, len(candidates) - len(pending))
     pending = pending[: cap + 30]
 
@@ -598,7 +661,7 @@ def _ingest_series(
             if len(added) >= cap:
                 break
             cand, works = fut.result()
-            if cand["qid"] in known:
+            if _already_catalogued(cand, known, names):
                 skipped += 1
                 continue
             if works is None:
@@ -606,18 +669,24 @@ def _ingest_series(
                 continue
             entry = build_complete_entry(cand, works)
             if not entry:
+                entry = build_complete_entry(cand, works, min_volumes=1, standalone=True)
+            if not entry:
                 skipped += 1
                 continue
-            fiches += _persist(entry, known, added, hints)
+            fiches += _persist(entry, known, added, hints, names)
     return added, skipped, fiches
 
 
 def _ingest_books(
-    cap: int, known: set[str], hints: list[dict[str, Any]] | None = None
+    cap: int,
+    known: set[str],
+    hints: list[dict[str, Any]] | None = None,
+    names: set[str] | None = None,
 ) -> tuple[list[str], int, int]:
     added: list[str] = []
     skipped = 0
     fiches = 0
+    names = names if names is not None else set()
     if cap <= 0:
         return added, skipped, fiches
     try:
@@ -629,12 +698,11 @@ def _ingest_books(
         if fiches >= cap:
             break
         qid = cand.get("qid") or ""
-        if not qid or qid in known:
+        if not qid or _already_catalogued(cand, known, names):
             skipped += 1
             continue
         author = (cand.get("author") or "").strip()
-        cover = usable_cover(cand.get("cover_url"))
-        if not author or not cover:
+        if not author:
             skipped += 1
             continue
         work = {
@@ -651,7 +719,7 @@ def _ingest_books(
         if not entry:
             skipped += 1
             continue
-        fiches += _persist(entry, known, added, hints)
+        fiches += _persist(entry, known, added, hints, names)
     return added, skipped, fiches
 
 
@@ -679,7 +747,7 @@ def run_daily_ingest(
         return busy
     _job_running = True
     try:
-        _wiki_cover_budget = 25
+        _wiki_cover_budget = 150
         from .isbn_resolve import reset_budget
 
         isbn_default = 0 if os.getenv("ENVIRONMENT", "").lower() == "test" else 400
@@ -693,11 +761,16 @@ def run_daily_ingest(
         else:
             book_cap = daily_books_limit()
         known = existing_qids()
+        names = existing_names()
         author_hints: list[dict[str, Any]] = []
-        series_names, skip_s, series_fiches = _ingest_series(series_cap, known, author_hints)
+        series_names, skip_s, series_fiches = _ingest_series(
+            series_cap, known, author_hints, names
+        )
         if books_limit is None and limit is None:
             book_cap = min(book_cap, max(0, target - series_fiches))
-        book_names, skip_b, book_fiches = _ingest_books(book_cap, known, author_hints)
+        book_names, skip_b, book_fiches = _ingest_books(
+            book_cap, known, author_hints, names
+        )
         from .daily_authors import daily_authors_limit, ingest_authors
 
         if authors_limit is not None:

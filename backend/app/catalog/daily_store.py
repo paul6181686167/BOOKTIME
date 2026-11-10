@@ -72,6 +72,18 @@ def known_qids() -> set[str]:
     return qids
 
 
+def known_names() -> set[str]:
+    names: set[str] = set()
+    try:
+        for doc in _coll().find({}, {"name_norm": 1, "name_en_norm": 1, "_id": 0}) or []:
+            for key in ((doc or {}).get("name_norm"), (doc or {}).get("name_en_norm")):
+                if key:
+                    names.add(str(key))
+    except Exception:
+        return set()
+    return names
+
+
 def count() -> int:
     try:
         coll = _coll()

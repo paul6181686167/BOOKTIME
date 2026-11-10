@@ -212,6 +212,27 @@ def _is_excluded(entry: dict[str, Any], query_norm: str) -> bool:
     return False
 
 
+def has_canonical(name: str) -> bool:
+    """Nom ou variation de l'overlay (One Piece, etc.), sans fuzzy ni Mongo."""
+    ensure_loaded()
+    q = _norm(name)
+    if not q:
+        return False
+    if q in _by_canon:
+        return True
+    entry = _by_key.get(q)
+    if not entry:
+        return False
+    names = {_norm(entry.get("name") or "")}
+    for v in entry.get("variations") or []:
+        nv = _norm(v)
+        if nv:
+            names.add(nv)
+    if entry.get("name_en"):
+        names.add(_norm(entry["name_en"]))
+    return q in names
+
+
 def match_curated(name: str, author: str | None = None) -> dict[str, Any] | None:
     """
     Renvoie l'entrée curée correspondant à la série (nom exact, variation ou titre
