@@ -4,12 +4,13 @@ from __future__ import annotations
 import pytest
 from httpx import AsyncClient
 
-from app.catalog import daily_authors, daily_ingest, daily_store, expanded
+from app.catalog import daily_authors, daily_ingest, daily_store, expanded, isbn_resolve
 from app.db_config import _mock_storage
 from app.series_verification import curated as curated_mod
 
 
 def _reset_daily():
+    isbn_resolve.reset_budget(0)
     store = _mock_storage.setdefault("catalog_daily_series", [])
     store.clear()
     _mock_storage.setdefault("authors", []).clear()
@@ -21,6 +22,7 @@ def _reset_daily():
 
 
 def test_complete_entry_requires_two_titles_author_and_cover():
+    isbn_resolve.reset_budget(0)
     cand = {"qid": "Q1", "name": "Saga Test", "category": "roman", "genre": "Fantasy", "cover_url": ""}
     assert daily_ingest.build_complete_entry(cand, [{"title": "Un"}]) is None
     works = [
@@ -42,6 +44,7 @@ def test_complete_entry_requires_two_titles_author_and_cover():
 
 
 def test_standalone_book_one_volume_with_real_isbn():
+    isbn_resolve.reset_budget(0)
     cand = {
         "qid": "Qsolo",
         "name": "Le Livre Seul",
@@ -50,15 +53,37 @@ def test_standalone_book_one_volume_with_real_isbn():
         "cover_url": "https://example.test/c.jpg",
     }
     works = [
-        {"title": "Le Livre Seul", "author": "Solo Auteur", "published_year": 2019, "isbn": "9782070123456"}
+        {"title": "Le Livre Seul", "author": "Solo Auteur", "published_year": 2019, "isbn": "9782070360024"}
     ]
     assert daily_ingest.build_complete_entry(cand, works) is None
     entry = daily_ingest.build_complete_entry(cand, works, min_volumes=1, standalone=True)
     assert entry is not None
     assert entry["volumes"] == 1
     assert entry["type"] == "standalone"
-    assert entry["volume_details"]["1"]["isbn"] == "9782070123456"
+    assert entry["volume_details"]["1"]["isbn"] == "9782070360024"
     assert "est un roman" in entry["volume_details"]["1"]["description"]
+
+
+def test_pick_isbn_checksum_et_isbn10():
+    assert daily_ingest.pick_isbn("9782070123456") == ""
+    assert daily_ingest.pick_isbn("978-2-07-036002-4") == "9782070360024"
+    assert daily_ingest.pick_isbn("2070360024") == "9782070360024"
+
+
+def test_build_entry_fills_isbn_from_other_sources(monkeypatch):
+    isbn_resolve.reset_budget(5)
+    monkeypatch.setattr(isbn_resolve, "resolve_isbn", lambda **kw: "9782070360024")
+    cand = {
+        "qid": "Qisbn",
+        "name": "Sans Isbn Wikidata",
+        "category": "roman",
+        "genre": "Roman",
+        "cover_url": "https://example.test/c.jpg",
+    }
+    works = [{"title": "Sans Isbn Wikidata", "author": "Auteur X", "published_year": 2018}]
+    entry = daily_ingest.build_complete_entry(cand, works, min_volumes=1, standalone=True)
+    assert entry is not None
+    assert entry["volume_details"]["1"]["isbn"] == "9782070360024"
 
 
 def test_plafonds_quotidiens_par_defaut(monkeypatch):
@@ -100,7 +125,7 @@ def test_ingest_persists_complete_series(monkeypatch):
         "cover_url": "https://example.test/cover.jpg",
     }
     works = [
-        {"title": "Le Premier", "title_en": "The First", "author": "Ève Test", "published_year": 2022, "isbn": "9782070123456", "work_qid": "Q11"},
+        {"title": "Le Premier", "title_en": "The First", "author": "Ève Test", "published_year": 2022, "isbn": "9782070360024", "work_qid": "Q11"},
         {"title": "Le Second", "author": "Ève Test", "published_year": 2023, "work_qid": "Q12"},
     ]
     monkeypatch.setattr(daily_ingest, "existing_qids", lambda: set())
@@ -111,7 +136,7 @@ def test_ingest_persists_complete_series(monkeypatch):
     assert result["fiches"] == 2
     stored = daily_store.all_series()
     assert stored[0]["name"] == "Chroniques de Pytest"
-    assert stored[0]["volume_details"]["1"]["isbn"] == "9782070123456"
+    assert stored[0]["volume_details"]["1"]["isbn"] == "9782070360024"
     expanded.clear_cache()
     assert all(s.get("qid") != "Q999001" for s in expanded.all_series())
     hits = expanded.search_series("Chroniques de Pytest")
@@ -131,7 +156,7 @@ def test_ingest_adds_standalone_books(monkeypatch):
         "category": "roman",
         "genre": "Roman",
         "cover_url": "https://example.test/cover.jpg",
-        "isbn": "9782070123456",
+        "isbn": "9782070360024",
         "ol_key": "",
         "year": 2021,
     }

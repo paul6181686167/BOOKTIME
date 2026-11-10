@@ -1,7 +1,7 @@
 """Ajoute chaque jour de nouvelles fiches COMPLÈTES au noyau curé.
 
 Sources : Wikidata (séries + livres individuels), Wikipedia / Commons pour la jaquette.
-ISBN uniquement s'il est réel. Rien n'est inventé.
+ISBN réel uniquement (Wikidata P212/P957, Open Library, Google Books, BnF). Rien n'est inventé.
 """
 from __future__ import annotations
 
@@ -102,14 +102,9 @@ def usable_cover(url: str | None) -> str:
 
 
 def pick_isbn(raw: Any) -> str:
-    if not raw:
-        return ""
-    digits = re.sub(r"[^0-9Xx]", "", str(raw)).upper()
-    if len(digits) == 13 and digits.isdigit():
-        return digits
-    if len(digits) == 10 and digits[:9].isdigit():
-        return digits
-    return ""
+    from .isbn_resolve import prefer_isbn
+
+    return prefer_isbn([raw]) if raw else ""
 
 
 def commons_url(filename: str) -> str:
@@ -260,7 +255,7 @@ def _parse_book_rows(rows: list[dict], seen: set[str] | None = None) -> list[dic
                 "category": cat,
                 "genre": genre,
                 "cover_url": commons_url(img) if img else "",
-                "isbn": pick_isbn(_lit(row, "isbn")),
+                "isbn": pick_isbn(_lit(row, "isbn")) or pick_isbn(_lit(row, "isbn10")),
                 "ol_key": f"/works/{ol}" if ol else "",
                 "year": year,
             }
@@ -289,7 +284,7 @@ def _books_sparql(year: int | None, limit: int, offset: int = 0) -> str:
     year_filter = f"FILTER(YEAR(?date) = {year})" if year else ""
     offset_clause = f"OFFSET {offset}" if offset else ""
     return f"""
-SELECT DISTINCT ?work ?workLabel ?enLabel ?author ?authorLabel ?date ?isbn ?ol ?img ?type WHERE {{
+SELECT DISTINCT ?work ?workLabel ?enLabel ?author ?authorLabel ?date ?isbn ?isbn10 ?ol ?img ?type WHERE {{
   VALUES ?type {{ {types} }}
   ?work wdt:P31 ?type .
   ?work wdt:P50 ?author .
@@ -302,6 +297,7 @@ SELECT DISTINCT ?work ?workLabel ?enLabel ?author ?authorLabel ?date ?isbn ?ol ?
     FILTER(LANG(?enLabel) = "en")
   }}
   OPTIONAL {{ ?work wdt:P212 ?isbn. }}
+  OPTIONAL {{ ?work wdt:P957 ?isbn10. }}
   OPTIONAL {{ ?work wdt:P648 ?ol. }}
   ?author rdfs:label ?authorLabel .
   FILTER((LANG(?authorLabel) = "fr") || (LANG(?authorLabel) = "en"))
@@ -357,7 +353,7 @@ def fetch_candidate_books(limit: int) -> list[dict[str, Any]]:
 
 def fetch_works(qid: str) -> list[dict[str, Any]]:
     query = f"""
-SELECT ?work ?frLabel ?enLabel ?date ?isbn ?ol ?author ?authorLabel WHERE {{
+SELECT ?work ?frLabel ?enLabel ?date ?isbn ?isbn10 ?ol ?author ?authorLabel WHERE {{
   {{ ?work wdt:P179 wd:{qid} . }}
   UNION {{ wd:{qid} wdt:P527 ?work . }}
   OPTIONAL {{
@@ -370,6 +366,7 @@ SELECT ?work ?frLabel ?enLabel ?date ?isbn ?ol ?author ?authorLabel WHERE {{
   }}
   OPTIONAL {{ ?work wdt:P577 ?date. }}
   OPTIONAL {{ ?work wdt:P212 ?isbn. }}
+  OPTIONAL {{ ?work wdt:P957 ?isbn10. }}
   OPTIONAL {{ ?work wdt:P648 ?ol. }}
   OPTIONAL {{
     ?work wdt:P50 ?author .
@@ -398,7 +395,7 @@ LIMIT 80
                 "title": title,
                 "title_en": _lit(row, "enLabel"),
                 "published_year": year if year and 1400 <= year <= 2035 else None,
-                "isbn": pick_isbn(_lit(row, "isbn")),
+                "isbn": pick_isbn(_lit(row, "isbn")) or pick_isbn(_lit(row, "isbn10")),
                 "ol_key": f"/works/{ol}" if ol and ol.endswith("W") else (f"/works/{ol}" if ol else ""),
                 "author": _lit(row, "authorLabel"),
                 "author_qid": _qid(_lit(row, "author")),
@@ -490,10 +487,20 @@ def build_complete_entry(
                 title, i, cand["name"], author, year, genre, lang, cat, standalone=standalone
             ),
         }
-        if w.get("isbn"):
-            detail["isbn"] = w["isbn"]
+        isbn = pick_isbn(w.get("isbn"))
+        if not isbn:
+            from .isbn_resolve import resolve_isbn
+
+            isbn = resolve_isbn(
+                title=title,
+                author=(w.get("author") or author).strip(),
+                title_en=en,
+                ol_key=w.get("ol_key") or "",
+            )
+        if isbn:
+            detail["isbn"] = isbn
             if not usable_cover(detail.get("cover_url")):
-                detail["cover_url"] = f"https://covers.openlibrary.org/b/isbn/{w['isbn']}-M.jpg"
+                detail["cover_url"] = f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg"
         if w.get("ol_key"):
             detail["ol_key"] = w["ol_key"]
         if w.get("work_qid"):
@@ -673,6 +680,10 @@ def run_daily_ingest(
     _job_running = True
     try:
         _wiki_cover_budget = 25
+        from .isbn_resolve import reset_budget
+
+        isbn_default = 0 if os.getenv("ENVIRONMENT", "").lower() == "test" else 400
+        reset_budget(_env_int("CATALOG_ISBN_LOOKUPS", isbn_default, 0, 2000))
         series_cap = limit if limit is not None else daily_series_limit()
         target = daily_fiches_target()
         if books_limit is not None:

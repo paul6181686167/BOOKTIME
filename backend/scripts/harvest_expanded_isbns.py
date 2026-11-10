@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Récolte d'ISBN réels pour le noyau 50 000 (Wikidata, Open Library, Google Books).
+"""Récolte d'ISBN réels pour le noyau 50 000 (Wikidata, Open Library, Google Books, BnF).
 
 N'invente aucun ISBN. Reprend là où il s'est arrêté (--resume).
 
@@ -43,6 +43,7 @@ WD_SPARQL = "https://query.wikidata.org/sparql"
 OL_SEARCH = "https://openlibrary.org/search.json"
 GB_URL = "https://www.googleapis.com/books/v1/volumes"
 GB_CAP = 8000
+BNF_CAP = 5000
 WD_BATCH = 40
 
 session = requests.Session()
@@ -408,6 +409,44 @@ def harvest_google(rows: list[dict], prog: dict) -> None:
     log(f"  Google Books mappés titre : {len(prog['by_title'])}")
 
 
+def harvest_bnf(rows: list[dict], prog: dict) -> None:
+    from app.catalog.isbn_resolve import from_bnf
+
+    seen: set[str] = set()
+    todo: list[tuple[str, str, str]] = []
+    for row in rows:
+        if isbn_from_progress(row, prog):
+            continue
+        key = norm_title(row["title"] or row["title_en"] or "")
+        if not key or key in seen or key in prog["by_title"]:
+            continue
+        seen.add(key)
+        todo.append((key, row["title"] or row["title_en"], row["author"]))
+        if len(todo) >= BNF_CAP:
+            break
+    log(f"BnF SRU : {len(todo)} titres (plafond {BNF_CAP})…")
+    found0 = len(prog["by_title"])
+    done = 0
+
+    def one(item: tuple[str, str, str]) -> tuple[str, str]:
+        key, title, author = item
+        return key, from_bnf(title, author, spend=False)
+
+    for batch in chunks(todo, 20):
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            futs = [pool.submit(one, t) for t in batch]
+            for fut in as_completed(futs):
+                key, isbn = fut.result()
+                done += 1
+                if isbn:
+                    prog["by_title"][key] = isbn
+        if done % 200 == 0:
+            save_progress(prog)
+            log(f"  … {done}/{len(todo)} (+{len(prog['by_title']) - found0})")
+    save_progress(prog)
+    log(f"  BnF mappés titre : {len(prog['by_title'])}")
+
+
 def apply_to_catalog(catalog: dict, prog: dict) -> int:
     added = 0
     for s in catalog.get("series") or []:
@@ -500,6 +539,10 @@ def main() -> None:
     harvest_ol_search(rows, prog)
     rows = [r for r in missing_volumes(catalog) if not isbn_from_progress(r, prog)]
     log(f"  encore sans ISBN après OL search : {len(rows):,}")
+
+    harvest_bnf(rows, prog)
+    rows = [r for r in missing_volumes(catalog) if not isbn_from_progress(r, prog)]
+    log(f"  encore sans ISBN après BnF : {len(rows):,}")
 
     added = apply_to_catalog(catalog, prog)
     CATALOG.write_text(json.dumps(catalog, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
