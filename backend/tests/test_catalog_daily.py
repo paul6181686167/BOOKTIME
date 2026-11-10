@@ -91,10 +91,10 @@ def test_plafonds_quotidiens_par_defaut(monkeypatch):
     monkeypatch.delenv("CATALOG_DAILY_BOOKS", raising=False)
     monkeypatch.delenv("CATALOG_DAILY_FICHES", raising=False)
     monkeypatch.delenv("CATALOG_DAILY_AUTHORS", raising=False)
-    assert daily_ingest.daily_series_limit() == 80
+    assert daily_ingest.daily_series_limit() == 300
     assert daily_ingest.daily_books_limit() == 10000
     assert daily_ingest.daily_fiches_target() == 10000
-    assert daily_authors.daily_authors_limit() == 2000
+    assert daily_authors.daily_authors_limit() == 10000
 
 
 def test_ingest_skips_known_qid_and_incomplete(monkeypatch):
@@ -135,7 +135,8 @@ def test_ingest_persists_complete_series(monkeypatch):
     monkeypatch.setattr(daily_ingest, "fetch_works", lambda qid: works)
     result = daily_ingest.run_daily_ingest(limit=3)
     assert result["added"] == 1
-    assert result["fiches"] == 2
+    assert result["fiches"] == 1
+    assert result["tomes"] == 2
     stored = daily_store.all_series()
     assert stored[0]["name"] == "Chroniques de Pytest"
     assert stored[0]["volume_details"]["1"]["isbn"] == "9782070360024"
@@ -294,6 +295,41 @@ def test_book_years_starts_with_recent():
     assert now - 1 in years
     assert len(years) == 20
     assert len(set(years)) == 20
+
+
+def test_remaining_quota_fills_with_authors(monkeypatch):
+    _reset_daily()
+    monkeypatch.setenv("CATALOG_DAILY_FICHES", "200")
+    cand = {
+        "qid": "Qfill1",
+        "name": "Saga Quota",
+        "category": "roman",
+        "genre": "Roman",
+        "cover_url": "https://example.test/cover.jpg",
+    }
+    works = [
+        {"title": "Un", "author": "A. Quota", "published_year": 2020},
+        {"title": "Deux", "author": "A. Quota", "published_year": 2021},
+    ]
+    captured: dict = {}
+
+    def fake_authors(cap, hints=None):
+        captured["cap"] = cap
+        return ["Auteur A", "Auteur B", "Auteur C", "Auteur D"], 0
+
+    monkeypatch.setattr(daily_ingest, "existing_qids", lambda: set())
+    monkeypatch.setattr(daily_ingest, "existing_names", lambda: set())
+    monkeypatch.setattr(daily_ingest, "fetch_candidate_series", lambda limit: [cand])
+    monkeypatch.setattr(daily_ingest, "fetch_works", lambda qid: works)
+    monkeypatch.setattr(daily_ingest, "fetch_candidate_books", lambda limit: [])
+    monkeypatch.setattr("app.catalog.daily_authors.ingest_authors", fake_authors)
+    result = daily_ingest.run_daily_ingest()
+    assert captured["cap"] == 199
+    assert result["added_series"] == 1
+    assert result["added_books"] == 0
+    assert result["added_authors"] == 4
+    assert result["fiches"] == 5
+    assert result["target_fiches"] == 200
 
 
 def test_complete_author_needs_photo_and_birth_or_bio():

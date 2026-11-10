@@ -75,7 +75,7 @@ def _env_int(name: str, default: int, lo: int, hi: int) -> int:
 
 
 def daily_series_limit() -> int:
-    return _env_int("CATALOG_DAILY_SERIES", 80, 1, 200)
+    return _env_int("CATALOG_DAILY_SERIES", 300, 1, 800)
 
 
 def daily_books_limit() -> int:
@@ -83,7 +83,7 @@ def daily_books_limit() -> int:
 
 
 def daily_fiches_target() -> int:
-    """Objectif : tomes de séries + livres individuels ajoutés ce jour."""
+    """Objectif : 10 000 fiches (séries + livres + auteurs) par jour."""
     return _env_int("CATALOG_DAILY_FICHES", 10000, 100, 15000)
 
 
@@ -752,25 +752,27 @@ def run_daily_ingest(
 
         isbn_default = 0 if os.getenv("ENVIRONMENT", "").lower() == "test" else 400
         reset_budget(_env_int("CATALOG_ISBN_LOOKUPS", isbn_default, 0, 2000))
-        series_cap = limit if limit is not None else daily_series_limit()
         target = daily_fiches_target()
+        series_cap = limit if limit is not None else min(daily_series_limit(), target)
+        known = existing_qids()
+        names = existing_names()
+        author_hints: list[dict[str, Any]] = []
+        series_names, skip_s, series_tomes = _ingest_series(
+            series_cap, known, author_hints, names
+        )
+        n_series = len(series_names)
+        remaining = max(0, target - n_series)
         if books_limit is not None:
             book_cap = books_limit
         elif limit is not None:
             book_cap = 0
         else:
-            book_cap = daily_books_limit()
-        known = existing_qids()
-        names = existing_names()
-        author_hints: list[dict[str, Any]] = []
-        series_names, skip_s, series_fiches = _ingest_series(
-            series_cap, known, author_hints, names
-        )
-        if books_limit is None and limit is None:
-            book_cap = min(book_cap, max(0, target - series_fiches))
-        book_names, skip_b, book_fiches = _ingest_books(
+            book_cap = min(daily_books_limit(), remaining)
+        book_names, skip_b, book_tomes = _ingest_books(
             book_cap, known, author_hints, names
         )
+        n_books = len(book_names)
+        remaining = max(0, target - n_series - n_books)
         from .daily_authors import daily_authors_limit, ingest_authors
 
         if authors_limit is not None:
@@ -778,20 +780,22 @@ def run_daily_ingest(
         elif limit is not None or books_limit is not None:
             author_cap = 0
         else:
-            author_cap = daily_authors_limit()
+            author_cap = min(daily_authors_limit(), remaining)
         author_names, skip_a = ingest_authors(author_cap, hints=author_hints)
+        n_authors = len(author_names)
         added = series_names + book_names
         skipped = skip_s + skip_b + skip_a
-        fiches = series_fiches + book_fiches
+        fiches = n_series + n_books + n_authors
+        tomes = series_tomes + book_tomes
         if added or author_names:
             expanded.stats.cache_clear()
             curated_mod.clear_cache()
         logger.info(
             "Ingest quotidien : +%d séries (%d tomes), +%d livres, +%d auteurs, fiches=%d/%d, ignorés=%d",
-            len(series_names),
-            series_fiches,
-            len(book_names),
-            len(author_names),
+            n_series,
+            series_tomes,
+            n_books,
+            n_authors,
             fiches,
             target,
             skipped,
@@ -799,10 +803,11 @@ def run_daily_ingest(
         result = {
             "status": "ok",
             "added": len(added),
-            "added_series": len(series_names),
-            "added_books": len(book_names),
-            "added_authors": len(author_names),
+            "added_series": n_series,
+            "added_books": n_books,
+            "added_authors": n_authors,
             "fiches": fiches,
+            "tomes": tomes,
             "target_fiches": target,
             "skipped": skipped,
             "names": added[:24],

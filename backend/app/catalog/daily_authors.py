@@ -40,7 +40,7 @@ _wiki_bio_budget = 80
 
 
 def daily_authors_limit() -> int:
-    return _env_int("CATALOG_DAILY_AUTHORS", 2000, 0, 5000)
+    return _env_int("CATALOG_DAILY_AUTHORS", 10000, 0, 12000)
 
 
 def _coll():
@@ -205,7 +205,7 @@ def _parse_author_rows(rows: list[dict], seen: set[str] | None = None) -> list[d
 def fetch_candidate_authors(limit: int) -> list[dict[str, Any]]:
     if limit <= 0:
         return []
-    pages = max(6, (limit + _AUTHOR_PAGE - 1) // _AUTHOR_PAGE + 3)
+    pages = max(6, min(50, (limit + _AUTHOR_PAGE - 1) // _AUTHOR_PAGE + 3))
     years = _year_slice(pages)
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -416,7 +416,7 @@ def ingest_authors(
             }
         )
     try:
-        extra = fetch_candidate_authors(cap + 40)
+        extra = fetch_candidate_authors(cap + 200)
     except Exception as exc:
         logger.warning("Ingest auteurs : SPARQL échoué : %s", exc)
         extra = []

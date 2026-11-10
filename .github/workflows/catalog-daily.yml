@@ -12,7 +12,7 @@ on:
 jobs:
   ingest:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 50
     steps:
       - name: Réveiller le backend puis lancer l'ingest
         env:
@@ -42,7 +42,7 @@ jobs:
             -w "\nHTTP %{http_code}\n" \
             "$BASE/api/catalog/daily/run"
           status="{}"
-          for i in $(seq 1 40); do
+          for i in $(seq 1 90); do
             sleep 20
             curl -s -o /dev/null --max-time 20 "$URL" || true
             status=$(curl -sS --max-time 20 \
