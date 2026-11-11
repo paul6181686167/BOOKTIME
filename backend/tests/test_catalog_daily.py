@@ -91,7 +91,7 @@ def test_plafonds_quotidiens_par_defaut(monkeypatch):
     monkeypatch.delenv("CATALOG_DAILY_BOOKS", raising=False)
     monkeypatch.delenv("CATALOG_DAILY_FICHES", raising=False)
     monkeypatch.delenv("CATALOG_DAILY_AUTHORS", raising=False)
-    assert daily_ingest.daily_series_limit() == 300
+    assert daily_ingest.daily_series_limit() == 400
     assert daily_ingest.daily_books_limit() == 10000
     assert daily_ingest.daily_fiches_target() == 10000
     assert daily_authors.daily_authors_limit() == 10000
@@ -330,6 +330,31 @@ def test_remaining_quota_fills_with_authors(monkeypatch):
     assert result["added_authors"] == 4
     assert result["fiches"] == 5
     assert result["target_fiches"] == 200
+
+
+def test_author_year_slice_spreads_across_centuries():
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc).year
+    years = daily_authors._year_slice(40)
+    assert len(years) == 40
+    assert len(set(years)) == 40
+    assert min(years) >= 1800
+    assert max(years) <= now
+    assert max(years) - min(years) > 50
+
+
+def test_fetch_candidate_authors_many_years(monkeypatch):
+    calls: list[str] = []
+
+    def fake_sparql(query, timeout=55):
+        calls.append(query)
+        return []
+
+    monkeypatch.setattr(daily_authors, "_sparql", fake_sparql)
+    daily_authors.fetch_candidate_authors(10000)
+    assert len(calls) >= 70
+    assert any("Q49757" in c for c in calls)
 
 
 def test_complete_author_needs_photo_and_birth_or_bio():

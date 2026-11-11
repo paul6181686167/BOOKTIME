@@ -61,7 +61,7 @@ BOOK_TYPE_GENRE = {
 }
 
 _wiki_cover_budget = 25
-_BOOK_PAGE = 80
+_BOOK_PAGE = 100
 _ingest_lock = threading.Lock()
 _job_running = False
 _job_last: dict[str, Any] | None = None
@@ -75,7 +75,7 @@ def _env_int(name: str, default: int, lo: int, hi: int) -> int:
 
 
 def daily_series_limit() -> int:
-    return _env_int("CATALOG_DAILY_SERIES", 300, 1, 800)
+    return _env_int("CATALOG_DAILY_SERIES", 400, 1, 1000)
 
 
 def daily_books_limit() -> int:
@@ -176,12 +176,11 @@ SELECT DISTINCT ?series ?seriesLabel ?enLabel ?type ?img WHERE {{
   }}
   SERVICE wikibase:label {{ bd:serviceParam wikibase:language "fr,en". }}
 }}
-LIMIT {max(limit * 8, 80)}
+LIMIT {max(limit * 10, 120)}
 """
     rows = _sparql(query_recent)
-    if len(rows) < limit:
-        offset = (datetime.now(timezone.utc).timetuple().tm_yday * 17) % 8000
-        query_rot = f"""
+    offset = (datetime.now(timezone.utc).timetuple().tm_yday * 17) % 8000
+    query_rot = f"""
 SELECT DISTINCT ?series ?seriesLabel ?enLabel ?type ?img WHERE {{
   VALUES ?type {{ {NOVEL} {MANGA} {COMICS} }}
   ?series wdt:P31 ?type .
@@ -193,12 +192,12 @@ SELECT DISTINCT ?series ?seriesLabel ?enLabel ?type ?img WHERE {{
   SERVICE wikibase:label {{ bd:serviceParam wikibase:language "fr,en". }}
 }}
 OFFSET {offset}
-LIMIT {limit * 3}
+LIMIT {limit * 4}
 """
-        try:
-            rows.extend(_sparql(query_rot))
-        except Exception as exc:
-            logger.warning("Rotation Wikidata ignorée : %s", exc)
+    try:
+        rows.extend(_sparql(query_rot))
+    except Exception as exc:
+        logger.warning("Rotation Wikidata ignorée : %s", exc)
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
     for row in rows:
@@ -329,7 +328,7 @@ def fetch_candidate_books(limit: int) -> list[dict[str, Any]]:
     """Livres individuels paginés par année (évite un OFFSET Wikidata trop lent)."""
     if limit <= 0:
         return []
-    pages = max(12, min(40, (limit + _BOOK_PAGE - 1) // _BOOK_PAGE + 4))
+    pages = max(20, min(80, (limit + _BOOK_PAGE - 1) // _BOOK_PAGE + 8))
     years = _book_years(pages)
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -747,10 +746,10 @@ def run_daily_ingest(
         return busy
     _job_running = True
     try:
-        _wiki_cover_budget = 150
+        _wiki_cover_budget = 300
         from .isbn_resolve import reset_budget
 
-        isbn_default = 0 if os.getenv("ENVIRONMENT", "").lower() == "test" else 400
+        isbn_default = 0 if os.getenv("ENVIRONMENT", "").lower() == "test" else 800
         reset_budget(_env_int("CATALOG_ISBN_LOOKUPS", isbn_default, 0, 2000))
         target = daily_fiches_target()
         series_cap = limit if limit is not None else min(daily_series_limit(), target)

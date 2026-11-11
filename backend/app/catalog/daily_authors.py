@@ -35,6 +35,9 @@ NOVELIST = "wd:Q6625963"
 AUTHOR = "wd:Q482980"
 MANGAKA = "wd:Q191633"
 COMICS_ARTIST = "wd:Q715301"
+POET = "wd:Q49757"
+PLAYWRIGHT = "wd:Q214917"
+CHILDRENS_WRITER = "wd:Q4853732"
 _AUTHOR_PAGE = 400
 _wiki_bio_budget = 80
 
@@ -134,23 +137,32 @@ def author_lite(doc: dict[str, Any]) -> dict[str, Any]:
 
 
 def _year_slice(n: int) -> list[int]:
+    """Répartit les années sur 1800→aujourd'hui (pas 28 années d'affilée déjà vues hier)."""
     now = datetime.now(timezone.utc).year
     yday = datetime.now(timezone.utc).timetuple().tm_yday
     span = max(1, now - 1800)
-    start = 1800 + (yday * 11) % span
+    start = 1800 + (yday * 19) % span
+    stride = max(1, span // max(n, 1))
     years: list[int] = []
+    seen: set[int] = set()
     y = start
-    while len(years) < n:
-        if 1800 <= y <= now:
+    guard = 0
+    while len(years) < n and guard < 500:
+        guard += 1
+        if 1800 <= y <= now and y not in seen:
+            seen.add(y)
             years.append(y)
-        y += 1
+        y += stride
         if y > now:
-            y = 1800
-    return years
+            y = 1800 + ((y - 1800) % span)
+            stride = 1 if stride > 1 else stride
+    return years[:n]
 
 
 def _authors_sparql(year: int, limit: int) -> str:
-    types = " ".join([WRITER, NOVELIST, AUTHOR, MANGAKA, COMICS_ARTIST])
+    types = " ".join(
+        [WRITER, NOVELIST, AUTHOR, MANGAKA, COMICS_ARTIST, POET, PLAYWRIGHT, CHILDRENS_WRITER]
+    )
     return f"""
 SELECT DISTINCT ?author ?authorLabel ?enLabel ?birth ?death ?nationalityLabel ?img ?wikipedia WHERE {{
   VALUES ?occ {{ {types} }}
@@ -205,7 +217,9 @@ def _parse_author_rows(rows: list[dict], seen: set[str] | None = None) -> list[d
 def fetch_candidate_authors(limit: int) -> list[dict[str, Any]]:
     if limit <= 0:
         return []
-    pages = max(6, min(50, (limit + _AUTHOR_PAGE - 1) // _AUTHOR_PAGE + 3))
+    pages = max(24, min(90, (limit + _AUTHOR_PAGE - 1) // _AUTHOR_PAGE + 25))
+    if limit >= 4000:
+        pages = max(pages, 70)
     years = _year_slice(pages)
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -416,7 +430,7 @@ def ingest_authors(
             }
         )
     try:
-        extra = fetch_candidate_authors(cap + 200)
+        extra = fetch_candidate_authors(max(cap + 400, int(cap * 1.6)))
     except Exception as exc:
         logger.warning("Ingest auteurs : SPARQL échoué : %s", exc)
         extra = []
