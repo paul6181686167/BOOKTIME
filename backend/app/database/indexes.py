@@ -38,6 +38,8 @@ INDEXES: List[Tuple[str, Any, Dict[str, Any]]] = [
     ("catalog_daily_series", "title_norms", {}),
     ("catalog_daily_series", "source", {}),
     ("catalog_daily_series", "name", {}),
+    ("catalog_daily_pending", "qid", {"unique": True, "sparse": True}),
+    ("catalog_daily_pending", "kind", {}),
     ("authors", "name_normalized", {"unique": True, "sparse": True}),
     ("authors", "wikidata_qid", {"sparse": True}),
     ("authors", "name", {}),

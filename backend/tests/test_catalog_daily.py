@@ -4,7 +4,7 @@ from __future__ import annotations
 import pytest
 from httpx import AsyncClient
 
-from app.catalog import daily_authors, daily_ingest, daily_store, expanded, isbn_resolve
+from app.catalog import daily_authors, daily_ingest, daily_pending, daily_store, expanded, isbn_resolve
 from app.db_config import _mock_storage
 from app.series_verification import curated as curated_mod
 
@@ -15,7 +15,9 @@ def _reset_daily():
     store = _mock_storage.setdefault("catalog_daily_series", [])
     store.clear()
     _mock_storage.setdefault("authors", []).clear()
+    _mock_storage.setdefault("catalog_daily_pending", []).clear()
     _mock_storage.pop("catalog_ingest_meta", None)
+    daily_pending.reset_wd_budget(0)
     expanded.clear_cache()
     curated_mod.clear_cache()
     from app.catalog.seed import reset_seed_flag
@@ -593,3 +595,168 @@ def test_ingest_adds_author_fiches(monkeypatch):
     hits = expanded.search_authors("Ada Lovelace")
     assert hits and hits[0]["type"] == "author"
     assert hits[0]["name"] == "Ada Lovelace"
+
+
+def _isolate_catalog(monkeypatch):
+    _reset_daily()
+    from app.db_config import MockCollection
+    from app.catalog import seed as seed_mod
+
+    monkeypatch.setattr(daily_pending, "_coll", lambda: MockCollection("catalog_daily_pending"))
+    monkeypatch.setattr(daily_store, "_coll", lambda: MockCollection("catalog_daily_series"))
+    monkeypatch.setattr(daily_authors, "_coll", lambda: MockCollection("authors"))
+    monkeypatch.setattr(seed_mod, "ensure_seeded", lambda **k: {"status": "skipped_test", "seeded": False})
+
+
+def test_incomplete_book_queued_unique_not_counted(monkeypatch):
+    _isolate_catalog(monkeypatch)
+    book = {
+        "qid": "Qpend1",
+        "name": "Roman Sans Jaquette",
+        "author": "Jane Doe",
+        "category": "roman",
+        "genre": "Roman",
+        "cover_url": "",
+        "isbn": "",
+        "ol_key": "",
+        "year": 2021,
+    }
+    monkeypatch.setattr(daily_ingest, "existing_qids", lambda: set())
+    monkeypatch.setattr(daily_ingest, "existing_names", lambda: set())
+    monkeypatch.setattr(daily_ingest, "fetch_candidate_series", lambda limit: [])
+    monkeypatch.setattr(daily_ingest, "fetch_candidate_books", lambda limit: [book, dict(book)])
+    monkeypatch.setattr(daily_pending, "enrich_work_candidate", lambda cand, works: None)
+    result = daily_ingest.run_daily_ingest(limit=0, books_limit=5)
+    assert result["added_books"] == 0
+    assert result["fiches"] == 0
+    pending = _mock_storage.get("catalog_daily_pending") or []
+    assert len(pending) == 1
+    assert pending[0]["qid"] == "Qpend1"
+    assert pending[0]["kind"] == "book"
+    assert not any(s.get("qid") == "Qpend1" for s in (_mock_storage.get("catalog_daily_series") or []))
+    assert daily_pending.count() == 1
+
+
+def test_qid_name_and_known_not_queued(monkeypatch):
+    _isolate_catalog(monkeypatch)
+    monkeypatch.setattr(daily_ingest, "existing_qids", lambda: {"Qknown"})
+    monkeypatch.setattr(daily_ingest, "existing_names", lambda: set())
+    monkeypatch.setattr(
+        daily_ingest,
+        "fetch_candidate_series",
+        lambda limit: [
+            {"qid": "Qknown", "name": "Déjà là", "category": "roman", "genre": "Roman", "cover_url": "https://x/c.jpg"},
+            {
+                "qid": "Q136831715",
+                "name": "Q136831715",
+                "category": "roman",
+                "genre": "Roman",
+                "cover_url": "",
+            },
+        ],
+    )
+    monkeypatch.setattr(daily_ingest, "fetch_works", lambda qid: [{"title": "Un", "author": "A. Auteur"}])
+    monkeypatch.setattr(daily_pending, "enrich_work_candidate", lambda cand, works: None)
+    daily_ingest.run_daily_ingest(limit=5)
+    assert daily_pending.count() == 0
+
+
+def test_cover_enrichment_saves_book_instead_of_pending(monkeypatch):
+    _isolate_catalog(monkeypatch)
+    book = {
+        "qid": "Qcover1",
+        "name": "Roman Recupere",
+        "author": "Jane Doe",
+        "category": "roman",
+        "genre": "Roman",
+        "cover_url": "",
+        "isbn": "",
+        "year": 2020,
+    }
+
+    def fake_enrich(cand, works):
+        cand["cover_url"] = "https://covers.openlibrary.org/b/id/99-M.jpg"
+
+    monkeypatch.setattr(daily_ingest, "existing_qids", lambda: set())
+    monkeypatch.setattr(daily_ingest, "existing_names", lambda: set())
+    monkeypatch.setattr(daily_ingest, "fetch_candidate_series", lambda limit: [])
+    monkeypatch.setattr(daily_ingest, "fetch_candidate_books", lambda limit: [book])
+    monkeypatch.setattr(daily_pending, "enrich_work_candidate", fake_enrich)
+    result = daily_ingest.run_daily_ingest(limit=0, books_limit=5)
+    assert result["added_books"] == 1
+    assert result["fiches"] == 1
+    assert daily_pending.count() == 0
+    stored = [s for s in daily_store.all_series() if s.get("qid") == "Qcover1"]
+    assert stored and stored[0]["cover_url"].startswith("https://")
+
+
+def test_promote_pending_book_once_cover_found(monkeypatch):
+    _isolate_catalog(monkeypatch)
+    daily_pending.remember(
+        "book",
+        {
+            "qid": "Qlater",
+            "name": "Livre En Attente",
+            "author": "Paul Test",
+            "category": "roman",
+            "genre": "Roman",
+            "cover_url": "",
+        },
+        reason="incomplete",
+        works=[{"title": "Livre En Attente", "author": "Paul Test", "published_year": 2019}],
+        known=set(),
+        names=set(),
+    )
+    assert daily_pending.count() == 1
+    assert not any(s.get("qid") == "Qlater" for s in (_mock_storage.get("catalog_daily_series") or []))
+
+    def fake_enrich(cand, works):
+        cand["cover_url"] = "https://example.test/recovered.jpg"
+
+    monkeypatch.setattr(daily_pending, "enrich_work_candidate", fake_enrich)
+    monkeypatch.setattr(daily_ingest, "existing_qids", lambda: set())
+    monkeypatch.setattr(daily_ingest, "existing_names", lambda: set())
+    monkeypatch.setattr(daily_ingest, "fetch_candidate_series", lambda limit: [])
+    monkeypatch.setattr(daily_ingest, "fetch_candidate_books", lambda limit: [])
+    monkeypatch.setattr(daily_authors, "fetch_candidate_authors", lambda limit: [])
+    result = daily_ingest.run_daily_ingest()
+    assert result["recovered"] == 1
+    assert result["added_books"] == 1
+    assert daily_pending.count() == 0
+    stored = [s for s in daily_store.all_series() if s.get("qid") == "Qlater"]
+    assert stored and stored[0]["authors"] == ["Paul Test"]
+
+
+def test_promote_pending_author_after_photo(monkeypatch):
+    _isolate_catalog(monkeypatch)
+    from app.db_config import MockCollection
+
+    mock_authors = MockCollection("authors")
+    monkeypatch.setattr(daily_authors, "_coll", lambda: mock_authors)
+    monkeypatch.setattr("app.authors.service.authors_collection", mock_authors)
+    daily_pending.remember(
+        "author",
+        {"qid": "Qada2", "name": "Ada Pending", "photo_url": "", "birth_date": ""},
+        reason="incomplete",
+        known=set(),
+        names=set(),
+    )
+    assert daily_pending.count() == 1
+
+    def fake_enrich(cand):
+        cand["photo_url"] = "https://example.test/ada2.jpg"
+        cand["birth_date"] = "1815-12-10"
+
+    monkeypatch.setattr(daily_pending, "enrich_author_candidate", fake_enrich)
+    monkeypatch.setattr(daily_ingest, "existing_qids", lambda: set())
+    monkeypatch.setattr(daily_ingest, "fetch_candidate_series", lambda limit: [])
+    monkeypatch.setattr(daily_ingest, "fetch_candidate_books", lambda limit: [])
+    monkeypatch.setattr(daily_authors, "fetch_candidate_authors", lambda limit: [])
+    monkeypatch.setattr(daily_authors, "known_qids", lambda: set())
+    monkeypatch.setattr(daily_authors, "known_names", lambda: set())
+    result = daily_ingest.run_daily_ingest()
+    assert result["recovered"] == 1
+    assert result["added_authors"] == 1
+    assert daily_pending.count() == 0
+    stored = [a for a in _mock_storage.get("authors", []) if a.get("wikidata_qid") == "Qada2"]
+    assert stored and stored[0]["photo_url"].startswith("https://")

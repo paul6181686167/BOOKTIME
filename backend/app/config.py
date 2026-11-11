@@ -72,6 +72,7 @@ COLLECTIONS = {
     "authors": "authors",
     "series_library": "series_library",
     "catalog_daily_series": "catalog_daily_series",
+    "catalog_daily_pending": "catalog_daily_pending",
 }
 
 # Configuration Open Library

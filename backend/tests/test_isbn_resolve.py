@@ -118,3 +118,60 @@ def test_resolve_isbn_budget_zero_no_http(monkeypatch):
 
     monkeypatch.setattr(isbn_resolve.requests, "get", boom)
     assert isbn_resolve.resolve_isbn(title="L'Étranger") == ""
+
+
+def test_find_cover_from_openlibrary_cover_i(monkeypatch):
+    isbn_resolve.reset_cover_budget(5)
+
+    def fake_get(url, **kwargs):
+        if "openlibrary.org/search" in url:
+            return _Resp(200, {"docs": [{"title": "L'Étranger", "cover_i": 12345, "isbn": [VALID]}]})
+        raise AssertionError(url)
+
+    monkeypatch.setattr(isbn_resolve.requests, "get", fake_get)
+    cover, isbn = isbn_resolve.find_cover(title="L'Étranger", author="Camus")
+    assert cover == "https://covers.openlibrary.org/b/id/12345-M.jpg"
+    assert isbn == VALID
+
+
+def test_find_cover_google_thumbnail(monkeypatch):
+    isbn_resolve.reset_cover_budget(5)
+
+    def fake_get(url, **kwargs):
+        if "openlibrary.org/search" in url:
+            return _Resp(200, {"docs": []})
+        if "googleapis.com" in url:
+            return _Resp(
+                200,
+                {
+                    "items": [
+                        {
+                            "volumeInfo": {
+                                "title": "L'Étranger",
+                                "imageLinks": {
+                                    "thumbnail": "http://books.google.com/books/content?id=x&img=1"
+                                },
+                            }
+                        }
+                    ]
+                },
+            )
+        raise AssertionError(url)
+
+    monkeypatch.setattr(isbn_resolve.requests, "get", fake_get)
+    cover, isbn = isbn_resolve.find_cover(title="L'Étranger")
+    assert cover.startswith("https://")
+    assert "books.google.com" in cover
+    assert isbn == ""
+
+
+def test_find_cover_budget_zero_no_http(monkeypatch):
+    isbn_resolve.reset_cover_budget(0)
+
+    def boom(*a, **k):
+        raise AssertionError("HTTP interdit sans budget jaquette")
+
+    monkeypatch.setattr(isbn_resolve.requests, "get", boom)
+    cover, isbn = isbn_resolve.find_cover(title="L'Étranger")
+    assert cover == ""
+    assert isbn == ""

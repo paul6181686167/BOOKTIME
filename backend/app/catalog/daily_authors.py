@@ -495,6 +495,20 @@ def ingest_authors(
         works = _works_for(cand.get("name") or "", hints or [])
         entry = build_complete_author(cand, works=works)
         if not entry:
+            from . import daily_pending
+
+            daily_pending.enrich_author_candidate(cand)
+            entry = build_complete_author(cand, works=works)
+        if not entry:
+            from . import daily_pending
+
+            daily_pending.remember(
+                "author",
+                cand,
+                reason="incomplete",
+                known=known_id,
+                names=known_n,
+            )
             skipped += 1
             continue
         upsert_author(entry)

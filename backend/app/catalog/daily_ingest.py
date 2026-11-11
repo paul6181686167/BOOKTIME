@@ -796,12 +796,29 @@ def _ingest_series(
                 skipped += 1
                 continue
             if works is None:
+                from . import daily_pending
+
+                daily_pending.remember(
+                    "series", cand, reason="works_timeout", works=[], known=known, names=names
+                )
                 skipped += 1
                 continue
             entry = build_complete_entry(cand, works)
             if not entry:
                 entry = build_complete_entry(cand, works, min_volumes=1, standalone=True)
             if not entry:
+                from . import daily_pending
+
+                daily_pending.enrich_work_candidate(cand, works)
+                entry = build_complete_entry(cand, works)
+                if not entry:
+                    entry = build_complete_entry(cand, works, min_volumes=1, standalone=True)
+            if not entry:
+                from . import daily_pending
+
+                daily_pending.remember(
+                    "series", cand, reason="incomplete", works=works, known=known, names=names
+                )
                 skipped += 1
                 continue
             fiches += _persist(entry, known, added, hints, names)
@@ -848,6 +865,16 @@ def _ingest_books(
         }
         entry = build_complete_entry(cand, [work], min_volumes=1, standalone=True)
         if not entry:
+            from . import daily_pending
+
+            daily_pending.enrich_work_candidate(cand, [work])
+            entry = build_complete_entry(cand, [work], min_volumes=1, standalone=True)
+        if not entry:
+            from . import daily_pending
+
+            daily_pending.remember(
+                "book", cand, reason="incomplete", works=[work], known=known, names=names
+            )
             skipped += 1
             continue
         fiches += _persist(entry, known, added, hints, names)
@@ -878,11 +905,16 @@ def run_daily_ingest(
         return busy
     _job_running = True
     try:
-        _wiki_cover_budget = 300
-        from .isbn_resolve import reset_budget
+        test_env = os.getenv("ENVIRONMENT", "").lower() == "test"
+        _wiki_cover_budget = 0 if test_env else 300
+        from .isbn_resolve import reset_budget, reset_cover_budget
+        from . import daily_pending
 
-        isbn_default = 0 if os.getenv("ENVIRONMENT", "").lower() == "test" else 800
+        isbn_default = 0 if test_env else 800
+        cover_default = 0 if test_env else 500
         reset_budget(_env_int("CATALOG_ISBN_LOOKUPS", isbn_default, 0, 2000))
+        reset_cover_budget(_env_int("CATALOG_COVER_LOOKUPS", cover_default, 0, 2000))
+        daily_pending.reset_wd_budget(0 if test_env else _env_int("CATALOG_PENDING_WD", 250, 0, 800))
         purged_series = purge_qid_named_daily()
         from .daily_authors import daily_authors_limit, ingest_authors, purge_qid_named_authors
 
@@ -907,6 +939,8 @@ def run_daily_ingest(
                     "purged": purged_series + purged_authors,
                     "catalog_fiches": total,
                     "goal_fiches": goal,
+                    "pending_fiches": daily_pending.count(),
+                    "recovered": 0,
                 }
                 _job_last = result
                 logger.info(
@@ -940,6 +974,23 @@ def run_daily_ingest(
         )
         n_books = len(book_names)
         remaining = max(0, target - n_series - n_books)
+        recovered = {
+            "added_series": 0,
+            "added_books": 0,
+            "added_authors": 0,
+            "fiches": 0,
+            "tomes": 0,
+            "names": [],
+            "author_names": [],
+        }
+        if remaining > 0:
+            recovered = daily_pending.enrich_and_promote(
+                cap=min(remaining, daily_pending.pending_promote_limit())
+            )
+            n_series += int(recovered.get("added_series") or 0)
+            n_books += int(recovered.get("added_books") or 0)
+            series_names = series_names + list(recovered.get("names") or [])
+            remaining = max(0, target - n_series - n_books - int(recovered.get("added_authors") or 0))
         if authors_limit is not None:
             author_cap = authors_limit
         elif limit is not None or books_limit is not None:
@@ -947,16 +998,17 @@ def run_daily_ingest(
         else:
             author_cap = min(daily_authors_limit(), remaining)
         author_names, skip_a = ingest_authors(author_cap, hints=author_hints)
-        n_authors = len(author_names)
+        n_authors = len(author_names) + int(recovered.get("added_authors") or 0)
+        author_names = list(recovered.get("author_names") or []) + author_names
         added = series_names + book_names
         skipped = skip_s + skip_b + skip_a
         fiches = n_series + n_books + n_authors
-        tomes = series_tomes + book_tomes
+        tomes = series_tomes + book_tomes + int(recovered.get("tomes") or 0)
         if added or author_names:
             expanded.stats.cache_clear()
             curated_mod.clear_cache()
         logger.info(
-            "Ingest quotidien : +%d séries (%d tomes), +%d livres, +%d auteurs, fiches=%d/%d, ignorés=%d",
+            "Ingest quotidien : +%d séries (%d tomes), +%d livres, +%d auteurs, fiches=%d/%d, ignorés=%d, pending=%d, recovered=%d",
             n_series,
             series_tomes,
             n_books,
@@ -964,10 +1016,12 @@ def run_daily_ingest(
             fiches,
             target,
             skipped,
+            daily_pending.count(),
+            int(recovered.get("fiches") or 0),
         )
         result = {
             "status": "ok",
-            "added": len(added),
+            "added": n_series + n_books,
             "added_series": n_series,
             "added_books": n_books,
             "added_authors": n_authors,
@@ -981,6 +1035,8 @@ def run_daily_ingest(
             "catalog_fiches": catalog_fiche_total(),
             "goal_fiches": goal,
             "wd_window": wd_window,
+            "pending_fiches": daily_pending.count(),
+            "recovered": int(recovered.get("fiches") or 0),
         }
         _job_last = result
         return result
@@ -993,6 +1049,8 @@ def run_daily_ingest(
 
 
 def ingest_status() -> dict[str, Any]:
+    from . import daily_pending
+
     total = catalog_fiche_total()
     goal = catalog_goal()
     return {
@@ -1002,6 +1060,7 @@ def ingest_status() -> dict[str, Any]:
         "goal_fiches": goal,
         "remaining": max(0, goal - total),
         "wd_window": window_salt(),
+        "pending_fiches": daily_pending.count(),
         "last": _job_last,
     }
 

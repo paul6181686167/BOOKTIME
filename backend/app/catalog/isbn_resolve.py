@@ -34,11 +34,25 @@ GB_URL = "https://www.googleapis.com/books/v1/volumes"
 BNF_SRU = "https://catalogue.bnf.fr/api/SRU"
 
 _budget = 400
+_cover_budget = 0
 
 
 def reset_budget(n: int = 400) -> None:
     global _budget
     _budget = max(0, int(n))
+
+
+def reset_cover_budget(n: int = 0) -> None:
+    global _cover_budget
+    _cover_budget = max(0, int(n))
+
+
+def _spend_cover() -> bool:
+    global _cover_budget
+    if _cover_budget <= 0:
+        return False
+    _cover_budget -= 1
+    return True
 
 
 def _spend() -> bool:
@@ -231,3 +245,87 @@ def resolve_isbn(
             if got:
                 return got
     return ""
+
+
+def _ol_cover_url(cover_i: Any) -> str:
+    try:
+        n = int(cover_i)
+    except (TypeError, ValueError):
+        return ""
+    if n <= 0:
+        return ""
+    return f"https://covers.openlibrary.org/b/id/{n}-M.jpg"
+
+
+def find_cover(
+    *,
+    title: str,
+    author: str = "",
+    title_en: str = "",
+    isbn: str = "",
+    ol_key: str = "",
+) -> tuple[str, str]:
+    """Jaquette + ISBN réel (Open Library / Google). Jamais d'ISBN inventé."""
+    isbn = prefer_isbn([isbn]) if isbn else ""
+    if isbn:
+        return f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg", isbn
+    if ol_key:
+        got = from_ol_editions(ol_key)
+        if got:
+            return f"https://covers.openlibrary.org/b/isbn/{got}-M.jpg", got
+    for t in (title, title_en):
+        if len((t or "").strip()) < 3 or not _spend_cover():
+            continue
+        params: dict[str, Any] = {
+            "title": t,
+            "limit": 5,
+            "fields": "title,author_name,isbn,key,cover_i",
+        }
+        if author:
+            params["author"] = author
+        try:
+            r = requests.get(OL_SEARCH, params=params, timeout=8, headers=UA)
+            if r.status_code == 200:
+                for doc in (r.json() or {}).get("docs") or []:
+                    if not title_close(t, doc.get("title") or ""):
+                        continue
+                    cover = _ol_cover_url(doc.get("cover_i"))
+                    got = prefer_isbn(doc.get("isbn") or [])
+                    if cover:
+                        return cover, got
+                    if got:
+                        return f"https://covers.openlibrary.org/b/isbn/{got}-M.jpg", got
+        except Exception as exc:
+            logger.debug("Jaquette OL search échoué %s: %s", t, exc)
+        if not _spend_cover():
+            continue
+        q = f'intitle:"{t}"'
+        if author:
+            q += f' inauthor:"{author}"'
+        gb_params: dict[str, Any] = {"q": q, "maxResults": 3, "printType": "books"}
+        key = (os.getenv("GOOGLE_BOOKS_API_KEY") or "").strip()
+        if key:
+            gb_params["key"] = key
+        try:
+            r = requests.get(GB_URL, params=gb_params, timeout=8, headers=UA)
+            if r.status_code in (403, 429):
+                continue
+            if r.status_code != 200:
+                continue
+            for item in (r.json() or {}).get("items") or []:
+                info = item.get("volumeInfo") or {}
+                if not title_close(t, info.get("title") or ""):
+                    continue
+                ids = info.get("industryIdentifiers") or []
+                got = prefer_isbn([x.get("identifier") for x in ids if isinstance(x, dict)])
+                links = info.get("imageLinks") or {}
+                thumb = (links.get("thumbnail") or links.get("smallThumbnail") or "").strip()
+                if thumb:
+                    if thumb.startswith("http://"):
+                        thumb = "https://" + thumb[len("http://") :]
+                    return thumb, got
+                if got:
+                    return f"https://covers.openlibrary.org/b/isbn/{got}-M.jpg", got
+        except Exception as exc:
+            logger.debug("Jaquette Google Books échoué %s: %s", t, exc)
+    return "", isbn or ""
