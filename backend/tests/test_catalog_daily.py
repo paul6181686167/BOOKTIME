@@ -43,6 +43,85 @@ def test_complete_entry_requires_two_titles_author_and_cover():
     assert d1["published_year"] == 2020
 
 
+def test_human_label_rejects_qid_keeps_real_titles():
+    assert daily_ingest.is_human_label("Sa Majesté des mouches")
+    assert daily_ingest.is_human_label("1984")
+    assert daily_ingest.is_human_label("進撃の巨人")
+    assert not daily_ingest.is_human_label("Q136831715")
+    assert not daily_ingest.is_human_label("Q42")
+    assert not daily_ingest.is_human_label("")
+    assert not daily_ingest.is_human_label("?")
+
+
+def test_complete_entry_rejects_qid_as_title_or_author():
+    isbn_resolve.reset_budget(0)
+    cand = {
+        "qid": "Q136831715",
+        "name": "Q136831715",
+        "category": "roman",
+        "genre": "Roman",
+        "cover_url": "https://example.test/c.jpg",
+    }
+    works = [{"title": "Q136831715", "author": "A. Auteur", "published_year": 2020}]
+    assert daily_ingest.build_complete_entry(cand, works, min_volumes=1, standalone=True) is None
+    cand["name"] = "Vrai Titre"
+    works[0]["title"] = "Vrai Titre"
+    works[0]["author"] = "Q42"
+    assert daily_ingest.build_complete_entry(cand, works, min_volumes=1, standalone=True) is None
+    works[0]["author"] = "A. Auteur"
+    assert daily_ingest.build_complete_entry(cand, works, min_volumes=1, standalone=True) is not None
+
+
+def test_complete_author_rejects_qid_as_name():
+    cand = {
+        "qid": "Q107883",
+        "name": "Q107883",
+        "photo_url": "https://example.test/a.jpg",
+        "birth_date": "1900-01-01",
+        "bio": "Bio.",
+    }
+    assert daily_authors.build_complete_author(cand) is None
+    cand["name"] = "Vrai Auteur"
+    assert daily_authors.build_complete_author(cand) is not None
+
+
+def test_purge_qid_named_daily(monkeypatch):
+    from app.db_config import MockCollection, _mock_storage
+
+    monkeypatch.setenv("CATALOG_DAILY_PURGE", "1")
+    _mock_storage["catalog_daily_series"] = []
+    mock = MockCollection("catalog_daily_series")
+    monkeypatch.setattr(daily_store, "_coll", lambda: mock)
+    daily_store.upsert_series(
+        {
+            "qid": "Q136831715",
+            "name": "Q136831715",
+            "authors": ["A. Auteur"],
+            "cover_url": "https://example.test/c.jpg",
+            "volumes": 1,
+            "volume_titles": {"1": "Q136831715"},
+            "volume_details": {"1": {"author": "A. Auteur", "cover_url": "https://example.test/c.jpg"}},
+            "source": "daily",
+        }
+    )
+    daily_store.upsert_series(
+        {
+            "qid": "Qok",
+            "name": "Officially Dead",
+            "authors": ["A. Auteur"],
+            "cover_url": "https://example.test/c.jpg",
+            "volumes": 1,
+            "volume_titles": {"1": "Officially Dead"},
+            "volume_details": {"1": {"author": "A. Auteur", "cover_url": "https://example.test/c.jpg"}},
+            "source": "daily",
+        }
+    )
+    assert daily_ingest.purge_qid_named_daily() == 1
+    names = {s.get("name") for s in daily_store.all_series()}
+    assert "Officially Dead" in names
+    assert "Q136831715" not in names
+
+
 def test_standalone_book_one_volume_with_real_isbn():
     isbn_resolve.reset_budget(0)
     cand = {

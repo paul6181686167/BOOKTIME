@@ -22,9 +22,12 @@ from .daily_ingest import (
     WIKI_SUMMARY,
     _env_int,
     _lit,
+    _purge_enabled,
     _qid,
     _sparql,
     commons_url,
+    is_human_label,
+    is_qid_label,
     usable_cover,
 )
 
@@ -74,6 +77,31 @@ def known_names() -> set[str]:
     except Exception:
         return set()
     return names
+
+
+def purge_qid_named_authors() -> int:
+    """Retire les fiches auteur quotidiennes dont le nom n'est qu'un identifiant Wikidata."""
+    if not _purge_enabled():
+        return 0
+    n = 0
+    try:
+        for doc in _coll().find({"source": "daily"}, {"wikidata_qid": 1, "name": 1, "name_normalized": 1}) or []:
+            if not is_qid_label((doc or {}).get("name")):
+                continue
+            qid = (doc or {}).get("wikidata_qid")
+            key = (doc or {}).get("name_normalized")
+            filt: dict[str, Any] = {"source": "daily"}
+            if qid:
+                filt["wikidata_qid"] = qid
+            elif key:
+                filt["name_normalized"] = key
+            else:
+                continue
+            _coll().delete_one(filt)
+            n += 1
+    except Exception as exc:
+        logger.warning("Purge auteurs QID : %s", exc)
+    return n
 
 
 def count() -> int:
@@ -191,7 +219,8 @@ def _parse_author_rows(rows: list[dict], seen: set[str] | None = None) -> list[d
     seen = seen if seen is not None else set()
     for row in rows:
         qid = _qid(_lit(row, "author"))
-        if not qid or qid in seen:
+        name = _lit(row, "authorLabel") or ""
+        if not qid or qid in seen or not is_human_label(name):
             continue
         seen.add(qid)
         img = _lit(row, "img")
@@ -202,7 +231,7 @@ def _parse_author_rows(rows: list[dict], seen: set[str] | None = None) -> list[d
         out.append(
             {
                 "qid": qid,
-                "name": _lit(row, "authorLabel") or qid,
+                "name": name,
                 "name_en": _lit(row, "enLabel") or None,
                 "photo_url": commons_url(img) if img else "",
                 "birth_date": birth[:10] if birth else None,
@@ -295,7 +324,7 @@ def build_complete_author(
     name = (cand.get("name") or "").strip()
     qid = (cand.get("qid") or cand.get("wikidata_qid") or "").strip()
     photo = usable_cover(cand.get("photo_url") or cand.get("image_url") or cand.get("cover_url"))
-    if not name or not qid or not photo:
+    if not is_human_label(name) or not qid or not photo:
         return None
     bio = (cand.get("bio") or "").strip()
     wiki_url = cand.get("wikipedia_url") or ""

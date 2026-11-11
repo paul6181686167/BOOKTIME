@@ -35,6 +35,7 @@ WD_SPARQL = "https://query.wikidata.org/sparql"
 WIKI_SUMMARY = "https://{lang}.wikipedia.org/api/rest_v1/page/summary/{title}"
 PAGES_BY_CAT = {"manga": 192, "bd": 48, "roman": 280}
 OL_W_COVER = re.compile(r"/b/(?:id|olid)/OL\d+W", re.I)
+_QID_LABEL = re.compile(r"^Q\d+$", re.I)
 
 NOVEL = "wd:Q1667921"
 BOOK_SERIES = "wd:Q277759"
@@ -90,6 +91,26 @@ def daily_fiches_target() -> int:
 def daily_limit() -> int:
     """Compat : plafond de séries (le job ajoute aussi des livres individuels)."""
     return daily_series_limit()
+
+
+def is_human_label(value: str | None) -> bool:
+    """Titre ou nom lisible — pas un identifiant Wikidata (Q123) ni une chaîne vide."""
+    t = (value or "").strip()
+    if len(t) < 2 or is_qid_label(t):
+        return False
+    if re.search(r"[^\W\d_]", t, flags=re.UNICODE):
+        return True
+    return bool(re.fullmatch(r"\d{2,4}", t))
+
+
+def is_qid_label(value: str | None) -> bool:
+    return bool(_QID_LABEL.match((value or "").strip()))
+
+
+def _purge_enabled() -> bool:
+    if os.getenv("ENVIRONMENT", "").lower() == "test":
+        return os.getenv("CATALOG_DAILY_PURGE", "").lower() in {"1", "true", "yes"}
+    return True
 
 
 def usable_cover(url: str | None) -> str:
@@ -206,6 +227,9 @@ LIMIT {limit * 4}
             continue
         seen.add(qid)
         type_qid = _qid(_lit(row, "type"))
+        name = _lit(row, "seriesLabel") or ""
+        if not is_human_label(name):
+            continue
         img = _lit(row, "img")
         if img.startswith("http"):
             img = img.rsplit("/", 1)[-1]
@@ -213,7 +237,7 @@ LIMIT {limit * 4}
         out.append(
             {
                 "qid": qid,
-                "name": _lit(row, "seriesLabel") or qid,
+                "name": name,
                 "name_en": _lit(row, "enLabel") or None,
                 "category": cat,
                 "genre": genre,
@@ -233,6 +257,10 @@ def _parse_book_rows(rows: list[dict], seen: set[str] | None = None) -> list[dic
         seen.add(qid)
         type_qid = _qid(_lit(row, "type"))
         cat, genre = BOOK_TYPE_GENRE.get(type_qid, ("roman", "Roman"))
+        name = _lit(row, "workLabel") or ""
+        author = _lit(row, "authorLabel")
+        if not is_human_label(name) or not is_human_label(author):
+            continue
         img = _lit(row, "img")
         if img.startswith("http"):
             img = img.rsplit("/", 1)[-1]
@@ -247,9 +275,9 @@ def _parse_book_rows(rows: list[dict], seen: set[str] | None = None) -> list[dic
         out.append(
             {
                 "qid": qid,
-                "name": _lit(row, "workLabel") or qid,
+                "name": name,
                 "name_en": _lit(row, "enLabel") or None,
-                "author": _lit(row, "authorLabel"),
+                "author": author,
                 "author_qid": _qid(_lit(row, "author")),
                 "category": cat,
                 "genre": genre,
@@ -388,7 +416,7 @@ LIMIT 80
     seen: set[str] = set()
     for row in rows:
         title = _lit(row, "frLabel") or _lit(row, "enLabel")
-        if not title or title in seen:
+        if not is_human_label(title) or title in seen:
             continue
         seen.add(title)
         date = _lit(row, "date")
@@ -397,6 +425,7 @@ LIMIT 80
         if m:
             year = int(m.group(1))
         ol = _lit(row, "ol")
+        author = _lit(row, "authorLabel")
         works.append(
             {
                 "title": title,
@@ -404,7 +433,7 @@ LIMIT 80
                 "published_year": year if year and 1400 <= year <= 2035 else None,
                 "isbn": pick_isbn(_lit(row, "isbn")) or pick_isbn(_lit(row, "isbn10")),
                 "ol_key": f"/works/{ol}" if ol and ol.endswith("W") else (f"/works/{ol}" if ol else ""),
-                "author": _lit(row, "authorLabel"),
+                "author": author if is_human_label(author) else "",
                 "author_qid": _qid(_lit(row, "author")),
                 "work_qid": _qid(_lit(row, "work")),
             }
@@ -449,11 +478,13 @@ def build_complete_entry(
     standalone: bool = False,
 ) -> dict[str, Any] | None:
     """None si la fiche n'est pas complète (titre, auteur, jaquette, assez de tomes)."""
-    titled = [w for w in works if (w.get("title") or "").strip()]
+    if not is_human_label(cand.get("name")):
+        return None
+    titled = [w for w in works if is_human_label(w.get("title"))]
     if len(titled) < min_volumes:
         return None
-    author = next((w.get("author") for w in titled if (w.get("author") or "").strip()), "") or ""
-    if not author.strip():
+    author = next((w.get("author") for w in titled if is_human_label(w.get("author"))), "") or ""
+    if not is_human_label(author):
         return None
     author_qid = (cand.get("author_qid") or "") or next(
         (w.get("author_qid") for w in titled if w.get("author_qid")),
@@ -542,6 +573,26 @@ def build_complete_entry(
         "source": "daily",
         **({"volume_titles_en": volume_titles_en} if volume_titles_en else {}),
     }
+
+
+def purge_qid_named_daily() -> int:
+    """Retire les fiches quotidiennes dont le titre n'est qu'un identifiant Wikidata."""
+    if not _purge_enabled():
+        return 0
+    n = 0
+    try:
+        coll = daily_store._coll()
+        for doc in coll.find({"source": "daily"}, {"qid": 1, "name": 1}) or []:
+            if not is_qid_label((doc or {}).get("name")):
+                continue
+            qid = (doc or {}).get("qid")
+            if not qid:
+                continue
+            coll.delete_one({"qid": qid, "source": "daily"})
+            n += 1
+    except Exception as exc:
+        logger.warning("Purge titres QID : %s", exc)
+    return n
 
 
 def existing_qids() -> set[str]:
@@ -701,7 +752,7 @@ def _ingest_books(
             skipped += 1
             continue
         author = (cand.get("author") or "").strip()
-        if not author:
+        if not is_human_label(author) or not is_human_label(cand.get("name")):
             skipped += 1
             continue
         work = {
@@ -751,6 +802,10 @@ def run_daily_ingest(
 
         isbn_default = 0 if os.getenv("ENVIRONMENT", "").lower() == "test" else 800
         reset_budget(_env_int("CATALOG_ISBN_LOOKUPS", isbn_default, 0, 2000))
+        purged_series = purge_qid_named_daily()
+        from .daily_authors import daily_authors_limit, ingest_authors, purge_qid_named_authors
+
+        purged_authors = purge_qid_named_authors()
         target = daily_fiches_target()
         series_cap = limit if limit is not None else min(daily_series_limit(), target)
         known = existing_qids()
@@ -772,8 +827,6 @@ def run_daily_ingest(
         )
         n_books = len(book_names)
         remaining = max(0, target - n_series - n_books)
-        from .daily_authors import daily_authors_limit, ingest_authors
-
         if authors_limit is not None:
             author_cap = authors_limit
         elif limit is not None or books_limit is not None:
@@ -811,6 +864,7 @@ def run_daily_ingest(
             "skipped": skipped,
             "names": added[:24],
             "author_names": author_names[:24],
+            "purged": purged_series + purged_authors,
         }
         _job_last = result
         return result
