@@ -66,6 +66,8 @@ _BOOK_PAGE = 100
 _ingest_lock = threading.Lock()
 _job_running = False
 _job_last: dict[str, Any] | None = None
+_active_window = 0
+_WINDOW_KEY = "wd_window"
 
 
 def _env_int(name: str, default: int, lo: int, hi: int) -> int:
@@ -101,6 +103,50 @@ def catalog_fiche_total() -> int:
         return int(daily_store.count() or 0) + int(daily_authors.count() or 0)
     except Exception:
         return 0
+
+
+def window_salt() -> int:
+    """Sel SPARQL du lot en cours (0 = première fenêtre, comme avant)."""
+    return int(_active_window or 0)
+
+
+def _window_coll():
+    from ..db_config import database
+
+    return database.db["catalog_ingest_meta"]
+
+
+def take_window_index() -> int:
+    """Compteur persisté : +1 à chaque lot, même si le jour n'a pas changé."""
+    try:
+        coll = _window_coll()
+        doc = coll.find_one({"key": _WINDOW_KEY}) or {}
+        n = int(doc.get("n") or 0) + 1
+        coll.update_one(
+            {"key": _WINDOW_KEY},
+            {"$set": {"key": _WINDOW_KEY, "n": n}},
+            upsert=True,
+        )
+        return n
+    except Exception:
+        return 0
+
+
+def begin_ingest_window() -> int:
+    """Nouvelle fenêtre Wikidata à chaque lot — pas seulement chaque jour."""
+    global _active_window
+    env = os.getenv("CATALOG_WD_WINDOW")
+    if env is not None and str(env).strip() != "":
+        try:
+            _active_window = max(0, int(env))
+            return _active_window
+        except ValueError:
+            pass
+    yday = datetime.now(timezone.utc).timetuple().tm_yday
+    total = catalog_fiche_total()
+    n = take_window_index()
+    _active_window = abs(yday * 100003 + total * 7919 + n * 104729)
+    return _active_window
 
 
 def daily_limit() -> int:
@@ -196,9 +242,12 @@ def _qid(uri: str) -> str:
 
 
 def fetch_candidate_series(limit: int) -> list[dict[str, Any]]:
-    """Séries Wikidata récentes, puis rotation annuelle pour alimenter chaque jour."""
+    """Séries Wikidata récentes, puis une autre page à chaque lot (pas seulement chaque jour)."""
     year = datetime.now(timezone.utc).year - 3
+    salt = window_salt()
     types = " ".join([NOVEL, BOOK_SERIES, MANGA, COMICS, COMIC_BOOK])
+    recent_off = (salt * 80) % 2000
+    recent_offset_clause = f"OFFSET {recent_off}" if recent_off else ""
     query_recent = f"""
 SELECT DISTINCT ?series ?seriesLabel ?enLabel ?type ?img WHERE {{
   VALUES ?type {{ {types} }}
@@ -212,10 +261,11 @@ SELECT DISTINCT ?series ?seriesLabel ?enLabel ?type ?img WHERE {{
   }}
   SERVICE wikibase:label {{ bd:serviceParam wikibase:language "fr,en". }}
 }}
+{recent_offset_clause}
 LIMIT {max(limit * 10, 120)}
 """
     rows = _sparql(query_recent)
-    offset = (datetime.now(timezone.utc).timetuple().tm_yday * 17) % 8000
+    offset = (datetime.now(timezone.utc).timetuple().tm_yday * 17 + salt * 211) % 8000
     query_rot = f"""
 SELECT DISTINCT ?series ?seriesLabel ?enLabel ?type ?img WHERE {{
   VALUES ?type {{ {NOVEL} {MANGA} {COMICS} }}
@@ -305,18 +355,22 @@ def _parse_book_rows(rows: list[dict], seen: set[str] | None = None) -> list[dic
     return out
 
 
-def _book_years(n: int) -> list[int]:
-    """Années récentes d'abord (SPARQL plus fiable), puis une fenêtre qui tourne chaque jour."""
+def _book_years(n: int, salt: int | None = None) -> list[int]:
+    """Années récentes d'abord, décalées à chaque lot, puis une fenêtre historique."""
+    if salt is None:
+        salt = window_salt()
     now = datetime.now(timezone.utc).year
     yday = datetime.now(timezone.utc).timetuple().tm_yday
     years: list[int] = []
     seen: set[int] = set()
-    for y in range(now, now - 12, -1):
-        if 1800 <= y <= now and y not in seen:
+    recent = [y for y in range(now, now - 12, -1) if 1800 <= y <= now]
+    rot = salt % max(len(recent), 1)
+    for y in recent[rot:] + recent[:rot]:
+        if y not in seen:
             seen.add(y)
             years.append(y)
     span = max(1, now - 1850)
-    start = 1850 + (yday * 17) % span
+    start = 1850 + ((yday * 17 + salt * 41) % span)
     y = start
     guard = 0
     while len(years) < n and guard < 400:
@@ -328,6 +382,11 @@ def _book_years(n: int) -> list[int]:
         if y > now:
             y = 1800
     return years[:n]
+
+
+def _book_page_offset(year: int, salt: int) -> int:
+    """Page SPARQL dans l'année (0, 50, 100…) — évite les 100 mêmes livres à chaque lot."""
+    return ((salt * 53 + year * 13) % 8) * 50
 
 
 def _books_sparql(year: int | None, limit: int, offset: int = 0) -> str:
@@ -368,11 +427,12 @@ def _fetch_books_page(year: int | None, limit: int, offset: int = 0) -> list[dic
 
 
 def fetch_candidate_books(limit: int) -> list[dict[str, Any]]:
-    """Livres individuels paginés par année (évite un OFFSET Wikidata trop lent)."""
+    """Livres individuels paginés par année, autre page à chaque lot."""
     if limit <= 0:
         return []
+    salt = window_salt()
     pages = max(20, min(80, (limit + _BOOK_PAGE - 1) // _BOOK_PAGE + 8))
-    years = _book_years(pages)
+    years = _book_years(pages, salt)
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
 
@@ -389,14 +449,20 @@ def fetch_candidate_books(limit: int) -> list[dict[str, Any]]:
             break
         chunk = years[i : i + 4]
         with ThreadPoolExecutor(max_workers=min(4, len(chunk))) as pool:
-            batches = list(pool.map(lambda y: _fetch_books_page(y, _BOOK_PAGE), chunk))
+            batches = list(
+                pool.map(
+                    lambda y: _fetch_books_page(y, _BOOK_PAGE, _book_page_offset(y, salt)),
+                    chunk,
+                )
+            )
         for batch in batches:
             _absorb(batch)
             if len(out) >= limit:
                 break
 
     if len(out) < limit:
-        offset = (datetime.now(timezone.utc).timetuple().tm_yday * 23) % 8000
+        yday = datetime.now(timezone.utc).timetuple().tm_yday
+        offset = (yday * 23 + salt * 97) % 8000
         _absorb(_fetch_books_page(None, min(_BOOK_PAGE, limit - len(out) + 80), offset))
     return out
 
@@ -852,6 +918,8 @@ def run_daily_ingest(
             target = min(daily_fiches_target(), remaining_goal)
         else:
             target = daily_fiches_target()
+        wd_window = begin_ingest_window()
+        logger.info("Ingest quotidien : fenêtre Wikidata %d, cible %d", wd_window, target)
         series_cap = limit if limit is not None else min(daily_series_limit(), target)
         known = existing_qids()
         names = existing_names()
@@ -912,6 +980,7 @@ def run_daily_ingest(
             "purged": purged_series + purged_authors,
             "catalog_fiches": catalog_fiche_total(),
             "goal_fiches": goal,
+            "wd_window": wd_window,
         }
         _job_last = result
         return result
@@ -932,6 +1001,7 @@ def ingest_status() -> dict[str, Any]:
         "catalog_fiches": total,
         "goal_fiches": goal,
         "remaining": max(0, goal - total),
+        "wd_window": window_salt(),
         "last": _job_last,
     }
 

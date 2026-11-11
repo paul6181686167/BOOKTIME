@@ -11,9 +11,11 @@ from app.series_verification import curated as curated_mod
 
 def _reset_daily():
     isbn_resolve.reset_budget(0)
+    daily_ingest._active_window = 0
     store = _mock_storage.setdefault("catalog_daily_series", [])
     store.clear()
     _mock_storage.setdefault("authors", []).clear()
+    _mock_storage.pop("catalog_ingest_meta", None)
     expanded.clear_cache()
     curated_mod.clear_cache()
     from app.catalog.seed import reset_seed_flag
@@ -183,6 +185,7 @@ def test_ingest_status_exposes_catalog_goal():
     assert "catalog_fiches" in st
     assert "remaining" in st
     assert st["remaining"] == max(0, st["goal_fiches"] - st["catalog_fiches"])
+    assert "wd_window" in st
 
 
 def test_ingest_stops_when_catalog_goal_reached(monkeypatch):
@@ -383,6 +386,7 @@ def test_fetch_candidate_books_pages_by_year(monkeypatch):
         return []
 
     monkeypatch.setattr(daily_ingest, "_sparql", fake_sparql)
+    daily_ingest._active_window = 0
     daily_ingest.fetch_candidate_books(900)
     assert len(calls) >= 2
     assert any("YEAR(?date)" in c for c in calls)
@@ -395,11 +399,26 @@ def test_book_years_starts_with_recent():
     from datetime import datetime, timezone
 
     now = datetime.now(timezone.utc).year
-    years = daily_ingest._book_years(20)
+    years = daily_ingest._book_years(20, salt=0)
     assert years[0] == now
     assert now - 1 in years
     assert len(years) == 20
     assert len(set(years)) == 20
+
+
+def test_book_years_rotates_with_window():
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc).year
+    a = daily_ingest._book_years(20, salt=0)
+    b = daily_ingest._book_years(20, salt=1)
+    c = daily_ingest._book_years(20, salt=12)
+    assert a[0] == now
+    assert b[0] == now - 1
+    assert a != b
+    assert a != c
+    assert len(set(b)) == 20
+    assert set(a[:12]) == set(b[:12])
 
 
 def test_remaining_quota_fills_with_authors(monkeypatch):
@@ -441,12 +460,56 @@ def test_author_year_slice_spreads_across_centuries():
     from datetime import datetime, timezone
 
     now = datetime.now(timezone.utc).year
-    years = daily_authors._year_slice(40)
+    years = daily_authors._year_slice(40, salt=0)
     assert len(years) == 40
     assert len(set(years)) == 40
     assert min(years) >= 1800
     assert max(years) <= now
     assert max(years) - min(years) > 50
+
+
+def test_author_year_slice_changes_with_window():
+    a = daily_authors._year_slice(40, salt=0)
+    b = daily_authors._year_slice(40, salt=1)
+    assert a[0] != b[0]
+    assert a != b
+
+
+def test_series_and_books_offset_change_with_window(monkeypatch):
+    series_q: list[str] = []
+    book_q: list[str] = []
+
+    def fake_series_sparql(query, timeout=55):
+        series_q.append(query)
+        return []
+
+    def fake_book_sparql(query, timeout=55):
+        book_q.append(query)
+        return []
+
+    monkeypatch.setattr(daily_ingest, "_sparql", fake_series_sparql)
+    daily_ingest._active_window = 0
+    daily_ingest.fetch_candidate_series(10)
+    monkeypatch.setattr(daily_ingest, "_sparql", fake_book_sparql)
+    daily_ingest.fetch_candidate_books(200)
+    daily_ingest._active_window = 3
+    series_q.clear()
+    book_q.clear()
+    monkeypatch.setattr(daily_ingest, "_sparql", fake_series_sparql)
+    daily_ingest.fetch_candidate_series(10)
+    monkeypatch.setattr(daily_ingest, "_sparql", fake_book_sparql)
+    daily_ingest.fetch_candidate_books(200)
+    assert any("OFFSET 240" in q for q in series_q)
+    assert any("OFFSET " in q for q in book_q)
+
+
+def test_begin_ingest_window_advances_each_lot(monkeypatch):
+    _reset_daily()
+    monkeypatch.delenv("CATALOG_WD_WINDOW", raising=False)
+    first = daily_ingest.begin_ingest_window()
+    second = daily_ingest.begin_ingest_window()
+    assert first != second
+    assert daily_ingest.window_salt() == second
 
 
 def test_fetch_candidate_authors_many_years(monkeypatch):
@@ -457,9 +520,27 @@ def test_fetch_candidate_authors_many_years(monkeypatch):
         return []
 
     monkeypatch.setattr(daily_authors, "_sparql", fake_sparql)
+    daily_ingest._active_window = 0
     daily_authors.fetch_candidate_authors(10000)
     assert len(calls) >= 70
     assert any("Q49757" in c for c in calls)
+
+
+def test_fetch_candidate_authors_offset_rotates(monkeypatch):
+    calls: list[str] = []
+
+    def fake_sparql(query, timeout=55):
+        calls.append(query)
+        return []
+
+    monkeypatch.setattr(daily_authors, "_sparql", fake_sparql)
+    daily_ingest._active_window = 0
+    daily_authors.fetch_candidate_authors(400)
+    assert all("OFFSET" not in c for c in calls)
+    calls.clear()
+    daily_ingest._active_window = 1
+    daily_authors.fetch_candidate_authors(400)
+    assert any("OFFSET 80" in c for c in calls)
 
 
 def test_complete_author_needs_photo_and_birth_or_bio():

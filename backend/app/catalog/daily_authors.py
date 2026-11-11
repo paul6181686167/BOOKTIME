@@ -168,12 +168,16 @@ def author_lite(doc: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _year_slice(n: int) -> list[int]:
-    """Répartit les années sur 1800→aujourd'hui (pas 28 années d'affilée déjà vues hier)."""
+def _year_slice(n: int, salt: int | None = None) -> list[int]:
+    """Répartit les années sur 1800→aujourd'hui ; le sel change à chaque lot."""
+    from .daily_ingest import window_salt
+
+    if salt is None:
+        salt = window_salt()
     now = datetime.now(timezone.utc).year
     yday = datetime.now(timezone.utc).timetuple().tm_yday
     span = max(1, now - 1800)
-    start = 1800 + (yday * 19) % span
+    start = 1800 + ((yday * 19 + salt * 37) % span)
     stride = max(1, span // max(n, 1))
     years: list[int] = []
     seen: set[int] = set()
@@ -191,10 +195,11 @@ def _year_slice(n: int) -> list[int]:
     return years[:n]
 
 
-def _authors_sparql(year: int, limit: int) -> str:
+def _authors_sparql(year: int, limit: int, offset: int = 0) -> str:
     types = " ".join(
         [WRITER, NOVELIST, AUTHOR, MANGAKA, COMICS_ARTIST, POET, PLAYWRIGHT, CHILDRENS_WRITER]
     )
+    offset_clause = f"OFFSET {offset}" if offset else ""
     return f"""
 SELECT DISTINCT ?author ?authorLabel ?enLabel ?birth ?death ?nationalityLabel ?img ?wikipedia WHERE {{
   VALUES ?occ {{ {types} }}
@@ -214,6 +219,7 @@ SELECT DISTINCT ?author ?authorLabel ?enLabel ?birth ?death ?nationalityLabel ?i
   }}
   SERVICE wikibase:label {{ bd:serviceParam wikibase:language "fr,en". }}
 }}
+{offset_clause}
 LIMIT {min(max(limit, 20), 500)}
 """
 
@@ -250,16 +256,20 @@ def _parse_author_rows(rows: list[dict], seen: set[str] | None = None) -> list[d
 def fetch_candidate_authors(limit: int) -> list[dict[str, Any]]:
     if limit <= 0:
         return []
+    from .daily_ingest import window_salt
+
+    salt = window_salt()
     pages = max(24, min(90, (limit + _AUTHOR_PAGE - 1) // _AUTHOR_PAGE + 25))
     if limit >= 4000:
         pages = max(pages, 70)
-    years = _year_slice(pages)
+    years = _year_slice(pages, salt)
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
+    page_off = (salt % 4) * 80
 
     def _page(year: int) -> list[dict[str, Any]]:
         try:
-            rows = _sparql(_authors_sparql(year, _AUTHOR_PAGE), timeout=50)
+            rows = _sparql(_authors_sparql(year, _AUTHOR_PAGE, page_off), timeout=50)
         except Exception as exc:
             logger.warning("SPARQL auteurs %s échoué : %s", year, exc)
             return []
