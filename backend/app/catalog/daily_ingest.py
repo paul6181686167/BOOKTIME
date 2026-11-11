@@ -84,8 +84,23 @@ def daily_books_limit() -> int:
 
 
 def daily_fiches_target() -> int:
-    """Objectif : 10 000 fiches (séries + livres + auteurs) par jour."""
+    """Objectif : 10 000 fiches (séries + livres + auteurs) par lot."""
     return _env_int("CATALOG_DAILY_FICHES", 10000, 100, 15000)
+
+
+def catalog_goal() -> int:
+    """Plafond catalogue (séries + livres + auteurs) : on enchaîne les lots jusqu'ici."""
+    return _env_int("CATALOG_FICHES_GOAL", 100000, 1000, 500000)
+
+
+def catalog_fiche_total() -> int:
+    """Une fiche = 1 série ou 1 livre ou 1 auteur quotidien."""
+    from . import daily_authors, daily_store
+
+    try:
+        return int(daily_store.count() or 0) + int(daily_authors.count() or 0)
+    except Exception:
+        return 0
 
 
 def daily_limit() -> int:
@@ -806,7 +821,37 @@ def run_daily_ingest(
         from .daily_authors import daily_authors_limit, ingest_authors, purge_qid_named_authors
 
         purged_authors = purge_qid_named_authors()
-        target = daily_fiches_target()
+        total = catalog_fiche_total()
+        goal = catalog_goal()
+        remaining_goal = max(0, goal - total)
+        if limit is None and books_limit is None and authors_limit is None:
+            if remaining_goal <= 0:
+                result = {
+                    "status": "ok",
+                    "added": 0,
+                    "added_series": 0,
+                    "added_books": 0,
+                    "added_authors": 0,
+                    "fiches": 0,
+                    "tomes": 0,
+                    "target_fiches": 0,
+                    "skipped": 0,
+                    "names": [],
+                    "author_names": [],
+                    "purged": purged_series + purged_authors,
+                    "catalog_fiches": total,
+                    "goal_fiches": goal,
+                }
+                _job_last = result
+                logger.info(
+                    "Ingest quotidien : objectif atteint (%d/%d), rien à ajouter",
+                    total,
+                    goal,
+                )
+                return result
+            target = min(daily_fiches_target(), remaining_goal)
+        else:
+            target = daily_fiches_target()
         series_cap = limit if limit is not None else min(daily_series_limit(), target)
         known = existing_qids()
         names = existing_names()
@@ -865,6 +910,8 @@ def run_daily_ingest(
             "names": added[:24],
             "author_names": author_names[:24],
             "purged": purged_series + purged_authors,
+            "catalog_fiches": catalog_fiche_total(),
+            "goal_fiches": goal,
         }
         _job_last = result
         return result
@@ -877,9 +924,14 @@ def run_daily_ingest(
 
 
 def ingest_status() -> dict[str, Any]:
+    total = catalog_fiche_total()
+    goal = catalog_goal()
     return {
         "running": _job_running,
         "target_fiches": daily_fiches_target(),
+        "catalog_fiches": total,
+        "goal_fiches": goal,
+        "remaining": max(0, goal - total),
         "last": _job_last,
     }
 
@@ -893,7 +945,7 @@ def start_daily_ingest(*, sync: bool = False) -> dict[str, Any]:
             "status": "busy",
             "running": True,
             "last": _job_last,
-            "target_fiches": daily_fiches_target(),
+            **ingest_status(),
         }
 
     def _bg() -> None:
@@ -912,4 +964,6 @@ def start_daily_ingest(*, sync: bool = False) -> dict[str, Any]:
         "target_books": daily_books_limit(),
         "target_series": daily_series_limit(),
         "target_authors": daily_authors_limit(),
+        "catalog_fiches": catalog_fiche_total(),
+        "goal_fiches": catalog_goal(),
     }

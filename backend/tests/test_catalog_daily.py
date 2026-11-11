@@ -173,7 +173,30 @@ def test_plafonds_quotidiens_par_defaut(monkeypatch):
     assert daily_ingest.daily_series_limit() == 400
     assert daily_ingest.daily_books_limit() == 10000
     assert daily_ingest.daily_fiches_target() == 10000
+    assert daily_ingest.catalog_goal() == 100000
     assert daily_authors.daily_authors_limit() == 10000
+
+
+def test_ingest_status_exposes_catalog_goal():
+    st = daily_ingest.ingest_status()
+    assert st["goal_fiches"] == 100000
+    assert "catalog_fiches" in st
+    assert "remaining" in st
+    assert st["remaining"] == max(0, st["goal_fiches"] - st["catalog_fiches"])
+
+
+def test_ingest_stops_when_catalog_goal_reached(monkeypatch):
+    _reset_daily()
+    monkeypatch.setattr(daily_ingest, "catalog_fiche_total", lambda: 100000)
+    monkeypatch.setattr(
+        daily_ingest,
+        "fetch_candidate_series",
+        lambda limit: (_ for _ in ()).throw(AssertionError("ne doit pas requêter Wikidata")),
+    )
+    result = daily_ingest.run_daily_ingest()
+    assert result["fiches"] == 0
+    assert result["catalog_fiches"] == 100000
+    assert result["goal_fiches"] == 100000
 
 
 def test_ingest_skips_known_qid_and_incomplete(monkeypatch):
@@ -344,7 +367,10 @@ async def test_daily_run_endpoint_requires_secret(test_client: AsyncClient, monk
         headers={"X-Catalog-Daily-Secret": "s3cret-daily"},
     )
     assert r.status_code == 200
-    assert r.json()["target_fiches"] == 10000
+    body = r.json()
+    assert body["target_fiches"] == 10000
+    assert body["goal_fiches"] == 100000
+    assert "catalog_fiches" in body
 
 
 def test_fetch_candidate_books_pages_by_year(monkeypatch):

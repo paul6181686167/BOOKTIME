@@ -106,8 +106,12 @@ def purge_qid_named_authors() -> int:
 
 def count() -> int:
     try:
+        coll = _coll()
+        counted = getattr(coll, "count_documents", None)
+        if callable(counted):
+            return int(counted({"source": "daily"}))
         n = 0
-        for _ in _coll().find({"source": "daily"}, {"_id": 1}) or []:
+        for _ in coll.find({"source": "daily"}, {"_id": 1}) or []:
             n += 1
         return n
     except Exception:

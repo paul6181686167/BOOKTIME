@@ -1,6 +1,6 @@
 name: Fiches quotidiennes
 
-# Réveille le backend Render puis déclenche l'ajout (~10 000 fiches, en fond).
+# Lots de ~10 000 fiches, enchaînés jusqu'à 100 000 (séries + livres + auteurs).
 # Le ping répété empêche Render de rendormir le process pendant le job.
 # Configurer le secret CATALOG_DAILY_SECRET (identique à la variable Render).
 
@@ -9,15 +9,25 @@ on:
     - cron: "25 3 * * *"
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: catalog-daily-ingest
+  cancel-in-progress: false
+
 jobs:
   ingest:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 360
     steps:
-      - name: Réveiller le backend puis lancer l'ingest
+      - name: Réveiller le backend puis enchaîner les lots jusqu'à 100k
         env:
           SECRET: ${{ secrets.CATALOG_DAILY_SECRET }}
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set -u
           URL="${{ vars.BACKEND_PING_URL }}"
           if [ -z "$URL" ]; then
             URL="https://booktime-uo15.onrender.com/ping"
@@ -36,26 +46,102 @@ jobs:
             echo "Pas de secret CATALOG_DAILY_SECRET : le cron interne du backend fera l'ajout."
             exit 0
           fi
-          echo "POST $BASE/api/catalog/daily/run"
-          curl -sS -X POST --max-time 90 \
-            -H "X-Catalog-Daily-Secret: $SECRET" \
-            -w "\nHTTP %{http_code}\n" \
-            "$BASE/api/catalog/daily/run"
-          status="{}"
-          for i in $(seq 1 90); do
-            sleep 20
-            curl -s -o /dev/null --max-time 20 "$URL" || true
-            status=$(curl -sS --max-time 20 \
+
+          read_status() {
+            curl -sS --max-time 20 \
               -H "X-Catalog-Daily-Secret: $SECRET" \
-              "$BASE/api/catalog/daily/status" || echo "{}")
-            echo "Poll $i : $status"
-            # JSON compact ("running":false) ou espacé : ne pas faire échouer le job (set -e).
-            if echo "$status" | grep -Eq '"running"[[:space:]]*:[[:space:]]*false'; then
+              "$BASE/api/catalog/daily/status" || echo "{}"
+          }
+
+          parse() {
+            python3 -c '
+          import json,sys
+          s=json.loads(sys.stdin.read() or "{}")
+          last=s.get("last") or {}
+          print(str(s.get("running")).lower())
+          print(int(s.get("catalog_fiches") or 0))
+          print(int(s.get("goal_fiches") or 100000))
+          print(int(s.get("remaining") or 0))
+          print(int(last.get("fiches") or 0))
+          print(str(last.get("status") or ""))
+          '
+          }
+
+          load_fields() {
+            local raw="$1"
+            mapfile -t _p < <(printf '%s' "$raw" | parse)
+            running="${_p[0]:-false}"
+            catalog="${_p[1]:-0}"
+            goal="${_p[2]:-100000}"
+            remaining="${_p[3]:-0}"
+            added="${_p[4]:-0}"
+            st="${_p[5]:-}"
+          }
+
+          wait_idle() {
+            local raw="{}"
+            for i in $(seq 1 150); do
+              sleep 20
+              curl -s -o /dev/null --max-time 20 "$URL" || true
+              raw=$(read_status)
+              echo "Poll $i : $raw"
+              load_fields "$raw"
+              if [ "$running" = "false" ]; then
+                return 0
+              fi
+            done
+            return 1
+          }
+
+          NEED_MORE=0
+          for batch in $(seq 1 8); do
+            raw=$(read_status)
+            echo "État avant lot $batch : $raw"
+            load_fields "$raw"
+            if [ "$st" = "error" ]; then
+              echo "Ingest en erreur côté backend"
+              exit 1
+            fi
+            if [ "$catalog" -ge "$goal" ]; then
+              echo "Objectif atteint : $catalog / $goal"
+              NEED_MORE=0
               break
             fi
+            if [ "$running" = "true" ]; then
+              echo "Un lot est déjà en cours, on attend."
+            else
+              echo "POST $BASE/api/catalog/daily/run (lot $batch, reste $remaining)"
+              curl -sS -X POST --max-time 90 \
+                -H "X-Catalog-Daily-Secret: $SECRET" \
+                -w "\nHTTP %{http_code}\n" \
+                "$BASE/api/catalog/daily/run" || true
+              sleep 5
+            fi
+            if ! wait_idle; then
+              echo "Lot $batch encore en fond après le délai GitHub."
+              NEED_MORE=1
+              break
+            fi
+            echo "Lot $batch terminé : catalog=$catalog goal=$goal added=$added remaining=$remaining"
+            if [ "$st" = "error" ]; then
+              echo "Ingest en erreur côté backend"
+              exit 1
+            fi
+            if [ "$catalog" -ge "$goal" ]; then
+              echo "Objectif atteint : $catalog / $goal"
+              NEED_MORE=0
+              break
+            fi
+            if [ "$added" -le 0 ]; then
+              echo "Lot vide, Wikidata n'a plus de fiches complètes. Arrêt."
+              NEED_MORE=0
+              break
+            fi
+            NEED_MORE=1
           done
-          if echo "$status" | grep -Eq '"status"[[:space:]]*:[[:space:]]*"error"'; then
-            echo "Ingest en erreur côté backend"
-            exit 1
+
+          if [ "$NEED_MORE" = "1" ]; then
+            echo "Relance du workflow pour continuer vers $goal fiches."
+            gh workflow run catalog-daily.yml --repo "${GITHUB_REPOSITORY}"
           fi
           echo "Ingest terminé ou encore en fond (Render). Job GitHub OK."
