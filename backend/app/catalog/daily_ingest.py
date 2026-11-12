@@ -117,6 +117,26 @@ def _window_coll():
     return database.db["catalog_ingest_meta"]
 
 
+def meta_pair(key: str) -> tuple[int, int]:
+    """Curseur persisté (n, offset) pour scanner Wikidata sans recouvrir les mêmes pages."""
+    try:
+        doc = _window_coll().find_one({"key": key}) or {}
+        return int(doc.get("n") or 0), int(doc.get("offset") or 0)
+    except Exception:
+        return 0, 0
+
+
+def meta_save_pair(key: str, n: int, offset: int) -> None:
+    try:
+        _window_coll().update_one(
+            {"key": key},
+            {"$set": {"key": key, "n": int(n), "offset": int(offset)}},
+            upsert=True,
+        )
+    except Exception:
+        pass
+
+
 def take_window_index() -> int:
     """Compteur persisté : +1 à chaque lot, même si le jour n'a pas changé."""
     try:
@@ -243,8 +263,8 @@ def _qid(uri: str) -> str:
 
 
 def fetch_candidate_series(limit: int) -> list[dict[str, Any]]:
-    """Séries Wikidata récentes, puis une autre page à chaque lot (pas seulement chaque jour)."""
-    year = datetime.now(timezone.utc).year - 3
+    """Séries Wikidata : récentes, puis page suivante du scan (curseur), jaquette d'abord."""
+    year = datetime.now(timezone.utc).year - 15
     salt = window_salt()
     types = " ".join([NOVEL, BOOK_SERIES, MANGA, COMICS, COMIC_BOOK])
     recent_off = (salt * 80) % 50000
@@ -266,26 +286,29 @@ SELECT DISTINCT ?series ?seriesLabel ?enLabel ?type ?img WHERE {{
 LIMIT {max(limit * 10, 120)}
 """
     rows = _sparql(query_recent)
-    offset = (datetime.now(timezone.utc).timetuple().tm_yday * 17 + salt * 211) % 250000
-    residue = abs(int(salt)) % 97
+    _, series_off = meta_pair("wd_series_scan")
+    page = max(limit * 8, 200)
     query_rot = f"""
 SELECT DISTINCT ?series ?seriesLabel ?enLabel ?type ?img WHERE {{
-  VALUES ?type {{ {NOVEL} {MANGA} {COMICS} }}
+  VALUES ?type {{ {types} }}
   ?series wdt:P31 ?type .
-  BIND(xsd:integer(STRAFTER(STR(?series), "entity/Q")) AS ?qidn)
-  FILTER(?qidn >= 0 && ?qidn % 97 = {residue})
-  OPTIONAL {{ ?series wdt:P18 ?img. }}
+  ?series wdt:P18 ?img .
   OPTIONAL {{
     ?series rdfs:label ?enLabel .
     FILTER(LANG(?enLabel) = "en")
   }}
   SERVICE wikibase:label {{ bd:serviceParam wikibase:language "fr,en". }}
 }}
-OFFSET {offset}
-LIMIT {limit * 4}
+OFFSET {series_off}
+LIMIT {page}
 """
     try:
-        rows.extend(_sparql(query_rot))
+        extra = _sparql(query_rot)
+        rows.extend(extra)
+        nxt = series_off + page
+        if not extra or len(extra) < 20:
+            nxt = 0
+        meta_save_pair("wd_series_scan", 0, nxt)
     except Exception as exc:
         logger.warning("Rotation Wikidata ignorée : %s", exc)
     out: list[dict[str, Any]] = []
@@ -389,7 +412,7 @@ def _book_years(n: int, salt: int | None = None) -> list[int]:
 
 
 def _book_page_offset(year: int, salt: int) -> int:
-    """Page SPARQL dans l'année — bien au-delà des 8 premières pages."""
+    """Page SPARQL dans l'année (repli si pas de curseur)."""
     return ((salt * 53 + year * 13) % 80) * 50
 
 
@@ -431,12 +454,22 @@ def _fetch_books_page(year: int | None, limit: int, offset: int = 0) -> list[dic
 
 
 def fetch_candidate_books(limit: int) -> list[dict[str, Any]]:
-    """Livres individuels paginés par année, autre page à chaque lot."""
+    """Livres individuels : curseur année + page, pour ne plus rescanner les 8 mêmes pages."""
     if limit <= 0:
         return []
     salt = window_salt()
+    now = datetime.now(timezone.utc).year
+    span = max(1, now - 1800 + 1)
+    n, off = meta_pair("wd_book_scan")
+    start = 1800 + (int(n) % span)
     pages = max(20, min(80, (limit + _BOOK_PAGE - 1) // _BOOK_PAGE + 8))
-    years = _book_years(pages, salt)
+    years: list[int] = []
+    y = start
+    for _ in range(pages):
+        years.append(y)
+        y += 1
+        if y > now:
+            y = 1800
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
 
@@ -455,7 +488,7 @@ def fetch_candidate_books(limit: int) -> list[dict[str, Any]]:
         with ThreadPoolExecutor(max_workers=min(4, len(chunk))) as pool:
             batches = list(
                 pool.map(
-                    lambda y: _fetch_books_page(y, _BOOK_PAGE, _book_page_offset(y, salt)),
+                    lambda yr: _fetch_books_page(yr, _BOOK_PAGE, off),
                     chunk,
                 )
             )
@@ -463,6 +496,11 @@ def fetch_candidate_books(limit: int) -> list[dict[str, Any]]:
             _absorb(batch)
             if len(out) >= limit:
                 break
+
+    if len(out) >= min(limit, 80):
+        meta_save_pair("wd_book_scan", n, off + _BOOK_PAGE)
+    else:
+        meta_save_pair("wd_book_scan", n + pages, 0)
 
     if len(out) < limit:
         yday = datetime.now(timezone.utc).timetuple().tm_yday

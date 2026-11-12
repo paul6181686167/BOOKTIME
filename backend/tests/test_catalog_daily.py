@@ -1,6 +1,8 @@
 """Ajout quotidien de fiches complètes au noyau curé."""
 from __future__ import annotations
 
+import re
+
 import pytest
 from httpx import AsyncClient
 
@@ -502,7 +504,7 @@ def test_series_and_books_offset_change_with_window(monkeypatch):
     monkeypatch.setattr(daily_ingest, "_sparql", fake_book_sparql)
     daily_ingest.fetch_candidate_books(200)
     assert any("OFFSET 240" in q for q in series_q)
-    assert any("OFFSET " in q for q in book_q)
+    assert any("YEAR(?date)" in q or "YEAR(?date) =" in q for q in book_q)
 
 
 def test_begin_ingest_window_advances_each_lot(monkeypatch):
@@ -528,7 +530,7 @@ def test_fetch_candidate_authors_many_years(monkeypatch):
     assert any("Q49757" in c for c in calls)
 
 
-def test_fetch_candidate_authors_qid_modulo_rotates(monkeypatch):
+def test_fetch_candidate_authors_scans_without_qid_modulo(monkeypatch):
     calls: list[str] = []
 
     def fake_sparql(query, timeout=55):
@@ -536,13 +538,32 @@ def test_fetch_candidate_authors_qid_modulo_rotates(monkeypatch):
         return []
 
     monkeypatch.setattr(daily_authors, "_sparql", fake_sparql)
-    daily_ingest._active_window = 0
+    _reset_daily()
     daily_authors.fetch_candidate_authors(400)
-    assert any("% 97 = 0" in c for c in calls)
-    calls.clear()
-    daily_ingest._active_window = 1
+    assert calls
+    assert all("% 97" not in c for c in calls)
+    assert any("P18" in c and "P569" in c for c in calls)
+
+
+def test_author_scan_cursor_moves_after_a_lot(monkeypatch):
+    years: list[int] = []
+
+    def fake_sparql(query, timeout=55):
+        m = re.search(r"YEAR\(\?birth\) = (\d+)", query)
+        if m:
+            years.append(int(m.group(1)))
+        return [{"author": {"value": "http://www.wikidata.org/entity/Q1"}, "authorLabel": {"value": "A"}, "img": {"value": "File:a.jpg"}, "birth": {"value": "1900-01-01"}}]
+
+    monkeypatch.setattr(daily_authors, "_sparql", fake_sparql)
+    _reset_daily()
     daily_authors.fetch_candidate_authors(400)
-    assert any("% 97 = 1" in c for c in calls)
+    first = list(years)
+    years.clear()
+    daily_authors.fetch_candidate_authors(400)
+    assert first and years
+    assert years[0] != first[0]
+    n1, off1 = daily_ingest.meta_pair("wd_author_scan")
+    assert n1 or off1
 
 
 def test_openlibrary_books_need_title_author_cover(monkeypatch):

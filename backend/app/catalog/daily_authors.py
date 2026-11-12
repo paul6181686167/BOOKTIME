@@ -200,7 +200,6 @@ def _authors_sparql(year: int, limit: int, offset: int = 0, salt: int = 0) -> st
         [WRITER, NOVELIST, AUTHOR, MANGAKA, COMICS_ARTIST, POET, PLAYWRIGHT, CHILDRENS_WRITER]
     )
     offset_clause = f"OFFSET {offset}" if offset else ""
-    residue = abs(int(salt)) % 97
     return f"""
 SELECT DISTINCT ?author ?authorLabel ?enLabel ?birth ?death ?nationalityLabel ?img ?wikipedia WHERE {{
   VALUES ?occ {{ {types} }}
@@ -208,8 +207,6 @@ SELECT DISTINCT ?author ?authorLabel ?enLabel ?birth ?death ?nationalityLabel ?i
   ?author wdt:P18 ?img .
   ?author wdt:P569 ?birth .
   FILTER(YEAR(?birth) = {year})
-  BIND(xsd:integer(STRAFTER(STR(?author), "entity/Q")) AS ?qidn)
-  FILTER(?qidn >= 0 && ?qidn % 97 = {residue})
   OPTIONAL {{ ?author wdt:P570 ?death . }}
   OPTIONAL {{ ?author wdt:P27 ?nat . }}
   OPTIONAL {{
@@ -259,20 +256,29 @@ def _parse_author_rows(rows: list[dict], seen: set[str] | None = None) -> list[d
 def fetch_candidate_authors(limit: int) -> list[dict[str, Any]]:
     if limit <= 0:
         return []
-    from .daily_ingest import window_salt
+    from .daily_ingest import meta_pair, meta_save_pair
 
-    salt = window_salt()
+    now = datetime.now(timezone.utc).year
+    span = max(1, now - 1800 + 1)
+    n, off = meta_pair("wd_author_scan")
+    start = 1800 + (int(n) % span)
     pages = max(24, min(90, (limit + _AUTHOR_PAGE - 1) // _AUTHOR_PAGE + 25))
     if limit >= 4000:
         pages = max(pages, 70)
-    years = _year_slice(pages, salt)
+    years: list[int] = []
+    y = start
+    for _ in range(pages):
+        years.append(y)
+        y += 1
+        if y > now:
+            y = 1800
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
-    page_off = ((salt // 97) % 12) * 80
+    page_off = int(off)
 
     def _page(year: int) -> list[dict[str, Any]]:
         try:
-            rows = _sparql(_authors_sparql(year, _AUTHOR_PAGE, page_off, salt), timeout=50)
+            rows = _sparql(_authors_sparql(year, _AUTHOR_PAGE, page_off), timeout=50)
         except Exception as exc:
             logger.warning("SPARQL auteurs %s échoué : %s", year, exc)
             return []
@@ -295,6 +301,10 @@ def fetch_candidate_authors(limit: int) -> list[dict[str, Any]]:
                     break
             if len(out) >= limit:
                 break
+    if len(out) >= min(limit, 200):
+        meta_save_pair("wd_author_scan", n, page_off + _AUTHOR_PAGE)
+    else:
+        meta_save_pair("wd_author_scan", n + pages, 0)
     return out
 
 
