@@ -1,6 +1,6 @@
 name: Fiches quotidiennes
 
-# Lots de ~10 000 fiches, enchaînés jusqu'à 100 000 (séries + livres + auteurs).
+# Lots de ~10 000 fiches, enchaînés jusqu'à 1 000 000 (séries + livres + auteurs).
 # Le ping répété empêche Render de rendormir le process pendant le job.
 # Configurer le secret CATALOG_DAILY_SECRET (identique à la variable Render).
 
@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
-      - name: Réveiller le backend puis enchaîner les lots jusqu'à 100k
+      - name: Réveiller le backend puis enchaîner les lots jusqu'à 1M
         env:
           SECRET: ${{ secrets.CATALOG_DAILY_SECRET }}
           GH_TOKEN: ${{ github.token }}
@@ -60,7 +60,7 @@ jobs:
           last=s.get("last") or {}
           print(str(s.get("running")).lower())
           print(int(s.get("catalog_fiches") or 0))
-          print(int(s.get("goal_fiches") or 100000))
+          print(int(s.get("goal_fiches") or 1000000))
           print(int(s.get("remaining") or 0))
           print(int(last.get("fiches") or 0))
           print(str(last.get("status") or ""))
@@ -72,7 +72,7 @@ jobs:
             mapfile -t _p < <(printf '%s' "$raw" | parse)
             running="${_p[0]:-false}"
             catalog="${_p[1]:-0}"
-            goal="${_p[2]:-100000}"
+            goal="${_p[2]:-1000000}"
             remaining="${_p[3]:-0}"
             added="${_p[4]:-0}"
             st="${_p[5]:-}"

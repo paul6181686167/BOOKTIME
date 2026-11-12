@@ -171,6 +171,21 @@ def test_build_entry_fills_isbn_from_other_sources(monkeypatch):
     assert entry["volume_details"]["1"]["isbn"] == "9782070360024"
 
 
+def test_author_dry_streak_switches_focus_to_works():
+    _reset_daily()
+    assert daily_ingest.ingest_focus() == "authors"
+    assert daily_ingest.daily_series_limit() == 400
+    daily_ingest.remember_author_yield(50)
+    daily_ingest.remember_author_yield(20)
+    assert daily_ingest.ingest_focus() == "authors"
+    daily_ingest.remember_author_yield(10)
+    assert daily_ingest.ingest_focus() == "works"
+    assert daily_ingest.daily_series_limit() == 8000
+    daily_ingest.remember_author_yield(2000)
+    assert daily_ingest.ingest_focus() == "authors"
+    assert daily_ingest.daily_series_limit() == 400
+
+
 def test_plafonds_quotidiens_par_defaut(monkeypatch):
     monkeypatch.delenv("CATALOG_DAILY_SERIES", raising=False)
     monkeypatch.delenv("CATALOG_DAILY_BOOKS", raising=False)
@@ -179,13 +194,13 @@ def test_plafonds_quotidiens_par_defaut(monkeypatch):
     assert daily_ingest.daily_series_limit() == 400
     assert daily_ingest.daily_books_limit() == 10000
     assert daily_ingest.daily_fiches_target() == 10000
-    assert daily_ingest.catalog_goal() == 100000
+    assert daily_ingest.catalog_goal() == 1000000
     assert daily_authors.daily_authors_limit() == 10000
 
 
 def test_ingest_status_exposes_catalog_goal():
     st = daily_ingest.ingest_status()
-    assert st["goal_fiches"] == 100000
+    assert st["goal_fiches"] == 1000000
     assert "catalog_fiches" in st
     assert "remaining" in st
     assert st["remaining"] == max(0, st["goal_fiches"] - st["catalog_fiches"])
@@ -194,7 +209,7 @@ def test_ingest_status_exposes_catalog_goal():
 
 def test_ingest_stops_when_catalog_goal_reached(monkeypatch):
     _reset_daily()
-    monkeypatch.setattr(daily_ingest, "catalog_fiche_total", lambda: 100000)
+    monkeypatch.setattr(daily_ingest, "catalog_fiche_total", lambda: 1000000)
     monkeypatch.setattr(
         daily_ingest,
         "fetch_candidate_series",
@@ -202,8 +217,8 @@ def test_ingest_stops_when_catalog_goal_reached(monkeypatch):
     )
     result = daily_ingest.run_daily_ingest()
     assert result["fiches"] == 0
-    assert result["catalog_fiches"] == 100000
-    assert result["goal_fiches"] == 100000
+    assert result["catalog_fiches"] == 1000000
+    assert result["goal_fiches"] == 1000000
 
 
 def test_ingest_skips_known_qid_and_incomplete(monkeypatch):
@@ -376,7 +391,7 @@ async def test_daily_run_endpoint_requires_secret(test_client: AsyncClient, monk
     assert r.status_code == 200
     body = r.json()
     assert body["target_fiches"] == 10000
-    assert body["goal_fiches"] == 100000
+    assert body["goal_fiches"] == 1000000
     assert "catalog_fiches" in body
 
 

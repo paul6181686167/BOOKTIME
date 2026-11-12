@@ -69,6 +69,8 @@ _job_running = False
 _job_last: dict[str, Any] | None = None
 _active_window = 0
 _WINDOW_KEY = "wd_window"
+_FOCUS_KEY = "ingest_focus"
+_DRY_KEY = "author_dry_streak"
 
 
 def _env_int(name: str, default: int, lo: int, hi: int) -> int:
@@ -78,8 +80,29 @@ def _env_int(name: str, default: int, lo: int, hi: int) -> int:
         return default
 
 
+def ingest_focus() -> str:
+    """authors = gisement photo+naissance ; works = séries et livres."""
+    n, _ = meta_pair(_FOCUS_KEY)
+    return "works" if int(n) else "authors"
+
+
+def remember_author_yield(n_authors: int) -> None:
+    """3 lots pauvres en auteurs complets → on bascule sur séries/livres."""
+    n_authors = int(n_authors or 0)
+    if n_authors >= 1500:
+        meta_save_pair(_FOCUS_KEY, 0, 0)
+        meta_save_pair(_DRY_KEY, 0, 0)
+        return
+    dry, _ = meta_pair(_DRY_KEY)
+    dry = dry + 1 if n_authors < 400 else 0
+    meta_save_pair(_DRY_KEY, dry, 0)
+    if dry >= 3:
+        meta_save_pair(_FOCUS_KEY, 1, 0)
+
+
 def daily_series_limit() -> int:
-    return _env_int("CATALOG_DAILY_SERIES", 400, 1, 1000)
+    default = 8000 if ingest_focus() == "works" else 400
+    return _env_int("CATALOG_DAILY_SERIES", default, 1, 12000)
 
 
 def daily_books_limit() -> int:
@@ -93,7 +116,7 @@ def daily_fiches_target() -> int:
 
 def catalog_goal() -> int:
     """Plafond catalogue (séries + livres + auteurs) : on enchaîne les lots jusqu'ici."""
-    return _env_int("CATALOG_FICHES_GOAL", 100000, 1000, 500000)
+    return _env_int("CATALOG_FICHES_GOAL", 1000000, 1000, 2000000)
 
 
 def catalog_fiche_total() -> int:
@@ -1161,8 +1184,13 @@ def run_daily_ingest(
         elif limit is not None or books_limit is not None:
             author_cap = 0
         else:
-            author_cap = min(daily_authors_limit(), remaining)
+            if ingest_focus() == "works":
+                author_cap = min(300, remaining)
+            else:
+                author_cap = min(daily_authors_limit(), remaining)
         author_names, skip_a = ingest_authors(author_cap, hints=author_hints)
+        if limit is None and books_limit is None and authors_limit is None:
+            remember_author_yield(len(author_names))
         n_authors = len(author_names) + int(recovered.get("added_authors") or 0)
         author_names = list(recovered.get("author_names") or []) + author_names
         added = series_names + book_names
@@ -1202,6 +1230,7 @@ def run_daily_ingest(
             "wd_window": wd_window,
             "pending_fiches": daily_pending.count(),
             "recovered": int(recovered.get("fiches") or 0),
+            "focus": ingest_focus(),
         }
         _job_last = result
         return result
@@ -1226,6 +1255,7 @@ def ingest_status() -> dict[str, Any]:
         "remaining": max(0, goal - total),
         "wd_window": window_salt(),
         "pending_fiches": daily_pending.count(),
+        "focus": ingest_focus(),
         "last": _job_last,
     }
 
