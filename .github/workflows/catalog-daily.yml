@@ -94,6 +94,7 @@ jobs:
           }
 
           NEED_MORE=0
+          EMPTY_STREAK=0
           for batch in $(seq 1 8); do
             raw=$(read_status)
             echo "État avant lot $batch : $raw"
@@ -133,10 +134,17 @@ jobs:
               break
             fi
             if [ "$added" -le 0 ]; then
-              echo "Lot vide, Wikidata n'a plus de fiches complètes. Arrêt."
-              NEED_MORE=0
-              break
+              EMPTY_STREAK=$((EMPTY_STREAK + 1))
+              echo "Lot vide ($EMPTY_STREAK) — on tente une autre fenêtre Wikidata / Open Library."
+              if [ "$EMPTY_STREAK" -ge 2 ]; then
+                echo "Deux lots vides d'affilée. Arrêt."
+                NEED_MORE=0
+                break
+              fi
+              NEED_MORE=1
+              continue
             fi
+            EMPTY_STREAK=0
             NEED_MORE=1
           done
 

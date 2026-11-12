@@ -31,7 +31,6 @@ from .daily_ingest import (
 
 logger = logging.getLogger(__name__)
 
-_MAX_ATTEMPTS = 8
 _wd_budget = 0
 
 
@@ -273,6 +272,10 @@ def enrich_author_candidate(cand: dict[str, Any]) -> None:
     photo = usable_cover(cand.get("photo_url") or cand.get("image_url") or cand.get("cover_url"))
     if not photo:
         photo = wiki_cover(cand.get("name") or "", cand.get("name_en"))
+    if not photo:
+        from .isbn_resolve import ol_author_photo
+
+        photo = usable_cover(ol_author_photo(cand.get("name") or "", cand.get("name_en") or ""))
     extra = {}
     if qid and (not photo or not cand.get("birth_date")):
         extra = _author_wikidata(qid)
@@ -407,8 +410,6 @@ def enrich_and_promote(*, cap: int) -> dict[str, Any]:
         if not qid:
             continue
         attempts = int(doc.get("attempts") or 0) + 1
-        if attempts > _MAX_ATTEMPTS:
-            continue
         if kind == "author":
             if qid in author_ids:
                 drop(qid)

@@ -247,6 +247,33 @@ def resolve_isbn(
     return ""
 
 
+def ol_author_photo(name: str, name_en: str = "") -> str:
+    """Photo auteur Open Library (olid), ou ''."""
+    for raw in (name, name_en):
+        q = (raw or "").strip()
+        if len(q) < 3 or not _spend_cover():
+            continue
+        try:
+            r = requests.get(
+                "https://openlibrary.org/search/authors.json",
+                params={"q": q, "limit": 5},
+                timeout=8,
+                headers=UA,
+            )
+            if r.status_code != 200:
+                continue
+            for doc in (r.json() or {}).get("docs") or []:
+                if not title_close(q, doc.get("name") or ""):
+                    continue
+                key = (doc.get("key") or "").rstrip("/").rsplit("/", 1)[-1]
+                if not key.startswith("OL"):
+                    continue
+                return f"https://covers.openlibrary.org/a/olid/{key}-M.jpg"
+        except Exception as exc:
+            logger.debug("Photo OL auteur échoué %s: %s", q, exc)
+    return ""
+
+
 def _ol_cover_url(cover_i: Any) -> str:
     try:
         n = int(cover_i)

@@ -195,11 +195,12 @@ def _year_slice(n: int, salt: int | None = None) -> list[int]:
     return years[:n]
 
 
-def _authors_sparql(year: int, limit: int, offset: int = 0) -> str:
+def _authors_sparql(year: int, limit: int, offset: int = 0, salt: int = 0) -> str:
     types = " ".join(
         [WRITER, NOVELIST, AUTHOR, MANGAKA, COMICS_ARTIST, POET, PLAYWRIGHT, CHILDRENS_WRITER]
     )
     offset_clause = f"OFFSET {offset}" if offset else ""
+    residue = abs(int(salt)) % 97
     return f"""
 SELECT DISTINCT ?author ?authorLabel ?enLabel ?birth ?death ?nationalityLabel ?img ?wikipedia WHERE {{
   VALUES ?occ {{ {types} }}
@@ -207,6 +208,8 @@ SELECT DISTINCT ?author ?authorLabel ?enLabel ?birth ?death ?nationalityLabel ?i
   ?author wdt:P18 ?img .
   ?author wdt:P569 ?birth .
   FILTER(YEAR(?birth) = {year})
+  BIND(xsd:integer(STRAFTER(STR(?author), "entity/Q")) AS ?qidn)
+  FILTER(?qidn >= 0 && ?qidn % 97 = {residue})
   OPTIONAL {{ ?author wdt:P570 ?death . }}
   OPTIONAL {{ ?author wdt:P27 ?nat . }}
   OPTIONAL {{
@@ -265,11 +268,11 @@ def fetch_candidate_authors(limit: int) -> list[dict[str, Any]]:
     years = _year_slice(pages, salt)
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
-    page_off = (salt % 4) * 80
+    page_off = ((salt // 97) % 12) * 80
 
     def _page(year: int) -> list[dict[str, Any]]:
         try:
-            rows = _sparql(_authors_sparql(year, _AUTHOR_PAGE, page_off), timeout=50)
+            rows = _sparql(_authors_sparql(year, _AUTHOR_PAGE, page_off, salt), timeout=50)
         except Exception as exc:
             logger.warning("SPARQL auteurs %s échoué : %s", year, exc)
             return []

@@ -528,7 +528,7 @@ def test_fetch_candidate_authors_many_years(monkeypatch):
     assert any("Q49757" in c for c in calls)
 
 
-def test_fetch_candidate_authors_offset_rotates(monkeypatch):
+def test_fetch_candidate_authors_qid_modulo_rotates(monkeypatch):
     calls: list[str] = []
 
     def fake_sparql(query, timeout=55):
@@ -538,11 +538,68 @@ def test_fetch_candidate_authors_offset_rotates(monkeypatch):
     monkeypatch.setattr(daily_authors, "_sparql", fake_sparql)
     daily_ingest._active_window = 0
     daily_authors.fetch_candidate_authors(400)
-    assert all("OFFSET" not in c for c in calls)
+    assert any("% 97 = 0" in c for c in calls)
     calls.clear()
     daily_ingest._active_window = 1
     daily_authors.fetch_candidate_authors(400)
-    assert any("OFFSET 80" in c for c in calls)
+    assert any("% 97 = 1" in c for c in calls)
+
+
+def test_openlibrary_books_need_title_author_cover(monkeypatch):
+    class FakeResp:
+        status_code = 200
+
+        def json(self):
+            return {
+                "docs": [
+                    {"key": "/works/OL1W", "title": "Seul", "author_name": [], "cover_i": 1},
+                    {
+                        "key": "/works/OL2W",
+                        "title": "Le Livre Complet",
+                        "author_name": ["A. Auteur"],
+                        "cover_i": 99,
+                        "isbn": ["9782070360024"],
+                        "first_publish_year": 2001,
+                    },
+                ]
+            }
+
+    monkeypatch.setattr(daily_ingest.requests, "get", lambda *a, **k: FakeResp())
+    daily_ingest._active_window = 7
+    out = daily_ingest.fetch_candidate_books_openlibrary(20)
+    assert len(out) == 1
+    assert out[0]["qid"] == "OL2W"
+    assert out[0]["author"] == "A. Auteur"
+    assert out[0]["cover_url"].startswith("https://covers.openlibrary.org")
+    assert out[0]["isbn"] == "9782070360024"
+
+
+def test_pending_retries_after_many_attempts(monkeypatch):
+    _isolate_catalog(monkeypatch)
+    daily_pending.remember(
+        "book",
+        {
+            "qid": "Qstuck",
+            "name": "Livre Bloque",
+            "author": "Paul Test",
+            "category": "roman",
+            "genre": "Roman",
+            "cover_url": "",
+        },
+        reason="incomplete",
+        works=[{"title": "Livre Bloque", "author": "Paul Test", "published_year": 2019}],
+        known=set(),
+        names=set(),
+    )
+    _mock_storage["catalog_daily_pending"][0]["attempts"] = 20
+
+    def fake_enrich(cand, works):
+        cand["cover_url"] = "https://example.test/unstuck.jpg"
+
+    monkeypatch.setattr(daily_pending, "enrich_work_candidate", fake_enrich)
+    got = daily_pending.enrich_and_promote(cap=10)
+    assert got["fiches"] == 1
+    assert daily_pending.count() == 0
 
 
 def test_complete_author_needs_photo_and_birth_or_bio():

@@ -1,7 +1,8 @@
 """Ajoute chaque jour de nouvelles fiches COMPLÈTES au noyau curé.
 
-Sources : Wikidata (séries + livres individuels), Wikipedia / Commons pour la jaquette.
-ISBN réel uniquement (Wikidata P212/P957, Open Library, Google Books, BnF). Rien n'est inventé.
+Sources : Wikidata (séries + livres + auteurs, fenêtre QID/OFFSET tournante),
+Open Library (livres avec jaquette), Wikipedia / Commons / Google Books / BnF
+pour compléter jaquette, photo, ISBN. Rien n'est inventé.
 """
 from __future__ import annotations
 
@@ -246,7 +247,7 @@ def fetch_candidate_series(limit: int) -> list[dict[str, Any]]:
     year = datetime.now(timezone.utc).year - 3
     salt = window_salt()
     types = " ".join([NOVEL, BOOK_SERIES, MANGA, COMICS, COMIC_BOOK])
-    recent_off = (salt * 80) % 2000
+    recent_off = (salt * 80) % 50000
     recent_offset_clause = f"OFFSET {recent_off}" if recent_off else ""
     query_recent = f"""
 SELECT DISTINCT ?series ?seriesLabel ?enLabel ?type ?img WHERE {{
@@ -265,11 +266,14 @@ SELECT DISTINCT ?series ?seriesLabel ?enLabel ?type ?img WHERE {{
 LIMIT {max(limit * 10, 120)}
 """
     rows = _sparql(query_recent)
-    offset = (datetime.now(timezone.utc).timetuple().tm_yday * 17 + salt * 211) % 8000
+    offset = (datetime.now(timezone.utc).timetuple().tm_yday * 17 + salt * 211) % 250000
+    residue = abs(int(salt)) % 97
     query_rot = f"""
 SELECT DISTINCT ?series ?seriesLabel ?enLabel ?type ?img WHERE {{
   VALUES ?type {{ {NOVEL} {MANGA} {COMICS} }}
   ?series wdt:P31 ?type .
+  BIND(xsd:integer(STRAFTER(STR(?series), "entity/Q")) AS ?qidn)
+  FILTER(?qidn >= 0 && ?qidn % 97 = {residue})
   OPTIONAL {{ ?series wdt:P18 ?img. }}
   OPTIONAL {{
     ?series rdfs:label ?enLabel .
@@ -385,8 +389,8 @@ def _book_years(n: int, salt: int | None = None) -> list[int]:
 
 
 def _book_page_offset(year: int, salt: int) -> int:
-    """Page SPARQL dans l'année (0, 50, 100…) — évite les 100 mêmes livres à chaque lot."""
-    return ((salt * 53 + year * 13) % 8) * 50
+    """Page SPARQL dans l'année — bien au-delà des 8 premières pages."""
+    return ((salt * 53 + year * 13) % 80) * 50
 
 
 def _books_sparql(year: int | None, limit: int, offset: int = 0) -> str:
@@ -462,8 +466,101 @@ def fetch_candidate_books(limit: int) -> list[dict[str, Any]]:
 
     if len(out) < limit:
         yday = datetime.now(timezone.utc).timetuple().tm_yday
-        offset = (yday * 23 + salt * 97) % 8000
+        offset = (yday * 23 + salt * 97) % 80000
         _absorb(_fetch_books_page(None, min(_BOOK_PAGE, limit - len(out) + 80), offset))
+    if os.getenv("ENVIRONMENT", "").lower() != "test" and len(out) < limit:
+        _absorb(fetch_candidate_books_openlibrary(limit - len(out)))
+    return out
+
+
+_OL_BOOK_SUBJECTS = (
+    "fiction",
+    "roman",
+    "fantasy",
+    "science_fiction",
+    "bande dessinée",
+    "manga",
+    "mystery",
+    "historical fiction",
+    "young adult",
+    "poetry",
+)
+
+
+def fetch_candidate_books_openlibrary(limit: int) -> list[dict[str, Any]]:
+    """Livres Open Library déjà illustrés — 2e source, hors Wikidata."""
+    if limit <= 0:
+        return []
+    salt = window_salt()
+    subject = _OL_BOOK_SUBJECTS[salt % len(_OL_BOOK_SUBJECTS)]
+    offset = ((salt // len(_OL_BOOK_SUBJECTS)) % 250) * 40
+    params: dict[str, Any] = {
+        "q": f"subject:{subject}",
+        "limit": min(max(int(limit), 20), 80),
+        "offset": offset,
+        "fields": "key,title,author_name,isbn,cover_i,first_publish_year,language,subject",
+    }
+    if salt % 2 == 0:
+        params["language"] = "fre"
+    try:
+        r = requests.get(
+            "https://openlibrary.org/search.json",
+            params=params,
+            timeout=12,
+            headers=UA,
+        )
+        if r.status_code != 200:
+            return []
+        docs = (r.json() or {}).get("docs") or []
+    except Exception as exc:
+        logger.warning("Open Library livres échoué : %s", exc)
+        return []
+    from .isbn_resolve import _ol_cover_url
+
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for doc in docs:
+        if not isinstance(doc, dict):
+            continue
+        title = (doc.get("title") or "").strip()
+        authors = [a for a in (doc.get("author_name") or []) if is_human_label(a)]
+        cover = _ol_cover_url(doc.get("cover_i"))
+        key = (doc.get("key") or "").rstrip("/").rsplit("/", 1)[-1]
+        if not key.startswith("OL") or key in seen:
+            continue
+        if not is_human_label(title) or not authors or not cover:
+            continue
+        seen.add(key)
+        subjects = [str(s).lower() for s in (doc.get("subject") or [])[:8]]
+        cat, genre = "roman", "Roman"
+        joined = " ".join(subjects)
+        if "manga" in joined:
+            cat, genre = "manga", "Manga"
+        elif "bande dessinée" in joined or "comic" in joined or "graphic novel" in joined:
+            cat, genre = "bd", "BD"
+        year = doc.get("first_publish_year")
+        try:
+            year = int(year) if year else None
+        except (TypeError, ValueError):
+            year = None
+        isbn = pick_isbn(doc.get("isbn") or [])
+        out.append(
+            {
+                "qid": key,
+                "name": title,
+                "name_en": title,
+                "author": authors[0],
+                "author_qid": "",
+                "category": cat,
+                "genre": genre,
+                "cover_url": cover,
+                "isbn": isbn or "",
+                "ol_key": f"/works/{key}" if key.endswith("W") else doc.get("key") or "",
+                "year": year if year and 1400 <= year <= 2035 else None,
+            }
+        )
+        if len(out) >= limit:
+            break
     return out
 
 
@@ -911,10 +1008,12 @@ def run_daily_ingest(
         from . import daily_pending
 
         isbn_default = 0 if test_env else 800
-        cover_default = 0 if test_env else 500
+        cover_default = 0 if test_env else 1500
         reset_budget(_env_int("CATALOG_ISBN_LOOKUPS", isbn_default, 0, 2000))
-        reset_cover_budget(_env_int("CATALOG_COVER_LOOKUPS", cover_default, 0, 2000))
-        daily_pending.reset_wd_budget(0 if test_env else _env_int("CATALOG_PENDING_WD", 250, 0, 800))
+        reset_cover_budget(_env_int("CATALOG_COVER_LOOKUPS", cover_default, 0, 4000))
+        daily_pending.reset_wd_budget(0 if test_env else _env_int("CATALOG_PENDING_WD", 400, 0, 800))
+        if not test_env:
+            _wiki_cover_budget = _env_int("CATALOG_WIKI_COVERS", 400, 0, 800)
         purged_series = purge_qid_named_daily()
         from .daily_authors import daily_authors_limit, ingest_authors, purge_qid_named_authors
 
@@ -954,26 +1053,9 @@ def run_daily_ingest(
             target = daily_fiches_target()
         wd_window = begin_ingest_window()
         logger.info("Ingest quotidien : fenêtre Wikidata %d, cible %d", wd_window, target)
-        series_cap = limit if limit is not None else min(daily_series_limit(), target)
         known = existing_qids()
         names = existing_names()
         author_hints: list[dict[str, Any]] = []
-        series_names, skip_s, series_tomes = _ingest_series(
-            series_cap, known, author_hints, names
-        )
-        n_series = len(series_names)
-        remaining = max(0, target - n_series)
-        if books_limit is not None:
-            book_cap = books_limit
-        elif limit is not None:
-            book_cap = 0
-        else:
-            book_cap = min(daily_books_limit(), remaining)
-        book_names, skip_b, book_tomes = _ingest_books(
-            book_cap, known, author_hints, names
-        )
-        n_books = len(book_names)
-        remaining = max(0, target - n_series - n_books)
         recovered = {
             "added_series": 0,
             "added_books": 0,
@@ -983,13 +1065,58 @@ def run_daily_ingest(
             "names": [],
             "author_names": [],
         }
+
+        def _merge_recovered(part: dict[str, Any]) -> None:
+            recovered["added_series"] += int(part.get("added_series") or 0)
+            recovered["added_books"] += int(part.get("added_books") or 0)
+            recovered["added_authors"] += int(part.get("added_authors") or 0)
+            recovered["fiches"] += int(part.get("fiches") or 0)
+            recovered["tomes"] += int(part.get("tomes") or 0)
+            recovered["names"] = (list(recovered.get("names") or []) + list(part.get("names") or []))[:24]
+            recovered["author_names"] = (
+                list(recovered.get("author_names") or []) + list(part.get("author_names") or [])
+            )[:24]
+
+        remaining = target
         if remaining > 0:
-            recovered = daily_pending.enrich_and_promote(
-                cap=min(remaining, daily_pending.pending_promote_limit())
+            _merge_recovered(
+                daily_pending.enrich_and_promote(
+                    cap=min(remaining, daily_pending.pending_promote_limit())
+                )
             )
-            n_series += int(recovered.get("added_series") or 0)
-            n_books += int(recovered.get("added_books") or 0)
-            series_names = series_names + list(recovered.get("names") or [])
+            remaining = max(0, target - int(recovered.get("fiches") or 0))
+            known = existing_qids()
+            names = existing_names()
+        n_series = int(recovered.get("added_series") or 0)
+        n_books = int(recovered.get("added_books") or 0)
+        series_names = list(recovered.get("names") or [])
+        series_cap = limit if limit is not None else min(daily_series_limit(), remaining)
+        more_s, skip_s, series_tomes = _ingest_series(
+            series_cap, known, author_hints, names
+        )
+        series_names = series_names + more_s
+        n_series += len(more_s)
+        remaining = max(0, target - n_series - n_books - int(recovered.get("added_authors") or 0))
+        if books_limit is not None:
+            book_cap = books_limit
+        elif limit is not None:
+            book_cap = 0
+        else:
+            book_cap = min(daily_books_limit(), remaining)
+        book_names, skip_b, book_tomes = _ingest_books(
+            book_cap, known, author_hints, names
+        )
+        n_books += len(book_names)
+        remaining = max(0, target - n_series - n_books - int(recovered.get("added_authors") or 0))
+        if remaining > 0:
+            _merge_recovered(
+                daily_pending.enrich_and_promote(
+                    cap=min(remaining, daily_pending.pending_promote_limit())
+                )
+            )
+            n_series = int(recovered.get("added_series") or 0) + len(more_s)
+            n_books = int(recovered.get("added_books") or 0) + len(book_names)
+            series_names = list(recovered.get("names") or []) + more_s
             remaining = max(0, target - n_series - n_books - int(recovered.get("added_authors") or 0))
         if authors_limit is not None:
             author_cap = authors_limit

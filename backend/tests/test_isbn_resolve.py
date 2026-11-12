@@ -165,6 +165,19 @@ def test_find_cover_google_thumbnail(monkeypatch):
     assert isbn == ""
 
 
+def test_ol_author_photo_from_olid(monkeypatch):
+    isbn_resolve.reset_cover_budget(3)
+
+    def fake_get(url, **kwargs):
+        if "search/authors" in url:
+            return _Resp(200, {"docs": [{"name": "Ada Lovelace", "key": "OL23919A"}]})
+        raise AssertionError(url)
+
+    monkeypatch.setattr(isbn_resolve.requests, "get", fake_get)
+    url = isbn_resolve.ol_author_photo("Ada Lovelace")
+    assert url == "https://covers.openlibrary.org/a/olid/OL23919A-M.jpg"
+
+
 def test_find_cover_budget_zero_no_http(monkeypatch):
     isbn_resolve.reset_cover_budget(0)
 
