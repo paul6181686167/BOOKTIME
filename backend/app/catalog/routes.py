@@ -438,11 +438,27 @@ def run_daily_catalog(
     return start_daily_ingest(sync=sync)
 
 
+@router.post("/daily/backfill")
+def run_daily_backfill(
+    x_catalog_daily_secret: str | None = Header(default=None, alias="X-Catalog-Daily-Secret"),
+):
+    """Backfill œuvres hors lot (OL/GB/BnF + séries), sans auteurs."""
+    if not _daily_secret_ok(x_catalog_daily_secret):
+        raise HTTPException(status_code=403, detail="Interdit")
+    import os
+
+    from ..db_config import database
+    from .daily_ingest import start_works_backfill
+
+    sync = database.is_mock_mode() or os.getenv("CATALOG_DAILY_SYNC", "").lower() == "true"
+    return start_works_backfill(sync=sync)
+
+
 @router.get("/daily/status")
 def daily_catalog_status(
     x_catalog_daily_secret: str | None = Header(default=None, alias="X-Catalog-Daily-Secret"),
 ):
-    """État du job 10k fiches (même secret que POST /daily/run)."""
+    """État du job fiches (même secret que POST /daily/run)."""
     if not _daily_secret_ok(x_catalog_daily_secret):
         raise HTTPException(status_code=403, detail="Interdit")
     from .daily_ingest import ingest_status

@@ -193,7 +193,7 @@ def test_author_dry_streak_switches_focus_to_works(monkeypatch):
     assert daily_ingest.ingest_focus() == "authors"
     daily_ingest.remember_author_yield(10)
     assert daily_ingest.ingest_focus() == "works"
-    assert daily_ingest.daily_series_limit() == 8000
+    assert daily_ingest.daily_series_limit() == 12000
     daily_ingest.remember_author_yield(2000)
     assert daily_ingest.ingest_focus() == "authors"
     assert daily_ingest.daily_series_limit() == 400
@@ -224,10 +224,10 @@ def test_plafonds_quotidiens_par_defaut(monkeypatch):
     monkeypatch.delenv("CATALOG_DAILY_FICHES", raising=False)
     monkeypatch.delenv("CATALOG_DAILY_AUTHORS", raising=False)
     monkeypatch.delenv("CATALOG_ADD_AUTHORS", raising=False)
-    # Défaut : plus d'auteurs → focus œuvres → plafond séries haut
-    assert daily_ingest.daily_series_limit() == 8000
-    assert daily_ingest.daily_books_limit() == 10000
-    assert daily_ingest.daily_fiches_target() == 10000
+    # Défaut : plus d'auteurs → focus œuvres → plafonds hauts (objectif 2 semaines)
+    assert daily_ingest.daily_series_limit() == 12000
+    assert daily_ingest.daily_books_limit() == 15000
+    assert daily_ingest.daily_fiches_target() == 15000
     assert daily_ingest.catalog_goal() == 1000000
     assert daily_authors.daily_authors_limit() == 10000
 
@@ -424,7 +424,7 @@ async def test_daily_run_endpoint_requires_secret(test_client: AsyncClient, monk
     )
     assert r.status_code == 200
     body = r.json()
-    assert body["target_fiches"] == 10000
+    assert body["target_fiches"] == 15000
     assert body["goal_fiches"] == 1000000
     assert "catalog_fiches" in body
 

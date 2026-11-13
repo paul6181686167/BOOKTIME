@@ -1,0 +1,86 @@
+name: Backfill œuvres 24/7
+
+# Complète le lot quotidien : déclenche un backfill œuvres sur Render toutes les 2 h,
+# et se relance tant que l'objectif 1M n'est pas atteint.
+
+on:
+  schedule:
+    - cron: "20 */2 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: catalog-works-backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Backfill œuvres sur le backend
+        env:
+          SECRET: ${{ secrets.CATALOG_DAILY_SECRET }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -u
+          URL="${{ vars.BACKEND_PING_URL }}"
+          if [ -z "$URL" ]; then
+            URL="https://booktime-uo15.onrender.com/ping"
+          fi
+          BASE="${URL%/ping}"
+          echo "Ping: $URL"
+          for attempt in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 90 "$URL" || echo "000")
+            echo "Tentative $attempt -> HTTP $code"
+            if [ "$code" = "200" ]; then break; fi
+            sleep 12
+          done
+          if [ -z "$SECRET" ]; then
+            echo "Pas de secret CATALOG_DAILY_SECRET"
+            exit 0
+          fi
+
+          read_status() {
+            curl -sS --max-time 20 -H "X-Catalog-Daily-Secret: $SECRET" \
+              "$BASE/api/catalog/daily/status" || echo "{}"
+          }
+
+          for batch in $(seq 1 6); do
+            raw=$(read_status)
+            echo "État $batch : $raw"
+            catalog=$(python3 -c 'import json,sys; s=json.loads(sys.stdin.read() or "{}"); print(int(s.get("catalog_fiches") or 0))' <<<"$raw")
+            goal=$(python3 -c 'import json,sys; s=json.loads(sys.stdin.read() or "{}"); print(int(s.get("goal_fiches") or 1000000))' <<<"$raw")
+            running=$(python3 -c 'import json,sys; s=json.loads(sys.stdin.read() or "{}"); print(str(s.get("running")).lower())' <<<"$raw")
+            if [ "$catalog" -ge "$goal" ]; then
+              echo "Objectif atteint"
+              exit 0
+            fi
+            if [ "$running" = "true" ]; then
+              echo "Job déjà en cours, attente…"
+            else
+              echo "POST backfill $batch"
+              curl -sS -X POST --max-time 60 \
+                -H "X-Catalog-Daily-Secret: $SECRET" \
+                "$BASE/api/catalog/daily/backfill" || true
+            fi
+            for i in $(seq 1 40); do
+              sleep 15
+              curl -s -o /dev/null --max-time 20 "$URL" || true
+              raw=$(read_status)
+              running=$(python3 -c 'import json,sys; s=json.loads(sys.stdin.read() or "{}"); print(str(s.get("running")).lower())' <<<"$raw")
+              echo "poll $i running=$running"
+              if [ "$running" = "false" ]; then break; fi
+            done
+          done
+
+          raw=$(read_status)
+          catalog=$(python3 -c 'import json,sys; s=json.loads(sys.stdin.read() or "{}"); print(int(s.get("catalog_fiches") or 0))' <<<"$raw")
+          goal=$(python3 -c 'import json,sys; s=json.loads(sys.stdin.read() or "{}"); print(int(s.get("goal_fiches") or 1000000))' <<<"$raw")
+          if [ "$catalog" -lt "$goal" ]; then
+            echo "Relance backfill workflow"
+            gh workflow run catalog-backfill.yml --repo "${GITHUB_REPOSITORY}"
+          fi

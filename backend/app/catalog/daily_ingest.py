@@ -118,12 +118,12 @@ def remember_author_yield(n_authors: int) -> None:
 
 
 def daily_series_limit() -> int:
-    default = 8000 if ingest_focus() == "works" else 400
-    return _env_int("CATALOG_DAILY_SERIES", default, 1, 12000)
+    default = 12000 if ingest_focus() == "works" else 400
+    return _env_int("CATALOG_DAILY_SERIES", default, 1, 20000)
 
 
 def daily_books_limit() -> int:
-    return _env_int("CATALOG_DAILY_BOOKS", 10000, 0, 12000)
+    return _env_int("CATALOG_DAILY_BOOKS", 15000, 0, 20000)
 
 
 def author_fill_cap(remaining: int) -> int:
@@ -136,8 +136,8 @@ def author_fill_cap(remaining: int) -> int:
 
 
 def daily_fiches_target() -> int:
-    """Objectif : 10 000 fiches (séries + livres + auteurs) par lot."""
-    return _env_int("CATALOG_DAILY_FICHES", 10000, 100, 15000)
+    """Objectif : 15 000 fiches (séries + livres) par lot."""
+    return _env_int("CATALOG_DAILY_FICHES", 15000, 100, 20000)
 
 
 def catalog_goal() -> int:
@@ -1709,6 +1709,72 @@ def ingest_status() -> dict[str, Any]:
     }
 
 
+def run_works_backfill(cap: int | None = None) -> dict[str, Any]:
+    """Backfill œuvres hors lot quotidien : OL/GB/BnF + pending, sans auteurs."""
+    global _wiki_cover_budget, _author_lookup_budget, _job_last, _job_running
+    if not _ingest_lock.acquire(blocking=False):
+        return {"status": "busy", "added": 0, "fiches": 0, **ingest_status()}
+    _job_running = True
+    try:
+        from .isbn_resolve import reset_budget, reset_cover_budget
+        from . import daily_pending
+
+        target = int(cap or _env_int("CATALOG_BACKFILL_CAP", 8000, 100, 20000))
+        test_env = os.getenv("ENVIRONMENT", "").lower() == "test"
+        _wiki_cover_budget = 0 if test_env else 200
+        _author_lookup_budget = 0 if test_env else 120
+        reset_budget(0 if test_env else 200)
+        reset_cover_budget(0 if test_env else 800)
+        daily_pending.reset_wd_budget(0 if test_env else 200)
+
+        known = existing_qids()
+        names = existing_names()
+        added_names: list[str] = []
+        skipped = 0
+        fiches = 0
+        recovered = daily_pending.enrich_and_promote(cap=min(500, target))
+        fiches += int(recovered.get("fiches") or 0)
+        added_names.extend(list(recovered.get("names") or []))
+        remaining = max(0, target - fiches)
+        # Forcer un gros pull multi-sources livres
+        books, skip_b, book_n = _ingest_books(remaining, known, None, names)
+        fiches += book_n
+        skipped += skip_b
+        added_names.extend(books)
+        remaining = max(0, target - fiches)
+        if remaining > 0:
+            more_s, skip_s, _tomes = _ingest_series(min(remaining, 2000), known, None, names)
+            fiches += len(more_s)
+            skipped += skip_s
+            added_names.extend(more_s)
+        complete_missing_covers(_env_int("CATALOG_COVER_BACKFILL", 300, 0, 2000))
+        if added_names:
+            expanded.stats.cache_clear()
+            curated_mod.clear_cache()
+        result = {
+            "status": "ok",
+            "mode": "backfill",
+            "added": len(added_names),
+            "added_books": book_n,
+            "fiches": fiches,
+            "skipped": skipped,
+            "names": added_names[:24],
+            "catalog_fiches": catalog_fiche_total(),
+            "goal_fiches": catalog_goal(),
+            "pending_fiches": daily_pending.count(),
+            "focus": ingest_focus(),
+        }
+        _job_last = result
+        logger.info("Backfill œuvres : +%d fiches (ignorés=%d)", fiches, skipped)
+        return result
+    except Exception as exc:
+        _job_last = {"status": "error", "error": str(exc)[:240], "added": 0, "fiches": 0, "mode": "backfill"}
+        raise
+    finally:
+        _job_running = False
+        _ingest_lock.release()
+
+
 def start_daily_ingest(*, sync: bool = False) -> dict[str, Any]:
     """En production : thread de fond (Render coupe les HTTP longs). Tests : sync."""
     if sync:
@@ -1737,6 +1803,30 @@ def start_daily_ingest(*, sync: bool = False) -> dict[str, Any]:
         "target_books": daily_books_limit(),
         "target_series": daily_series_limit(),
         "target_authors": daily_authors_limit(),
+        "catalog_fiches": catalog_fiche_total(),
+        "goal_fiches": catalog_goal(),
+    }
+
+
+def start_works_backfill(*, sync: bool = False, cap: int | None = None) -> dict[str, Any]:
+    """Backfill œuvres en fond (secret GitHub / script local)."""
+    if sync:
+        return run_works_backfill(cap)
+    if _job_running:
+        return {"status": "busy", "running": True, "last": _job_last, **ingest_status()}
+
+    def _bg() -> None:
+        try:
+            run_works_backfill(cap)
+        except Exception as exc:
+            logger.warning("Backfill œuvres (fond) échoué : %s", exc)
+
+    threading.Thread(target=_bg, daemon=True, name="catalog-works-backfill").start()
+    return {
+        "status": "started",
+        "running": True,
+        "mode": "backfill",
+        "target_fiches": int(cap or _env_int("CATALOG_BACKFILL_CAP", 8000, 100, 20000)),
         "catalog_fiches": catalog_fiche_total(),
         "goal_fiches": catalog_goal(),
     }
