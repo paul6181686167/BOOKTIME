@@ -185,6 +185,7 @@ def test_build_entry_fills_isbn_from_other_sources(monkeypatch):
 def test_author_dry_streak_switches_focus_to_works(monkeypatch):
     _reset_daily()
     _isolate_meta(monkeypatch)
+    monkeypatch.setenv("CATALOG_ADD_AUTHORS", "1")
     assert daily_ingest.ingest_focus() == "authors"
     assert daily_ingest.daily_series_limit() == 400
     daily_ingest.remember_author_yield(50)
@@ -198,16 +199,21 @@ def test_author_dry_streak_switches_focus_to_works(monkeypatch):
     assert daily_ingest.daily_series_limit() == 400
 
 
-def test_works_focus_fills_remaining_lot_with_authors(monkeypatch):
+def test_works_focus_does_not_add_authors_by_default(monkeypatch):
     _reset_daily()
     _isolate_meta(monkeypatch)
     monkeypatch.delenv("CATALOG_DAILY_AUTHORS", raising=False)
+    monkeypatch.delenv("CATALOG_ADD_AUTHORS", raising=False)
+    assert daily_ingest.authors_ingest_enabled() is False
+    assert daily_ingest.ingest_focus() == "works"
+    assert daily_ingest.author_fill_cap(9700) == 0
+    assert daily_ingest.author_fill_cap(0) == 0
+    monkeypatch.setenv("CATALOG_ADD_AUTHORS", "1")
     daily_ingest.remember_author_yield(10)
     daily_ingest.remember_author_yield(10)
     daily_ingest.remember_author_yield(10)
     assert daily_ingest.ingest_focus() == "works"
     assert daily_ingest.author_fill_cap(9700) == 9700
-    assert daily_ingest.author_fill_cap(0) == 0
 
 
 def test_plafonds_quotidiens_par_defaut(monkeypatch):
@@ -217,7 +223,9 @@ def test_plafonds_quotidiens_par_defaut(monkeypatch):
     monkeypatch.delenv("CATALOG_DAILY_BOOKS", raising=False)
     monkeypatch.delenv("CATALOG_DAILY_FICHES", raising=False)
     monkeypatch.delenv("CATALOG_DAILY_AUTHORS", raising=False)
-    assert daily_ingest.daily_series_limit() == 400
+    monkeypatch.delenv("CATALOG_ADD_AUTHORS", raising=False)
+    # Défaut : plus d'auteurs → focus œuvres → plafond séries haut
+    assert daily_ingest.daily_series_limit() == 8000
     assert daily_ingest.daily_books_limit() == 10000
     assert daily_ingest.daily_fiches_target() == 10000
     assert daily_ingest.catalog_goal() == 1000000
@@ -834,8 +842,10 @@ def test_series_without_author_is_skipped_next_lot(monkeypatch):
         "cover_url": "https://example.test/c.jpg",
     }
     calls: list[str] = []
+    blocked: set[str] = set()
     monkeypatch.setattr(daily_ingest, "existing_qids", lambda: set())
     monkeypatch.setattr(daily_ingest, "existing_names", lambda: set())
+    monkeypatch.setattr(daily_ingest, "_already_catalogued", lambda *a, **k: False)
     monkeypatch.setattr(daily_ingest, "fetch_candidate_series", lambda limit: [cand])
     monkeypatch.setattr(
         daily_ingest,
@@ -843,6 +853,7 @@ def test_series_without_author_is_skipped_next_lot(monkeypatch):
         lambda qid: calls.append(qid) or [{"title": "Tome 1", "author": ""}],
     )
     monkeypatch.setattr(daily_ingest, "fetch_candidate_books", lambda limit: [])
+    monkeypatch.setattr(daily_pending, "blocked_qids", lambda: set(blocked))
     monkeypatch.setattr(
         daily_pending,
         "enrich_and_promote",
@@ -860,9 +871,25 @@ def test_series_without_author_is_skipped_next_lot(monkeypatch):
     assert first["added_series"] == 0
     assert calls == ["Qdead"]
     assert "Qdead" in daily_pending.skipped_qids()
+    blocked.update(daily_pending.skipped_qids())
     second = daily_ingest.run_daily_ingest(limit=5, books_limit=0)
     assert second["added_series"] == 0
     assert calls == ["Qdead"]
+
+
+def test_fill_missing_author_from_series_p50(monkeypatch):
+    isbn_resolve.reset_budget(0)
+    daily_ingest._author_lookup_budget = 5
+    monkeypatch.setattr(daily_ingest, "fetch_entity_author", lambda qid: ("Ève Test", "Q77"))
+    cand = {"qid": "Qsaga", "name": "Saga Retrouvée", "author": "", "category": "roman", "genre": "Roman"}
+    works = [{"title": "Tome 1", "author": ""}]
+    daily_ingest.fill_missing_author(cand, works)
+    assert cand["author"] == "Ève Test"
+    assert cand["author_qid"] == "Q77"
+    assert works[0]["author"] == "Ève Test"
+    entry = daily_ingest.build_complete_entry(cand, works, min_volumes=1, standalone=True)
+    assert entry is not None
+    assert entry["authors"] == ["Ève Test"]
 
 
 def test_qid_name_and_known_not_queued(monkeypatch):

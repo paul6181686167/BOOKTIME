@@ -384,23 +384,26 @@ def _promote_work(
     added: list[str],
     hints: list[dict[str, Any]],
 ) -> tuple[bool, int]:
+    from .daily_ingest import fill_missing_author
+
     cand = _cand_from_pending(doc)
     works = list(doc.get("works") or [])
     kind = doc.get("kind") or "book"
     attempts = int(doc.get("attempts") or 0)
-    if kind == "series" and not works and attempts < 2:
+    force = bool(doc.get("_force_enrich"))
+    if kind == "series" and not works and (force or attempts < 2):
         try:
             works = fetch_works(cand["qid"])
         except Exception:
             works = []
+    fill_missing_author(cand, works)
     standalone = kind == "book" or len([w for w in works if is_human_label(w.get("title"))]) < 2
     entry = build_complete_entry(cand, works, min_volumes=1 if standalone else 2, standalone=standalone)
     if not entry and not standalone:
         entry = build_complete_entry(cand, works, min_volumes=1, standalone=True)
-    if not entry:
-        if attempts and attempts % 4 != 0:
-            return False, 0
+    if not entry or (entry.get("needs_cover") and (force or not attempts or attempts % 4 == 0)):
         enrich_work_candidate(cand, works)
+        fill_missing_author(cand, works)
         entry = build_complete_entry(cand, works, min_volumes=1 if standalone else 2, standalone=standalone)
         if not entry and not standalone:
             entry = build_complete_entry(cand, works, min_volumes=1, standalone=True)
@@ -431,7 +434,7 @@ def _promote_author(doc: dict[str, Any], known: set[str], names: set[str], added
     return True
 
 
-def enrich_and_promote(*, cap: int) -> dict[str, Any]:
+def enrich_and_promote(*, cap: int, force: bool = False) -> dict[str, Any]:
     """Tente de compléter la file pending et n'ajoute que les fiches désormais valides."""
     added_series: list[str] = []
     added_books: list[str] = []
@@ -448,6 +451,18 @@ def enrich_and_promote(*, cap: int) -> dict[str, Any]:
             "author_names": [],
         }
     from . import daily_authors
+    from .daily_ingest import _author_lookup_budget, _wiki_cover_budget
+    from . import isbn_resolve
+
+    if force:
+        # Backfill hors lot quotidien : budgets élargis pour les ~167.
+        import app.catalog.daily_ingest as ingest_mod
+
+        ingest_mod._wiki_cover_budget = max(int(_wiki_cover_budget or 0), 500)
+        ingest_mod._author_lookup_budget = max(int(_author_lookup_budget or 0), 200)
+        isbn_resolve.reset_cover_budget(800)
+        isbn_resolve.reset_budget(800)
+        reset_wd_budget(max(int(_wd_budget or 0), 200))
 
     known = existing_qids()
     names = existing_names()
@@ -470,6 +485,9 @@ def enrich_and_promote(*, cap: int) -> dict[str, Any]:
         if not qid:
             continue
         attempts = int(doc.get("attempts") or 0) + 1
+        if force:
+            doc = dict(doc)
+            doc["_force_enrich"] = True
         if kind == "author":
             if qid in author_ids:
                 drop(qid)

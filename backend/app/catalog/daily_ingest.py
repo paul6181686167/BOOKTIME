@@ -63,6 +63,7 @@ BOOK_TYPE_GENRE = {
 }
 
 _wiki_cover_budget = 25
+_author_lookup_budget = 0
 _BOOK_PAGE = 100
 _ingest_lock = threading.Lock()
 _job_running = False
@@ -82,12 +83,28 @@ def _env_int(name: str, default: int, lo: int, hi: int) -> int:
 
 def ingest_focus() -> str:
     """authors = gisement photo+naissance ; works = séries et livres."""
+    if not authors_ingest_enabled():
+        return "works"
     n, _ = meta_pair(_FOCUS_KEY)
     return "works" if int(n) else "authors"
 
 
+def authors_ingest_enabled() -> bool:
+    """False = plus d'auteurs dans les lots (focus œuvres uniquement)."""
+    raw = (os.getenv("CATALOG_ADD_AUTHORS") or "0").strip().lower()
+    if raw in ("0", "false", "no", "off"):
+        return False
+    if raw in ("1", "true", "yes", "on"):
+        return True
+    return True
+
+
 def remember_author_yield(n_authors: int) -> None:
     """3 lots pauvres en auteurs complets → on bascule sur séries/livres."""
+    if not authors_ingest_enabled():
+        meta_save_pair(_FOCUS_KEY, 1, 0)
+        meta_save_pair(_DRY_KEY, 0, 0)
+        return
     n_authors = int(n_authors or 0)
     if n_authors >= 1500:
         meta_save_pair(_FOCUS_KEY, 0, 0)
@@ -110,7 +127,9 @@ def daily_books_limit() -> int:
 
 
 def author_fill_cap(remaining: int) -> int:
-    """Comble le lot avec des auteurs après séries/livres, quel que soit le focus."""
+    """Auteurs seulement si CATALOG_ADD_AUTHORS est activé."""
+    if not authors_ingest_enabled():
+        return 0
     from .daily_authors import daily_authors_limit
 
     return min(daily_authors_limit(), max(0, int(remaining or 0)))
@@ -695,6 +714,96 @@ LIMIT 80
     return works
 
 
+def fetch_entity_author(qid: str) -> tuple[str, str]:
+    """Auteur P50 de l'entité Wikidata (série ou livre), ou ('', '')."""
+    qid = (qid or "").strip()
+    if not qid.startswith("Q"):
+        return "", ""
+    query = f"""
+SELECT ?author ?authorLabel WHERE {{
+  wd:{qid} wdt:P50 ?author .
+  SERVICE wikibase:label {{ bd:serviceParam wikibase:language "fr,en". }}
+}}
+LIMIT 1
+"""
+    try:
+        rows = _sparql(query, timeout=20)
+    except Exception as exc:
+        logger.debug("Auteur P50 %s : %s", qid, exc)
+        return "", ""
+    if not rows:
+        return "", ""
+    row = rows[0]
+    name = _lit(row, "authorLabel")
+    if not is_human_label(name):
+        return "", ""
+    return name, _qid(_lit(row, "author"))
+
+
+def ol_title_author(title: str, title_en: str | None = None) -> str:
+    """Premier auteur Open Library pour un titre proche, ou ''."""
+    from .isbn_resolve import title_close
+
+    for raw in (title, title_en):
+        q = (raw or "").strip()
+        if len(q) < 3:
+            continue
+        try:
+            r = requests.get(
+                "https://openlibrary.org/search.json",
+                params={"title": q, "limit": 5, "fields": "title,author_name"},
+                timeout=8,
+                headers=UA,
+            )
+            if r.status_code != 200:
+                continue
+            for doc in (r.json() or {}).get("docs") or []:
+                if not title_close(q, doc.get("title") or ""):
+                    continue
+                for a in doc.get("author_name") or []:
+                    if is_human_label(a):
+                        return a
+        except Exception as exc:
+            logger.debug("Auteur OL titre échoué %s: %s", q, exc)
+    return ""
+
+
+def fill_missing_author(cand: dict[str, Any], works: list[dict[str, Any]] | None) -> None:
+    """Complète un auteur réel (P50 Wikidata, puis Open Library) avant d'ignorer."""
+    global _author_lookup_budget
+    works = works or []
+    existing = (cand.get("author") or "").strip()
+    if not is_human_label(existing):
+        existing = next((w.get("author") for w in works if is_human_label(w.get("author"))), "") or ""
+    if is_human_label(existing):
+        cand["author"] = existing
+        for w in works:
+            if not is_human_label(w.get("author")):
+                w["author"] = existing
+                if cand.get("author_qid") and not w.get("author_qid"):
+                    w["author_qid"] = cand.get("author_qid")
+        return
+    if _author_lookup_budget <= 0:
+        return
+    _author_lookup_budget -= 1
+    name, aqid = fetch_entity_author(cand.get("qid") or "")
+    if not is_human_label(name):
+        name = ol_title_author(cand.get("name") or "", cand.get("name_en"))
+        aqid = ""
+    if not is_human_label(name):
+        return
+    cand["author"] = name
+    if aqid:
+        cand["author_qid"] = aqid
+    if not works:
+        return
+    for w in works:
+        if not is_human_label(w.get("author")):
+            w["author"] = name
+            if aqid:
+                w["author_qid"] = aqid
+
+
 def wiki_cover(name: str, name_en: str | None) -> str:
     global _wiki_cover_budget
     if _wiki_cover_budget <= 0:
@@ -987,6 +1096,7 @@ def _ingest_series(
                     daily_pending.remember_skip(cand.get("qid") or "", "works_timeout")
                     skipped += 1
                     continue
+                fill_missing_author(cand, works)
                 entry = build_complete_entry(cand, works)
                 if not entry:
                     entry = build_complete_entry(cand, works, min_volumes=1, standalone=True)
@@ -1030,6 +1140,9 @@ def _ingest_books(
             skipped += 1
             continue
         author = (cand.get("author") or "").strip()
+        if not is_human_label(author):
+            fill_missing_author(cand, [])
+            author = (cand.get("author") or "").strip()
         if not is_human_label(author) or not is_human_label(cand.get("name")):
             daily_pending.remember_skip(qid, "no_author")
             skipped += 1
@@ -1115,7 +1228,7 @@ def run_daily_ingest(
     authors_limit: int | None = None,
 ) -> dict[str, Any]:
     """Ajoute séries + livres + auteurs complets. Idempotent (qid déjà connu ignoré)."""
-    global _wiki_cover_budget, _job_last, _job_running
+    global _wiki_cover_budget, _author_lookup_budget, _job_last, _job_running
     if not _ingest_lock.acquire(blocking=False):
         busy = {
             "status": "busy",
@@ -1134,6 +1247,7 @@ def run_daily_ingest(
     try:
         test_env = os.getenv("ENVIRONMENT", "").lower() == "test"
         _wiki_cover_budget = 0 if test_env else 300
+        _author_lookup_budget = 0 if test_env else 80
         from .isbn_resolve import reset_budget, reset_cover_budget
         from . import daily_pending
 
@@ -1144,6 +1258,7 @@ def run_daily_ingest(
         daily_pending.reset_wd_budget(0 if test_env else _env_int("CATALOG_PENDING_WD", 400, 0, 800))
         if not test_env:
             _wiki_cover_budget = _env_int("CATALOG_WIKI_COVERS", 400, 0, 800)
+            _author_lookup_budget = _env_int("CATALOG_AUTHOR_LOOKUPS", 80, 0, 400)
         purged_series = purge_qid_named_daily()
         from .daily_authors import daily_authors_limit, ingest_authors, purge_qid_named_authors
 
