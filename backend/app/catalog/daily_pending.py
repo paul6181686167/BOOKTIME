@@ -53,6 +53,59 @@ def _coll():
     return database.db["catalog_daily_pending"]
 
 
+def _skip_coll():
+    import os
+
+    from ..db_config import MockCollection, database
+
+    if os.getenv("ENVIRONMENT", "").lower() == "test":
+        return MockCollection("catalog_daily_skip")
+    return database.db["catalog_daily_skip"]
+
+
+def pending_qids() -> set[str]:
+    try:
+        qids: set[str] = set()
+        for doc in _coll().find({}, {"qid": 1, "_id": 0}) or []:
+            qid = (doc or {}).get("qid")
+            if qid:
+                qids.add(str(qid))
+        return qids
+    except Exception:
+        return set()
+
+
+def skipped_qids() -> set[str]:
+    try:
+        qids: set[str] = set()
+        for doc in _skip_coll().find({}, {"qid": 1, "_id": 0}) or []:
+            qid = (doc or {}).get("qid")
+            if qid:
+                qids.add(str(qid))
+        return qids
+    except Exception:
+        return set()
+
+
+def blocked_qids() -> set[str]:
+    """QID déjà en file ou déjà jugés inutilisables : pas de SPARQL tomes."""
+    return pending_qids() | skipped_qids()
+
+
+def remember_skip(qid: str, reason: str = "incomplete") -> None:
+    qid = (qid or "").strip()
+    if not qid:
+        return
+    try:
+        _skip_coll().update_one(
+            {"qid": qid},
+            {"$set": {"qid": qid, "reason": reason, "updated_at": _now()}},
+            upsert=True,
+        )
+    except Exception:
+        pass
+
+
 def count() -> int:
     try:
         coll = _coll()
@@ -334,16 +387,23 @@ def _promote_work(
     cand = _cand_from_pending(doc)
     works = list(doc.get("works") or [])
     kind = doc.get("kind") or "book"
-    if kind == "series" and not works:
+    attempts = int(doc.get("attempts") or 0)
+    if kind == "series" and not works and attempts < 2:
         try:
             works = fetch_works(cand["qid"])
         except Exception:
             works = []
-    enrich_work_candidate(cand, works)
     standalone = kind == "book" or len([w for w in works if is_human_label(w.get("title"))]) < 2
     entry = build_complete_entry(cand, works, min_volumes=1 if standalone else 2, standalone=standalone)
     if not entry and not standalone:
         entry = build_complete_entry(cand, works, min_volumes=1, standalone=True)
+    if not entry:
+        if attempts and attempts % 4 != 0:
+            return False, 0
+        enrich_work_candidate(cand, works)
+        entry = build_complete_entry(cand, works, min_volumes=1 if standalone else 2, standalone=standalone)
+        if not entry and not standalone:
+            entry = build_complete_entry(cand, works, min_volumes=1, standalone=True)
     if not entry:
         return False, 0
     tomes = _persist(entry, known, added, hints, names)

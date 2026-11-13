@@ -947,10 +947,20 @@ def _ingest_series(
     except Exception as exc:
         logger.warning("Ingest quotidien : SPARQL séries échoué : %s", exc)
         return added, skipped, fiches
+    from . import daily_pending
+
     candidates.sort(key=lambda c: 0 if usable_cover(c.get("cover_url")) else 1)
-    pending = [c for c in candidates if c.get("qid") and not _already_catalogued(c, known, names)]
-    skipped += max(0, len(candidates) - len(pending))
-    pending = pending[: cap + 30]
+    blocked = daily_pending.blocked_qids()
+    fresh = []
+    for c in candidates:
+        qid = c.get("qid") or ""
+        if not qid or _already_catalogued(c, known, names) or qid in blocked:
+            skipped += 1
+            continue
+        fresh.append(c)
+    max_fetch = _env_int("CATALOG_SERIES_WORK_FETCH", 120, 20, 800)
+    to_load = fresh[: min(cap + 30, max_fetch)]
+    skipped += max(0, len(fresh) - len(to_load))
 
     def _load(cand: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]] | None]:
         try:
@@ -958,43 +968,37 @@ def _ingest_series(
         except Exception:
             return cand, None
 
-    workers = min(6, max(1, len(pending)))
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        futs = [pool.submit(_load, cand) for cand in pending]
-        for fut in as_completed(futs):
-            if len(added) >= cap:
-                break
-            cand, works = fut.result()
-            if _already_catalogued(cand, known, names):
-                skipped += 1
-                continue
-            if works is None:
-                from . import daily_pending
-
-                daily_pending.remember(
-                    "series", cand, reason="works_timeout", works=[], known=known, names=names
-                )
-                skipped += 1
-                continue
-            entry = build_complete_entry(cand, works)
-            if not entry:
-                entry = build_complete_entry(cand, works, min_volumes=1, standalone=True)
-            if not entry:
-                from . import daily_pending
-
-                daily_pending.enrich_work_candidate(cand, works)
+    chunk = 24
+    for i in range(0, len(to_load), chunk):
+        if len(added) >= cap:
+            break
+        batch = to_load[i : i + chunk]
+        workers = min(6, max(1, len(batch)))
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futs = [pool.submit(_load, cand) for cand in batch]
+            for fut in as_completed(futs):
+                if len(added) >= cap:
+                    break
+                cand, works = fut.result()
+                if _already_catalogued(cand, known, names):
+                    skipped += 1
+                    continue
+                if works is None:
+                    daily_pending.remember_skip(cand.get("qid") or "", "works_timeout")
+                    skipped += 1
+                    continue
                 entry = build_complete_entry(cand, works)
                 if not entry:
                     entry = build_complete_entry(cand, works, min_volumes=1, standalone=True)
-            if not entry:
-                from . import daily_pending
-
-                daily_pending.remember(
-                    "series", cand, reason="incomplete", works=works, known=known, names=names
-                )
-                skipped += 1
-                continue
-            fiches += _persist(entry, known, added, hints, names)
+                if not entry:
+                    kept = daily_pending.remember(
+                        "series", cand, reason="incomplete", works=works, known=known, names=names
+                    )
+                    if not kept:
+                        daily_pending.remember_skip(cand.get("qid") or "", "incomplete")
+                    skipped += 1
+                    continue
+                fiches += _persist(entry, known, added, hints, names)
     return added, skipped, fiches
 
 
@@ -1015,15 +1019,19 @@ def _ingest_books(
     except Exception as exc:
         logger.warning("Ingest quotidien : SPARQL livres échoué : %s", exc)
         return added, skipped, fiches
+    from . import daily_pending
+
+    blocked = daily_pending.blocked_qids()
     for cand in candidates:
         if fiches >= cap:
             break
         qid = cand.get("qid") or ""
-        if not qid or _already_catalogued(cand, known, names):
+        if not qid or _already_catalogued(cand, known, names) or qid in blocked:
             skipped += 1
             continue
         author = (cand.get("author") or "").strip()
         if not is_human_label(author) or not is_human_label(cand.get("name")):
+            daily_pending.remember_skip(qid, "no_author")
             skipped += 1
             continue
         work = {
@@ -1038,13 +1046,6 @@ def _ingest_books(
         }
         entry = build_complete_entry(cand, [work], min_volumes=1, standalone=True)
         if not entry:
-            from . import daily_pending
-
-            daily_pending.enrich_work_candidate(cand, [work])
-            entry = build_complete_entry(cand, [work], min_volumes=1, standalone=True)
-        if not entry:
-            from . import daily_pending
-
             daily_pending.remember(
                 "book", cand, reason="incomplete", works=[work], known=known, names=names
             )
@@ -1239,16 +1240,6 @@ def run_daily_ingest(
         remaining = max(0, target - n_series - n_books - int(recovered.get("added_authors") or 0))
         complete_missing_covers(_env_int("CATALOG_COVER_BACKFILL", 400, 0, 2000))
         remaining = max(0, target - n_series - n_books - int(recovered.get("added_authors") or 0))
-        if remaining > 0:
-            _merge_recovered(
-                daily_pending.enrich_and_promote(
-                    cap=min(remaining, daily_pending.pending_promote_limit())
-                )
-            )
-            n_series = int(recovered.get("added_series") or 0) + len(more_s)
-            n_books = int(recovered.get("added_books") or 0) + len(book_names)
-            series_names = list(recovered.get("names") or []) + more_s
-            remaining = max(0, target - n_series - n_books - int(recovered.get("added_authors") or 0))
         if authors_limit is not None:
             author_cap = authors_limit
         elif limit is not None or books_limit is not None:

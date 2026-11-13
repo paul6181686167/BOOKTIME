@@ -18,6 +18,7 @@ def _reset_daily():
     store.clear()
     _mock_storage.setdefault("authors", []).clear()
     _mock_storage.setdefault("catalog_daily_pending", []).clear()
+    _mock_storage.setdefault("catalog_daily_skip", []).clear()
     _mock_storage.pop("catalog_ingest_meta", None)
     daily_pending.reset_wd_budget(0)
     expanded.clear_cache()
@@ -780,6 +781,88 @@ def test_complete_missing_covers_fills_later(monkeypatch):
     saved = next(s for s in daily_store.all_series() if s.get("qid") == "Qlater")
     assert saved.get("needs_cover") is False
     assert saved.get("cover_url") == "https://covers.example/found.jpg"
+
+
+def test_series_skips_pending_qid_without_fetch_works(monkeypatch):
+    _isolate_catalog(monkeypatch)
+    cand = {
+        "qid": "QpendS",
+        "name": "Saga Déjà Vue",
+        "category": "roman",
+        "genre": "Roman",
+        "cover_url": "https://example.test/c.jpg",
+    }
+    daily_pending.remember(
+        "series",
+        cand,
+        reason="incomplete",
+        works=[{"title": "Tome 1", "author": "A. Auteur", "published_year": 2020}],
+        known=set(),
+        names=set(),
+    )
+    calls: list[str] = []
+    monkeypatch.setattr(daily_ingest, "existing_qids", lambda: set())
+    monkeypatch.setattr(daily_ingest, "existing_names", lambda: set())
+    monkeypatch.setattr(daily_ingest, "fetch_candidate_series", lambda limit: [cand])
+    monkeypatch.setattr(daily_ingest, "fetch_works", lambda qid: calls.append(qid) or [])
+    monkeypatch.setattr(daily_ingest, "fetch_candidate_books", lambda limit: [])
+    monkeypatch.setattr(
+        daily_pending,
+        "enrich_and_promote",
+        lambda **k: {
+            "added_series": 0,
+            "added_books": 0,
+            "added_authors": 0,
+            "fiches": 0,
+            "tomes": 0,
+            "names": [],
+            "author_names": [],
+        },
+    )
+    result = daily_ingest.run_daily_ingest(limit=5, books_limit=0)
+    assert "QpendS" not in calls
+    assert result["added_series"] == 0
+
+
+def test_series_without_author_is_skipped_next_lot(monkeypatch):
+    _isolate_catalog(monkeypatch)
+    cand = {
+        "qid": "Qdead",
+        "name": "Saga Sans Auteur",
+        "category": "roman",
+        "genre": "Roman",
+        "cover_url": "https://example.test/c.jpg",
+    }
+    calls: list[str] = []
+    monkeypatch.setattr(daily_ingest, "existing_qids", lambda: set())
+    monkeypatch.setattr(daily_ingest, "existing_names", lambda: set())
+    monkeypatch.setattr(daily_ingest, "fetch_candidate_series", lambda limit: [cand])
+    monkeypatch.setattr(
+        daily_ingest,
+        "fetch_works",
+        lambda qid: calls.append(qid) or [{"title": "Tome 1", "author": ""}],
+    )
+    monkeypatch.setattr(daily_ingest, "fetch_candidate_books", lambda limit: [])
+    monkeypatch.setattr(
+        daily_pending,
+        "enrich_and_promote",
+        lambda **k: {
+            "added_series": 0,
+            "added_books": 0,
+            "added_authors": 0,
+            "fiches": 0,
+            "tomes": 0,
+            "names": [],
+            "author_names": [],
+        },
+    )
+    first = daily_ingest.run_daily_ingest(limit=5, books_limit=0)
+    assert first["added_series"] == 0
+    assert calls == ["Qdead"]
+    assert "Qdead" in daily_pending.skipped_qids()
+    second = daily_ingest.run_daily_ingest(limit=5, books_limit=0)
+    assert second["added_series"] == 0
+    assert calls == ["Qdead"]
 
 
 def test_qid_name_and_known_not_queued(monkeypatch):

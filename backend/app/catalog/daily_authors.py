@@ -497,12 +497,15 @@ def ingest_authors(
         seen.add(qid)
         pending.append(cand)
 
+    from . import daily_pending as pending_mod
+
+    blocked = pending_mod.blocked_qids()
     for cand in pending:
         if len(added) >= cap:
             break
         qid = (cand.get("qid") or "").strip()
         key = normalize_author_name(cand.get("name") or "")
-        if (qid and qid in known_id) or (key and key in known_n):
+        if (qid and qid in known_id) or (key and key in known_n) or (qid and qid in blocked):
             skipped += 1
             continue
         works = _works_for(cand.get("name") or "", hints or [])
@@ -515,13 +518,15 @@ def ingest_authors(
         if not entry:
             from . import daily_pending
 
-            daily_pending.remember(
+            kept = daily_pending.remember(
                 "author",
                 cand,
                 reason="incomplete",
                 known=known_id,
                 names=known_n,
             )
+            if not kept and qid:
+                daily_pending.remember_skip(qid, "incomplete")
             skipped += 1
             continue
         upsert_author(entry)
