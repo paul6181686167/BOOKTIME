@@ -1,8 +1,8 @@
 """Ajoute chaque jour de nouvelles fiches COMPLÈTES au noyau curé.
 
-Sources : Wikidata (séries + livres + auteurs, fenêtre QID/OFFSET tournante),
-Open Library (livres avec jaquette), Wikipedia / Commons / Google Books / BnF
-pour compléter jaquette, photo, ISBN. Rien n'est inventé.
+Sources œuvres : Wikidata, Open Library, Google Books, BnF (mélange).
+Enrichissement : Wikipedia / Commons / Google Books / BnF (jaquette, photo, ISBN).
+Rien n'est inventé.
 """
 from __future__ import annotations
 
@@ -250,7 +250,9 @@ def usable_cover(url: str | None) -> str:
         return ""
     if OL_W_COVER.search(u):
         return ""
-    return u.replace("http://", "https:")
+    if u.startswith("http://"):
+        u = "https://" + u[len("http://") :]
+    return u
 
 
 def pick_isbn(raw: Any) -> str:
@@ -503,7 +505,7 @@ def _fetch_books_page(year: int | None, limit: int, offset: int = 0) -> list[dic
 
 
 def fetch_candidate_books(limit: int) -> list[dict[str, Any]]:
-    """Livres individuels : curseur année + page, pour ne plus rescanner les 8 mêmes pages."""
+    """Livres : Wikidata + Open Library + Google Books + BnF (mélange unique)."""
     if limit <= 0:
         return []
     salt = window_salt()
@@ -519,19 +521,19 @@ def fetch_candidate_books(limit: int) -> list[dict[str, Any]]:
         y += 1
         if y > now:
             y = 1800
-    out: list[dict[str, Any]] = []
-    seen: set[str] = set()
+    wd: list[dict[str, Any]] = []
+    seen_wd: set[str] = set()
 
-    def _absorb(batch: list[dict[str, Any]]) -> None:
+    def _absorb_wd(batch: list[dict[str, Any]]) -> None:
         for cand in batch:
             qid = cand.get("qid")
-            if not qid or qid in seen:
+            if not qid or qid in seen_wd:
                 continue
-            seen.add(qid)
-            out.append(cand)
+            seen_wd.add(qid)
+            wd.append(cand)
 
     for i in range(0, len(years), 4):
-        if len(out) >= limit:
+        if len(wd) >= limit:
             break
         chunk = years[i : i + 4]
         with ThreadPoolExecutor(max_workers=min(4, len(chunk))) as pool:
@@ -542,21 +544,53 @@ def fetch_candidate_books(limit: int) -> list[dict[str, Any]]:
                 )
             )
         for batch in batches:
-            _absorb(batch)
-            if len(out) >= limit:
+            _absorb_wd(batch)
+            if len(wd) >= limit:
                 break
 
-    if len(out) >= min(limit, 80):
+    if len(wd) >= min(limit, 80):
         meta_save_pair("wd_book_scan", n, off + _BOOK_PAGE)
     else:
         meta_save_pair("wd_book_scan", n + pages, 0)
 
-    if len(out) < limit:
+    if len(wd) < limit:
         yday = datetime.now(timezone.utc).timetuple().tm_yday
         offset = (yday * 23 + salt * 97) % 80000
-        _absorb(_fetch_books_page(None, min(_BOOK_PAGE, limit - len(out) + 80), offset))
-    if os.getenv("ENVIRONMENT", "").lower() != "test" and len(out) < limit:
-        _absorb(fetch_candidate_books_openlibrary(limit - len(out)))
+        _absorb_wd(_fetch_books_page(None, min(_BOOK_PAGE, limit - len(wd) + 80), offset))
+
+    ext: list[dict[str, Any]] = []
+    if os.getenv("ENVIRONMENT", "").lower() != "test":
+        ext_cap = max(120, min(limit, max(limit // 2, limit - len(wd))))
+        for fetch in (
+            fetch_candidate_books_openlibrary,
+            fetch_candidate_books_google,
+            fetch_candidate_books_bnf,
+        ):
+            if len(ext) >= ext_cap:
+                break
+            try:
+                ext.extend(fetch(ext_cap - len(ext)))
+            except Exception as exc:
+                logger.warning("Source livres externe échouée (%s) : %s", fetch.__name__, exc)
+
+    # Mélange : ~55% Wikidata puis sources externes, puis reste WD.
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    wd_first = wd[: max(1, int(limit * 0.55))]
+
+    def _push(batch: list[dict[str, Any]]) -> None:
+        for cand in batch:
+            if len(out) >= limit:
+                return
+            qid = cand.get("qid")
+            if not qid or qid in seen:
+                continue
+            seen.add(qid)
+            out.append(cand)
+
+    _push(wd_first)
+    _push(ext)
+    _push(wd[len(wd_first) :])
     return out
 
 
@@ -571,11 +605,36 @@ _OL_BOOK_SUBJECTS = (
     "historical fiction",
     "young adult",
     "poetry",
+    "thriller",
+    "romance",
+    "horror",
+    "biography",
+    "children",
+    "literature",
+    "detective",
+    "adventure",
+    "classics",
+    "short stories",
+    "drama",
+    "comics",
+    "graphic novels",
+    "science fiction",
+    "littérature française",
+    "roman policier",
 )
 
 
+def _book_cat_from_subjects(subjects: list[str]) -> tuple[str, str]:
+    joined = " ".join(subjects).lower()
+    if "manga" in joined:
+        return "manga", "Manga"
+    if any(x in joined for x in ("bande dessinée", "comic", "comics", "graphic novel", "bd")):
+        return "bd", "BD"
+    return "roman", "Roman"
+
+
 def fetch_candidate_books_openlibrary(limit: int) -> list[dict[str, Any]]:
-    """Livres Open Library déjà illustrés — 2e source, hors Wikidata."""
+    """Livres Open Library — titre+auteur requis, jaquette optionnelle."""
     if limit <= 0:
         return []
     from .isbn_resolve import _ol_cover_url
@@ -583,22 +642,26 @@ def fetch_candidate_books_openlibrary(limit: int) -> list[dict[str, Any]]:
     salt = window_salt()
     n, off = meta_pair("ol_book_scan")
     page_size = 80
-    pages = min(6, max(1, (int(limit) + page_size - 1) // page_size))
+    pages = min(10, max(2, (int(limit) + page_size - 1) // page_size))
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
     for page in range(pages):
         if len(out) >= limit:
             break
         subject = _OL_BOOK_SUBJECTS[(salt + n + page) % len(_OL_BOOK_SUBJECTS)]
-        offset = ((int(off) + page) * page_size) % 20000
+        offset = ((int(off) + page) * page_size) % 40000
         params: dict[str, Any] = {
             "q": f"subject:{subject}",
             "limit": min(max(int(limit) - len(out), 20), page_size),
             "offset": offset,
             "fields": "key,title,author_name,isbn,cover_i,first_publish_year,language,subject",
         }
-        if (salt + page) % 2 == 0:
+        # Alterner FR / toutes langues / EN pour élargir le gisement.
+        lang_mode = (salt + page) % 3
+        if lang_mode == 0:
             params["language"] = "fre"
+        elif lang_mode == 1:
+            params["language"] = "eng"
         try:
             r = requests.get(
                 "https://openlibrary.org/search.json",
@@ -617,26 +680,23 @@ def fetch_candidate_books_openlibrary(limit: int) -> list[dict[str, Any]]:
                 continue
             title = (doc.get("title") or "").strip()
             authors = [a for a in (doc.get("author_name") or []) if is_human_label(a)]
-            cover = _ol_cover_url(doc.get("cover_i"))
+            cover = _ol_cover_url(doc.get("cover_i")) or ""
             key = (doc.get("key") or "").rstrip("/").rsplit("/", 1)[-1]
             if not key.startswith("OL") or key in seen:
                 continue
-            if not is_human_label(title) or not authors or not cover:
+            if not is_human_label(title) or not authors:
                 continue
             seen.add(key)
             subjects = [str(s).lower() for s in (doc.get("subject") or [])[:8]]
-            cat, genre = "roman", "Roman"
-            joined = " ".join(subjects)
-            if "manga" in joined:
-                cat, genre = "manga", "Manga"
-            elif "bande dessinée" in joined or "comic" in joined or "graphic novel" in joined:
-                cat, genre = "bd", "BD"
+            cat, genre = _book_cat_from_subjects(subjects)
             year = doc.get("first_publish_year")
             try:
                 year = int(year) if year else None
             except (TypeError, ValueError):
                 year = None
             isbn = pick_isbn(doc.get("isbn") or [])
+            if not cover and isbn:
+                cover = f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg"
             out.append(
                 {
                     "qid": key,
@@ -646,15 +706,231 @@ def fetch_candidate_books_openlibrary(limit: int) -> list[dict[str, Any]]:
                     "author_qid": "",
                     "category": cat,
                     "genre": genre,
-                    "cover_url": cover,
+                    "cover_url": cover if usable_cover(cover) else "",
                     "isbn": isbn or "",
                     "ol_key": f"/works/{key}" if key.endswith("W") else doc.get("key") or "",
                     "year": year if year and 1400 <= year <= 2035 else None,
+                    "source": "openlibrary",
                 }
             )
             if len(out) >= limit:
                 break
     meta_save_pair("ol_book_scan", n + 1, off + pages)
+    return out
+
+
+_GB_QUERIES = (
+    "subject:fiction",
+    "subject:fantasy",
+    "subject:science fiction",
+    "subject:mystery",
+    "subject:romance",
+    "subject:thriller",
+    "subject:comics",
+    "subject:manga",
+    "subject:poetry",
+    "subject:biography",
+    "subject:juvenile fiction",
+    "subject:historical fiction",
+    'subject:"bande dessinée"',
+    "inauthor:roman",
+)
+
+
+def fetch_candidate_books_google(limit: int) -> list[dict[str, Any]]:
+    """Livres Google Books — 3e source (clé API optionnelle)."""
+    if limit <= 0:
+        return []
+    from .isbn_resolve import GB_URL
+
+    salt = window_salt()
+    n, off = meta_pair("gb_book_scan")
+    page_size = 40
+    pages = min(8, max(1, (int(limit) + page_size - 1) // page_size))
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    key = (os.getenv("GOOGLE_BOOKS_API_KEY") or "").strip()
+    for page in range(pages):
+        if len(out) >= limit:
+            break
+        q = _GB_QUERIES[(salt + n + page) % len(_GB_QUERIES)]
+        start = (int(off) + page * page_size) % 800
+        params: dict[str, Any] = {
+            "q": q,
+            "startIndex": start,
+            "maxResults": min(page_size, max(10, limit - len(out))),
+            "printType": "books",
+            "orderBy": "newest" if (salt + page) % 2 == 0 else "relevance",
+        }
+        if (salt + page) % 3 == 0:
+            params["langRestrict"] = "fr"
+        if key:
+            params["key"] = key
+        try:
+            r = requests.get(GB_URL, params=params, timeout=12, headers=UA)
+            if r.status_code in (403, 429):
+                logger.warning("Google Books limité (%s)", r.status_code)
+                break
+            if r.status_code != 200:
+                continue
+            items = (r.json() or {}).get("items") or []
+        except Exception as exc:
+            logger.warning("Google Books livres échoué : %s", exc)
+            continue
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            info = item.get("volumeInfo") or {}
+            title = (info.get("title") or "").strip()
+            authors = [a for a in (info.get("authors") or []) if is_human_label(a)]
+            if not is_human_label(title) or not authors:
+                continue
+            gid = str(item.get("id") or "").strip()
+            if not gid or gid in seen:
+                continue
+            seen.add(gid)
+            ids = info.get("industryIdentifiers") or []
+            isbn = pick_isbn([x.get("identifier") for x in ids if isinstance(x, dict)])
+            image = info.get("imageLinks") or {}
+            cover = (
+                usable_cover(image.get("thumbnail"))
+                or usable_cover(image.get("smallThumbnail"))
+                or ""
+            )
+            cover = usable_cover(cover)
+            if not cover and isbn:
+                cover = f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg"
+            cats = [str(c).lower() for c in (info.get("categories") or [])[:6]]
+            cat, genre = _book_cat_from_subjects(cats)
+            year = None
+            raw_date = str(info.get("publishedDate") or "")
+            if len(raw_date) >= 4 and raw_date[:4].isdigit():
+                try:
+                    y = int(raw_date[:4])
+                    year = y if 1400 <= y <= 2035 else None
+                except ValueError:
+                    year = None
+            out.append(
+                {
+                    "qid": f"GB:{gid}",
+                    "name": title,
+                    "name_en": title,
+                    "author": authors[0],
+                    "author_qid": "",
+                    "category": cat,
+                    "genre": genre,
+                    "cover_url": cover if usable_cover(cover) else "",
+                    "isbn": isbn or "",
+                    "ol_key": "",
+                    "year": year,
+                    "source": "google_books",
+                }
+            )
+            if len(out) >= limit:
+                break
+    meta_save_pair("gb_book_scan", n + 1, off + pages * page_size)
+    return out
+
+
+_BNF_QUERIES = (
+    'bib.title all "roman"',
+    'bib.title all "nouvelle"',
+    'bib.title all "poésie"',
+    'bib.title all "bande dessinée"',
+    'bib.title all "manga"',
+    'bib.title all "thriller"',
+    'bib.title all "policier"',
+    'bib.title all "fantasy"',
+    'bib.author all "a" and bib.doctype any "a"',
+)
+
+
+def fetch_candidate_books_bnf(limit: int) -> list[dict[str, Any]]:
+    """Livres BnF (SRU) — 4e source, surtout français."""
+    if limit <= 0:
+        return []
+    import xml.etree.ElementTree as ET
+
+    from .isbn_resolve import BNF_SRU
+    from ..openlibrary.isbn_lookup import _DC, _bnf_text
+
+    salt = window_salt()
+    n, off = meta_pair("bnf_book_scan")
+    page_size = 20
+    pages = min(6, max(1, (int(limit) + page_size - 1) // page_size))
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for page in range(pages):
+        if len(out) >= limit:
+            break
+        query = _BNF_QUERIES[(salt + n + page) % len(_BNF_QUERIES)]
+        start = 1 + ((int(off) + page * page_size) % 2000)
+        try:
+            r = requests.get(
+                BNF_SRU,
+                params={
+                    "version": "1.2",
+                    "operation": "searchRetrieve",
+                    "query": query,
+                    "recordSchema": "dublincore",
+                    "maximumRecords": str(min(page_size, max(5, limit - len(out)))),
+                    "startRecord": str(start),
+                },
+                timeout=12,
+                headers={**UA, "Accept": "application/xml"},
+            )
+            if r.status_code != 200:
+                continue
+            root = ET.fromstring(r.content)
+        except Exception as exc:
+            logger.warning("BnF livres échoué : %s", exc)
+            continue
+        for dc in root.findall(".//{http://www.openarchives.org/OAI/2.0/oai_dc/}dc"):
+            title = _bnf_text(dc.find(f"{_DC}title")).split(" / ")[0].strip()
+            creators = [
+                _bnf_text(c).split("(")[0].strip()
+                for c in dc.findall(f"{_DC}creator")
+            ]
+            authors = [a for a in creators if is_human_label(a)]
+            if not is_human_label(title) or not authors:
+                continue
+            idents = [_bnf_text(i) for i in dc.findall(f"{_DC}identifier")]
+            isbn = pick_isbn(idents)
+            ark = next((x for x in idents if "ark:" in x or x.startswith("http")), "")
+            qid = f"BNF:{(isbn or ark or title)[:80]}"
+            if qid in seen:
+                continue
+            seen.add(qid)
+            types = [_bnf_text(t).lower() for t in dc.findall(f"{_DC}type")]
+            subjects = [_bnf_text(s).lower() for s in dc.findall(f"{_DC}subject")]
+            cat, genre = _book_cat_from_subjects(types + subjects)
+            year = None
+            for d in dc.findall(f"{_DC}date"):
+                raw = _bnf_text(d)
+                m = re.search(r"(1[5-9]\d{2}|20[0-3]\d)", raw)
+                if m:
+                    year = int(m.group(1))
+                    break
+            cover = f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg" if isbn else ""
+            out.append(
+                {
+                    "qid": qid,
+                    "name": title,
+                    "name_en": title,
+                    "author": authors[0],
+                    "author_qid": "",
+                    "category": cat,
+                    "genre": genre,
+                    "cover_url": cover if usable_cover(cover) else "",
+                    "isbn": isbn or "",
+                    "ol_key": "",
+                    "year": year,
+                    "source": "bnf",
+                }
+            )
+            if len(out) >= limit:
+                break
+    meta_save_pair("bnf_book_scan", n + 1, off + pages * page_size)
     return out
 
 

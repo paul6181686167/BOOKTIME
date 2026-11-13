@@ -432,6 +432,8 @@ async def test_daily_run_endpoint_requires_secret(test_client: AsyncClient, monk
 def test_fetch_candidate_books_pages_by_year(monkeypatch):
     from datetime import datetime, timezone
 
+    _isolate_meta(monkeypatch)
+    monkeypatch.setenv("ENVIRONMENT", "test")
     calls: list[str] = []
 
     def fake_sparql(query, timeout=55):
@@ -440,12 +442,15 @@ def test_fetch_candidate_books_pages_by_year(monkeypatch):
 
     monkeypatch.setattr(daily_ingest, "_sparql", fake_sparql)
     daily_ingest._active_window = 0
+    # Curseur proche d'aujourd'hui pour couvrir l'année courante.
+    now = datetime.now(timezone.utc).year
+    daily_ingest.meta_save_pair("wd_book_scan", now - 1800, 0)
     daily_ingest.fetch_candidate_books(900)
     assert len(calls) >= 2
     assert any("YEAR(?date)" in c for c in calls)
     assert any("OPTIONAL { ?work wdt:P18 ?img." in c for c in calls)
     assert all("?author rdfs:label ?authorLabel" not in c for c in calls)
-    assert any(str(datetime.now(timezone.utc).year) in c for c in calls)
+    assert any(str(now) in c for c in calls)
 
 
 def test_book_years_starts_with_recent():
@@ -615,7 +620,7 @@ def test_author_scan_cursor_moves_after_a_lot(monkeypatch):
     assert n1 or off1
 
 
-def test_openlibrary_books_need_title_author_cover(monkeypatch):
+def test_openlibrary_books_need_title_author_cover_optional(monkeypatch):
     class FakeResp:
         status_code = 200
 
@@ -631,17 +636,90 @@ def test_openlibrary_books_need_title_author_cover(monkeypatch):
                         "isbn": ["9782070360024"],
                         "first_publish_year": 2001,
                     },
+                    {
+                        "key": "/works/OL3W",
+                        "title": "Sans Jaquette",
+                        "author_name": ["B. Auteur"],
+                        "first_publish_year": 1999,
+                    },
                 ]
             }
 
     monkeypatch.setattr(daily_ingest.requests, "get", lambda *a, **k: FakeResp())
     daily_ingest._active_window = 7
     out = daily_ingest.fetch_candidate_books_openlibrary(20)
+    assert len(out) == 2
+    by_qid = {c["qid"]: c for c in out}
+    assert by_qid["OL2W"]["author"] == "A. Auteur"
+    assert by_qid["OL2W"]["cover_url"].startswith("https://covers.openlibrary.org")
+    assert by_qid["OL2W"]["isbn"] == "9782070360024"
+    assert by_qid["OL3W"]["author"] == "B. Auteur"
+    assert by_qid["OL3W"]["cover_url"] == ""
+
+
+def test_google_books_candidates(monkeypatch):
+    class FakeResp:
+        status_code = 200
+
+        def json(self):
+            return {
+                "items": [
+                    {
+                        "id": "abc123",
+                        "volumeInfo": {
+                            "title": "Roman Google",
+                            "authors": ["Claire Test"],
+                            "publishedDate": "2018-05-01",
+                            "industryIdentifiers": [{"type": "ISBN_13", "identifier": "9782070360024"}],
+                            "imageLinks": {"thumbnail": "http://books.google.com/cover.jpg"},
+                            "categories": ["Fiction"],
+                        },
+                    },
+                    {"id": "noauthor", "volumeInfo": {"title": "Orphelin", "authors": []}},
+                ]
+            }
+
+    monkeypatch.setattr(daily_ingest.requests, "get", lambda *a, **k: FakeResp())
+    daily_ingest._active_window = 3
+    out = daily_ingest.fetch_candidate_books_google(10)
     assert len(out) == 1
-    assert out[0]["qid"] == "OL2W"
-    assert out[0]["author"] == "A. Auteur"
-    assert out[0]["cover_url"].startswith("https://covers.openlibrary.org")
+    assert out[0]["qid"] == "GB:abc123"
+    assert out[0]["author"] == "Claire Test"
+    assert out[0]["cover_url"].startswith("https://")
     assert out[0]["isbn"] == "9782070360024"
+    assert out[0]["source"] == "google_books"
+
+
+def test_bnf_books_candidates(monkeypatch):
+    xml = """<?xml version="1.0"?>
+    <root xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/"
+          xmlns:dc="http://purl.org/dc/elements/1.1/">
+      <oai_dc:dc>
+        <dc:title>Roman BnF / autre</dc:title>
+        <dc:creator>Alice Dupont (romancière)</dc:creator>
+        <dc:identifier>9782070360024</dc:identifier>
+        <dc:date>2012</dc:date>
+        <dc:type>text</dc:type>
+      </oai_dc:dc>
+      <oai_dc:dc>
+        <dc:title>Sans Auteur</dc:title>
+        <dc:identifier>ark:/12148/x</dc:identifier>
+      </oai_dc:dc>
+    </root>"""
+
+    class FakeResp:
+        status_code = 200
+        content = xml.encode("utf-8")
+
+    monkeypatch.setattr(daily_ingest.requests, "get", lambda *a, **k: FakeResp())
+    daily_ingest._active_window = 2
+    out = daily_ingest.fetch_candidate_books_bnf(10)
+    assert len(out) == 1
+    assert out[0]["name"] == "Roman BnF"
+    assert out[0]["author"] == "Alice Dupont"
+    assert out[0]["isbn"] == "9782070360024"
+    assert out[0]["source"] == "bnf"
+    assert out[0]["qid"].startswith("BNF:")
 
 
 def test_pending_retries_after_many_attempts(monkeypatch):
