@@ -167,6 +167,22 @@ def search(q: str, limit: int = 20) -> list[dict[str, Any]]:
         return []
 
 
+def needing_cover(limit: int = 400) -> list[dict[str, Any]]:
+    """Fiches quotidiennes titre+auteur déjà en base, jaquette encore à trouver."""
+    out: list[dict[str, Any]] = []
+    try:
+        cur = _coll().find({"needs_cover": True}).limit(max(1, int(limit)))
+        for doc in cur or []:
+            row = _strip_id(doc if isinstance(doc, dict) else None)
+            if row and row.get("qid") and row.get("name"):
+                out.append(row)
+            if len(out) >= limit:
+                break
+    except Exception:
+        return out
+    return out
+
+
 def upsert_series(entry: dict[str, Any]) -> None:
     doc = prepare_entry(entry)
     qid = (doc.get("qid") or "").strip()

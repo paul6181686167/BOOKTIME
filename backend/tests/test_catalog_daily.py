@@ -27,6 +27,13 @@ def _reset_daily():
     reset_seed_flag()
 
 
+def _isolate_meta(monkeypatch):
+    from app.db_config import MockCollection
+
+    monkeypatch.setattr(daily_ingest, "_window_coll", lambda: MockCollection("catalog_ingest_meta"))
+    _mock_storage.pop("catalog_ingest_meta", None)
+
+
 def test_complete_entry_requires_two_titles_author_and_cover():
     isbn_resolve.reset_budget(0)
     cand = {"qid": "Q1", "name": "Saga Test", "category": "roman", "genre": "Fantasy", "cover_url": ""}
@@ -37,10 +44,13 @@ def test_complete_entry_requires_two_titles_author_and_cover():
     ]
     assert daily_ingest.build_complete_entry(cand, works) is None
     works[0]["author"] = "A. Auteur"
-    assert daily_ingest.build_complete_entry(cand, works) is None
+    draft = daily_ingest.build_complete_entry(cand, works)
+    assert draft is not None
+    assert draft["needs_cover"] is True
     cand["cover_url"] = "https://example.test/c.jpg"
     entry = daily_ingest.build_complete_entry(cand, works)
     assert entry is not None
+    assert entry.get("needs_cover") is False
     assert entry["authors"] == ["A. Auteur"]
     assert entry["volumes"] == 2
     d1 = entry["volume_details"]["1"]
@@ -171,8 +181,9 @@ def test_build_entry_fills_isbn_from_other_sources(monkeypatch):
     assert entry["volume_details"]["1"]["isbn"] == "9782070360024"
 
 
-def test_author_dry_streak_switches_focus_to_works():
+def test_author_dry_streak_switches_focus_to_works(monkeypatch):
     _reset_daily()
+    _isolate_meta(monkeypatch)
     assert daily_ingest.ingest_focus() == "authors"
     assert daily_ingest.daily_series_limit() == 400
     daily_ingest.remember_author_yield(50)
@@ -186,7 +197,21 @@ def test_author_dry_streak_switches_focus_to_works():
     assert daily_ingest.daily_series_limit() == 400
 
 
+def test_works_focus_fills_remaining_lot_with_authors(monkeypatch):
+    _reset_daily()
+    _isolate_meta(monkeypatch)
+    monkeypatch.delenv("CATALOG_DAILY_AUTHORS", raising=False)
+    daily_ingest.remember_author_yield(10)
+    daily_ingest.remember_author_yield(10)
+    daily_ingest.remember_author_yield(10)
+    assert daily_ingest.ingest_focus() == "works"
+    assert daily_ingest.author_fill_cap(9700) == 9700
+    assert daily_ingest.author_fill_cap(0) == 0
+
+
 def test_plafonds_quotidiens_par_defaut(monkeypatch):
+    _reset_daily()
+    _isolate_meta(monkeypatch)
     monkeypatch.delenv("CATALOG_DAILY_SERIES", raising=False)
     monkeypatch.delenv("CATALOG_DAILY_BOOKS", raising=False)
     monkeypatch.delenv("CATALOG_DAILY_FICHES", raising=False)
@@ -701,7 +726,7 @@ def _isolate_catalog(monkeypatch):
     monkeypatch.setattr(seed_mod, "ensure_seeded", lambda **k: {"status": "skipped_test", "seeded": False})
 
 
-def test_incomplete_book_queued_unique_not_counted(monkeypatch):
+def test_book_without_cover_is_catalogued_to_complete_later(monkeypatch):
     _isolate_catalog(monkeypatch)
     book = {
         "qid": "Qpend1",
@@ -720,14 +745,41 @@ def test_incomplete_book_queued_unique_not_counted(monkeypatch):
     monkeypatch.setattr(daily_ingest, "fetch_candidate_books", lambda limit: [book, dict(book)])
     monkeypatch.setattr(daily_pending, "enrich_work_candidate", lambda cand, works: None)
     result = daily_ingest.run_daily_ingest(limit=0, books_limit=5)
-    assert result["added_books"] == 0
-    assert result["fiches"] == 0
-    pending = _mock_storage.get("catalog_daily_pending") or []
-    assert len(pending) == 1
-    assert pending[0]["qid"] == "Qpend1"
-    assert pending[0]["kind"] == "book"
-    assert not any(s.get("qid") == "Qpend1" for s in (_mock_storage.get("catalog_daily_series") or []))
-    assert daily_pending.count() == 1
+    assert result["added_books"] == 1
+    assert result["fiches"] == 1
+    stored = [s for s in (_mock_storage.get("catalog_daily_series") or []) if s.get("qid") == "Qpend1"]
+    assert len(stored) == 1
+    assert stored[0].get("needs_cover") is True
+    assert stored[0].get("authors") == ["Jane Doe"]
+    assert daily_pending.count() == 0
+
+
+def test_complete_missing_covers_fills_later(monkeypatch):
+    _isolate_catalog(monkeypatch)
+    daily_store.upsert_series(
+        {
+            "qid": "Qlater",
+            "name": "Livre À Compléter",
+            "authors": ["Jane Doe"],
+            "category": "roman",
+            "genre": "Roman",
+            "cover_url": "",
+            "needs_cover": True,
+            "volumes": 1,
+            "volume_titles": {"1": "Livre À Compléter"},
+            "volume_details": {"1": {"author": "Jane Doe", "cover_url": ""}},
+            "source": "daily",
+        }
+    )
+
+    def fake_enrich(cand, works):
+        cand["cover_url"] = "https://covers.example/found.jpg"
+
+    monkeypatch.setattr(daily_pending, "enrich_work_candidate", fake_enrich)
+    assert daily_ingest.complete_missing_covers(10) == 1
+    saved = next(s for s in daily_store.all_series() if s.get("qid") == "Qlater")
+    assert saved.get("needs_cover") is False
+    assert saved.get("cover_url") == "https://covers.example/found.jpg"
 
 
 def test_qid_name_and_known_not_queued(monkeypatch):

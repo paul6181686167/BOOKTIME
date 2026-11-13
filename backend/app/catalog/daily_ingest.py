@@ -109,6 +109,13 @@ def daily_books_limit() -> int:
     return _env_int("CATALOG_DAILY_BOOKS", 10000, 0, 12000)
 
 
+def author_fill_cap(remaining: int) -> int:
+    """Comble le lot avec des auteurs après séries/livres, quel que soit le focus."""
+    from .daily_authors import daily_authors_limit
+
+    return min(daily_authors_limit(), max(0, int(remaining or 0)))
+
+
 def daily_fiches_target() -> int:
     """Objectif : 10 000 fiches (séries + livres + auteurs) par lot."""
     return _env_int("CATALOG_DAILY_FICHES", 10000, 100, 15000)
@@ -552,76 +559,83 @@ def fetch_candidate_books_openlibrary(limit: int) -> list[dict[str, Any]]:
     """Livres Open Library déjà illustrés — 2e source, hors Wikidata."""
     if limit <= 0:
         return []
-    salt = window_salt()
-    subject = _OL_BOOK_SUBJECTS[salt % len(_OL_BOOK_SUBJECTS)]
-    offset = ((salt // len(_OL_BOOK_SUBJECTS)) % 250) * 40
-    params: dict[str, Any] = {
-        "q": f"subject:{subject}",
-        "limit": min(max(int(limit), 20), 80),
-        "offset": offset,
-        "fields": "key,title,author_name,isbn,cover_i,first_publish_year,language,subject",
-    }
-    if salt % 2 == 0:
-        params["language"] = "fre"
-    try:
-        r = requests.get(
-            "https://openlibrary.org/search.json",
-            params=params,
-            timeout=12,
-            headers=UA,
-        )
-        if r.status_code != 200:
-            return []
-        docs = (r.json() or {}).get("docs") or []
-    except Exception as exc:
-        logger.warning("Open Library livres échoué : %s", exc)
-        return []
     from .isbn_resolve import _ol_cover_url
 
+    salt = window_salt()
+    n, off = meta_pair("ol_book_scan")
+    page_size = 80
+    pages = min(6, max(1, (int(limit) + page_size - 1) // page_size))
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
-    for doc in docs:
-        if not isinstance(doc, dict):
-            continue
-        title = (doc.get("title") or "").strip()
-        authors = [a for a in (doc.get("author_name") or []) if is_human_label(a)]
-        cover = _ol_cover_url(doc.get("cover_i"))
-        key = (doc.get("key") or "").rstrip("/").rsplit("/", 1)[-1]
-        if not key.startswith("OL") or key in seen:
-            continue
-        if not is_human_label(title) or not authors or not cover:
-            continue
-        seen.add(key)
-        subjects = [str(s).lower() for s in (doc.get("subject") or [])[:8]]
-        cat, genre = "roman", "Roman"
-        joined = " ".join(subjects)
-        if "manga" in joined:
-            cat, genre = "manga", "Manga"
-        elif "bande dessinée" in joined or "comic" in joined or "graphic novel" in joined:
-            cat, genre = "bd", "BD"
-        year = doc.get("first_publish_year")
-        try:
-            year = int(year) if year else None
-        except (TypeError, ValueError):
-            year = None
-        isbn = pick_isbn(doc.get("isbn") or [])
-        out.append(
-            {
-                "qid": key,
-                "name": title,
-                "name_en": title,
-                "author": authors[0],
-                "author_qid": "",
-                "category": cat,
-                "genre": genre,
-                "cover_url": cover,
-                "isbn": isbn or "",
-                "ol_key": f"/works/{key}" if key.endswith("W") else doc.get("key") or "",
-                "year": year if year and 1400 <= year <= 2035 else None,
-            }
-        )
+    for page in range(pages):
         if len(out) >= limit:
             break
+        subject = _OL_BOOK_SUBJECTS[(salt + n + page) % len(_OL_BOOK_SUBJECTS)]
+        offset = ((int(off) + page) * page_size) % 20000
+        params: dict[str, Any] = {
+            "q": f"subject:{subject}",
+            "limit": min(max(int(limit) - len(out), 20), page_size),
+            "offset": offset,
+            "fields": "key,title,author_name,isbn,cover_i,first_publish_year,language,subject",
+        }
+        if (salt + page) % 2 == 0:
+            params["language"] = "fre"
+        try:
+            r = requests.get(
+                "https://openlibrary.org/search.json",
+                params=params,
+                timeout=12,
+                headers=UA,
+            )
+            if r.status_code != 200:
+                continue
+            docs = (r.json() or {}).get("docs") or []
+        except Exception as exc:
+            logger.warning("Open Library livres échoué : %s", exc)
+            continue
+        for doc in docs:
+            if not isinstance(doc, dict):
+                continue
+            title = (doc.get("title") or "").strip()
+            authors = [a for a in (doc.get("author_name") or []) if is_human_label(a)]
+            cover = _ol_cover_url(doc.get("cover_i"))
+            key = (doc.get("key") or "").rstrip("/").rsplit("/", 1)[-1]
+            if not key.startswith("OL") or key in seen:
+                continue
+            if not is_human_label(title) or not authors or not cover:
+                continue
+            seen.add(key)
+            subjects = [str(s).lower() for s in (doc.get("subject") or [])[:8]]
+            cat, genre = "roman", "Roman"
+            joined = " ".join(subjects)
+            if "manga" in joined:
+                cat, genre = "manga", "Manga"
+            elif "bande dessinée" in joined or "comic" in joined or "graphic novel" in joined:
+                cat, genre = "bd", "BD"
+            year = doc.get("first_publish_year")
+            try:
+                year = int(year) if year else None
+            except (TypeError, ValueError):
+                year = None
+            isbn = pick_isbn(doc.get("isbn") or [])
+            out.append(
+                {
+                    "qid": key,
+                    "name": title,
+                    "name_en": title,
+                    "author": authors[0],
+                    "author_qid": "",
+                    "category": cat,
+                    "genre": genre,
+                    "cover_url": cover,
+                    "isbn": isbn or "",
+                    "ol_key": f"/works/{key}" if key.endswith("W") else doc.get("key") or "",
+                    "year": year if year and 1400 <= year <= 2035 else None,
+                }
+            )
+            if len(out) >= limit:
+                break
+    meta_save_pair("ol_book_scan", n + 1, off + pages)
     return out
 
 
@@ -716,7 +730,7 @@ def build_complete_entry(
     min_volumes: int = 2,
     standalone: bool = False,
 ) -> dict[str, Any] | None:
-    """None si la fiche n'est pas complète (titre, auteur, jaquette, assez de tomes)."""
+    """None sans titre ou auteur réels. Jaquette optionnelle : needs_cover à compléter plus tard."""
     if not is_human_label(cand.get("name")):
         return None
     titled = [w for w in works if is_human_label(w.get("title"))]
@@ -736,8 +750,8 @@ def build_complete_entry(
             if isbn:
                 cover = f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg"
                 break
-    if not cover:
-        return None
+    needs_cover = not bool(cover)
+    cover = cover or ""
     cat = cand.get("category") or "roman"
     genre = cand.get("genre") or "Roman"
     lang = "français"
@@ -810,6 +824,7 @@ def build_complete_entry(
         "language": lang,
         "genre": genre,
         "source": "daily",
+        "needs_cover": needs_cover,
         **({"volume_titles_en": volume_titles_en} if volume_titles_en else {}),
     }
 
@@ -1039,6 +1054,59 @@ def _ingest_books(
     return added, skipped, fiches
 
 
+def complete_missing_covers(cap: int = 400) -> int:
+    """Complète les jaquettes des fiches déjà cataloguées (titre+auteur, sans image)."""
+    from . import daily_pending, daily_store
+
+    filled = 0
+    if cap <= 0:
+        return 0
+    for doc in daily_store.needing_cover(cap):
+        if usable_cover(doc.get("cover_url")):
+            doc["needs_cover"] = False
+            daily_store.upsert_series(doc)
+            filled += 1
+            continue
+        details = doc.get("volume_details") if isinstance(doc.get("volume_details"), dict) else {}
+        works: list[dict[str, Any]] = []
+        for vn in sorted(details, key=lambda k: int(k) if str(k).isdigit() else 0):
+            d = details.get(vn) or {}
+            works.append(
+                {
+                    "title": (doc.get("volume_titles") or {}).get(vn) or doc.get("name") or "",
+                    "author": d.get("author") or (doc.get("authors") or [""])[0],
+                    "isbn": d.get("isbn") or "",
+                    "ol_key": d.get("ol_key") or "",
+                }
+            )
+        if not works:
+            authors = [a for a in (doc.get("authors") or []) if a]
+            works = [{"title": doc.get("name") or "", "author": authors[0] if authors else ""}]
+        cand = {
+            "qid": doc.get("qid"),
+            "name": doc.get("name"),
+            "name_en": doc.get("name_en"),
+            "author": (doc.get("authors") or [""])[0] if doc.get("authors") else "",
+            "cover_url": doc.get("cover_url") or "",
+            "isbn": (works[0].get("isbn") if works else "") or "",
+            "ol_key": (works[0].get("ol_key") if works else "") or "",
+        }
+        daily_pending.enrich_work_candidate(cand, works)
+        cover = usable_cover(cand.get("cover_url"))
+        if not cover:
+            cover = wiki_cover(doc.get("name") or "", doc.get("name_en"))
+        if not cover:
+            continue
+        doc["cover_url"] = cover
+        doc["needs_cover"] = False
+        for d in details.values():
+            if isinstance(d, dict) and not usable_cover(d.get("cover_url")):
+                d["cover_url"] = cover
+        daily_store.upsert_series(doc)
+        filled += 1
+    return filled
+
+
 def run_daily_ingest(
     *,
     limit: int | None = None,
@@ -1169,6 +1237,8 @@ def run_daily_ingest(
         )
         n_books += len(book_names)
         remaining = max(0, target - n_series - n_books - int(recovered.get("added_authors") or 0))
+        complete_missing_covers(_env_int("CATALOG_COVER_BACKFILL", 400, 0, 2000))
+        remaining = max(0, target - n_series - n_books - int(recovered.get("added_authors") or 0))
         if remaining > 0:
             _merge_recovered(
                 daily_pending.enrich_and_promote(
@@ -1184,10 +1254,7 @@ def run_daily_ingest(
         elif limit is not None or books_limit is not None:
             author_cap = 0
         else:
-            if ingest_focus() == "works":
-                author_cap = min(300, remaining)
-            else:
-                author_cap = min(daily_authors_limit(), remaining)
+            author_cap = author_fill_cap(remaining)
         author_names, skip_a = ingest_authors(author_cap, hints=author_hints)
         if limit is None and books_limit is None and authors_limit is None:
             remember_author_yield(len(author_names))
