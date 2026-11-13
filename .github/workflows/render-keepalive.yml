@@ -1,0 +1,34 @@
+name: Keep-alive Render
+
+# Empêche le sleep Render pendant la course au million (ping toutes les 10 min).
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: render-keepalive
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping backend
+        run: |
+          URL="${{ vars.BACKEND_PING_URL }}"
+          if [ -z "$URL" ]; then
+            URL="https://booktime-uo15.onrender.com/ping"
+          fi
+          for i in 1 2 3; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$URL" || echo "000")
+            echo "ping $i -> $code"
+            if [ "$code" = "200" ]; then exit 0; fi
+            sleep 8
+          done
+          exit 0

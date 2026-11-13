@@ -80,8 +80,10 @@ jobs:
 
           wait_idle() {
             local raw="{}"
-            for i in $(seq 1 150); do
-              sleep 20
+            for i in $(seq 1 200); do
+              sleep 12
+              curl -s -o /dev/null --max-time 20 "$URL" || true
+              # double ping pour limiter le sleep Render
               curl -s -o /dev/null --max-time 20 "$URL" || true
               raw=$(read_status)
               echo "Poll $i : $raw"

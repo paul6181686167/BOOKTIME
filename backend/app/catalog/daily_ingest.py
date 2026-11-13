@@ -10,6 +10,7 @@ import logging
 import os
 import re
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from typing import Any
@@ -769,7 +770,12 @@ def fetch_candidate_books_google(limit: int) -> list[dict[str, Any]]:
         try:
             r = requests.get(GB_URL, params=params, timeout=12, headers=UA)
             if r.status_code in (403, 429):
-                logger.warning("Google Books limité (%s)", r.status_code)
+                logger.warning(
+                    "Google Books limité (%s)%s",
+                    r.status_code,
+                    "" if key else " — définir GOOGLE_BOOKS_API_KEY",
+                )
+                time.sleep(2)
                 break
             if r.status_code != 200:
                 continue
@@ -1735,6 +1741,13 @@ def run_works_backfill(cap: int | None = None) -> dict[str, Any]:
         recovered = daily_pending.enrich_and_promote(cap=min(500, target))
         fiches += int(recovered.get("fiches") or 0)
         added_names.extend(list(recovered.get("names") or []))
+        try:
+            from .retry_skipped import retry_skipped_no_author
+
+            retried = retry_skipped_no_author(cap=min(400, max(50, target // 10)))
+            fiches += int(retried.get("promoted") or 0)
+        except Exception as exc:
+            logger.warning("Retry skip no_author échoué : %s", exc)
         remaining = max(0, target - fiches)
         # Forcer un gros pull multi-sources livres
         books, skip_b, book_n = _ingest_books(remaining, known, None, names)

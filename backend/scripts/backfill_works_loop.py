@@ -34,10 +34,12 @@ def _log(msg: str) -> None:
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--rounds", type=int, default=50)
-    p.add_argument("--works-limit", type=int, default=20000, help="œuvres dump OL par round")
+    p.add_argument("--works-limit", type=int, default=15000, help="œuvres dump OL par round")
+    p.add_argument("--editions-limit", type=int, default=15000, help="éditions dump OL par round")
     p.add_argument("--api-cap", type=int, default=3000, help="fiches via API OL/GB/BnF/WD par round")
     p.add_argument("--recover-cap", type=int, default=2000, help="auteurs DB × Wikidata par round")
     p.add_argument("--authors-seed", type=int, default=300000, help="cache auteurs OL au 1er passage")
+    p.add_argument("--dump-workers", type=int, default=2)
     p.add_argument("--no-dump", action="store_true")
     p.add_argument("--sleep", type=int, default=5)
     args = p.parse_args()
@@ -86,7 +88,24 @@ def main() -> int:
                 if not prog.get("authors_done") and cached < 100000:
                     _log(f"seeding authors cache (cap {args.authors_seed})…")
                     _log(str(ol_dump_import.import_authors_dump(limit=args.authors_seed)))
-                _log(str(ol_dump_import.import_works_dump(limit=args.works_limit)))
+                if args.dump_workers > 1:
+                    subprocess.run(
+                        [
+                            sys.executable,
+                            str(ROOT / "scripts" / "import_ol_dump_workers.py"),
+                            "--workers",
+                            str(args.dump_workers),
+                            "--works-limit",
+                            str(args.works_limit),
+                            "--editions-limit",
+                            str(args.editions_limit),
+                        ],
+                        cwd=str(ROOT),
+                        check=False,
+                    )
+                else:
+                    _log(str(ol_dump_import.import_works_dump(limit=args.works_limit)))
+                    _log(str(ol_dump_import.import_editions_dump(limit=args.editions_limit)))
             except Exception as exc:
                 _log(f"dump_err {exc}")
 

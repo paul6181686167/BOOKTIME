@@ -1,9 +1,9 @@
-"""Import dump Open Library (auteurs puis œuvres) vers Mongo live.
+"""Import dump Open Library (auteurs / works / editions).
 
-Exemples :
-  python scripts/import_ol_dump.py --authors-limit 500000
-  python scripts/import_ol_dump.py --works-limit 80000
-  python scripts/import_ol_dump.py --works-limit 100000 --works-file D:/data/ol_dump_works.txt.gz
+  python scripts/import_ol_dump.py --download all
+  python scripts/import_ol_dump.py --authors-limit 300000
+  python scripts/import_ol_dump.py --works-limit 50000 --worker-id 0 --workers 4
+  python scripts/import_ol_dump.py --editions-limit 50000
 """
 from __future__ import annotations
 
@@ -29,12 +29,15 @@ def _load_env() -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--authors-limit", type=int, default=0, help="0 = tout le dump auteurs")
-    parser.add_argument("--works-limit", type=int, default=50000)
-    parser.add_argument("--authors-file", default="", help="chemin local dump auteurs .gz")
-    parser.add_argument("--works-file", default="", help="chemin local dump works .gz")
-    parser.add_argument("--skip-authors", action="store_true")
-    parser.add_argument("--authors-only", action="store_true")
+    parser.add_argument("--download", choices=["authors", "works", "editions", "all"], default="")
+    parser.add_argument("--authors-limit", type=int, default=-1, help="-1=skip, 0=all, N=cap")
+    parser.add_argument("--works-limit", type=int, default=-1)
+    parser.add_argument("--editions-limit", type=int, default=-1)
+    parser.add_argument("--authors-file", default="")
+    parser.add_argument("--works-file", default="")
+    parser.add_argument("--editions-file", default="")
+    parser.add_argument("--worker-id", type=int, default=0)
+    parser.add_argument("--workers", type=int, default=1)
     args = parser.parse_args()
 
     _load_env()
@@ -48,28 +51,51 @@ def main() -> int:
 
     reset_budget(0)
     reset_cover_budget(0)
-
     client = MongoClient(os.environ["MONGO_URL"], serverSelectionTimeoutMS=30000)
     db = client[os.environ.get("DATABASE_NAME") or "booktime"]
     database._client = client
     database._db = db
 
-    if not args.skip_authors:
-        print("=== authors dump ===", flush=True)
-        stats = ol_dump_import.import_authors_dump(
-            args.authors_file or None,
-            limit=args.authors_limit,
-        )
-        print(stats, flush=True)
-        if args.authors_only:
-            return 0
+    if args.download:
+        kinds = ["authors", "works", "editions"] if args.download == "all" else [args.download]
+        for kind in kinds:
+            path = ol_dump_import.download_dump(kind)
+            print(f"downloaded {kind} -> {path} ({path.stat().st_size} bytes)", flush=True)
 
-    print("=== works dump ===", flush=True)
-    stats = ol_dump_import.import_works_dump(
-        args.works_file or None,
-        limit=args.works_limit,
-    )
-    print(stats, flush=True)
+    if args.authors_limit >= 0 or args.authors_file:
+        print("=== authors ===", flush=True)
+        print(
+            ol_dump_import.import_authors_dump(
+                args.authors_file or None,
+                limit=max(0, args.authors_limit),
+            ),
+            flush=True,
+        )
+
+    if args.works_limit >= 0 or args.works_file:
+        print("=== works ===", flush=True)
+        print(
+            ol_dump_import.import_works_dump(
+                args.works_file or None,
+                limit=args.works_limit if args.works_limit >= 0 else 50000,
+                worker_id=args.worker_id,
+                workers=max(1, args.workers),
+            ),
+            flush=True,
+        )
+
+    if args.editions_limit >= 0 or args.editions_file:
+        print("=== editions ===", flush=True)
+        print(
+            ol_dump_import.import_editions_dump(
+                args.editions_file or None,
+                limit=args.editions_limit if args.editions_limit >= 0 else 50000,
+                worker_id=args.worker_id,
+                workers=max(1, args.workers),
+            ),
+            flush=True,
+        )
+
     series = db["catalog_daily_series"].count_documents({})
     authors = db["authors"].count_documents({})
     print(f"catalog series={series} authors={authors} total={series + authors}", flush=True)

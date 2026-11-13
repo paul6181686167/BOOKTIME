@@ -5,7 +5,8 @@ services:
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: python -u start_render.py
-    plan: free
+    # starter = pas de sleep (contrairement au free) — requis pour lots / backfill 24/7
+    plan: starter
 
     # Variables d'environnement
     # Les valeurs "sync: false" doivent être saisies manuellement
@@ -38,6 +39,14 @@ services:
         sync: false
       - key: FROM_EMAIL
         sync: false
+      - key: GOOGLE_BOOKS_API_KEY
+        sync: false
+      - key: CATALOG_ADD_AUTHORS
+        value: "0"
+      - key: CATALOG_DAILY_FICHES
+        value: "15000"
+      - key: OL_DUMP_BULK_SIZE
+        value: "800"
       - key: SMTP_HOST
         value: "smtp.gmail.com"
       - key: SMTP_PORT

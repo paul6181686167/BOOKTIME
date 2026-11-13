@@ -29,8 +29,8 @@ def test_iter_json_records_and_author_keys(tmp_path: Path):
     )
     rows = list(ol_dump_import._iter_json_records(str(f)))
     assert len(rows) == 2
-    assert rows[0][0] == "/authors/OL1A"
-    assert is_human_label(rows[0][1]["name"])
+    assert rows[0][1] == "/authors/OL1A"
+    assert is_human_label(rows[0][2]["name"])
 
 
 def test_work_author_keys_and_cover():
@@ -45,3 +45,19 @@ def test_work_author_keys_and_cover():
     assert "12345" in ol_dump_import._cover_from_work(data)
     assert ol_dump_import._cat_from_subjects(data["subjects"])[0] == "manga"
     assert ol_dump_import._year_from_work(data) == 1998
+
+
+def test_edition_keys_and_worker_sharding():
+    data = {
+        "title": "Edition Dump",
+        "authors": [{"key": "/authors/OL8A"}],
+        "isbn_13": ["9782070360024"],
+        "covers": [9],
+        "works": [{"key": "/works/OL1W"}],
+        "publish_date": "2001",
+    }
+    assert ol_dump_import._author_keys_from_record(data) == ["OL8A"]
+    assert ol_dump_import._year_from_record(data) == 2001
+    assert ol_dump_import._worker_keeps(4, 0, 4) is True
+    assert ol_dump_import._worker_keeps(5, 0, 4) is False
+    assert ol_dump_import._worker_keeps(5, 1, 4) is True
