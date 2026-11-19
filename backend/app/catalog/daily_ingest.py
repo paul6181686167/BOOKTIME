@@ -2096,7 +2096,18 @@ def run_works_backfill(cap: int | None = None) -> dict[str, Any]:
         logger.info("Backfill œuvres : +%d fiches (ignorés=%d)", fiches, skipped)
         return result
     except Exception as exc:
-        _job_last = {"status": "error", "error": str(exc)[:240], "added": 0, "fiches": 0, "mode": "backfill"}
+        msg = str(exc)
+        soft = "space quota" in msg.lower() or "8000" in msg or "atlas" in msg.lower()
+        _job_last = {
+            "status": "error_soft" if soft else "error",
+            "error": msg[:240],
+            "added": 0,
+            "fiches": 0,
+            "mode": "backfill",
+        }
+        if soft:
+            logger.warning("Backfill œuvres soft-fail (quota) : %s", msg[:200])
+            return _job_last
         raise
     finally:
         _job_running = False
