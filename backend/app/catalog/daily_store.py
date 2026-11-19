@@ -183,11 +183,63 @@ def needing_cover(limit: int = 400) -> list[dict[str, Any]]:
     return out
 
 
+def needing_summary(limit: int = 200) -> list[dict[str, Any]]:
+    """Fiches sans résumé réel (flag needs_summary ou description absente)."""
+    out: list[dict[str, Any]] = []
+    lim = max(1, int(limit))
+    try:
+        cur = _coll().find(
+            {
+                "$or": [
+                    {"needs_summary": True},
+                    {"description": {"$exists": False}},
+                    {"description": ""},
+                    {"description": None},
+                ]
+            }
+        ).limit(lim * 2)
+        for doc in cur or []:
+            row = _strip_id(doc if isinstance(doc, dict) else None)
+            if not row or not row.get("qid") or not row.get("name"):
+                continue
+            # Ignorer si volume_details a déjà un vrai texte (filtré plus bas côté enrich)
+            out.append(row)
+            if len(out) >= lim:
+                break
+    except Exception:
+        return out
+    return out
+
+
 def upsert_series(entry: dict[str, Any]) -> None:
     doc = prepare_entry(entry)
     qid = (doc.get("qid") or "").strip()
     if not qid:
         return
     doc["source"] = doc.get("source") or "daily"
-    doc["added_at"] = datetime.now(timezone.utc).isoformat()
-    _coll().update_one({"qid": qid}, {"$set": doc}, upsert=True)
+    # Ne pas écraser added_at sur une mise à jour (cover/summary)
+    if not doc.get("added_at"):
+        try:
+            prev = _coll().find_one({"qid": qid}, {"added_at": 1})
+            if prev and prev.get("added_at"):
+                doc["added_at"] = prev["added_at"]
+        except Exception:
+            pass
+    if not doc.get("added_at"):
+        doc["added_at"] = datetime.now(timezone.utc).isoformat()
+    mongo_ok = True
+    try:
+        _coll().update_one({"qid": qid}, {"$set": doc}, upsert=True)
+    except Exception as exc:
+        msg = str(exc).lower()
+        if "space quota" in msg or "8000" in msg:
+            mongo_ok = False
+        else:
+            raise
+    # Toujours mirroir PC (référence) — surtout si Atlas est plein
+    try:
+        from . import catalog_media
+
+        catalog_media.mirror_to_sqlite(doc, synced=1 if mongo_ok else 0)
+    except Exception:
+        pass

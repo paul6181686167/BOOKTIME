@@ -1,6 +1,7 @@
 """Ajoute chaque jour de nouvelles fiches COMPLÈTES au noyau curé.
 
-Sources œuvres : Wikidata, Open Library, Google Books, BnF (mélange).
+Sources œuvres : Wikidata, Open Library, Google Books, BnF/data.bnf,
+Project Gutenberg, Internet Archive (mélange).
 Enrichissement : Wikipedia / Commons / Google Books / BnF (jaquette, photo, ISBN).
 Rien n'est inventé.
 """
@@ -119,12 +120,12 @@ def remember_author_yield(n_authors: int) -> None:
 
 
 def daily_series_limit() -> int:
-    default = 12000 if ingest_focus() == "works" else 400
-    return _env_int("CATALOG_DAILY_SERIES", default, 1, 20000)
+    default = 20000 if ingest_focus() == "works" else 400
+    return _env_int("CATALOG_DAILY_SERIES", default, 1, 50000)
 
 
 def daily_books_limit() -> int:
-    return _env_int("CATALOG_DAILY_BOOKS", 15000, 0, 20000)
+    return _env_int("CATALOG_DAILY_BOOKS", 25000, 0, 50000)
 
 
 def author_fill_cap(remaining: int) -> int:
@@ -137,8 +138,8 @@ def author_fill_cap(remaining: int) -> int:
 
 
 def daily_fiches_target() -> int:
-    """Objectif : 15 000 fiches (séries + livres) par lot."""
-    return _env_int("CATALOG_DAILY_FICHES", 15000, 100, 20000)
+    """Objectif : 25 000 fiches (séries + livres) par lot."""
+    return _env_int("CATALOG_DAILY_FICHES", 25000, 100, 50000)
 
 
 def catalog_goal() -> int:
@@ -566,6 +567,8 @@ def fetch_candidate_books(limit: int) -> list[dict[str, Any]]:
             fetch_candidate_books_openlibrary,
             fetch_candidate_books_google,
             fetch_candidate_books_bnf,
+            fetch_candidate_books_gutenberg,
+            fetch_candidate_books_internet_archive,
         ):
             if len(ext) >= ext_cap:
                 break
@@ -847,12 +850,118 @@ _BNF_QUERIES = (
     'bib.title all "thriller"',
     'bib.title all "policier"',
     'bib.title all "fantasy"',
+    'bib.title all "science-fiction"',
+    'bib.title all "biographie"',
+    'bib.title all "essai"',
+    'bib.title all "conte"',
+    'bib.title all "théâtre"',
     'bib.author all "a" and bib.doctype any "a"',
+    'bib.author all "e" and bib.doctype any "a"',
+    'bib.author all "i" and bib.doctype any "a"',
+    'bib.author all "o" and bib.doctype any "a"',
+    'bib.author all "u" and bib.doctype any "a"',
 )
+BNF_DATA_SPARQL = "https://data.bnf.fr/sparql"
+
+
+def _bnf_append_candidate(
+    out: list[dict[str, Any]],
+    seen: set[str],
+    *,
+    title: str,
+    author: str,
+    isbn: str = "",
+    ark: str = "",
+    subjects: list[str] | None = None,
+    year: int | None = None,
+    source: str = "bnf",
+    limit: int,
+) -> bool:
+    if len(out) >= limit:
+        return True
+    if not is_human_label(title) or not is_human_label(author):
+        return False
+    qid = f"BNF:{(isbn or ark or title)[:80]}"
+    if qid in seen:
+        return False
+    seen.add(qid)
+    cat, genre = _book_cat_from_subjects(subjects or [])
+    cover = f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg" if isbn else ""
+    out.append(
+        {
+            "qid": qid,
+            "name": title,
+            "name_en": title,
+            "author": author,
+            "author_qid": "",
+            "category": cat,
+            "genre": genre,
+            "cover_url": cover if usable_cover(cover) else "",
+            "isbn": isbn or "",
+            "ol_key": "",
+            "year": year,
+            "source": source,
+        }
+    )
+    return len(out) >= limit
+
+
+def fetch_candidate_books_bnf_data(limit: int) -> list[dict[str, Any]]:
+    """Livres via SPARQL data.bnf.fr (bulk FR)."""
+    if limit <= 0:
+        return []
+    salt = window_salt()
+    n, off = meta_pair("bnf_data_scan")
+    offset = int(off) + (salt * 50)
+    page = min(200, max(40, int(limit)))
+    query = f"""
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX bnf-onto: <http://data.bnf.fr/ontology/bnf-onto/>
+SELECT DISTINCT ?work ?title ?author WHERE {{
+  ?work a bnf-onto:Work ;
+        dc:title ?title .
+  OPTIONAL {{
+    ?work foaf:contributor ?p .
+    ?p foaf:name ?author .
+  }}
+}}
+OFFSET {offset}
+LIMIT {page}
+"""
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    try:
+        r = requests.get(
+            BNF_DATA_SPARQL,
+            params={"query": query, "format": "json"},
+            timeout=25,
+            headers=SPARQL_UA,
+        )
+        if r.status_code != 200:
+            meta_save_pair("bnf_data_scan", n + 1, offset + page)
+            return []
+        bindings = (r.json().get("results") or {}).get("bindings") or []
+    except Exception as exc:
+        logger.warning("data.bnf SPARQL échoué : %s", exc)
+        meta_save_pair("bnf_data_scan", n + 1, offset + page)
+        return []
+    for row in bindings:
+        title = ((row.get("title") or {}).get("value") or "").split(" / ")[0].strip()
+        author = ((row.get("author") or {}).get("value") or "").split("(")[0].strip()
+        work = ((row.get("work") or {}).get("value") or "")
+        if not author:
+            continue
+        if _bnf_append_candidate(
+            out, seen, title=title, author=author, ark=work, source="bnf_data", limit=limit
+        ):
+            break
+    meta_save_pair("bnf_data_scan", n + 1, offset + page)
+    return out[:limit]
 
 
 def fetch_candidate_books_bnf(limit: int) -> list[dict[str, Any]]:
-    """Livres BnF (SRU) — 4e source, surtout français."""
+    """Livres BnF : SRU catalogue + SPARQL data.bnf (bulk FR)."""
     if limit <= 0:
         return []
     import xml.etree.ElementTree as ET
@@ -862,15 +971,15 @@ def fetch_candidate_books_bnf(limit: int) -> list[dict[str, Any]]:
 
     salt = window_salt()
     n, off = meta_pair("bnf_book_scan")
-    page_size = 20
-    pages = min(6, max(1, (int(limit) + page_size - 1) // page_size))
+    page_size = 50
+    pages = min(16, max(2, (int(limit) + page_size - 1) // page_size))
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
     for page in range(pages):
         if len(out) >= limit:
             break
         query = _BNF_QUERIES[(salt + n + page) % len(_BNF_QUERIES)]
-        start = 1 + ((int(off) + page * page_size) % 2000)
+        start = 1 + ((int(off) + page * page_size) % 8000)
         try:
             r = requests.get(
                 BNF_SRU,
@@ -879,10 +988,10 @@ def fetch_candidate_books_bnf(limit: int) -> list[dict[str, Any]]:
                     "operation": "searchRetrieve",
                     "query": query,
                     "recordSchema": "dublincore",
-                    "maximumRecords": str(min(page_size, max(5, limit - len(out)))),
+                    "maximumRecords": str(min(page_size, max(10, limit - len(out)))),
                     "startRecord": str(start),
                 },
-                timeout=12,
+                timeout=18,
                 headers={**UA, "Accept": "application/xml"},
             )
             if r.status_code != 200:
@@ -898,18 +1007,13 @@ def fetch_candidate_books_bnf(limit: int) -> list[dict[str, Any]]:
                 for c in dc.findall(f"{_DC}creator")
             ]
             authors = [a for a in creators if is_human_label(a)]
-            if not is_human_label(title) or not authors:
+            if not authors:
                 continue
             idents = [_bnf_text(i) for i in dc.findall(f"{_DC}identifier")]
             isbn = pick_isbn(idents)
             ark = next((x for x in idents if "ark:" in x or x.startswith("http")), "")
-            qid = f"BNF:{(isbn or ark or title)[:80]}"
-            if qid in seen:
-                continue
-            seen.add(qid)
             types = [_bnf_text(t).lower() for t in dc.findall(f"{_DC}type")]
             subjects = [_bnf_text(s).lower() for s in dc.findall(f"{_DC}subject")]
-            cat, genre = _book_cat_from_subjects(types + subjects)
             year = None
             for d in dc.findall(f"{_DC}date"):
                 raw = _bnf_text(d)
@@ -917,26 +1021,195 @@ def fetch_candidate_books_bnf(limit: int) -> list[dict[str, Any]]:
                 if m:
                     year = int(m.group(1))
                     break
-            cover = f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg" if isbn else ""
-            out.append(
-                {
-                    "qid": qid,
-                    "name": title,
-                    "name_en": title,
-                    "author": authors[0],
-                    "author_qid": "",
-                    "category": cat,
-                    "genre": genre,
-                    "cover_url": cover if usable_cover(cover) else "",
-                    "isbn": isbn or "",
-                    "ol_key": "",
-                    "year": year,
-                    "source": "bnf",
-                }
-            )
-            if len(out) >= limit:
+            if _bnf_append_candidate(
+                out,
+                seen,
+                title=title,
+                author=authors[0],
+                isbn=isbn or "",
+                ark=ark,
+                subjects=types + subjects,
+                year=year,
+                source="bnf",
+                limit=limit,
+            ):
                 break
     meta_save_pair("bnf_book_scan", n + 1, off + pages * page_size)
+    if len(out) < limit:
+        try:
+            out.extend(fetch_candidate_books_bnf_data(limit - len(out)))
+        except Exception as exc:
+            logger.warning("BnF data bulk échoué : %s", exc)
+    return out[:limit]
+
+
+_GUTENBERG_LANGS = ("en", "fr", "de", "es", "it")
+_IA_QUERIES = (
+    "mediatype:texts AND languageSorter:French AND (subject:fiction OR subject:roman)",
+    "mediatype:texts AND languageSorter:English AND subject:fiction",
+    "mediatype:texts AND subject:fantasy AND languageSorter:English",
+    "mediatype:texts AND subject:mystery AND languageSorter:English",
+    "mediatype:texts AND subject:poetry",
+    'mediatype:texts AND subject:"science fiction"',
+)
+
+
+def fetch_candidate_books_gutenberg(limit: int) -> list[dict[str, Any]]:
+    """Project Gutenberg via Gutendex (domaine public)."""
+    if limit <= 0:
+        return []
+    salt = window_salt()
+    n, off = meta_pair("gutenberg_book_scan")
+    start = int(off) + salt * 25
+    page_size = min(100, max(25, int(limit)))
+    lang = _GUTENBERG_LANGS[(salt + n) % len(_GUTENBERG_LANGS)]
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    try:
+        r = requests.get(
+            "https://gutendex.com/books/",
+            params={
+                "languages": lang,
+                "mime_type": "text/",
+                "page": max(1, (start // page_size) + 1),
+            },
+            timeout=20,
+            headers=UA,
+        )
+        if r.status_code != 200:
+            meta_save_pair("gutenberg_book_scan", n + 1, start + page_size)
+            return []
+        results = (r.json() or {}).get("results") or []
+    except Exception as exc:
+        logger.warning("Gutenberg/Gutendex échoué : %s", exc)
+        meta_save_pair("gutenberg_book_scan", n + 1, start + page_size)
+        return []
+    for item in results:
+        title = (item.get("title") or "").strip()
+        authors: list[str] = []
+        for a in item.get("authors") or []:
+            name = (a.get("name") or "").strip()
+            if "," in name:
+                parts = [p.strip() for p in name.split(",", 1)]
+                name = f"{parts[1]} {parts[0]}".strip() if len(parts) == 2 else parts[0]
+            if is_human_label(name):
+                authors.append(name)
+        if not is_human_label(title) or not authors:
+            continue
+        gid = str(item.get("id") or "")
+        if not gid or gid in seen:
+            continue
+        seen.add(gid)
+        formats = item.get("formats") or {}
+        cover = ""
+        for k, v in formats.items():
+            if "image" in k and isinstance(v, str) and v.startswith("http"):
+                cover = v
+                break
+        subjects = [str(s).lower() for s in (item.get("subjects") or [])[:12]]
+        cat, genre = _book_cat_from_subjects(subjects)
+        out.append(
+            {
+                "qid": f"PG:{gid}",
+                "name": title,
+                "name_en": title,
+                "author": authors[0],
+                "author_qid": "",
+                "category": cat,
+                "genre": genre,
+                "cover_url": cover if usable_cover(cover) else "",
+                "isbn": "",
+                "ol_key": "",
+                "year": None,
+                "source": "gutenberg",
+            }
+        )
+        if len(out) >= limit:
+            break
+    meta_save_pair("gutenberg_book_scan", n + 1, start + page_size)
+    return out
+
+
+def fetch_candidate_books_internet_archive(limit: int) -> list[dict[str, Any]]:
+    """Métadonnées Internet Archive (texts) — bulk public."""
+    if limit <= 0:
+        return []
+    salt = window_salt()
+    n, off = meta_pair("ia_book_scan")
+    page = max(1, 1 + (int(off) // 50) + salt)
+    q = _IA_QUERIES[(salt + n) % len(_IA_QUERIES)]
+    rows = min(100, max(20, int(limit)))
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    try:
+        r = requests.get(
+            "https://archive.org/advancedsearch.php",
+            params={
+                "q": q,
+                "fl[]": ["identifier", "title", "creator", "year", "subject"],
+                "rows": rows,
+                "page": page,
+                "output": "json",
+            },
+            timeout=22,
+            headers=UA,
+        )
+        if r.status_code != 200:
+            meta_save_pair("ia_book_scan", n + 1, int(off) + rows)
+            return []
+        docs = (((r.json() or {}).get("response") or {}).get("docs")) or []
+    except Exception as exc:
+        logger.warning("Internet Archive texts échoué : %s", exc)
+        meta_save_pair("ia_book_scan", n + 1, int(off) + rows)
+        return []
+    for doc in docs:
+        title = doc.get("title") or ""
+        if isinstance(title, list):
+            title = title[0] if title else ""
+        title = str(title).strip()
+        creator = doc.get("creator") or ""
+        if isinstance(creator, list):
+            creator = creator[0] if creator else ""
+        author = str(creator).split(";")[0].split(",")[0].strip()
+        ident = str(doc.get("identifier") or "").strip()
+        if not ident or not is_human_label(title) or not is_human_label(author):
+            continue
+        if ident in seen:
+            continue
+        seen.add(ident)
+        subjects = doc.get("subject") or []
+        if isinstance(subjects, str):
+            subjects = [subjects]
+        subjects = [str(s).lower() for s in subjects[:12]]
+        cat, genre = _book_cat_from_subjects(subjects)
+        year = None
+        raw_y = doc.get("year")
+        if isinstance(raw_y, list):
+            raw_y = raw_y[0] if raw_y else None
+        if raw_y:
+            m = re.search(r"(1[5-9]\d{2}|20[0-3]\d)", str(raw_y))
+            if m:
+                year = int(m.group(1))
+        cover = f"https://archive.org/services/img/{ident}"
+        out.append(
+            {
+                "qid": f"IA:{ident[:80]}",
+                "name": title,
+                "name_en": title,
+                "author": author,
+                "author_qid": "",
+                "category": cat,
+                "genre": genre,
+                "cover_url": cover if usable_cover(cover) else "",
+                "isbn": "",
+                "ol_key": "",
+                "year": year,
+                "source": "internet_archive",
+            }
+        )
+        if len(out) >= limit:
+            break
+    meta_save_pair("ia_book_scan", n + 1, int(off) + rows)
     return out
 
 
@@ -1196,7 +1469,25 @@ def build_complete_entry(
         volume_details[vn] = detail
     name = cand["name"]
     key = (norm_title(name).replace(" ", "_")[:80] or cand["qid"])
-    return {
+    # Résumé réel (GB / OL / Wikipédia) si budget restant — sinon blurb template
+    synopsis = ""
+    synopsis_src = ""
+    try:
+        from . import catalog_media
+
+        w0 = titled[0] if titled else {}
+        synopsis, synopsis_src = catalog_media.fetch_synopsis(
+            title=w0.get("title") or name,
+            author=(w0.get("author") or author).strip(),
+            isbn=pick_isbn(w0.get("isbn"))
+            or pick_isbn((volume_details.get("1") or {}).get("isbn")),
+            ol_key=w0.get("ol_key") or "",
+        )
+        if synopsis and volume_details.get("1"):
+            volume_details["1"]["description"] = synopsis
+    except Exception:
+        synopsis, synopsis_src = "", ""
+    entry = {
         "key": key,
         "qid": cand["qid"],
         "name": name,
@@ -1216,8 +1507,14 @@ def build_complete_entry(
         "genre": genre,
         "source": "daily",
         "needs_cover": needs_cover,
+        "needs_summary": not bool(synopsis),
         **({"volume_titles_en": volume_titles_en} if volume_titles_en else {}),
     }
+    if synopsis:
+        entry["description"] = synopsis
+        if synopsis_src:
+            entry["summary_source"] = synopsis_src
+    return entry
 
 
 def purge_qid_named_daily() -> int:
@@ -1300,6 +1597,12 @@ def _persist(
     names: set[str] | None = None,
 ) -> int:
     daily_store.upsert_series(entry)
+    try:
+        from . import catalog_media
+
+        catalog_media.mirror_to_sqlite(entry, synced=0)
+    except Exception:
+        pass
     known.add(entry["qid"])
     if names is not None:
         names.update(_name_keys(entry))
@@ -1451,55 +1754,44 @@ def _ingest_books(
 
 
 def complete_missing_covers(cap: int = 400) -> int:
-    """Complète les jaquettes des fiches déjà cataloguées (titre+auteur, sans image)."""
-    from . import daily_pending, daily_store
+    """Complète jaquettes (+ résumés si manquants) des fiches déjà cataloguées."""
+    from . import catalog_media, daily_store
 
     filled = 0
     if cap <= 0:
         return 0
+    catalog_media.reset_budgets(
+        synopsis=_env_int("CATALOG_SYNOPSIS_LOOKUPS", 120, 0, 2000),
+        covers=_env_int("CATALOG_COVER_LOOKUPS", max(cap, 200), 0, 2000),
+    )
     for doc in daily_store.needing_cover(cap):
-        if usable_cover(doc.get("cover_url")):
-            doc["needs_cover"] = False
+        before_cover = usable_cover(doc.get("cover_url"))
+        got = catalog_media.enrich_doc_media(doc, want_cover=True, want_summary=True)
+        if got["cover"] or got["summary"] or (before_cover and not doc.get("needs_cover")):
             daily_store.upsert_series(doc)
+            catalog_media.mirror_to_sqlite(doc, synced=0)
+            if got["cover"] or before_cover:
+                filled += 1
+    return filled
+
+
+def complete_missing_summaries(cap: int = 200) -> int:
+    """Complète les résumés réels (hors blurb template) sur fiches existantes."""
+    from . import catalog_media, daily_store
+
+    filled = 0
+    if cap <= 0:
+        return 0
+    catalog_media.reset_budgets(
+        synopsis=_env_int("CATALOG_SYNOPSIS_LOOKUPS", max(cap, 80), 0, 2000),
+        covers=0,
+    )
+    for doc in daily_store.needing_summary(cap):
+        got = catalog_media.enrich_doc_media(doc, want_cover=False, want_summary=True)
+        if got["summary"]:
+            daily_store.upsert_series(doc)
+            catalog_media.mirror_to_sqlite(doc, synced=0)
             filled += 1
-            continue
-        details = doc.get("volume_details") if isinstance(doc.get("volume_details"), dict) else {}
-        works: list[dict[str, Any]] = []
-        for vn in sorted(details, key=lambda k: int(k) if str(k).isdigit() else 0):
-            d = details.get(vn) or {}
-            works.append(
-                {
-                    "title": (doc.get("volume_titles") or {}).get(vn) or doc.get("name") or "",
-                    "author": d.get("author") or (doc.get("authors") or [""])[0],
-                    "isbn": d.get("isbn") or "",
-                    "ol_key": d.get("ol_key") or "",
-                }
-            )
-        if not works:
-            authors = [a for a in (doc.get("authors") or []) if a]
-            works = [{"title": doc.get("name") or "", "author": authors[0] if authors else ""}]
-        cand = {
-            "qid": doc.get("qid"),
-            "name": doc.get("name"),
-            "name_en": doc.get("name_en"),
-            "author": (doc.get("authors") or [""])[0] if doc.get("authors") else "",
-            "cover_url": doc.get("cover_url") or "",
-            "isbn": (works[0].get("isbn") if works else "") or "",
-            "ol_key": (works[0].get("ol_key") if works else "") or "",
-        }
-        daily_pending.enrich_work_candidate(cand, works)
-        cover = usable_cover(cand.get("cover_url"))
-        if not cover:
-            cover = wiki_cover(doc.get("name") or "", doc.get("name_en"))
-        if not cover:
-            continue
-        doc["cover_url"] = cover
-        doc["needs_cover"] = False
-        for d in details.values():
-            if isinstance(d, dict) and not usable_cover(d.get("cover_url")):
-                d["cover_url"] = cover
-        daily_store.upsert_series(doc)
-        filled += 1
     return filled
 
 
@@ -1538,6 +1830,16 @@ def run_daily_ingest(
         reset_budget(_env_int("CATALOG_ISBN_LOOKUPS", isbn_default, 0, 2000))
         reset_cover_budget(_env_int("CATALOG_COVER_LOOKUPS", cover_default, 0, 4000))
         daily_pending.reset_wd_budget(0 if test_env else _env_int("CATALOG_PENDING_WD", 400, 0, 800))
+        from . import catalog_media
+
+        catalog_media.reset_budgets(
+            synopsis=0
+            if test_env
+            else _env_int("CATALOG_SYNOPSIS_LOOKUPS", 120, 0, 2000),
+            covers=0
+            if test_env
+            else _env_int("CATALOG_COVER_LOOKUPS", cover_default, 0, 4000),
+        )
         if not test_env:
             _wiki_cover_budget = _env_int("CATALOG_WIKI_COVERS", 400, 0, 800)
             _author_lookup_budget = _env_int("CATALOG_AUTHOR_LOOKUPS", 80, 0, 400)
@@ -1636,6 +1938,7 @@ def run_daily_ingest(
         n_books += len(book_names)
         remaining = max(0, target - n_series - n_books - int(recovered.get("added_authors") or 0))
         complete_missing_covers(_env_int("CATALOG_COVER_BACKFILL", 400, 0, 2000))
+        complete_missing_summaries(_env_int("CATALOG_SUMMARY_BACKFILL", 200, 0, 2000))
         remaining = max(0, target - n_series - n_books - int(recovered.get("added_authors") or 0))
         if authors_limit is not None:
             author_cap = authors_limit
@@ -1761,6 +2064,7 @@ def run_works_backfill(cap: int | None = None) -> dict[str, Any]:
             skipped += skip_s
             added_names.extend(more_s)
         complete_missing_covers(_env_int("CATALOG_COVER_BACKFILL", 300, 0, 2000))
+        complete_missing_summaries(_env_int("CATALOG_SUMMARY_BACKFILL", 150, 0, 2000))
         if added_names:
             expanded.stats.cache_clear()
             curated_mod.clear_cache()

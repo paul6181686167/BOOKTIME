@@ -1,6 +1,6 @@
 name: Fiches quotidiennes
 
-# Lots de ~15 000 fiches (œuvres), enchaînés jusqu'à 1 000 000.
+# Lots de ~25 000 fiches (œuvres), enchaînés jusqu'à 1 000 000.
 # Le ping répété empêche Render de rendormir le process pendant le job.
 # Configurer le secret CATALOG_DAILY_SECRET (identique à la variable Render).
 

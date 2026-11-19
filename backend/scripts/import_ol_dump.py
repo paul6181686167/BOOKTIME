@@ -98,7 +98,19 @@ def main() -> int:
 
     series = db["catalog_daily_series"].count_documents({})
     authors = db["authors"].count_documents({})
-    print(f"catalog series={series} authors={authors} total={series + authors}", flush=True)
+    local_n = 0
+    try:
+        from app.catalog import local_catalog_sqlite as local_cat
+
+        if local_cat.enabled():
+            local_n = local_cat.count_series()
+    except Exception:
+        local_n = 0
+    print(
+        f"catalog series={series} authors={authors} total={series + authors} "
+        f"local_sqlite={local_n}",
+        flush=True,
+    )
     return 0
 
 

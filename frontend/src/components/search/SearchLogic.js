@@ -181,9 +181,13 @@ function cardFromExpandedEntry(entry, i) {
     relevanceScore: 100000 - i * 10,
     sourceType: 'official',
     fromOpenLibrary: false,
-    description: [entry.genre, entry.language, entry.volumes ? `${entry.volumes} tome(s)` : '']
-      .filter(Boolean)
-      .join(' · '),
+    description:
+      entry.description ||
+      entry.volume_details?.['1']?.description ||
+      entry.volume_details?.[1]?.description ||
+      [entry.genre, entry.language, entry.volumes ? `${entry.volumes} tome(s)` : '']
+        .filter(Boolean)
+        .join(' · '),
   };
 }
 

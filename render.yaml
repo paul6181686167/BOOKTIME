@@ -44,7 +44,7 @@ services:
       - key: CATALOG_ADD_AUTHORS
         value: "0"
       - key: CATALOG_DAILY_FICHES
-        value: "15000"
+        value: "25000"
       - key: OL_DUMP_BULK_SIZE
         value: "800"
       - key: SMTP_HOST

@@ -193,7 +193,7 @@ def test_author_dry_streak_switches_focus_to_works(monkeypatch):
     assert daily_ingest.ingest_focus() == "authors"
     daily_ingest.remember_author_yield(10)
     assert daily_ingest.ingest_focus() == "works"
-    assert daily_ingest.daily_series_limit() == 12000
+    assert daily_ingest.daily_series_limit() == 20000
     daily_ingest.remember_author_yield(2000)
     assert daily_ingest.ingest_focus() == "authors"
     assert daily_ingest.daily_series_limit() == 400
@@ -225,9 +225,9 @@ def test_plafonds_quotidiens_par_defaut(monkeypatch):
     monkeypatch.delenv("CATALOG_DAILY_AUTHORS", raising=False)
     monkeypatch.delenv("CATALOG_ADD_AUTHORS", raising=False)
     # Défaut : plus d'auteurs → focus œuvres → plafonds hauts (objectif 2 semaines)
-    assert daily_ingest.daily_series_limit() == 12000
-    assert daily_ingest.daily_books_limit() == 15000
-    assert daily_ingest.daily_fiches_target() == 15000
+    assert daily_ingest.daily_series_limit() == 20000
+    assert daily_ingest.daily_books_limit() == 25000
+    assert daily_ingest.daily_fiches_target() == 25000
     assert daily_ingest.catalog_goal() == 1000000
     assert daily_authors.daily_authors_limit() == 10000
 
@@ -424,7 +424,7 @@ async def test_daily_run_endpoint_requires_secret(test_client: AsyncClient, monk
     )
     assert r.status_code == 200
     body = r.json()
-    assert body["target_fiches"] == 15000
+    assert body["target_fiches"] == 25000
     assert body["goal_fiches"] == 1000000
     assert "catalog_fiches" in body
 
@@ -712,6 +712,7 @@ def test_bnf_books_candidates(monkeypatch):
         content = xml.encode("utf-8")
 
     monkeypatch.setattr(daily_ingest.requests, "get", lambda *a, **k: FakeResp())
+    monkeypatch.setattr(daily_ingest, "fetch_candidate_books_bnf_data", lambda limit: [])
     daily_ingest._active_window = 2
     out = daily_ingest.fetch_candidate_books_bnf(10)
     assert len(out) == 1
@@ -720,6 +721,63 @@ def test_bnf_books_candidates(monkeypatch):
     assert out[0]["isbn"] == "9782070360024"
     assert out[0]["source"] == "bnf"
     assert out[0]["qid"].startswith("BNF:")
+
+
+def test_gutenberg_books_candidates(monkeypatch):
+    class FakeResp:
+        status_code = 200
+
+        def json(self):
+            return {
+                "results": [
+                    {
+                        "id": 84,
+                        "title": "Frankenstein",
+                        "authors": [{"name": "Shelley, Mary"}],
+                        "subjects": ["Horror tales"],
+                        "formats": {
+                            "image/jpeg": "https://www.gutenberg.org/cache/epub/84/pg84.cover.medium.jpg"
+                        },
+                    }
+                ]
+            }
+
+    monkeypatch.setattr(daily_ingest.requests, "get", lambda *a, **k: FakeResp())
+    daily_ingest._active_window = 1
+    out = daily_ingest.fetch_candidate_books_gutenberg(5)
+    assert len(out) == 1
+    assert out[0]["qid"] == "PG:84"
+    assert out[0]["author"] == "Mary Shelley"
+    assert out[0]["source"] == "gutenberg"
+
+
+def test_internet_archive_books_candidates(monkeypatch):
+    class FakeResp:
+        status_code = 200
+
+        def json(self):
+            return {
+                "response": {
+                    "docs": [
+                        {
+                            "identifier": "aliceinwonderland00carr",
+                            "title": "Alice in Wonderland",
+                            "creator": "Carroll, Lewis",
+                            "year": "1865",
+                            "subject": ["Fiction", "Fantasy"],
+                        }
+                    ]
+                }
+            }
+
+    monkeypatch.setattr(daily_ingest.requests, "get", lambda *a, **k: FakeResp())
+    daily_ingest._active_window = 0
+    out = daily_ingest.fetch_candidate_books_internet_archive(5)
+    assert len(out) == 1
+    assert out[0]["qid"].startswith("IA:")
+    assert out[0]["name"] == "Alice in Wonderland"
+    assert out[0]["author"] == "Carroll"
+    assert out[0]["source"] == "internet_archive"
 
 
 def test_pending_retries_after_many_attempts(monkeypatch):

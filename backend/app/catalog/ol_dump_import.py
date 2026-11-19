@@ -159,10 +159,27 @@ def _open_dump(source: str):
     return open(path, "rb")
 
 
-def _iter_json_records(source: str) -> Iterable[tuple[int, str, dict[str, Any]]]:
-    """Yield (line_no_1based, key, json)."""
+def _iter_json_records(
+    source: str,
+    *,
+    start_after: int = 0,
+) -> Iterable[tuple[int, str, dict[str, Any]]]:
+    """Yield (line_no_1based, key, json).
+
+    ``start_after`` : saute ces lignes sans decode/JSON (évite le re-scan coûteux).
+    """
     with _open_dump(source) as fh:
         line_no = 0
+        target = max(0, int(start_after or 0))
+        while line_no < target:
+            raw = fh.readline()
+            if not raw:
+                return
+            line_no += 1
+            if line_no % 1_000_000 == 0:
+                msg = f"OL dump fast-skip {line_no:,}/{target:,}"
+                print(msg, flush=True)
+                logger.info(msg)
         for raw in fh:
             line_no += 1
             try:
@@ -194,12 +211,13 @@ def _series_coll():
 
 
 def _flush_entries(entries: list[dict[str, Any]]) -> int:
-    """Bulk upsert séries. Retourne le nombre écrit."""
+    """Bulk upsert séries (SQLite local + Mongo si possible). Retourne le nombre écrit."""
     if not entries:
         return 0
     from .daily_store import prepare_entry
+    from . import local_catalog_sqlite as local_cat
 
-    ops: list[UpdateOne] = []
+    docs: list[dict[str, Any]] = []
     now = datetime.now(timezone.utc).isoformat()
     for entry in entries:
         doc = prepare_entry(entry)
@@ -208,19 +226,58 @@ def _flush_entries(entries: list[dict[str, Any]]) -> int:
             continue
         doc["source"] = doc.get("source") or "openlibrary_dump"
         doc["added_at"] = now
-        ops.append(UpdateOne({"qid": qid}, {"$set": doc}, upsert=True))
-    if not ops:
+        docs.append(doc)
+    if not docs:
         return 0
-    _series_coll().bulk_write(ops, ordered=False)
-    return len(ops)
+
+    written = 0
+    if local_cat.enabled():
+        written = local_cat.upsert_series(docs)
+
+    # Atlas en best-effort (ignore quota plein)
+    prefer_local = (os.getenv("CATALOG_DUMP_LOCAL_ONLY") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    if not prefer_local:
+        ops = [UpdateOne({"qid": d["qid"]}, {"$set": d}, upsert=True) for d in docs]
+        try:
+            _series_coll().bulk_write(ops, ordered=False)
+            written = max(written, len(ops))
+            if local_cat.enabled():
+                local_cat.mark_synced([d["qid"] for d in docs])
+        except Exception as exc:
+            logger.warning("Mongo flush séries échoué (local OK) : %s", exc)
+            if not written:
+                written = local_cat.upsert_series(docs) if local_cat.enabled() else 0
+    return written
 
 
 def import_authors_dump(source: str | None = None, *, limit: int = 0) -> dict[str, Any]:
+    from . import local_catalog_sqlite as local_cat
+
     src = resolve_dump_source("authors", source)
     coll = _author_coll()
     batch: list[UpdateOne] = []
+    local_batch: list[tuple[str, str, str]] = []
     n = 0
     t0 = time.time()
+
+    def _flush_authors() -> None:
+        nonlocal batch, local_batch, n
+        if local_cat.enabled() and local_batch:
+            local_cat.upsert_authors(local_batch)
+        if batch:
+            try:
+                coll.bulk_write(batch, ordered=False)
+            except Exception as exc:
+                logger.warning("Mongo authors cache échoué (local OK) : %s", exc)
+        n += len(local_batch) or len(batch)
+        batch = []
+        local_batch = []
+
     for _line, key, data in _iter_json_records(src):
         olid = key.rstrip("/").rsplit("/", 1)[-1]
         if not _AUTHOR_OK.match(olid):
@@ -228,24 +285,23 @@ def import_authors_dump(source: str | None = None, *, limit: int = 0) -> dict[st
         name = (data.get("name") or data.get("personal_name") or "").strip()
         if not is_human_label(name):
             continue
+        nn = norm_title(name)
+        local_batch.append((olid, name, nn))
         batch.append(
             UpdateOne(
                 {"_id": olid},
-                {"$set": {"name": name, "name_norm": norm_title(name)}},
+                {"$set": {"name": name, "name_norm": nn}},
                 upsert=True,
             )
         )
-        if len(batch) >= BULK_SIZE:
-            coll.bulk_write(batch, ordered=False)
-            n += len(batch)
-            batch = []
+        if len(local_batch) >= BULK_SIZE:
+            _flush_authors()
             if n % 50000 == 0:
                 logger.info("OL authors cache : %d (%.0fs)", n, time.time() - t0)
             if limit and n >= limit:
                 break
-    if batch and (not limit or n < limit):
-        coll.bulk_write(batch, ordered=False)
-        n += len(batch)
+    if (local_batch or batch) and (not limit or n < limit):
+        _flush_authors()
     prog = load_progress()
     if not limit:
         prog["authors_done"] = True
@@ -255,11 +311,20 @@ def import_authors_dump(source: str | None = None, *, limit: int = 0) -> dict[st
 
 
 def _resolve_authors(keys: list[str], cache: dict[str, str]) -> list[str]:
+    from . import local_catalog_sqlite as local_cat
+
     missing = [k for k in keys if k not in cache]
     if missing:
-        coll = _author_coll()
-        for doc in coll.find({"_id": {"$in": missing}}, {"name": 1}):
-            cache[doc["_id"]] = doc.get("name") or ""
+        if local_cat.enabled():
+            cache.update(local_cat.resolve_authors(missing))
+            missing = [k for k in keys if k not in cache]
+        if missing:
+            try:
+                coll = _author_coll()
+                for doc in coll.find({"_id": {"$in": missing}}, {"name": 1}):
+                    cache[doc["_id"]] = doc.get("name") or ""
+            except Exception as exc:
+                logger.warning("Mongo author cache lecture échouée : %s", exc)
     names = []
     for k in keys:
         name = cache.get(k) or ""
@@ -316,6 +381,8 @@ def _year_from_record(data: dict[str, Any]) -> int | None:
 
 
 def _known_qids() -> set[str]:
+    from . import local_catalog_sqlite as local_cat
+
     known: set[str] = set()
     try:
         for doc in _series_coll().find({}, {"qid": 1}):
@@ -324,6 +391,11 @@ def _known_qids() -> set[str]:
                 known.add(q)
     except Exception:
         pass
+    if local_cat.enabled():
+        try:
+            known |= local_cat.known_qids()
+        except Exception:
+            pass
     return known
 
 
@@ -353,18 +425,33 @@ def import_works_dump(
     line_no = 0
     t0 = time.time()
 
-    for line_no, key, data in _iter_json_records(src):
-        if line_no <= start_skip:
-            continue
+    for line_no, key, data in _iter_json_records(src, start_after=start_skip):
         if not _worker_keeps(line_no, worker_id, workers):
             continue
         scanned += 1
+        if scanned % 20000 == 0 and worker_id == 0:
+            prog["works_lines"] = max(int(prog.get("works_lines") or 0), line_no)
+            prog["updated_at"] = datetime.now(timezone.utc).isoformat()
+            save_progress(prog)
+            logger.info(
+                "OL works w%d progress line=%d scanned=%d promoted=%d %.0fs",
+                worker_id,
+                line_no,
+                scanned,
+                promoted,
+                time.time() - t0,
+            )
         olid = key.rstrip("/").rsplit("/", 1)[-1]
         if not _QID_WORK.match(olid) or olid in known:
             skipped += 1
             continue
         title = (data.get("title") or "").strip()
         if not is_human_label(title):
+            skipped += 1
+            continue
+        from .catalog_quality_filters import is_catalog_noise_title
+
+        if is_catalog_noise_title(title):
             skipped += 1
             continue
         akeys = _author_keys_from_record(data)
@@ -414,7 +501,7 @@ def import_works_dump(
                     line_no,
                     time.time() - t0,
                 )
-        if promoted >= limit:
+        if limit > 0 and promoted >= limit:
             break
 
     promoted += _flush_entries(batch_entries)
@@ -456,18 +543,33 @@ def import_editions_dump(
     line_no = 0
     t0 = time.time()
 
-    for line_no, key, data in _iter_json_records(src):
-        if line_no <= start_skip:
-            continue
+    for line_no, key, data in _iter_json_records(src, start_after=start_skip):
         if not _worker_keeps(line_no, worker_id, workers):
             continue
         scanned += 1
+        if scanned % 20000 == 0 and worker_id == 0:
+            prog["editions_lines"] = max(int(prog.get("editions_lines") or 0), line_no)
+            prog["updated_at"] = datetime.now(timezone.utc).isoformat()
+            save_progress(prog)
+            logger.info(
+                "OL editions w%d progress line=%d scanned=%d promoted=%d %.0fs",
+                worker_id,
+                line_no,
+                scanned,
+                promoted,
+                time.time() - t0,
+            )
         olid = key.rstrip("/").rsplit("/", 1)[-1]
         if not _QID_EDITION.match(olid) or olid in known:
             skipped += 1
             continue
         title = (data.get("title") or "").strip()
         if not is_human_label(title):
+            skipped += 1
+            continue
+        from .catalog_quality_filters import is_catalog_noise_title
+
+        if is_catalog_noise_title(title):
             skipped += 1
             continue
         akeys = _author_keys_from_record(data)
@@ -526,7 +628,7 @@ def import_editions_dump(
                     line_no,
                     time.time() - t0,
                 )
-        if promoted >= limit:
+        if limit > 0 and promoted >= limit:
             break
 
     promoted += _flush_entries(batch_entries)

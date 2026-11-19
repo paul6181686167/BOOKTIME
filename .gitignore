@@ -49,6 +49,18 @@ dist/
 *.db
 *.sqlite
 *.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+
+# Catalogue local / dumps / progression (PC only)
+backend/data/ol_dumps/
+backend/data/_*_progress.json
+backend/data/_coherence_*.json
+backend/data/_fiche_analysis.json
+backend/data/_genre_compare.json
+backend/data/_noise_remaining.json
+backend/data/_roman_periodical_suspects.json
+backend/data/_standalone_series_audit.json
 
 # Temporary files
 tmp/
