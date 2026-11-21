@@ -98,19 +98,23 @@ def collect_batch(offset: int, batch: int) -> tuple[list[tuple[str, dict]], int,
             continue
         if catalog_media.has_real_synopsis(doc):
             continue
-        # Prioriser ISBN puis clé OL
+        # Prioriser ISBN puis clé OL puis titre (wiki/GB/BnF)
         isbn = _pick_isbn(doc)
         qid = str(doc.get("qid") or row["qid"] or "")
-        # ISBN d'abord (vrai dos de livre) ; OL work ensuite
-        if not isbn and not (qid.startswith("OL") and qid.endswith("W")):
+        title = (doc.get("name") or doc.get("title") or "").strip()
+        if not isbn and not (qid.startswith("OL") and qid.endswith("W")) and len(title) < 3:
             continue
         if isbn:
             doc["isbn"] = isbn
-        # Priorité ISBN dans le batch : on collectera plus large puis on trie
         out.append((row["qid"], doc))
         if len(out) >= batch * 2:
             break
-    out.sort(key=lambda x: (0 if _pick_isbn(x[1]) else 1))
+    out.sort(
+        key=lambda x: (
+            0 if _pick_isbn(x[1]) else 1,
+            0 if str(x[1].get("qid") or "").endswith("W") else 1,
+        )
+    )
     out = out[:batch]
     next_off = offset + scanned
     if next_off >= total:
@@ -119,7 +123,7 @@ def collect_batch(offset: int, batch: int) -> tuple[list[tuple[str, dict]], int,
 
 
 def run_batch(candidates: list[tuple[str, dict]]) -> dict:
-    """Priorité 4ᵉ de couverture ISBN ; secours description OL work (rapide)."""
+    """ISBN (GB/OL/BnF) → OL work → Wikipedia → pipeline heavy titre/auteur."""
     from app.catalog import catalog_media
     from app.utils.book_synopsis import (
         _ol_work_description_only,
@@ -127,7 +131,7 @@ def run_batch(candidates: list[tuple[str, dict]]) -> dict:
         is_usable_synopsis,
     )
 
-    catalog_media.reset_budgets(synopsis=max(len(candidates), 20), covers=0)
+    catalog_media.reset_budgets(synopsis=max(len(candidates) * 2, 40), covers=0)
     filled = tried = 0
     by_src: dict[str, int] = {}
     updates: list[tuple] = []
@@ -149,6 +153,29 @@ def run_batch(candidates: list[tuple[str, dict]]) -> dict:
                 ol_text = (_ol_work_description_only(ol_key) or "").strip()
                 if is_usable_synopsis(ol_text) and not catalog_media.is_template_blurb(ol_text):
                     text, src = ol_text, "openlibrary"
+        if not text:
+            # Pipeline élargi : wiki + GB titre/auteur + BnF via fetch_synopsis heavy
+            title = (doc.get("name") or doc.get("title") or "").strip()
+            author = ""
+            authors = doc.get("authors") or doc.get("author") or []
+            if isinstance(authors, list) and authors:
+                a0 = authors[0]
+                author = a0.get("name") if isinstance(a0, dict) else str(a0)
+            elif isinstance(authors, str):
+                author = authors
+            try:
+                text, src = catalog_media.fetch_synopsis(
+                    title=title,
+                    author=author or "",
+                    isbn=isbn or "",
+                    ol_key=(doc.get("key") or ""),
+                    heavy=True,
+                    prefer_back_cover=False,
+                )
+            except Exception:
+                text, src = "", ""
+            if not is_usable_synopsis(text) or catalog_media.is_template_blurb(text):
+                text, src = "", ""
         if not text or not catalog_media.apply_synopsis(doc, text, src):
             if tried % 10 == 0:
                 print(f"  synopsis tried={tried} filled={filled}", flush=True)

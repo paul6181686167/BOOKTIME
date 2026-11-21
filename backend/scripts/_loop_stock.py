@@ -1,4 +1,6 @@
-"""Boucle 1/3 — stock : dumps OL + jaquettes.
+"""Boucle 1/3 — stock RAPIDE : dumps OL en continu + jaquettes/daily en parallèle.
+
+Le dump ne redémarre plus (évite de re-fast-skip 18M lignes à chaque lot).
 
   python scripts/_loop_stock.py
 """
@@ -28,51 +30,79 @@ def _run(label: str, args: list[str], *, timeout: int) -> None:
 
 
 def main() -> int:
+    print("======== STOCK (dumps continus) ========", flush=True)
+    # 1 worker, lots illimités, boucle interne : un seul fast-skip puis flux continu
+    dump = subprocess.Popen(
+        [
+            PY,
+            str(ROOT / "scripts" / "import_ol_dump_workers.py"),
+            "--loop",
+            "--workers",
+            "1",
+            "--works-limit",
+            "0",
+            "--editions-limit",
+            "0",
+            "--sleep",
+            "2",
+        ],
+        cwd=str(ROOT),
+    )
+    print(f"dumps pid={dump.pid}", flush=True)
+
     n = 0
-    while True:
-        n += 1
-        print(f"\n======== STOCK #{n} ========", flush=True)
-        _run(
-            "dumps",
-            [
-                PY,
-                str(ROOT / "scripts" / "import_ol_dump_workers.py"),
-                "--workers",
-                "1",
-                "--works-limit",
-                "12000",
-                "--editions-limit",
-                "12000",
-                "--sleep",
-                "3",
-            ],
-            timeout=45 * 60,
-        )
-        _run(
-            "covers",
-            [
-                PY,
-                str(ROOT / "scripts" / "backfill_all_covers.py"),
-                "--workers",
-                "2",
-                "--limit",
-                "800",
-            ],
-            timeout=25 * 60,
-        )
-        # Fiches quotidiennes (Wikidata/OL curated) — lot borné
-        _run(
-            "daily",
-            [
-                PY,
-                str(ROOT / "scripts" / "run_daily_ingest.py"),
-                "--sync",
-                "--limit",
-                "80",
-            ],
-            timeout=35 * 60,
-        )
-        time.sleep(4)
+    try:
+        while True:
+            n += 1
+            print(f"\n======== STOCK side #{n} ========", flush=True)
+            if dump.poll() is not None:
+                print("dumps mort — relance", flush=True)
+                dump = subprocess.Popen(
+                    [
+                        PY,
+                        str(ROOT / "scripts" / "import_ol_dump_workers.py"),
+                        "--loop",
+                        "--workers",
+                        "1",
+                        "--works-limit",
+                        "0",
+                        "--editions-limit",
+                        "0",
+                        "--sleep",
+                        "2",
+                    ],
+                    cwd=str(ROOT),
+                )
+            _run(
+                "covers",
+                [
+                    PY,
+                    str(ROOT / "scripts" / "backfill_all_covers.py"),
+                    "--workers",
+                    "3",
+                    "--limit",
+                    "2000",
+                ],
+                timeout=20 * 60,
+            )
+            # Daily seulement 1 side sur 3 (Atlas souvent plein)
+            if n % 3 == 1:
+                _run(
+                    "daily",
+                    [
+                        PY,
+                        str(ROOT / "scripts" / "run_daily_ingest.py"),
+                        "--sync",
+                        "--limit",
+                        "120",
+                    ],
+                    timeout=25 * 60,
+                )
+            time.sleep(2)
+    finally:
+        if dump.poll() is None:
+            dump.terminate()
+    return 0
 
 
 if __name__ == "__main__":

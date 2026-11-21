@@ -433,6 +433,7 @@ def main() -> int:
     p.add_argument("--batch", type=int, default=60)
     p.add_argument("--loop", action="store_true", help="Boucler l'API OL")
     p.add_argument("--sleep", type=float, default=2.0)
+    p.add_argument("--max-rounds", type=int, default=0, help="0=illimité si --loop")
     p.add_argument("--skip-catalog", action="store_true")
     p.add_argument(
         "--sqlite-only",
@@ -468,7 +469,9 @@ def main() -> int:
         print("=== build OL todo (léger) ===", flush=True)
         todo = build_ol_todo(con, cache_by)
         print(f"ol_todo={len(todo)}", flush=True)
+        ol_rounds = 0
         while True:
+            ol_rounds += 1
             prog = _load_prog()
             offset = int(prog.get("ol_offset") or 0)
             res, new_off = link_from_ol_api(
@@ -486,12 +489,14 @@ def main() -> int:
             print(f"OLAPI done {res} offset={new_off}", flush=True)
             if not args.loop:
                 break
+            if args.max_rounds and ol_rounds >= args.max_rounds:
+                break
             if res["todo"] == 0 or (res["linked"] == 0 and new_off == 0):
                 print("OLAPI idle — rebuild todo", flush=True)
                 todo = build_ol_todo(con, cache_by)
-                time.sleep(max(5.0, args.sleep * 3))
+                time.sleep(max(2.0, args.sleep))
             else:
-                time.sleep(max(0.5, args.sleep))
+                time.sleep(max(0.2, args.sleep))
 
     con.close()
     print("DONE", json.dumps(prog, ensure_ascii=False), flush=True)

@@ -954,12 +954,64 @@ def _from_openlibrary_isbn(isbn: str) -> str:
         return ""
 
 
+def _from_bnf_isbn(isbn: str) -> str:
+    """Note / résumé BnF (catalogue SRU) pour un ISBN."""
+    clean = re.sub(r"[^0-9Xx]", "", isbn or "")
+    if len(clean) not in (10, 13):
+        return ""
+    try:
+        r = requests.get(
+            "https://catalogue.bnf.fr/api/SRU",
+            params={
+                "version": "1.2",
+                "operation": "searchRetrieve",
+                "query": f'bib.isbn all "{clean}"',
+                "recordSchema": "dublincore",
+                "maximumRecords": "3",
+            },
+            timeout=10,
+            headers={
+                "User-Agent": "BooktimeSynopsis/1.1",
+                "Accept": "application/xml",
+            },
+        )
+        if not r.ok or not r.text:
+            return ""
+        # dc:description = souvent résumé éditeur FR (écarter notes techniques)
+        for m in re.finditer(
+            r"<dc:description[^>]*>([^<]{60,4000})</dc:description>",
+            r.text,
+            flags=re.I,
+        ):
+            raw = m.group(1).strip()
+            low = raw.lower()
+            if any(
+                x in low
+                for x in (
+                    "code à barres",
+                    "ean ",
+                    "isbn ",
+                    "cote ",
+                    "in-8",
+                    "in-12",
+                    "pagination",
+                )
+            ):
+                continue
+            text = _clean(raw)
+            if is_usable_synopsis(text) and not looks_english(text):
+                return text
+    except Exception as exc:
+        logger.debug("BnF isbn synopsis fail: %s", exc)
+    return ""
+
+
 # Sources dont le texte est la 4ᵉ de couverture d'une édition (et non un article encyclopédique)
-BACK_COVER_SOURCES = ("google_books_isbn", "openlibrary_isbn", "google_books")
+BACK_COVER_SOURCES = ("google_books_isbn", "openlibrary_isbn", "bnf_isbn", "google_books")
 
 
 def fetch_back_cover_by_isbn(isbn: str) -> tuple[str, str]:
-    """4ᵉ de couverture de l'édition exacte (ISBN) : Google Books puis Open Library.
+    """4ᵉ de couverture ISBN : Google Books → Open Library → BnF.
 
     Retourne (texte, source) ou ("", "none").
     """
@@ -972,6 +1024,14 @@ def fetch_back_cover_by_isbn(isbn: str) -> tuple[str, str]:
         return desc, "google_books_isbn"
     ol = _from_openlibrary_isbn(clean)
     if is_usable_synopsis(ol) and not looks_english(ol):
+        return ol, "openlibrary_isbn"
+    bnf = _from_bnf_isbn(clean)
+    if is_usable_synopsis(bnf):
+        return bnf, "bnf_isbn"
+    # Dernier recours : accepter un texte GB même EN si rien en FR
+    if is_usable_synopsis(desc):
+        return desc, "google_books_isbn"
+    if is_usable_synopsis(ol):
         return ol, "openlibrary_isbn"
     return "", "none"
 

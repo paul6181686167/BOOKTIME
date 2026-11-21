@@ -308,38 +308,101 @@ def fetch_candidate_authors(limit: int) -> list[dict[str, Any]]:
     return out
 
 
+def reset_wiki_bio_budget(n: int = 2000) -> None:
+    """Réarme le budget Wikipedia (backfills massifs)."""
+    global _wiki_bio_budget
+    _wiki_bio_budget = max(0, int(n))
+
+
 def wiki_bio(name: str, name_en: str | None = None, wikipedia_url: str | None = None) -> tuple[str, str]:
-    """Renvoie (extrait, url wikipedia). Budget limité : pas 10k appels Wikipedia."""
+    """Renvoie (extrait, url wikipedia). Essaie FR → EN → DE → ES → IT (+ opensearch)."""
     global _wiki_bio_budget
     if _wiki_bio_budget <= 0:
         return "", wikipedia_url or ""
     titles: list[tuple[str, str]] = []
     if wikipedia_url and "wikipedia.org/wiki/" in wikipedia_url:
         slug = wikipedia_url.rsplit("/wiki/", 1)[-1]
-        lang = "fr" if "fr.wikipedia" in wikipedia_url else "en"
+        if "fr.wikipedia" in wikipedia_url:
+            lang = "fr"
+        elif "en.wikipedia" in wikipedia_url:
+            lang = "en"
+        elif "de.wikipedia" in wikipedia_url:
+            lang = "de"
+        elif "es.wikipedia" in wikipedia_url:
+            lang = "es"
+        elif "it.wikipedia" in wikipedia_url:
+            lang = "it"
+        else:
+            lang = "en"
         titles.append((lang, slug))
-    if name:
-        titles.append(("fr", quote(name.replace(" ", "_"), safe="_()")))
-    if name_en and name_en != name:
-        titles.append(("en", quote(name_en.replace(" ", "_"), safe="_()")))
+    slug_name = quote((name or "").replace(" ", "_"), safe="_()") if name else ""
+    slug_en = quote((name_en or "").replace(" ", "_"), safe="_()") if name_en else ""
+    # FR + EN d'abord (rendement) ; DE/ES/IT seulement si URL wiki déjà connue
+    if slug_name:
+        for lang in ("fr", "en"):
+            titles.append((lang, slug_name))
+    if slug_en and name_en and name_en != name:
+        titles.append(("en", slug_en))
+    # dédup (lang, title)
+    seen: set[tuple[str, str]] = set()
+    ordered: list[tuple[str, str]] = []
+    for item in titles:
+        if item in seen or not item[1]:
+            continue
+        seen.add(item)
+        ordered.append(item)
     session = requests.Session()
     session.headers.update(UA)
-    for lang, title in titles:
+
+    def _try_summary(lang: str, title: str) -> tuple[str, str]:
+        global _wiki_bio_budget
         if _wiki_bio_budget <= 0:
-            break
+            return "", ""
         _wiki_bio_budget -= 1
         try:
-            r = session.get(WIKI_SUMMARY.format(lang=lang, title=title), timeout=8)
+            r = session.get(WIKI_SUMMARY.format(lang=lang, title=title), timeout=3)
             if r.status_code != 200:
-                continue
+                return "", ""
             data = r.json() or {}
             extract = (data.get("extract") or "").strip()
             if len(extract) < 40:
-                continue
+                return "", ""
             page = ((data.get("content_urls") or {}).get("desktop") or {}).get("page") or ""
             return extract[:2000], page or wikipedia_url or ""
         except Exception:
-            continue
+            return "", ""
+
+    for lang, title in ordered:
+        extract, page = _try_summary(lang, title)
+        if extract:
+            return extract, page
+
+    # Opensearch FR (1 passe) si pas d'URL wiki
+    q = (name or "").strip()
+    if q and not wikipedia_url and _wiki_bio_budget > 0:
+        _wiki_bio_budget -= 1
+        try:
+            r = session.get(
+                "https://fr.wikipedia.org/w/api.php",
+                params={
+                    "action": "opensearch",
+                    "search": q,
+                    "limit": 2,
+                    "namespace": 0,
+                    "format": "json",
+                },
+                timeout=3,
+            )
+            if r.status_code == 200:
+                data = r.json() or []
+                hits = data[1] if isinstance(data, list) and len(data) > 1 else []
+                for hit in hits[:2]:
+                    slug = quote(str(hit).replace(" ", "_"), safe="_()")
+                    extract, page = _try_summary("fr", slug)
+                    if extract:
+                        return extract, page
+        except Exception:
+            pass
     return "", wikipedia_url or ""
 
 

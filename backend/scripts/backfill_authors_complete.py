@@ -260,59 +260,140 @@ def _wiki_bio(name: str, wikipedia_url: str | None) -> tuple[str, str]:
     return wiki_bio(name, None, wikipedia_url)
 
 
-def _local_catalog_works(name: str, *, cap: int = 40) -> list[dict[str, Any]]:
-    """Œuvres déjà présentes dans catalog_daily_series pour cet auteur (PC)."""
+UA_EXTRA = {"User-Agent": "BooktimeAuthorBackfill/1.1 (multi-source enrichment)"}
+
+
+def _olid_from_cache(name: str) -> str:
+    """OLID depuis ol_author_cache uniquement (pas d'API — trop lent en masse)."""
     import re
     import sqlite3
 
     key = re.sub(r"\s+", " ", (name or "").strip().lower())
     if len(key) < 2:
-        return []
+        return ""
     path = ROOT / "data" / "local_catalog.sqlite"
-    if not path.exists():
-        return []
-    con = sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True, timeout=30)
+    con = sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True, timeout=20)
     try:
-        out: list[dict[str, Any]] = []
-        # Scan borné : filtre JSON trop cher ; on matche name dans authors via LIKE sur doc
-        rows = con.execute(
-            "SELECT qid, name, doc_json FROM catalog_daily_series "
-            "WHERE doc_json LIKE ? LIMIT 400",
-            (f"%{name[:80]}%",),
-        ).fetchall()
-        for qid, title, raw in rows:
-            try:
-                d = json.loads(raw or "{}")
-            except Exception:
-                continue
-            authors = d.get("authors") or []
-            if not any(
-                re.sub(r"\s+", " ", str(a).strip().lower()) == key for a in authors
-            ):
-                continue
-            out.append(
-                {
-                    "id": qid,
-                    "title": str(title or d.get("name") or "")[:200],
-                    "series_id": None,
-                    "series_name": None,
-                    "volume_number": None,
-                    "publication_date": str(d.get("first_published") or "")[:10] or None,
-                    "genre": str(d.get("genre") or ""),
-                    "language": d.get("language"),
-                    "pages": None,
-                    "isbn": str(d.get("isbn") or ""),
-                    "publisher": "",
-                    "description": None,
-                    "book_type": "œuvre littéraire",
-                    "source": "local_catalog",
-                }
-            )
-            if len(out) >= cap:
-                break
-        return out
+        row = con.execute(
+            "SELECT olid FROM ol_author_cache WHERE name_norm=? LIMIT 1", (key,)
+        ).fetchone()
+        if row and row[0]:
+            return str(row[0])
+        row = con.execute(
+            "SELECT olid FROM ol_author_cache WHERE name_norm LIKE ? LIMIT 1",
+            (key[:40] + "%",),
+        ).fetchone()
+        return str(row[0]) if row and row[0] else ""
     finally:
         con.close()
+
+
+def _ol_author_profile(olid: str) -> dict[str, Any]:
+    """Bio + photo Open Library /authors/{OLID}.json."""
+    key = (olid or "").strip()
+    if key.startswith("/authors/"):
+        key = key.rsplit("/", 1)[-1]
+    if not key.startswith("OL"):
+        return {}
+    try:
+        r = requests.get(
+            f"https://openlibrary.org/authors/{key}.json",
+            headers=UA_EXTRA,
+            timeout=6,
+        )
+        if r.status_code != 200:
+            return {}
+        data = r.json() or {}
+    except Exception:
+        return {}
+    out: dict[str, Any] = {"olid": key}
+    bio = data.get("bio")
+    if isinstance(bio, dict):
+        bio = bio.get("value") or ""
+    bio = (bio or "").strip()
+    if len(bio) >= 40:
+        out["bio"] = bio[:2000]
+    # photo
+    photos = data.get("photos") or []
+    if isinstance(photos, list) and photos:
+        try:
+            pid = int(photos[0])
+            if pid > 0:
+                out["photo_url"] = f"https://covers.openlibrary.org/a/id/{pid}-M.jpg"
+        except (TypeError, ValueError):
+            pass
+    if not out.get("photo_url"):
+        out["photo_url"] = f"https://covers.openlibrary.org/a/olid/{key}-M.jpg"
+    # dates
+    for src, dst in (("birth_date", "birth_date"), ("death_date", "death_date")):
+        raw = (data.get(src) or "").strip()
+        if raw:
+            out[dst] = raw[:10] if len(raw) >= 10 and raw[:4].isdigit() else raw
+    return out
+
+
+def _bnf_author_hint(name: str) -> dict[str, Any]:
+    """Piste BnF SRU (autorités + notices) : note biographique FR."""
+    import re
+
+    q = (name or "").strip().replace('"', " ")
+    if len(q) < 3:
+        return {}
+    # Une seule requête autorités (2ᵉ trop lente / peu de bios)
+    queries = (f'aut.anywhere all "{q}"',)
+    for query in queries:
+        try:
+            r = requests.get(
+                "https://catalogue.bnf.fr/api/SRU",
+                params={
+                    "version": "1.2",
+                    "operation": "searchRetrieve",
+                    "query": query,
+                    "recordSchema": "dublincore",
+                    "maximumRecords": "3",
+                },
+                headers={**UA_EXTRA, "Accept": "application/xml"},
+                timeout=6,
+            )
+            if r.status_code != 200 or not r.text:
+                continue
+            for m in re.finditer(
+                r"<dc:description[^>]*>([^<]{40,2000})</dc:description>",
+                r.text,
+                flags=re.I,
+            ):
+                bio = m.group(1).strip()
+                low = bio.lower()
+                # Écarter notes techniques catalogue (EAN, cote, etc.)
+                if any(
+                    x in low
+                    for x in (
+                        "code à barres",
+                        "ean ",
+                        "isbn ",
+                        "cote ",
+                        "in-8",
+                        "in-12",
+                        "broché",
+                        "relié",
+                    )
+                ):
+                    continue
+                if len(bio) >= 60:
+                    return {"bio": bio[:2000]}
+        except Exception:
+            continue
+    return {}
+
+
+def _local_catalog_works(name: str, *, cap: int = 40) -> list[dict[str, Any]]:
+    """Œuvres déjà présentes dans catalog_daily_series pour cet auteur (PC)."""
+    import re
+
+    key = re.sub(r"\s+", " ", (name or "").strip().lower())
+    if len(key) < 2:
+        return []
+    return (_ensure_local_works_index().get(key) or [])[:cap]
 
 
 def _incomplete_filter() -> dict:
@@ -339,35 +420,120 @@ def _incomplete_filter() -> dict:
     }
 
 
-def _sqlite_incomplete(batch_n: int, *, offset: int = 0) -> list[dict[str, Any]]:
-    """Lit les auteurs incomplets depuis le PC (quand Atlas est plein)."""
+_LOCAL_WORKS_INDEX: dict[str, list[dict[str, Any]]] | None = None
+_WORKS_INDEX_CACHE = ROOT / "data" / "_local_works_index.json"
+
+
+def _ensure_local_works_index() -> dict[str, list[dict[str, Any]]]:
+    """Index name_norm → œuvres catalogue (une fois par process + cache disque)."""
+    global _LOCAL_WORKS_INDEX
+    if _LOCAL_WORKS_INDEX is not None:
+        return _LOCAL_WORKS_INDEX
+    import re
+    import sqlite3
+    from collections import defaultdict
+
+    path = ROOT / "data" / "local_catalog.sqlite"
+    try:
+        if _WORKS_INDEX_CACHE.exists() and path.exists():
+            # Valide 6h (évite rebuild à chaque restart pendant dumps)
+            age = time.time() - _WORKS_INDEX_CACHE.stat().st_mtime
+            if age < 6 * 3600:
+                raw = json.loads(_WORKS_INDEX_CACHE.read_text(encoding="utf-8"))
+                if isinstance(raw, dict) and len(raw) > 1000:
+                    _LOCAL_WORKS_INDEX = raw
+                    print(
+                        f"local_works_index authors={len(_LOCAL_WORKS_INDEX)} (cache)",
+                        flush=True,
+                    )
+                    return _LOCAL_WORKS_INDEX
+    except Exception as exc:
+        print(f"local_works_index_cache_miss {exc}", flush=True)
+
+    by: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    con = sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True, timeout=60)
+    try:
+        for (raw,) in con.execute("SELECT doc_json FROM catalog_daily_series"):
+            try:
+                d = json.loads(raw or "{}")
+            except Exception:
+                continue
+            authors = d.get("authors") or []
+            if not isinstance(authors, list):
+                continue
+            title = str(d.get("name") or "")[:200]
+            qid = str(d.get("qid") or d.get("wikidata_qid") or "")
+            if not title:
+                continue
+            book = {
+                "id": qid,
+                "title": title,
+                "series_id": None,
+                "series_name": None,
+                "volume_number": None,
+                "publication_date": str(d.get("first_published") or "")[:10] or None,
+                "genre": str(d.get("genre") or ""),
+                "language": d.get("language"),
+                "pages": None,
+                "isbn": str(d.get("isbn") or ""),
+                "publisher": "",
+                "description": None,
+                "book_type": "œuvre littéraire",
+                "source": "local_catalog",
+            }
+            for a in authors:
+                key = re.sub(r"\s+", " ", str(a).strip().lower())
+                if len(key) < 2:
+                    continue
+                lst = by[key]
+                if len(lst) >= 40:
+                    continue
+                if any(x.get("id") == qid and qid for x in lst):
+                    continue
+                lst.append(book)
+    finally:
+        con.close()
+    _LOCAL_WORKS_INDEX = dict(by)
+    try:
+        _WORKS_INDEX_CACHE.write_text(
+            json.dumps(_LOCAL_WORKS_INDEX, ensure_ascii=False), encoding="utf-8"
+        )
+    except Exception:
+        pass
+    print(f"local_works_index authors={len(_LOCAL_WORKS_INDEX)}", flush=True)
+    return _LOCAL_WORKS_INDEX
+
+
+def _sqlite_incomplete(
+    batch_n: int, *, after_rowid: int = 0
+) -> tuple[list[dict[str, Any]], int]:
+    """Lit les auteurs incomplets depuis le PC (curseur rowid, pas de re-scan offset)."""
     import sqlite3
 
     path = ROOT / "data" / "local_catalog.sqlite"
     con = sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True, timeout=60)
     out: list[dict[str, Any]] = []
-    skipped = 0
+    last_rowid = after_rowid
     try:
-        for (raw,) in con.execute(
-            "SELECT doc_json FROM catalog_authors ORDER BY rowid"
+        for rowid, raw in con.execute(
+            "SELECT rowid, doc_json FROM catalog_authors "
+            "WHERE rowid > ? ORDER BY rowid",
+            (after_rowid,),
         ):
+            last_rowid = int(rowid)
             try:
                 d = json.loads(raw or "{}")
             except Exception:
                 continue
-            if d.get("enrich_stuck") is True:
-                continue
+            # Retenter aussi les stuck (sinon un seul passage puis plus rien)
             if not _needs(d):
-                continue
-            if skipped < offset:
-                skipped += 1
                 continue
             out.append(d)
             if len(out) >= batch_n:
                 break
     finally:
         con.close()
-    return out
+    return out, last_rowid
 
 
 def main() -> int:
@@ -380,6 +546,16 @@ def main() -> int:
         "--sqlite-only",
         action="store_true",
         help="Lire/écrire uniquement SQLite (si quota Atlas)",
+    )
+    p.add_argument(
+        "--fast",
+        action="store_true",
+        help="Lots agressifs : moins de sleep, retente les stuck, index œuvres local",
+    )
+    p.add_argument(
+        "--skip-bio",
+        action="store_true",
+        help="Ne pas appeler Wikipédia bio (beaucoup plus rapide ; SPARQL only)",
     )
     args = p.parse_args()
     _load_env()
@@ -404,9 +580,24 @@ def main() -> int:
             coll = None
 
     prog = _load_prog()
-    batch_n = max(10, min(120, args.batch))
+    batch_n = max(10, min(250, args.batch))
     rounds = 0
-    sqlite_offset = int(prog.get("sqlite_offset") or 0)
+    sqlite_rowid = int(prog.get("sqlite_rowid") or 0)
+
+    # Budget Wikipedia généreux (sinon plafonné à ~80 bios / process)
+    try:
+        from app.catalog.daily_authors import reset_wiki_bio_budget
+
+        reset_wiki_bio_budget(5000 if args.fast else 2000)
+    except Exception:
+        pass
+
+    if args.fast or args.sqlite_only:
+        # Précharge index œuvres (évite 1 LIKE SQL / auteur)
+        try:
+            _ensure_local_works_index()
+        except Exception as exc:
+            print(f"local_works_index_warn {exc}", flush=True)
 
     if mongo_ok and coll is not None:
         try:
@@ -418,7 +609,10 @@ def main() -> int:
             print(f"mongo_count_fail → sqlite-only ({exc})", flush=True)
             mongo_ok = False
     if not mongo_ok:
-        print(f"sqlite-only batch={batch_n} offset={sqlite_offset}", flush=True)
+        print(
+            f"sqlite-only batch={batch_n} rowid>{sqlite_rowid} fast={bool(args.fast)}",
+            flush=True,
+        )
 
     while True:
         rounds += 1
@@ -457,17 +651,18 @@ def main() -> int:
                 docs = []
 
         if not docs:
-            docs = _sqlite_incomplete(batch_n, offset=sqlite_offset)
-            if not docs and sqlite_offset:
-                sqlite_offset = 0
-                docs = _sqlite_incomplete(batch_n, offset=0)
-            sqlite_offset += len(docs)
+            docs, sqlite_rowid = _sqlite_incomplete(batch_n, after_rowid=sqlite_rowid)
+            if not docs and sqlite_rowid:
+                # fin de table → repartir du début
+                sqlite_rowid = 0
+                docs, sqlite_rowid = _sqlite_incomplete(batch_n, after_rowid=0)
 
         if not docs:
             print("COMPLETE — plus de fiches incomplètes détectées", flush=True)
             break
 
         # Résoudre QID manquants par nom
+        qid_sleep = 0.03 if args.fast else 0.08
         for d in docs:
             q = (d.get("wikidata_qid") or "").strip()
             if q.startswith("Q"):
@@ -490,7 +685,7 @@ def main() -> int:
                             mongo_ok = False
                         else:
                             print(f"mongo_qid_warn {exc}", flush=True)
-            time.sleep(0.08)
+            time.sleep(qid_sleep)
 
         qids = []
         for d in docs:
@@ -544,9 +739,14 @@ def main() -> int:
                 patch["image_url"] = prof["photo_url"]
                 photos += 1
 
+            # Ordre rapide : Wikidata déjà fait → Wikipedia → OL (si OLID) → BnF
+            need_bio = not (d.get("bio") or patch.get("bio") or "").strip()
+            need_photo = not (
+                d.get("photo_url") or d.get("image_url") or patch.get("photo_url") or ""
+            ).strip()
+
             books = works.get(q) or []
             if not books and not (d.get("individual_books") or []):
-                # Secours local : œuvres déjà dans le catalogue PC pour cet auteur
                 try:
                     books = _local_catalog_works(d.get("name") or "")
                 except Exception:
@@ -556,19 +756,71 @@ def main() -> int:
                 patch["total_individual_books"] = len(books)
                 wks += 1
 
-            if not (d.get("bio") or "").strip():
+            filled_now = bool(patch)
+            if not args.skip_bio and need_bio:
                 name = (d.get("name") or "").strip()
                 wiki = patch.get("wikipedia_url") or d.get("wikipedia_url")
+                # En fast : Wikipedia seulement si URL déjà connue (évite 150× timeouts)
+                if wiki or not args.fast:
+                    try:
+                        bio, wiki2 = _wiki_bio(name, wiki)
+                    except Exception:
+                        bio, wiki2 = "", wiki or ""
+                    if bio:
+                        patch["bio"] = bio
+                        bios += 1
+                        need_bio = False
+                        filled_now = True
+                    if wiki2 and not (d.get("wikipedia_url") or patch.get("wikipedia_url")):
+                        patch["wikipedia_url"] = wiki2
+                        filled_now = True
+                    time.sleep(0.02 if args.fast else 0.05)
+
+            # Open Library : seulement si OLID déjà connu (cache / fiche)
+            if need_bio or need_photo:
+                olid = (d.get("olid") or d.get("openlibrary_key") or "").strip()
+                if not olid and (need_bio or need_photo):
+                    try:
+                        olid = _olid_from_cache(d.get("name") or "")
+                    except Exception:
+                        olid = ""
+                if olid:
+                    try:
+                        olp = _ol_author_profile(olid)
+                    except Exception:
+                        olp = {}
+                    if olp.get("olid") and not d.get("olid"):
+                        patch["olid"] = olp["olid"]
+                    if need_bio and olp.get("bio"):
+                        patch["bio"] = olp["bio"]
+                        bios += 1
+                        need_bio = False
+                        filled_now = True
+                    if need_photo and olp.get("photo_url"):
+                        patch["photo_url"] = olp["photo_url"]
+                        patch["image_url"] = olp["photo_url"]
+                        photos += 1
+                        need_photo = False
+                        filled_now = True
+                    if not (d.get("birth_date") or patch.get("birth_date") or "").strip() and olp.get(
+                        "birth_date"
+                    ):
+                        patch["birth_date"] = olp["birth_date"]
+                        filled_now = True
+                    time.sleep(0.03 if args.fast else 0.08)
+
+            # BnF : dernier recours (désactivé en --fast : trop lent vs wiki/OL)
+            if need_bio and not args.fast:
                 try:
-                    bio, wiki2 = _wiki_bio(name, wiki)
+                    bnf = _bnf_author_hint(d.get("name") or "")
                 except Exception:
-                    bio, wiki2 = "", wiki or ""
-                if bio:
-                    patch["bio"] = bio
+                    bnf = {}
+                if bnf.get("bio"):
+                    patch["bio"] = bnf["bio"]
                     bios += 1
-                if wiki2 and not (d.get("wikipedia_url") or patch.get("wikipedia_url")):
-                    patch["wikipedia_url"] = wiki2
-                time.sleep(0.05)
+                    need_bio = False
+                    filled_now = True
+                time.sleep(0.08)
 
             if q.startswith("Q") and d.get("wikidata_qid") != q:
                 patch["wikidata_qid"] = q
@@ -576,11 +828,13 @@ def main() -> int:
 
             patch["enrich_attempted_at"] = _utcnow()
             merged_preview = {**d, **patch}
-            # Ne marquer stuck que si QID connu et sources épuisées
-            if q.startswith("Q") and _needs(merged_preview):
+            # Stuck seulement si aucune info nouvelle ET pas de QID (sinon on retente)
+            if not q.startswith("Q") and not filled_now:
                 patch["enrich_stuck"] = True
-            elif not q.startswith("Q"):
-                patch["enrich_stuck"] = True  # pas de QID trouvable
+            elif args.fast:
+                patch["enrich_stuck"] = False
+            elif q.startswith("Q") and _needs(merged_preview) and not filled_now:
+                patch["enrich_stuck"] = True
             else:
                 patch["enrich_stuck"] = False
 
@@ -614,16 +868,16 @@ def main() -> int:
         prog["works"] = int(prog.get("works") or 0) + wks
         prog["photos"] = int(prog.get("photos") or 0) + photos
         prog["rounds"] = int(prog.get("rounds") or 0) + 1
-        prog["sqlite_offset"] = sqlite_offset
+        prog["sqlite_rowid"] = sqlite_rowid
         prog["mongo_ok"] = bool(mongo_ok)
         _save_prog(prog)
         print(
             f"round={rounds} updated={updated} bios+={bios} nat+={nats} works+={wks} photo+={photos} "
-            f"qid+={qids_linked} tot_upd={prog['updated']}",
+            f"qid+={qids_linked} tot_upd={prog['updated']} rowid={sqlite_rowid}",
             flush=True,
         )
 
-        time.sleep(max(0.2, args.sleep))
+        time.sleep(max(0.05 if args.fast else 0.2, args.sleep))
 
     print("DONE", json.dumps(prog, ensure_ascii=False), flush=True)
     return 0

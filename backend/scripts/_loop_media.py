@@ -1,4 +1,4 @@
-"""Boucle 2/3 — médias fiches : ISBN réels + résumés + titres FR.
+"""Boucle 2/3 — médias RAPIDE : ISBN prioritaire, résumés, titres FR.
 
   python scripts/_loop_media.py
 """
@@ -31,39 +31,42 @@ def main() -> int:
     while True:
         n += 1
         print(f"\n======== MEDIA #{n} ========", flush=True)
+        # ISBN : plus gros lots, moins de sleep (2 rounds media = 24 rounds ISBN)
         _run(
             "isbn",
             [
                 PY,
                 str(ROOT / "scripts" / "backfill_real_isbns.py"),
                 "--batch",
-                "40",
+                "80",
                 "--per-doc",
-                "4",
+                "3",
                 "--rounds",
-                "8",
+                "24",
                 "--sleep",
-                "0.5",
+                "0.15",
                 "--skip-purge",
                 "--loop",
             ],
-            timeout=35 * 60,
+            timeout=40 * 60,
         )
-        _run(
-            "synopses",
-            [
-                PY,
-                str(ROOT / "scripts" / "backfill_synopses_loop.py"),
-                "--batch",
-                "50",
-                "--rounds",
-                "10",
-                "--sleep",
-                "0.4",
-                "--loop",
-            ],
-            timeout=25 * 60,
-        )
+        # Résumés : moins souvent (rendement faible) — 1 media sur 2
+        if n % 2 == 0:
+            _run(
+                "synopses",
+                [
+                    PY,
+                    str(ROOT / "scripts" / "backfill_synopses_loop.py"),
+                    "--batch",
+                    "80",
+                    "--rounds",
+                    "8",
+                    "--sleep",
+                    "0.2",
+                    "--loop",
+                ],
+                timeout=15 * 60,
+            )
         _run(
             "titles_fr",
             [
@@ -72,13 +75,13 @@ def main() -> int:
                 "--phase",
                 "google",
                 "--workers",
-                "3",
+                "6",
                 "--limit",
-                "400",
+                "800",
             ],
-            timeout=30 * 60,
+            timeout=25 * 60,
         )
-        time.sleep(3)
+        time.sleep(1)
 
 
 if __name__ == "__main__":
