@@ -1,6 +1,8 @@
 """Boucle résumés / 4ᵉ de couverture sur le catalogue SQLite.
 
-Priorité ISBN (Google Books / OL) = texte proche du dos du livre.
+Stratégie (GB souvent en 429) :
+  OL work → Wikipédia titre/auteur → OL search → ISBN (OL/BnF, GB si dispo)
+
   python scripts/backfill_synopses_loop.py --batch 200 --loop
 """
 from __future__ import annotations
@@ -8,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sqlite3
 import sys
 import time
@@ -17,6 +20,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 PROGRESS = ROOT / "data" / "_synopses_progress.json"
+
+_FR_HINT = re.compile(
+    r"[àâäéèêëïîôùûüçœæ]|(\b(le|la|les|un|une|des|du|de|et|est|dans|pour|avec)\b)",
+    re.I,
+)
 
 
 def _load_env() -> None:
@@ -76,6 +84,35 @@ def _pick_isbn(doc: dict) -> str:
     return ""
 
 
+def _author_name(doc: dict) -> str:
+    authors = doc.get("authors") or doc.get("author") or []
+    if isinstance(authors, list) and authors:
+        a0 = authors[0]
+        return a0.get("name") if isinstance(a0, dict) else str(a0)
+    if isinstance(authors, str):
+        return authors
+    return ""
+
+
+def _fr_score(doc: dict) -> int:
+    """Plus bas = mieux (tri). Priorise FR / titres francophones."""
+    lang = str(doc.get("language") or doc.get("lang") or "").lower().strip()
+    title = str(doc.get("name") or doc.get("title") or "")
+    score = 5
+    if lang in ("fr", "fra", "fre", "français", "francais", "french") or lang.startswith("fr"):
+        score -= 4
+    elif lang in ("en", "eng", "anglais", "english") or lang.startswith("en"):
+        score += 3
+    if _FR_HINT.search(title):
+        score -= 2
+    if _pick_isbn(doc):
+        score -= 1
+    q = str(doc.get("qid") or "")
+    if q.startswith("OL") and q.endswith("W"):
+        score -= 1
+    return score
+
+
 def collect_batch(offset: int, batch: int) -> tuple[list[tuple[str, dict]], int, int]:
     """Retourne (candidates, next_offset, total_rows_seen_in_pass)."""
     from app.catalog import catalog_media
@@ -85,7 +122,7 @@ def collect_batch(offset: int, batch: int) -> tuple[list[tuple[str, dict]], int,
     rows = con.execute(
         "SELECT qid, doc_json FROM catalog_daily_series ORDER BY rowid "
         "LIMIT ? OFFSET ?",
-        (batch * 8, offset),
+        (batch * 12, offset),
     ).fetchall()
     con.close()
     out: list[tuple[str, dict]] = []
@@ -98,7 +135,6 @@ def collect_batch(offset: int, batch: int) -> tuple[list[tuple[str, dict]], int,
             continue
         if catalog_media.has_real_synopsis(doc):
             continue
-        # Prioriser ISBN puis clé OL puis titre (wiki/GB/BnF)
         isbn = _pick_isbn(doc)
         qid = str(doc.get("qid") or row["qid"] or "")
         title = (doc.get("name") or doc.get("title") or "").strip()
@@ -107,14 +143,13 @@ def collect_batch(offset: int, batch: int) -> tuple[list[tuple[str, dict]], int,
         if isbn:
             doc["isbn"] = isbn
         out.append((row["qid"], doc))
-        if len(out) >= batch * 2:
+        if len(out) >= batch * 3:
             break
-    out.sort(
-        key=lambda x: (
-            0 if _pick_isbn(x[1]) else 1,
-            0 if str(x[1].get("qid") or "").endswith("W") else 1,
-        )
-    )
+    out.sort(key=lambda x: _fr_score(x[1]))
+    # Si assez de pistes FR / wiki-friendly, dropper le bruit EN académique
+    preferred = [x for x in out if _fr_score(x[1]) <= 3]
+    if len(preferred) >= max(8, batch // 4):
+        out = preferred
     out = out[:batch]
     next_off = offset + scanned
     if next_off >= total:
@@ -122,63 +157,138 @@ def collect_batch(offset: int, batch: int) -> tuple[list[tuple[str, dict]], int,
     return out, next_off, total
 
 
+def _wiki_fast(title: str, author: str = "") -> str:
+    """Résumé Wikipédia rapide (REST summary FR/EN + 1 opensearch FR)."""
+    import requests
+    from urllib.parse import quote
+
+    headers = {"User-Agent": "BooktimeSynopsis/1.2"}
+    titles = [title]
+    if author:
+        titles.append(f"{title} ({author.split(',')[0].strip()})")
+        titles.append(f"{title} {author.split(',')[0].strip()}")
+    for lang in ("fr", "en"):
+        for t in titles:
+            slug = quote((t or "").strip().replace(" ", "_"), safe="_()")
+            if not slug:
+                continue
+            try:
+                r = requests.get(
+                    f"https://{lang}.wikipedia.org/api/rest_v1/page/summary/{slug}",
+                    timeout=3,
+                    headers=headers,
+                )
+                if r.status_code != 200:
+                    continue
+                extract = (r.json().get("extract") or "").strip()
+                if len(extract) >= 60:
+                    return extract[:2000]
+            except Exception:
+                continue
+    # 1 opensearch FR
+    try:
+        r = requests.get(
+            "https://fr.wikipedia.org/w/api.php",
+            params={
+                "action": "opensearch",
+                "search": title,
+                "limit": 2,
+                "namespace": 0,
+                "format": "json",
+            },
+            timeout=3,
+            headers=headers,
+        )
+        if r.status_code == 200:
+            hits = (r.json() or [None, []])[1] or []
+            for hit in hits[:2]:
+                slug = quote(str(hit).replace(" ", "_"), safe="_()")
+                r2 = requests.get(
+                    f"https://fr.wikipedia.org/api/rest_v1/page/summary/{slug}",
+                    timeout=3,
+                    headers=headers,
+                )
+                if r2.status_code == 200:
+                    extract = (r2.json().get("extract") or "").strip()
+                    if len(extract) >= 60:
+                        return extract[:2000]
+    except Exception:
+        pass
+    return ""
+
+
 def run_batch(candidates: list[tuple[str, dict]]) -> dict:
-    """ISBN (GB/OL/BnF) → OL work → Wikipedia → pipeline heavy titre/auteur."""
+    """OL work → Wiki rapide → ISBN OL/BnF (évite GB 429 et wiki lourd)."""
     from app.catalog import catalog_media
     from app.utils.book_synopsis import (
+        _from_bnf_isbn,
+        _from_openlibrary_isbn,
         _ol_work_description_only,
-        fetch_back_cover_by_isbn,
         is_usable_synopsis,
     )
+
+    try:
+        from app.google_books.service import gb_available
+        from app.utils.book_synopsis import fetch_back_cover_by_isbn
+    except Exception:
+        gb_available = lambda: False  # noqa: E731
+        fetch_back_cover_by_isbn = None
 
     catalog_media.reset_budgets(synopsis=max(len(candidates) * 2, 40), covers=0)
     filled = tried = 0
     by_src: dict[str, int] = {}
     updates: list[tuple] = []
+
+    def _ok(text: str) -> bool:
+        return bool(
+            is_usable_synopsis(text) and not catalog_media.is_template_blurb(text)
+        )
+
     for qid, doc in candidates:
         tried += 1
         text = ""
         src = ""
+        title = (doc.get("name") or doc.get("title") or "").strip()
+        author = _author_name(doc)
         isbn = _pick_isbn(doc)
-        if isbn:
-            text, src = fetch_back_cover_by_isbn(isbn)
-            if not is_usable_synopsis(text) or catalog_media.is_template_blurb(text):
-                text, src = "", ""
-        if not text:
-            ol_key = (doc.get("key") or "").strip()
-            q = str(doc.get("qid") or qid or "")
-            if not ol_key and q.startswith("OL") and q.endswith("W"):
-                ol_key = f"/works/{q}"
-            if ol_key:
-                ol_text = (_ol_work_description_only(ol_key) or "").strip()
-                if is_usable_synopsis(ol_text) and not catalog_media.is_template_blurb(ol_text):
-                    text, src = ol_text, "openlibrary"
-        if not text:
-            # Pipeline élargi : wiki + GB titre/auteur + BnF via fetch_synopsis heavy
-            title = (doc.get("name") or doc.get("title") or "").strip()
-            author = ""
-            authors = doc.get("authors") or doc.get("author") or []
-            if isinstance(authors, list) and authors:
-                a0 = authors[0]
-                author = a0.get("name") if isinstance(a0, dict) else str(a0)
-            elif isinstance(authors, str):
-                author = authors
-            try:
-                text, src = catalog_media.fetch_synopsis(
-                    title=title,
-                    author=author or "",
-                    isbn=isbn or "",
-                    ol_key=(doc.get("key") or ""),
-                    heavy=True,
-                    prefer_back_cover=False,
-                )
-            except Exception:
-                text, src = "", ""
-            if not is_usable_synopsis(text) or catalog_media.is_template_blurb(text):
-                text, src = "", ""
+        ol_key = (doc.get("key") or "").strip()
+        q = str(doc.get("qid") or qid or "")
+        if not ol_key and q.startswith("OL") and q.endswith("W"):
+            ol_key = f"/works/{q}"
+
+        # 1) Work OL
+        if ol_key:
+            ol_text = (_ol_work_description_only(ol_key) or "").strip()
+            if _ok(ol_text):
+                text, src = ol_text, "openlibrary"
+
+        # 2) Wiki rapide
+        if not text and title:
+            wiki = _wiki_fast(title, author)
+            if _ok(wiki):
+                text, src = wiki, "wikipedia"
+
+        # 3) ISBN sans GB si cooldown
+        if not text and isbn:
+            if gb_available() and fetch_back_cover_by_isbn:
+                try:
+                    bc, bsrc = fetch_back_cover_by_isbn(isbn)
+                    if _ok(bc):
+                        text, src = bc, bsrc or "isbn"
+                except Exception:
+                    pass
+            if not text:
+                ol_i = (_from_openlibrary_isbn(isbn) or "").strip()
+                if _ok(ol_i):
+                    text, src = ol_i, "openlibrary_isbn"
+            if not text:
+                bnf = (_from_bnf_isbn(isbn) or "").strip()
+                if _ok(bnf):
+                    text, src = bnf, "bnf_isbn"
+
         if not text or not catalog_media.apply_synopsis(doc, text, src):
-            if tried % 10 == 0:
-                print(f"  synopsis tried={tried} filled={filled}", flush=True)
+            if tried % 5 == 0:
+                print(f"  synopsis tried={tried} filled={filled} src={by_src}", flush=True)
             continue
         filled += 1
         by_src[src] = by_src.get(src, 0) + 1
@@ -190,10 +300,11 @@ def run_batch(candidates: list[tuple[str, dict]]) -> dict:
                 qid,
             )
         )
-        if len(updates) >= 15:
+        if len(updates) >= 8:
             _flush(updates)
             updates.clear()
             print(f"  synopsis filled={filled}/{tried} src={by_src}", flush=True)
+        time.sleep(0.03)
     _flush(updates)
     return {"filled": filled, "tried": tried, "by_src": by_src}
 
@@ -229,10 +340,17 @@ def main() -> int:
     p.add_argument("--loop", action="store_true")
     p.add_argument("--sleep", type=float, default=1.0)
     p.add_argument("--rounds", type=int, default=0, help="0=illimité si --loop")
+    p.add_argument("--reset-offset", action="store_true")
     args = p.parse_args()
     _load_env()
     os.environ.setdefault("CATALOG_DUMP_LOCAL", "1")
     print(f"db={_db()}", flush=True)
+
+    if args.reset_offset:
+        prog = _load_prog()
+        prog["offset"] = 0
+        _save_prog(prog)
+        print("offset reset → 0", flush=True)
 
     rounds = 0
     while True:

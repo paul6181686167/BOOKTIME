@@ -5,7 +5,9 @@ Utilisé comme 3e source de métadonnées (après Wikidata + Open Library) — v
 
 from __future__ import annotations
 
+import logging
 import re
+import time
 from typing import Any
 
 import requests
@@ -14,6 +16,24 @@ from ..config import GOOGLE_BOOKS_API_KEY
 
 GB_VOLUMES_URL = "https://www.googleapis.com/books/v1/volumes"
 _TIMEOUT = 15
+logger = logging.getLogger("booktime.google_books")
+
+# Circuit breaker quota 429 : coupe GB pendant N secondes
+_GB_COOLDOWN_UNTIL = 0.0
+_GB_COOLDOWN_SEC = 900.0
+
+
+def gb_available() -> bool:
+    """False si clé absente ou cooldown 429 actif."""
+    if not GOOGLE_BOOKS_API_KEY:
+        return False
+    return time.time() >= _GB_COOLDOWN_UNTIL
+
+
+def _trip_cooldown(sec: float | None = None) -> None:
+    global _GB_COOLDOWN_UNTIL
+    _GB_COOLDOWN_UNTIL = time.time() + float(sec if sec is not None else _GB_COOLDOWN_SEC)
+    logger.warning("Google Books 429 — pause jusqu'à +%.0fs", _GB_COOLDOWN_SEC)
 
 
 def infer_book_category_from_google_item(it: dict[str, Any]) -> str:
@@ -32,8 +52,8 @@ def infer_book_category_from_google_item(it: dict[str, Any]) -> str:
 
 
 def is_enabled() -> bool:
-    """True si une clé Google Books est configurée (sinon les appels échouent)."""
-    return bool(GOOGLE_BOOKS_API_KEY)
+    """True si une clé Google Books est configurée et hors cooldown 429."""
+    return gb_available()
 
 
 def _require_key() -> str:
@@ -61,6 +81,8 @@ def search_volumes(
     `print_type` : "books" | "magazines".
     Retourne le JSON Google (items, totalItems, ...).
     """
+    if not gb_available():
+        return {"items": [], "totalItems": 0, "error": "gb_cooldown"}
     key = _require_key()
     n = max(1, min(int(max_results), 40))
     params = {"q": q.strip(), "maxResults": n, "key": key}
@@ -71,6 +93,9 @@ def search_volumes(
     if print_type in ("books", "magazines"):
         params["printType"] = print_type
     r = requests.get(GB_VOLUMES_URL, params=params, timeout=_TIMEOUT)
+    if r.status_code in (403, 429):
+        _trip_cooldown()
+        return {"items": [], "totalItems": 0, "error": f"gb_{r.status_code}"}
     r.raise_for_status()
     return r.json()
 

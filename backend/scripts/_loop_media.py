@@ -1,4 +1,4 @@
-"""Boucle 2/3 — médias RAPIDE : ISBN prioritaire, résumés, titres FR.
+"""Boucle 2/3 — médias : résumés + ISBN (GB en 429 → OL/BnF/Wiki).
 
   python scripts/_loop_media.py
 """
@@ -31,56 +31,57 @@ def main() -> int:
     while True:
         n += 1
         print(f"\n======== MEDIA #{n} ========", flush=True)
-        # ISBN : plus gros lots, moins de sleep (2 rounds media = 24 rounds ISBN)
+        # Résumés EN PREMIER (étaient starving derrière ISBN)
+        _run(
+            "synopses",
+            [
+                PY,
+                str(ROOT / "scripts" / "backfill_synopses_loop.py"),
+                "--batch",
+                "40",
+                "--rounds",
+                "20",
+                "--sleep",
+                "0.08",
+                "--loop",
+            ],
+            timeout=30 * 60,
+        )
+        # ISBN : lots plus courts, OL/BnF d'abord (moins de GB)
         _run(
             "isbn",
             [
                 PY,
                 str(ROOT / "scripts" / "backfill_real_isbns.py"),
                 "--batch",
-                "80",
+                "60",
                 "--per-doc",
                 "3",
                 "--rounds",
-                "24",
+                "10",
                 "--sleep",
-                "0.15",
+                "0.2",
                 "--skip-purge",
                 "--loop",
             ],
-            timeout=40 * 60,
-        )
-        # Résumés : moins souvent (rendement faible) — 1 media sur 2
-        if n % 2 == 0:
-            _run(
-                "synopses",
-                [
-                    PY,
-                    str(ROOT / "scripts" / "backfill_synopses_loop.py"),
-                    "--batch",
-                    "80",
-                    "--rounds",
-                    "8",
-                    "--sleep",
-                    "0.2",
-                    "--loop",
-                ],
-                timeout=15 * 60,
-            )
-        _run(
-            "titles_fr",
-            [
-                PY,
-                str(ROOT / "scripts" / "backfill_french_titles.py"),
-                "--phase",
-                "google",
-                "--workers",
-                "6",
-                "--limit",
-                "800",
-            ],
             timeout=25 * 60,
         )
+        # Titres FR : 1 cycle sur 2
+        if n % 2 == 0:
+            _run(
+                "titles_fr",
+                [
+                    PY,
+                    str(ROOT / "scripts" / "backfill_french_titles.py"),
+                    "--phase",
+                    "google",
+                    "--workers",
+                    "4",
+                    "--limit",
+                    "400",
+                ],
+                timeout=20 * 60,
+            )
         time.sleep(1)
 
 

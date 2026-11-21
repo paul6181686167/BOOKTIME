@@ -240,7 +240,8 @@ def resolve_isbn(
     for t in (title, title_en):
         if not (t or "").strip():
             continue
-        for fn in (from_ol_search, from_google_books, from_bnf):
+        # OL + BnF d'abord (GB souvent en 429 / quota)
+        for fn in (from_ol_search, from_bnf, from_google_books):
             got = fn(t, author)
             if got:
                 return got
