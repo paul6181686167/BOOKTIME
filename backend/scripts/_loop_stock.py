@@ -1,6 +1,6 @@
-"""Boucle 1/3 — stock RAPIDE : dumps OL en continu + jaquettes/daily en parallèle.
+"""Boucle 1/3 — stock : dumps OL prioritaires (croissance fiches).
 
-Le dump ne redémarre plus (évite de re-fast-skip 18M lignes à chaque lot).
+Jaquettes / daily en fond rare — ne plus bloquer SQLite 20 min pour 0 cover.
 
   python scripts/_loop_stock.py
 """
@@ -30,8 +30,7 @@ def _run(label: str, args: list[str], *, timeout: int) -> None:
 
 
 def main() -> int:
-    print("======== STOCK (dumps continus) ========", flush=True)
-    # 1 worker, lots illimités, boucle interne : un seul fast-skip puis flux continu
+    print("======== STOCK (dumps prioritaires) ========", flush=True)
     dump = subprocess.Popen(
         [
             PY,
@@ -44,7 +43,7 @@ def main() -> int:
             "--editions-limit",
             "0",
             "--sleep",
-            "2",
+            "1",
         ],
         cwd=str(ROOT),
     )
@@ -69,24 +68,32 @@ def main() -> int:
                         "--editions-limit",
                         "0",
                         "--sleep",
-                        "2",
+                        "1",
                     ],
                     cwd=str(ROOT),
                 )
-            _run(
-                "covers",
-                [
-                    PY,
-                    str(ROOT / "scripts" / "backfill_all_covers.py"),
-                    "--workers",
-                    "3",
-                    "--limit",
-                    "2000",
-                ],
-                timeout=20 * 60,
-            )
-            # Daily seulement 1 side sur 3 (Atlas souvent plein)
-            if n % 3 == 1:
+                print(f"dumps pid={dump.pid}", flush=True)
+
+            # Laisser le dump respirer (SQLite) — side jobs rares
+            time.sleep(90)
+
+            # Jaquettes : petit lot, rare (rendement souvent 0)
+            if n % 4 == 0:
+                _run(
+                    "covers",
+                    [
+                        PY,
+                        str(ROOT / "scripts" / "backfill_all_covers.py"),
+                        "--workers",
+                        "2",
+                        "--limit",
+                        "400",
+                    ],
+                    timeout=8 * 60,
+                )
+
+            # Daily Atlas : très rare
+            if n % 8 == 1:
                 _run(
                     "daily",
                     [
@@ -94,11 +101,10 @@ def main() -> int:
                         str(ROOT / "scripts" / "run_daily_ingest.py"),
                         "--sync",
                         "--limit",
-                        "120",
+                        "80",
                     ],
-                    timeout=25 * 60,
+                    timeout=12 * 60,
                 )
-            time.sleep(2)
     finally:
         if dump.poll() is None:
             dump.terminate()

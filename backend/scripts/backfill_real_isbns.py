@@ -319,11 +319,35 @@ def fill_doc(doc: dict, *, budget_per_doc: int = 8) -> tuple[int, int]:
     return filled, tried
 
 
-def run_batch(candidates: list[tuple[str, dict]], *, per_doc: int) -> dict[str, int]:
+def run_batch(
+    candidates: list[tuple[str, dict]], *, per_doc: int, workers: int = 1
+) -> dict[str, int]:
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
     filled = tried = failed = 0
     updates: list[tuple] = []
-    for i, (qid, doc) in enumerate(candidates, 1):
+    workers = max(1, min(int(workers or 1), 10))
+
+    def _one(item: tuple[str, dict]) -> tuple[str, dict, int, int]:
+        qid, doc = item
         got, did = fill_doc(doc, budget_per_doc=per_doc)
+        return qid, doc, got, did
+
+    done_n = 0
+    if workers <= 1:
+        results = [_one(x) for x in candidates]
+    else:
+        results = []
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futs = [pool.submit(_one, x) for x in candidates]
+            for fut in as_completed(futs):
+                try:
+                    results.append(fut.result())
+                except Exception:
+                    failed += 1
+
+    for qid, doc, got, did in results:
+        done_n += 1
         tried += did
         filled += got
         if got:
@@ -337,15 +361,14 @@ def run_batch(candidates: list[tuple[str, dict]], *, per_doc: int) -> dict[str, 
             )
         else:
             failed += 1
-        if i % 10 == 0 or got:
+        if done_n % 15 == 0 or got:
             print(
-                f"  isbn {i}/{len(candidates)} filled+={got} tot_filled={filled} tried={tried}",
+                f"  isbn {done_n}/{len(candidates)} filled+={got} tot_filled={filled} tried={tried}",
                 flush=True,
             )
-        if len(updates) >= 20:
+        if len(updates) >= 25:
             _flush(updates)
             updates.clear()
-        time.sleep(0.05)
     _flush(updates)
     return {"filled": filled, "tried": tried, "failed_docs": failed}
 
@@ -357,12 +380,13 @@ def main() -> int:
     p.add_argument("--loop", action="store_true")
     p.add_argument("--sleep", type=float, default=0.8)
     p.add_argument("--rounds", type=int, default=0)
+    p.add_argument("--workers", type=int, default=6)
     p.add_argument("--purge-invalid-only", action="store_true")
     p.add_argument("--skip-purge", action="store_true")
     args = p.parse_args()
     _load_env()
     os.environ.setdefault("CATALOG_DUMP_LOCAL", "1")
-    print(f"db={_db()}", flush=True)
+    print(f"db={_db()} workers={args.workers}", flush=True)
 
     prog = _load_prog()
     if not args.skip_purge:
@@ -394,7 +418,9 @@ def main() -> int:
             if args.rounds and rounds >= args.rounds:
                 break
             continue
-        res = run_batch(cands, per_doc=max(1, args.per_doc))
+        res = run_batch(
+            cands, per_doc=max(1, args.per_doc), workers=max(1, args.workers)
+        )
         prog["filled"] = int(prog.get("filled") or 0) + int(res["filled"])
         prog["tried"] = int(prog.get("tried") or 0) + int(res["tried"])
         prog["failed"] = int(prog.get("failed") or 0) + int(res["failed_docs"])
@@ -406,7 +432,7 @@ def main() -> int:
             break
         if args.rounds and rounds >= args.rounds:
             break
-        time.sleep(max(0.3, args.sleep))
+        time.sleep(max(0.15, args.sleep))
     print("DONE", json.dumps(prog, ensure_ascii=False), flush=True)
     return 0
 

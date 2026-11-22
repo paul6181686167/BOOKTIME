@@ -102,7 +102,22 @@ def _book_from_series(d: dict) -> dict[str, Any]:
     }
 
 
+_SERIES_INDEX_CACHE = ROOT / "data" / "_works_series_index.json"
+
+
 def build_series_index(con: sqlite3.Connection) -> dict[str, list[dict]]:
+    # Cache disque 6h (évite rescanner 500k+ séries à chaque cycle)
+    try:
+        if _SERIES_INDEX_CACHE.exists():
+            age = time.time() - _SERIES_INDEX_CACHE.stat().st_mtime
+            if age < 6 * 3600:
+                raw = json.loads(_SERIES_INDEX_CACHE.read_text(encoding="utf-8"))
+                if isinstance(raw, dict) and len(raw) > 1000:
+                    print(f"series_index cache hit keys={len(raw)}", flush=True)
+                    return raw
+    except Exception as exc:
+        print(f"series_index_cache_miss {exc}", flush=True)
+
     by: dict[str, list[dict]] = defaultdict(list)
     for (raw,) in con.execute("SELECT doc_json FROM catalog_daily_series"):
         try:
@@ -127,7 +142,14 @@ def build_series_index(con: sqlite3.Connection) -> dict[str, list[dict]]:
             if any(x.get("title", "").lower() == book["title"].lower() for x in lst):
                 continue
             lst.append(book)
-    return by
+    out = dict(by)
+    try:
+        _SERIES_INDEX_CACHE.write_text(
+            json.dumps(out, ensure_ascii=False), encoding="utf-8"
+        )
+    except Exception:
+        pass
+    return out
 
 
 def build_cache_index(con: sqlite3.Connection) -> dict[str, list[str]]:
@@ -152,7 +174,7 @@ def _ol_author_works(olid: str, *, limit: int = 40) -> list[dict[str, Any]]:
             f"https://openlibrary.org/authors/{key}/works.json",
             params={"limit": limit},
             headers=UA,
-            timeout=25,
+            timeout=8,
         )
         if r.status_code != 200:
             return []
@@ -230,15 +252,17 @@ def link_from_catalog(con: sqlite3.Connection, by_series: dict[str, list]) -> di
         if not books:
             continue
         if _has_works(d):
-            # enrichir si peu d'œuvres
+            # enrichir tant qu'on a < 25 œuvres locales
             cur = list(d.get("individual_books") or [])
-            if len(cur) >= 5:
+            if len(cur) >= 25:
                 already += 1
                 continue
-            merged = _merge_books(cur, books)
+            merged = _merge_books(cur, books, cap=60)
             if len(merged) == len(cur):
                 already += 1
                 continue
+            if not (d.get("individual_books") or d.get("series")):
+                linked += 1
         else:
             merged = books[:60]
             linked += 1

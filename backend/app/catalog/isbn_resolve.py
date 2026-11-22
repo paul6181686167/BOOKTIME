@@ -105,7 +105,7 @@ def from_ol_editions(ol_key: str, *, spend: bool = True) -> str:
         return ""
     try:
         if kid.endswith("M"):
-            r = requests.get(f"https://openlibrary.org/books/{kid}.json", timeout=12, headers=UA)
+            r = requests.get(f"https://openlibrary.org/books/{kid}.json", timeout=6, headers=UA)
             if r.status_code != 200:
                 return ""
             data = r.json() or {}
@@ -115,8 +115,8 @@ def from_ol_editions(ol_key: str, *, spend: bool = True) -> str:
             path = "/" + path.lstrip("/")
         r = requests.get(
             f"https://openlibrary.org{path}",
-            params={"limit": 8},
-            timeout=15,
+            params={"limit": 6},
+            timeout=6,
             headers=UA,
         )
         if r.status_code != 200:
@@ -139,7 +139,7 @@ def from_ol_search(title: str, author: str = "", *, spend: bool = True) -> str:
     if author:
         params["author"] = author
     try:
-        r = requests.get(OL_SEARCH, params=params, timeout=8, headers=UA)
+        r = requests.get(OL_SEARCH, params=params, timeout=5, headers=UA)
         if r.status_code != 200:
             return ""
         for doc in (r.json() or {}).get("docs") or []:
@@ -157,6 +157,14 @@ def from_google_books(title: str, author: str = "", *, spend: bool = True) -> st
     title = (title or "").strip()
     if len(title) < 3 or (spend and not _spend()):
         return ""
+    # Respecter le circuit-breaker 429 global
+    try:
+        from ..google_books.service import gb_available
+
+        if not gb_available():
+            return ""
+    except Exception:
+        pass
     q = f'intitle:"{title}"'
     if author:
         q += f' inauthor:"{author}"'
@@ -165,8 +173,14 @@ def from_google_books(title: str, author: str = "", *, spend: bool = True) -> st
     if key:
         params["key"] = key
     try:
-        r = requests.get(GB_URL, params=params, timeout=8, headers=UA)
+        r = requests.get(GB_URL, params=params, timeout=6, headers=UA)
         if r.status_code in (403, 429):
+            try:
+                from ..google_books.service import _trip_cooldown
+
+                _trip_cooldown()
+            except Exception:
+                pass
             return ""
         if r.status_code != 200:
             return ""
@@ -202,7 +216,7 @@ def from_bnf(title: str, author: str = "", *, spend: bool = True) -> str:
                 "recordSchema": "dublincore",
                 "maximumRecords": "3",
             },
-            timeout=10,
+            timeout=5,
             headers={**UA, "Accept": "application/xml"},
         )
         if r.status_code != 200:
@@ -237,11 +251,23 @@ def resolve_isbn(
         got = from_ol_editions(ol_key)
         if got:
             return got
+    # Titre FR → BnF utile ; sinon OL puis GB (évite BnF lent sur EN)
+    looks_fr = any(
+        c in (title or "").lower()
+        for c in ("é", "è", "à", "ù", "ô", "ç", "œ", " le ", " la ", " les ", " un ", " une ")
+    ) or any(
+        c in (title or "")
+        for c in ("é", "è", "à", "ù", "ô", "ç", "É", "È")
+    )
     for t in (title, title_en):
         if not (t or "").strip():
             continue
-        # OL + BnF d'abord (GB souvent en 429 / quota)
-        for fn in (from_ol_search, from_bnf, from_google_books):
+        fns = (from_ol_search, from_bnf, from_google_books) if looks_fr else (
+            from_ol_search,
+            from_google_books,
+            from_bnf,
+        )
+        for fn in fns:
             got = fn(t, author)
             if got:
                 return got

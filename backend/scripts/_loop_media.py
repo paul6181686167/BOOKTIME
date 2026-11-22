@@ -1,4 +1,4 @@
-"""Boucle 2/3 — médias : résumés + ISBN (GB en 429 → OL/BnF/Wiki).
+"""Boucle 2/3 — médias turbo : résumés + ISBN en parallèle de lots.
 
   python scripts/_loop_media.py
 """
@@ -31,57 +31,45 @@ def main() -> int:
     while True:
         n += 1
         print(f"\n======== MEDIA #{n} ========", flush=True)
-        # Résumés EN PREMIER (étaient starving derrière ISBN)
+
         _run(
             "synopses",
             [
                 PY,
                 str(ROOT / "scripts" / "backfill_synopses_loop.py"),
                 "--batch",
-                "40",
+                "120",
                 "--rounds",
-                "20",
+                "30",
                 "--sleep",
-                "0.08",
+                "0.03",
                 "--loop",
+                "--workers",
+                "10",
             ],
-            timeout=30 * 60,
+            timeout=40 * 60,
         )
-        # ISBN : lots plus courts, OL/BnF d'abord (moins de GB)
+
         _run(
             "isbn",
             [
                 PY,
                 str(ROOT / "scripts" / "backfill_real_isbns.py"),
                 "--batch",
-                "60",
+                "150",
                 "--per-doc",
-                "3",
+                "2",
                 "--rounds",
-                "10",
+                "24",
                 "--sleep",
-                "0.2",
+                "0.05",
+                "--workers",
+                "8",
                 "--skip-purge",
                 "--loop",
             ],
-            timeout=25 * 60,
+            timeout=35 * 60,
         )
-        # Titres FR : 1 cycle sur 2
-        if n % 2 == 0:
-            _run(
-                "titles_fr",
-                [
-                    PY,
-                    str(ROOT / "scripts" / "backfill_french_titles.py"),
-                    "--phase",
-                    "google",
-                    "--workers",
-                    "4",
-                    "--limit",
-                    "400",
-                ],
-                timeout=20 * 60,
-            )
         time.sleep(1)
 
 

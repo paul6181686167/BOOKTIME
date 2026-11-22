@@ -1,4 +1,4 @@
-"""Boucle 3/3 — auteurs : priorité enrichissement (rapide).
+"""Boucle 3/3 — auteurs : œuvres OL fréquentes + enrich (catalogue local rare).
 
   python scripts/_loop_authors.py
 """
@@ -31,25 +31,57 @@ def main() -> int:
     while True:
         n += 1
         print(f"\n======== AUTHORS #{n} ========", flush=True)
-        # Enrich = priorité absolue (3 passes pour 1 promo)
-        for _ in range(3):
+
+        # Catalogue local : rare (déjà massivement fait, cache 6h)
+        if n == 1 or n % 4 == 0:
             _run(
-                "enrich",
+                "works_catalog",
                 [
                     PY,
-                    str(ROOT / "scripts" / "backfill_authors_complete.py"),
+                    str(ROOT / "scripts" / "link_author_works_from_catalog.py"),
                     "--sqlite-only",
-                    "--fast",
-                    "--batch",
-                    "150",
-                    "--sleep",
-                    "0.05",
-                    "--max-batches",
-                    "60",
                 ],
-                timeout=45 * 60,
+                timeout=30 * 60,
             )
-        # Promo cache : moins souvent
+
+        # OL API œuvres : chaque cycle (priorité restante)
+        _run(
+            "works_ol",
+            [
+                PY,
+                str(ROOT / "scripts" / "link_author_works_from_catalog.py"),
+                "--ol-api",
+                "--skip-catalog",
+                "--batch",
+                "180",
+                "--loop",
+                "--max-rounds",
+                "20",
+                "--sqlite-only",
+                "--sleep",
+                "0.08",
+            ],
+            timeout=25 * 60,
+        )
+
+        # Enrich bio/nat
+        _run(
+            "enrich",
+            [
+                PY,
+                str(ROOT / "scripts" / "backfill_authors_complete.py"),
+                "--sqlite-only",
+                "--fast",
+                "--batch",
+                "200",
+                "--sleep",
+                "0.03",
+                "--max-batches",
+                "50",
+            ],
+            timeout=40 * 60,
+        )
+
         if n % 2 == 1:
             _run(
                 "promote",
@@ -58,33 +90,13 @@ def main() -> int:
                     str(ROOT / "scripts" / "promote_ol_cache_to_authors.py"),
                     "--sqlite-only",
                     "--batch",
-                    "100",
+                    "150",
                     "--sleep",
-                    "0.1",
+                    "0.06",
                     "--max-batches",
-                    "20",
+                    "30",
                 ],
                 timeout=25 * 60,
-            )
-        # Œuvres OL : rare (coûteux / souvent 0 hit)
-        if n % 4 == 0:
-            _run(
-                "works",
-                [
-                    PY,
-                    str(ROOT / "scripts" / "link_author_works_from_catalog.py"),
-                    "--ol-api",
-                    "--batch",
-                    "100",
-                    "--loop",
-                    "--max-rounds",
-                    "8",
-                    "--skip-catalog",
-                    "--sqlite-only",
-                    "--sleep",
-                    "0.2",
-                ],
-                timeout=15 * 60,
             )
         time.sleep(1)
 

@@ -25,6 +25,14 @@ _FR_HINT = re.compile(
     r"[àâäéèêëïîôùûüçœæ]|(\b(le|la|les|un|une|des|du|de|et|est|dans|pour|avec)\b)",
     re.I,
 )
+_SKIP_TITLE = re.compile(
+    r"(?i)\b("
+    r"dissertatio|catalogu[es]?|apologie du jugement|zur geschichte|"
+    r"handbuch|leitfaden|jahrbuch|bericht|proceedings|thesis|"
+    r"mémoire présenté|these de|thèse de|bulletin de|annuaire|"
+    r"collection de beaux livres|schending van|volkenrecht"
+    r")\b"
+)
 
 
 def _load_env() -> None:
@@ -119,14 +127,16 @@ def collect_batch(offset: int, batch: int) -> tuple[list[tuple[str, dict]], int,
 
     con = _connect(readonly=True)
     total = int(con.execute("SELECT COUNT(*) FROM catalog_daily_series").fetchone()[0])
+    # Fenêtre large pour trouver assez de FR / non-académique
     rows = con.execute(
         "SELECT qid, doc_json FROM catalog_daily_series ORDER BY rowid "
         "LIMIT ? OFFSET ?",
-        (batch * 12, offset),
+        (batch * 40, offset),
     ).fetchall()
     con.close()
     out: list[tuple[str, dict]] = []
     scanned = 0
+    skipped_junk = 0
     for row in rows:
         scanned += 1
         try:
@@ -135,77 +145,81 @@ def collect_batch(offset: int, batch: int) -> tuple[list[tuple[str, dict]], int,
             continue
         if catalog_media.has_real_synopsis(doc):
             continue
+        title = (doc.get("name") or doc.get("title") or "").strip()
+        if _SKIP_TITLE.search(title):
+            skipped_junk += 1
+            continue
         isbn = _pick_isbn(doc)
         qid = str(doc.get("qid") or row["qid"] or "")
-        title = (doc.get("name") or doc.get("title") or "").strip()
         if not isbn and not (qid.startswith("OL") and qid.endswith("W")) and len(title) < 3:
             continue
         if isbn:
             doc["isbn"] = isbn
         out.append((row["qid"], doc))
-        if len(out) >= batch * 3:
+        if len(out) >= batch * 4:
             break
     out.sort(key=lambda x: _fr_score(x[1]))
-    # Si assez de pistes FR / wiki-friendly, dropper le bruit EN académique
     preferred = [x for x in out if _fr_score(x[1]) <= 3]
-    if len(preferred) >= max(8, batch // 4):
+    if len(preferred) >= max(10, batch // 3):
         out = preferred
+    elif preferred:
+        # Mélanger : d'abord FR, puis le reste
+        rest = [x for x in out if x not in preferred]
+        out = preferred + rest
     out = out[:batch]
     next_off = offset + scanned
     if next_off >= total:
         next_off = 0
+    if skipped_junk:
+        print(f"  skip_junk={skipped_junk}", flush=True)
     return out, next_off, total
 
 
 def _wiki_fast(title: str, author: str = "") -> str:
-    """Résumé Wikipédia rapide (REST summary FR/EN + 1 opensearch FR)."""
+    """Résumé Wikipédia ultra-court (FR slug → EN slug → 1 opensearch FR)."""
     import requests
     from urllib.parse import quote
 
-    headers = {"User-Agent": "BooktimeSynopsis/1.2"}
-    titles = [title]
-    if author:
-        titles.append(f"{title} ({author.split(',')[0].strip()})")
-        titles.append(f"{title} {author.split(',')[0].strip()}")
+    headers = {"User-Agent": "BooktimeSynopsis/1.3"}
+    slug0 = quote((title or "").strip().replace(" ", "_"), safe="_()")
+    if not slug0:
+        return ""
     for lang in ("fr", "en"):
-        for t in titles:
-            slug = quote((t or "").strip().replace(" ", "_"), safe="_()")
-            if not slug:
-                continue
-            try:
-                r = requests.get(
-                    f"https://{lang}.wikipedia.org/api/rest_v1/page/summary/{slug}",
-                    timeout=3,
-                    headers=headers,
-                )
-                if r.status_code != 200:
-                    continue
+        try:
+            r = requests.get(
+                f"https://{lang}.wikipedia.org/api/rest_v1/page/summary/{slug0}",
+                timeout=2.5,
+                headers=headers,
+            )
+            if r.status_code == 200:
                 extract = (r.json().get("extract") or "").strip()
                 if len(extract) >= 60:
                     return extract[:2000]
-            except Exception:
-                continue
-    # 1 opensearch FR
+        except Exception:
+            continue
+    # Opensearch FR seulement si le titre a l'air FR
+    if not _FR_HINT.search(title or ""):
+        return ""
     try:
         r = requests.get(
             "https://fr.wikipedia.org/w/api.php",
             params={
                 "action": "opensearch",
                 "search": title,
-                "limit": 2,
+                "limit": 1,
                 "namespace": 0,
                 "format": "json",
             },
-            timeout=3,
+            timeout=2.5,
             headers=headers,
         )
         if r.status_code == 200:
             hits = (r.json() or [None, []])[1] or []
-            for hit in hits[:2]:
-                slug = quote(str(hit).replace(" ", "_"), safe="_()")
+            if hits:
+                slug = quote(str(hits[0]).replace(" ", "_"), safe="_()")
                 r2 = requests.get(
                     f"https://fr.wikipedia.org/api/rest_v1/page/summary/{slug}",
-                    timeout=3,
+                    timeout=2.5,
                     headers=headers,
                 )
                 if r2.status_code == 200:
@@ -217,8 +231,8 @@ def _wiki_fast(title: str, author: str = "") -> str:
     return ""
 
 
-def run_batch(candidates: list[tuple[str, dict]]) -> dict:
-    """OL work → Wiki rapide → ISBN OL/BnF (évite GB 429 et wiki lourd)."""
+def _enrich_one(qid: str, doc: dict) -> tuple[str, dict, str, str] | None:
+    """Retourne (qid, doc, text, src) ou None."""
     from app.catalog import catalog_media
     from app.utils.book_synopsis import (
         _from_bnf_isbn,
@@ -227,69 +241,56 @@ def run_batch(candidates: list[tuple[str, dict]]) -> dict:
         is_usable_synopsis,
     )
 
-    try:
-        from app.google_books.service import gb_available
-        from app.utils.book_synopsis import fetch_back_cover_by_isbn
-    except Exception:
-        gb_available = lambda: False  # noqa: E731
-        fetch_back_cover_by_isbn = None
-
-    catalog_media.reset_budgets(synopsis=max(len(candidates) * 2, 40), covers=0)
-    filled = tried = 0
-    by_src: dict[str, int] = {}
-    updates: list[tuple] = []
-
     def _ok(text: str) -> bool:
         return bool(
             is_usable_synopsis(text) and not catalog_media.is_template_blurb(text)
         )
 
-    for qid, doc in candidates:
-        tried += 1
-        text = ""
-        src = ""
-        title = (doc.get("name") or doc.get("title") or "").strip()
-        author = _author_name(doc)
-        isbn = _pick_isbn(doc)
-        ol_key = (doc.get("key") or "").strip()
-        q = str(doc.get("qid") or qid or "")
-        if not ol_key and q.startswith("OL") and q.endswith("W"):
-            ol_key = f"/works/{q}"
+    title = (doc.get("name") or doc.get("title") or "").strip()
+    isbn = _pick_isbn(doc)
+    ol_key = (doc.get("key") or "").strip()
+    q = str(doc.get("qid") or qid or "")
+    if not ol_key and q.startswith("OL") and q.endswith("W"):
+        ol_key = f"/works/{q}"
 
-        # 1) Work OL
-        if ol_key:
-            ol_text = (_ol_work_description_only(ol_key) or "").strip()
-            if _ok(ol_text):
-                text, src = ol_text, "openlibrary"
+    text, src = "", ""
+    if ol_key:
+        ol_text = (_ol_work_description_only(ol_key) or "").strip()
+        if _ok(ol_text):
+            text, src = ol_text, "openlibrary"
+    if not text and title:
+        wiki = _wiki_fast(title)
+        if _ok(wiki):
+            text, src = wiki, "wikipedia"
+    if not text and isbn:
+        ol_i = (_from_openlibrary_isbn(isbn) or "").strip()
+        if _ok(ol_i):
+            text, src = ol_i, "openlibrary_isbn"
+        if not text:
+            bnf = (_from_bnf_isbn(isbn) or "").strip()
+            if _ok(bnf):
+                text, src = bnf, "bnf_isbn"
+    if not text:
+        return None
+    if not catalog_media.apply_synopsis(doc, text, src):
+        return None
+    return qid, doc, text, src
 
-        # 2) Wiki rapide
-        if not text and title:
-            wiki = _wiki_fast(title, author)
-            if _ok(wiki):
-                text, src = wiki, "wikipedia"
 
-        # 3) ISBN sans GB si cooldown
-        if not text and isbn:
-            if gb_available() and fetch_back_cover_by_isbn:
-                try:
-                    bc, bsrc = fetch_back_cover_by_isbn(isbn)
-                    if _ok(bc):
-                        text, src = bc, bsrc or "isbn"
-                except Exception:
-                    pass
-            if not text:
-                ol_i = (_from_openlibrary_isbn(isbn) or "").strip()
-                if _ok(ol_i):
-                    text, src = ol_i, "openlibrary_isbn"
-            if not text:
-                bnf = (_from_bnf_isbn(isbn) or "").strip()
-                if _ok(bnf):
-                    text, src = bnf, "bnf_isbn"
+def run_batch(candidates: list[tuple[str, dict]], *, workers: int = 1) -> dict:
+    """OL work → Wiki rapide → ISBN OL/BnF (parallèle)."""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
 
-        if not text or not catalog_media.apply_synopsis(doc, text, src):
-            if tried % 5 == 0:
-                print(f"  synopsis tried={tried} filled={filled} src={by_src}", flush=True)
-            continue
+    filled = tried = 0
+    by_src: dict[str, int] = {}
+    updates: list[tuple] = []
+    workers = max(1, min(int(workers or 1), 10))
+
+    def _handle(result: tuple[str, dict, str, str] | None) -> None:
+        nonlocal filled
+        if not result:
+            return
+        qid, doc, _text, src = result
         filled += 1
         by_src[src] = by_src.get(src, 0) + 1
         updates.append(
@@ -300,11 +301,33 @@ def run_batch(candidates: list[tuple[str, dict]]) -> dict:
                 qid,
             )
         )
-        if len(updates) >= 8:
-            _flush(updates)
-            updates.clear()
-            print(f"  synopsis filled={filled}/{tried} src={by_src}", flush=True)
-        time.sleep(0.03)
+
+    if workers <= 1:
+        for qid, doc in candidates:
+            tried += 1
+            _handle(_enrich_one(qid, doc))
+            if tried % 10 == 0:
+                print(f"  synopsis tried={tried} filled={filled} src={by_src}", flush=True)
+            if len(updates) >= 10:
+                _flush(updates)
+                updates.clear()
+    else:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futs = {pool.submit(_enrich_one, qid, doc): 1 for qid, doc in candidates}
+            for fut in as_completed(futs):
+                tried += 1
+                try:
+                    _handle(fut.result())
+                except Exception:
+                    pass
+                if tried % 10 == 0:
+                    print(
+                        f"  synopsis tried={tried} filled={filled} src={by_src}",
+                        flush=True,
+                    )
+                if len(updates) >= 10:
+                    _flush(updates)
+                    updates.clear()
     _flush(updates)
     return {"filled": filled, "tried": tried, "by_src": by_src}
 
@@ -341,10 +364,11 @@ def main() -> int:
     p.add_argument("--sleep", type=float, default=1.0)
     p.add_argument("--rounds", type=int, default=0, help="0=illimité si --loop")
     p.add_argument("--reset-offset", action="store_true")
+    p.add_argument("--workers", type=int, default=4)
     args = p.parse_args()
     _load_env()
     os.environ.setdefault("CATALOG_DUMP_LOCAL", "1")
-    print(f"db={_db()}", flush=True)
+    print(f"db={_db()} workers={args.workers}", flush=True)
 
     if args.reset_offset:
         prog = _load_prog()
@@ -372,7 +396,7 @@ def main() -> int:
             if args.rounds and rounds >= args.rounds:
                 break
             continue
-        res = run_batch(cands)
+        res = run_batch(cands, workers=max(1, args.workers))
         prog["filled"] = int(prog.get("filled") or 0) + int(res["filled"])
         prog["tried"] = int(prog.get("tried") or 0) + int(res["tried"])
         prog["offset"] = next_off
