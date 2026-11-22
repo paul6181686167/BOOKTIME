@@ -1,9 +1,10 @@
-"""Boucle 3/3 — auteurs : œuvres OL fréquentes + enrich (catalogue local rare).
+"""Boucle 3/3 — auteurs : enrichissement bio/œuvres (cache déjà promu).
 
   python scripts/_loop_authors.py
 """
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -12,6 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PY = sys.executable
+PROMOTE_PROG = ROOT / "data" / "_promote_cache_authors_progress.json"
 
 os.environ.setdefault("CATALOG_DUMP_LOCAL", "1")
 os.environ.setdefault("CATALOG_LOCAL_SQLITE", str(ROOT / "data" / "local_catalog.sqlite"))
@@ -26,45 +28,40 @@ def _run(label: str, args: list[str], *, timeout: int) -> None:
         print(f"<< {label} timeout>{timeout}s — continue", flush=True)
 
 
+def _cache_done() -> bool:
+    if not PROMOTE_PROG.exists():
+        return False
+    try:
+        p = json.loads(PROMOTE_PROG.read_text(encoding="utf-8"))
+        return int(p.get("offset") or 0) >= 300000
+    except Exception:
+        return False
+
+
 def main() -> int:
     n = 0
     while True:
         n += 1
         print(f"\n======== AUTHORS #{n} ========", flush=True)
 
-        # Catalogue local : rare (déjà massivement fait, cache 6h)
-        if n == 1 or n % 4 == 0:
+        if not _cache_done():
             _run(
-                "works_catalog",
+                "promote",
                 [
                     PY,
-                    str(ROOT / "scripts" / "link_author_works_from_catalog.py"),
+                    str(ROOT / "scripts" / "promote_ol_cache_to_authors.py"),
                     "--sqlite-only",
+                    "--fast",
+                    "--batch",
+                    "200",
+                    "--sleep",
+                    "0.02",
+                    "--max-batches",
+                    "100",
                 ],
-                timeout=30 * 60,
+                timeout=60 * 60,
             )
 
-        # OL API œuvres : chaque cycle (priorité restante)
-        _run(
-            "works_ol",
-            [
-                PY,
-                str(ROOT / "scripts" / "link_author_works_from_catalog.py"),
-                "--ol-api",
-                "--skip-catalog",
-                "--batch",
-                "180",
-                "--loop",
-                "--max-rounds",
-                "20",
-                "--sqlite-only",
-                "--sleep",
-                "0.08",
-            ],
-            timeout=25 * 60,
-        )
-
-        # Enrich bio/nat
         _run(
             "enrich",
             [
@@ -73,28 +70,22 @@ def main() -> int:
                 "--sqlite-only",
                 "--fast",
                 "--batch",
-                "200",
+                "220",
                 "--sleep",
-                "0.03",
+                "0.02",
                 "--max-batches",
-                "50",
+                "80",
             ],
-            timeout=40 * 60,
+            timeout=50 * 60,
         )
 
-        if n % 2 == 1:
+        if n % 2 == 0:
             _run(
-                "promote",
+                "works_catalog",
                 [
                     PY,
-                    str(ROOT / "scripts" / "promote_ol_cache_to_authors.py"),
+                    str(ROOT / "scripts" / "link_author_works_from_catalog.py"),
                     "--sqlite-only",
-                    "--batch",
-                    "150",
-                    "--sleep",
-                    "0.06",
-                    "--max-batches",
-                    "30",
                 ],
                 timeout=25 * 60,
             )

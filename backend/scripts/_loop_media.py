@@ -1,4 +1,4 @@
-"""Boucle 2/3 — médias turbo : résumés + ISBN en parallèle de lots.
+"""Boucle 2/3 — médias turbo : résumé + ISBN en parallèle (API) + dump local.
 
   python scripts/_loop_media.py
 """
@@ -26,49 +26,80 @@ def _run(label: str, args: list[str], *, timeout: int) -> None:
         print(f"<< {label} timeout>{timeout}s — continue", flush=True)
 
 
+def _parallel(jobs: list[tuple[str, list[str]]], *, timeout: int) -> None:
+    """Lance plusieurs enrichissements API en parallèle."""
+    procs: list[tuple[str, subprocess.Popen]] = []
+    for label, args in jobs:
+        print(f"\n>> {label} (parallel)", flush=True)
+        procs.append((label, subprocess.Popen(args, cwd=str(ROOT))))
+    t0 = time.time()
+    while procs:
+        still: list[tuple[str, subprocess.Popen]] = []
+        for label, p in procs:
+            rc = p.poll()
+            if rc is None:
+                if time.time() - t0 > timeout:
+                    print(f"<< {label} timeout>{timeout}s — kill", flush=True)
+                    p.terminate()
+                    try:
+                        p.wait(timeout=15)
+                    except Exception:
+                        p.kill()
+                else:
+                    still.append((label, p))
+            else:
+                print(f"<< {label} rc={rc}", flush=True)
+        procs = still
+        if procs:
+            time.sleep(2)
+
+
 def main() -> int:
     n = 0
     while True:
         n += 1
         print(f"\n======== MEDIA #{n} ========", flush=True)
 
-        _run(
-            "synopses",
+        # API parallèle (le dump local est géré par _loop_stock)
+        _parallel(
             [
-                PY,
-                str(ROOT / "scripts" / "backfill_synopses_loop.py"),
-                "--batch",
-                "120",
-                "--rounds",
-                "30",
-                "--sleep",
-                "0.03",
-                "--loop",
-                "--workers",
-                "10",
+                (
+                    "synopses",
+                    [
+                        PY,
+                        str(ROOT / "scripts" / "backfill_synopses_loop.py"),
+                        "--batch",
+                        "160",
+                        "--rounds",
+                        "40",
+                        "--sleep",
+                        "0.02",
+                        "--loop",
+                        "--workers",
+                        "14",
+                    ],
+                ),
+                (
+                    "isbn",
+                    [
+                        PY,
+                        str(ROOT / "scripts" / "backfill_real_isbns.py"),
+                        "--batch",
+                        "180",
+                        "--per-doc",
+                        "2",
+                        "--rounds",
+                        "30",
+                        "--sleep",
+                        "0.03",
+                        "--workers",
+                        "12",
+                        "--skip-purge",
+                        "--loop",
+                    ],
+                ),
             ],
-            timeout=40 * 60,
-        )
-
-        _run(
-            "isbn",
-            [
-                PY,
-                str(ROOT / "scripts" / "backfill_real_isbns.py"),
-                "--batch",
-                "150",
-                "--per-doc",
-                "2",
-                "--rounds",
-                "24",
-                "--sleep",
-                "0.05",
-                "--workers",
-                "8",
-                "--skip-purge",
-                "--loop",
-            ],
-            timeout=35 * 60,
+            timeout=45 * 60,
         )
         time.sleep(1)
 
